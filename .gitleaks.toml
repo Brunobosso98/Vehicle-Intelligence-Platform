@@ -1,0 +1,5 @@
+[extend]
+useDefault = true
+[allowlist]
+description = "Generated/dependency/build artifacts, never first-party source"
+paths = ['''(^|/)(node_modules|\.venv|\.next|\.cache|\.validation|coverage|playwright-report|test-results)/''']

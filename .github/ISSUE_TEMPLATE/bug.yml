@@ -1,0 +1,14 @@
+name: Bug report
+description: Report a reproducible foundation failure
+body:
+  - type: textarea
+    id: reproduction
+    attributes: { label: Steps and expected/actual behavior }
+    validations: { required: true }
+  - type: textarea
+    id: environment
+    attributes:
+      {
+        label: Toolchain versions and sanitized logs,
+        description: Never include credentials or personal vehicle data.,
+      }

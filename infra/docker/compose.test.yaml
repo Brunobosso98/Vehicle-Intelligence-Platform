@@ -1,0 +1,16 @@
+services:
+  db:
+    image: ${TEST_DB_IMAGE:-timescale/timescaledb:2.30.2-pg17}
+    environment:
+      POSTGRES_USER: vehicle
+      POSTGRES_PASSWORD: test-only
+      POSTGRES_DB: vehicle_test
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TIMESCALEDB_TELEMETRY: "off"
+    ports: ["127.0.0.1::5432"]
+    tmpfs: ["/var/lib/postgresql/data:mode=1777"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vehicle -d vehicle_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

@@ -1,0 +1,10 @@
+node_modules
+**/.next
+**/.venv
+**/coverage
+**/test-results
+**/playwright-report
+**/next-env.d.ts
+pnpm-lock.yaml
+apps/api/uv.lock
+attachments

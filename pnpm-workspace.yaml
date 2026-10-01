@@ -1,0 +1,15 @@
+packages:
+  - apps/web
+  - packages/contracts
+minimumReleaseAge: 1440
+allowBuilds:
+  unrs-resolver: true
+
+# Exact legacy plugins are adapted by @eslint/compat; see ADR 0008.
+peerDependencyRules:
+  allowedVersions:
+    "eslint-plugin-react@7.37.5>eslint": "10.11.0"
+    "eslint-plugin-jsx-a11y@6.10.2>eslint": "10.11.0"
+    "eslint-plugin-import@2.32.0>eslint": "10.11.0"
+
+networkConcurrency: 4

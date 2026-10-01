@@ -1,0 +1,172 @@
+:root {
+  color-scheme: dark;
+  --bg: #101416;
+  --surface: #192024;
+  --text: #f0f4f2;
+  --muted: #adb8b6;
+  --accent: #a9e7cc;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+header,
+main,
+footer {
+  max-width: 1080px;
+  margin: auto;
+  padding: 32px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #36413f;
+}
+.wordmark {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 25px;
+}
+.wordmark span,
+.phase,
+.eyebrow,
+.section-label {
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+.wordmark span {
+  color: var(--muted);
+}
+.phase {
+  border: 1px solid #52675f;
+  padding: 8px 12px;
+  color: var(--accent);
+}
+main {
+  padding-top: 70px;
+}
+.eyebrow {
+  color: var(--accent);
+}
+h1 {
+  font-size: clamp(38px, 6vw, 66px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin: 24px 0;
+}
+.intro {
+  max-width: 600px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.status-card {
+  max-width: 640px;
+  background: var(--surface);
+  border: 1px solid #394641;
+  padding: 30px;
+  margin: 48px 0;
+}
+.section-label {
+  font-size: 10px;
+  color: var(--accent);
+}
+h2 {
+  font-size: 23px;
+  font-weight: 500;
+}
+.status-list {
+  margin: 26px 0;
+}
+.status-list div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #394641;
+  padding: 14px 0;
+  gap: 20px;
+}
+.status-list dt {
+  color: var(--muted);
+}
+.status-list dd {
+  margin: 0;
+}
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 9px;
+}
+button {
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid #798e86;
+  padding: 12px 18px;
+  font: inherit;
+}
+button:hover {
+  background: #2b3934;
+}
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 5px;
+}
+.scope {
+  max-width: 620px;
+}
+.scope p,
+footer p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+footer {
+  border-top: 1px solid #36413f;
+  margin-top: 48px;
+  font-size: 12px;
+}
+footer span {
+  letter-spacing: 2px;
+}
+.status-error {
+  color: #ffc8b7;
+  line-height: 1.6;
+}
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  color: var(--bg);
+  background: var(--accent);
+  padding: 12px;
+}
+.skip-link:focus {
+  top: 10px;
+}
+@media (max-width: 600px) {
+  header,
+  main,
+  footer {
+    padding: 24px;
+  }
+  .wordmark span {
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .status-card {
+    padding: 22px;
+  }
+  main {
+    padding-top: 48px;
+  }
+}

@@ -1,0 +1,17 @@
+# Optional validation-only fallback for Docker Hub rate limits, prepared by scripts/cloud-validation.sh.
+services:
+  db:
+    image: vehicle-platform-db:validation
+  migrate:
+    build:
+      args:
+        PYTHON_IMAGE: ghcr.io/astral-sh/uv:python3.12-trixie-slim@sha256:5ae92e4d35b8d586d50ddf4aba6ecdd9f744237284d31c86bf45077e4e17e4bd
+      secrets: [proxy_ca]
+  web:
+    build:
+      args:
+        NODE_IMAGE: vehicle-platform-node:validation
+      secrets: [proxy_ca]
+secrets:
+  proxy_ca:
+    file: ${N55_BUILD_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt}

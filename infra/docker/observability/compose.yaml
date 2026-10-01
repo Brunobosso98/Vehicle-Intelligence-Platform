@@ -1,0 +1,5 @@
+# Merge with compose.yaml to enable API export; no exporter in the default stack.
+services:
+  api:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
