@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
   otel-collector:
     profiles: ["observability"]
-    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.146.1@sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.0@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       ["./infra/docker/observability/collector.yaml:/etc/otel/config.yaml:ro"]
