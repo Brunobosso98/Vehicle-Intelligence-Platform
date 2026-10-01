@@ -68,7 +68,7 @@ services:
     depends_on: ["tempo"]
   prometheus:
     profiles: ["observability"]
-    image: quay.io/prometheus/prometheus:v3.10.0@sha256:7571a304e67fbd794be02422b13627dc7de822152f74e99e2bef95d29eceecde
+    image: quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     volumes:
       [
         "./infra/docker/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro",
