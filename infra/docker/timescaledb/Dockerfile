@@ -31,7 +31,7 @@ COPY --from=helper-builder /out/gosu /usr/local/bin/gosu
 COPY --from=helper-builder /out/timescaledb-tune /usr/local/bin/timescaledb-tune
 
 RUN set -eux; \
-    apk upgrade --no-cache libexpat; \
+    apk upgrade --no-cache; \
     rm -f /usr/local/bin/timescaledb-parallel-copy; \
     test ! -e /usr/local/bin/timescaledb-parallel-copy; \
     gosu --version; \

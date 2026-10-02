@@ -1,0 +1,58 @@
+version: 1
+exceptions:
+  - id: api-web-cve-2025-69720
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2025-69720
+    packages: ["libncursesw6", "libtinfo6", "ncurses-base", "ncurses-bin"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The affected infocmp CLI is not invoked by either service; containers are non-root, read-only, and expose no shell-driven input."
+  - id: api-web-cve-2026-16742
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-16742
+    packages: ["libsystemd0", "libudev1"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit path requires systemd-homed/local logged-in users; these service containers run neither systemd nor homed."
+  - id: api-web-cve-2026-54369
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-54369
+    packages: ["libacl1"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The affected privileged ACL pathname path is not used; services are non-root with read-only roots."
+  - id: api-web-cve-2026-76642
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-76642
+    packages: ["bsdutils", "libblkid1", "liblastlog2-2", "libmount1", "libsmartcols1", "libuuid1", "login", "mount", "util-linux"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires privileged mount helpers/hooks; services drop all capabilities and do not invoke mount."
+  - id: api-web-cve-2026-78408
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78408
+    packages: ["bsdutils", "libblkid1", "liblastlog2-2", "libmount1", "libsmartcols1", "libuuid1", "login", "mount", "util-linux"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free."
+  - id: api-web-cve-2026-78409
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78409
+    packages: ["bsdutils", "libblkid1", "liblastlog2-2", "libmount1", "libsmartcols1", "libuuid1", "login", "mount", "util-linux"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires fstab-authorized mount operations not exposed by either service container."
+  - id: api-web-cve-2026-78410
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78410
+    packages: ["bsdutils", "libblkid1", "liblastlog2-2", "libmount1", "libsmartcols1", "libuuid1", "login", "mount", "util-linux"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires SUID mount/fstab bind mount control; no such path or capability exists in the services."
+  - id: api-web-cve-2026-9538
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-9538
+    packages: ["perl-base"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither service executes Perl or accepts archive uploads."
