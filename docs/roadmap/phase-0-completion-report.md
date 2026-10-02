@@ -1,8 +1,35 @@
 # PHASE 0 COMPLETION REPORT
 
-Date: 2026-10-01. **Status: implemented and substantially validated; Phase 0 NOT complete.**
+Date: 2026-10-01.
+
+## PHASE 0 STATUS: NOT COMPLETE
+
+The engineering foundation is implemented and substantially validated, but this closure environment
+does not have the Docker CLI. Consequently the mandatory canonical image, Compose, database,
+observability and complete security reruns were not executable, and `make verify` returned 2.
 The mandatory complete gate failed on proven environment and security blockers. Do not start
 Phase 1 as if all foundation acceptance criteria had passed.
+
+The validation model is now explicit: Codex Cloud runs `make verify-cloud` for every legitimate
+non-container check, while GitHub Actions `full-validation` is the canonical Docker/full-stack
+executor. The cloud gate passed locally, but creating the workflow is not execution evidence.
+Container builds, stack/database/integration/E2E, image security and full observability remain
+**CI REQUIRED** until that commit-tied workflow runs successfully.
+
+## Closure rerun result
+
+A detached checkout at commit `99b5356` bootstrapped successfully with initially empty isolated uv
+and pnpm caches. After deleting application build outputs, `make verify-local` passed from that clean
+tree: frozen installs, Python and TypeScript lint/types/unit coverage, contracts, documentation,
+formatting and the production Web build all passed. Current locked Python and Node production audits
+also returned no known vulnerabilities.
+
+The canonical `make verify` rerun passed its complete local/static section and production build, then
+failed at `docker compose build` because `docker` is not installed (shell exit 127; Make exit 2).
+This is neither a Docker Hub rate limit nor evidence of an upstream outage. API/Web builds, metadata,
+runtime UID/content, local stack, migrations, E2E, full observability and image scans are therefore
+**NOT RUN** for the final source state. Historical evidence below is retained but is not substituted
+for final acceptance.
 
 ## Architecture
 
@@ -89,20 +116,31 @@ Follow-up on 2026-10-01: PyPI, npm and GitHub HTTP probes returned 200, and
 dependency audits were rerun and reported no known vulnerabilities. The earlier 429/503 failures
 are historical evidence, not proof of a continuing outage. Their origin was not isolated between
 the external services and the environment proxy. Full canonical image downloads/builds, empty-cache
-bootstrap and the observability profile still require successful reruns. The 44 High package
-findings per image represent eight distinct CVEs; advisory/exposure triage remains incomplete,
-so absence of a scanner FixedVersion does not establish that remediation is impossible.
+bootstrap and the observability profile still require successful reruns. At that point, the 44 High
+package findings per image were known to represent eight distinct CVEs, but advisory/exposure triage
+was incomplete; absence of a scanner FixedVersion did not establish that remediation was impossible.
+
+Closure update: empty-cache locked installation and a clean-artifact production build now pass.
+The eight prior unique CVEs have been individually mapped to Debian packages, upstream fixes,
+runtime reachability and review conditions in the finding inventory. Because final images could not
+be built or scanned here, those records are not accepted exceptions and the image gate remains open.
+The current security rerun passed secret scanning, locked dependency audits and filesystem/IaC
+scanning, then failed on the pinned third-party Timescale image. Its bundled Go binaries contain
+fixed Critical findings, so the zero-Critical requirement is independently unmet; fail-fast behavior
+left the remaining image scans not run.
 
 ## Known limitations
 
-- Public registries started returning HTTP 503 broadly (npm, PyPI, Docker, GitHub), confirmed with
-  direct requests and clean bootstrap; authenticated Docker Hub credentials were not configured.
-- Anonymous Docker Hub rate limits initially blocked canonical Node/Timescale images.
+- The current closure environment has no Docker CLI. Canonical images, the Compose stack, database
+  validation, E2E, observability backends/failure behavior and all image scans could not run.
+- Earlier HTTP 429/503 registry events are historical only; they are not treated as current permanent
+  unavailability. Fresh Python and Node dependency downloads succeeded in this closure rerun.
 - Chromium download was denied (`Domain forbidden`); local installed browser validated E2E.
-- Cold bootstrap in a separate clean working tree failed fetching a public wheel; warm-cache result
-  is separately recorded in evidence, not claimed as a completely empty-cache success.
-- OS High findings remain unresolved and block closure; no accepted exception exists.
-- Full observability visualization and remote CI/rulesets remain unverified.
+- Final-image confirmation of the eight historically observed High CVEs remains unavailable; no
+  accepted exception exists without a fresh canonical scan.
+- The pinned Timescale image currently reports Critical bundled-binary vulnerabilities with upstream
+  fixes; selecting and validating a safe supported upstream release remains required.
+- Full observability visualization, failure recovery and remote CI/rulesets remain unverified.
 - Docker vfs exhausted the 32GB workspace during repeated builds; generated build cache/dangling
   images were reclaimed, and builds serialized. Application data was not deleted.
 

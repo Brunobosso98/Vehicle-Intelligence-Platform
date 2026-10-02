@@ -35,6 +35,9 @@ Web http://localhost:3000 · API http://localhost:8000/docs.
 ## Desenvolvimento e testes
 
 `make check-api`, `make check-web`, `make contracts`, `make test-integration` e `make verify`.
+No Codex Cloud, use `make verify-cloud` para todos os checks que não dependem de containers.
+O workflow GitHub Actions `full-validation` é o executor canônico de Docker/full-stack; checks
+dependentes de Docker permanecem `CI REQUIRED` até esse workflow passar.
 Instale Chromium e scanners conforme [desenvolvimento local](docs/development/local-development.md)
 e [automação de segurança](docs/security/automation.md). O gate completo requer Docker e downloads públicos.
 

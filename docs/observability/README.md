@@ -14,6 +14,12 @@ by service.name=vehicle-platform-api. Generate traffic with `make observability-
 `docker compose logs api` for observability-smoke and match request.id to the trace's trace ID.
 Prometheus at http://localhost:9090 queries http_server_requests_total and service_readiness_failures_total.
 
+The canonical CI check is `make observability-full`. It injects unique request/trace IDs, requires
+matching structured logs and a queryable Tempo trace, queries request/duration/readiness metrics from
+Prometheus, checks Collector/Tempo/Prometheus/Grafana health, verifies API survival while the
+Collector is stopped, and requires a second queryable trace after recovery. Evidence is written to
+`.validation/observability` and uploaded by `full-validation`.
+
 No Loki is installed: structured logs are directly readable with Compose and are sufficient for Phase 0.
 Collector failure must not affect request outcomes: bounded asynchronous exporter, optional endpoint,
 no startup dependency. Export failures remain visible in SDK diagnostics. Unit tests capture a real

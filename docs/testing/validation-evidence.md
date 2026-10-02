@@ -1,5 +1,61 @@
 # Validation evidence — 2026-10-01
 
+## Split-executor implementation
+
+Codex Cloud ran `make verify-cloud` after the split-executor implementation. It returned **0** and
+covered Ruff lint/format, strict Mypy, 34 API units and coverage thresholds, ESLint, strict
+TypeScript, 9 Web units and coverage thresholds, contracts/generated synchronization,
+documentation/shell/YAML checks, Prettier, the Next.js production build, Gitleaks, locked Python and
+Node production audits, and Trivy filesystem/IaC. The security outputs are machine-readable files
+under ignored `.validation/security`.
+
+Docker-dependent checks are now **CI REQUIRED** in this environment: canonical API/Web builds,
+Compose stack behavior, disposable database/migrations, integration, Playwright E2E, all image
+scans and the complete Collector/Tempo/Prometheus/Grafana path. They have not been reclassified as
+passed. `.github/workflows/full-validation.yml` now owns that canonical execution and must run
+successfully for Phase 0 completion.
+
+Workflow/configuration checks also passed: `make docs-check`, `git diff --check`, Bash syntax for
+every repository shell script, PyYAML parsing of Compose/Collector/workflow files, and
+`go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+.github/workflows/full-validation.yml`. A synthetic summary run mapped successful, failed and skipped
+step outcomes to `PASS`, `FAIL` and `NOT RUN` while keeping the aggregate full gate failed.
+
+## Closure rerun (23:33–23:38 UTC)
+
+This rerun began from clean Git status at commit `99b5356`. Raw local logs are ignored workspace
+artifacts named `.validation-clean-bootstrap.log`, `.validation-clean-verify-local.log`,
+`.validation-make-verify.log`, `.validation-python-audit.log` and `.validation-node-audit.log`.
+
+| Status  | Command / conditions                                                                                                                                         | Exit | Evidence                                                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PASS    | `make bootstrap` in detached worktree `/tmp/vip-phase0-clean` with new, initially empty `/tmp/vip-uv-cache`, `/tmp/vip-pnpm-store`, and `/tmp/vip-xdg-cache` |    0 | uv downloaded and installed 83 locked packages; pnpm downloaded and installed 448 locked packages with frozen lockfile. Cache file counts after installation were 5,499 and 22,788 respectively.                                                                             |
+| PASS    | `rm -rf apps/web/.next apps/api/build apps/api/dist && make verify-local` in that detached worktree                                                          |    0 | No application build output was reused. API lint/format/types and 34 units passed (99.63% line, 96.88% branch); Web lint/types and 9 units passed (100%); contracts/docs/Prettier and Next production build passed.                                                          |
+| FAIL    | `make verify` in the primary worktree                                                                                                                        |    2 | Every `verify-local` stage passed again, including the production build. The canonical gate then stopped at `docker compose build`: `/bin/bash: docker: command not found` (Make target exit 127). This is a local-tooling limitation, not a registry failure.               |
+| PASS    | `uv export ... --frozen ...` then `pip-audit -r .validation/requirements.txt --require-hashes --disable-pip`                                                 |    0 | Current locked Python production graph: `No known vulnerabilities found`.                                                                                                                                                                                                    |
+| PASS    | `pnpm audit --prod --audit-level high`                                                                                                                       |    0 | Current locked Node production graph: `No known vulnerabilities found`.                                                                                                                                                                                                      |
+| NOT RUN | Canonical API/Web image build, metadata inspection and runtime content/UID checks                                                                            |    — | Docker CLI is absent. No previously patched image is claimed as proof.                                                                                                                                                                                                       |
+| NOT RUN | Compose DB/API/Web health, disposable migrations, E2E and observability profile                                                                              |    — | All require Docker in the supported path. No arbitrary sleeps or substitute services were used.                                                                                                                                                                              |
+| NOT RUN | Fresh trace/log/Tempo/Grafana query, Prometheus backend query and Collector-failure recovery                                                                 |    — | The official profile cannot start without Docker. Prior Collector-only evidence remains historical and is not enough for completion.                                                                                                                                         |
+| PASS    | `gitleaks dir . --redact --config .gitleaks.toml` through `make security`                                                                                    |    0 | Scanned 670.82 KB after the documentation changes; no leaks found.                                                                                                                                                                                                           |
+| PASS    | Trivy filesystem vulnerability/IaC step through `make security`                                                                                              |    0 | Current DB: zero High/Critical lockfile vulnerabilities and zero Dockerfile misconfigurations.                                                                                                                                                                               |
+| FAIL    | `make security`                                                                                                                                              |    2 | Earlier steps passed. The first third-party image, `timescale/timescaledb:2.30.2-pg17`, failed on a fixed Alpine High plus Critical/High bundled-Go findings, including Critical CVE-2025-68121 (`gosu`) and CVE-2026-33815 (`timescaledb-parallel-copy`). The loop stopped. |
+
+The clean bootstrap is genuine dependency-cache isolation: both named dependency caches did not
+exist immediately before the command, the detached worktree began at committed source, and `.next`,
+`node_modules`, the API virtual environment and build/dist outputs did not pre-exist. Node 24.19.0
+itself was installed and checksum-verified from nodejs.org immediately beforehand; that runtime
+download is not an application dependency cache. The first Corepack attempt encountered direct
+`ENETUNREACH` to npm IPv4/IPv6 addresses because Node proxy support was not enabled; a direct curl
+through the configured proxy returned HTTP 200. The successful attempt set `NODE_USE_ENV_PROXY=1`
+and used the already installed pinned pnpm executable, then downloaded every locked package into the
+new isolated store. This distinguishes proxy configuration from upstream unavailability.
+
+The source and CI command comparison remains aligned: CI uses `make bootstrap verify-local`,
+`make bootstrap test-integration up`, E2E/observability checks, and `make bootstrap containers`
+plus `make security`. Locally, `make verify` composes those same checks into the stricter single
+gate. No mismatch requiring CI redesign was found.
+
 The table is a record of executed checks, not a future checklist. Environment reports are local;
 remote CI execution is not claimed. Full raw logs are under ignored .validation in this workspace.
 

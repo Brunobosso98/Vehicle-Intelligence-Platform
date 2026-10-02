@@ -13,6 +13,12 @@ a browser transport failure validates recovery. Do not replace the happy path AP
 
 Run make check-api/check-web during development, make verify for Phase 0 delivery. CI preserves
 coverage and browser reports/traces on failures. No private API or production fixture is needed.
+
+Validation uses split executors without splitting acceptance criteria. Codex Cloud runs
+`make verify-cloud`, the mandatory non-container subset. Docker-dependent results are `CI REQUIRED`.
+GitHub Actions `full-validation` runs the canonical `make verify` responsibilities on Ubuntu with
+Docker: final images, disposable database/migrations, stack behavior, integration, E2E, image scans
+and backend-queryable observability. Only a successful canonical workflow can complete Phase 0.
 Future synthetic and golden datasets: normal-session, heat-soak, boost-drop, fuel-pressure-drop,
 timing-correction and sensor-failure. Add real dataset files only when used by event/ML regression tests.
 A meaningful ingestion performance baseline belongs to Phase 1, not an artificial health benchmark.

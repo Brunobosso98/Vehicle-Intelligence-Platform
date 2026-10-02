@@ -11,3 +11,8 @@ GitHub workflows run dependency audits, gitleaks, Trivy filesystem/images and Co
 Dependency review may require public repository or GitHub Advanced Security availability; see workflow.
 GitHub native secret scanning/push protection should be enabled in repository settings when supported.
 Tools download vulnerability databases; network failure is a blocked check, never a clean result.
+
+`make security-cloud` runs the Docker-independent portion with machine-readable reports: Gitleaks,
+locked Python/Node production audits, and Trivy filesystem/IaC. `make security` first runs that target
+and then scans every exact Compose image into `.validation/security/images`. The reduced target does
+not imply that image security passed; image results remain `CI REQUIRED` outside Docker-capable CI.
