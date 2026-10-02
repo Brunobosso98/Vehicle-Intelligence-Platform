@@ -320,3 +320,62 @@ class PreflightResponse(BaseModel):
     expected_capabilities: list[str]
     unavailable_capabilities: list[str]
     warnings: list[str]
+
+
+class AcquisitionCreate(BaseModel):
+    vehicle_id: UUID
+    configuration_id: UUID | None = None
+    recipe_key: str = Field(min_length=1, max_length=80)
+    adapter: Literal["synthetic", "replay", "obd"]
+    source_id: str = Field(min_length=1, max_length=80)
+
+
+class AcquisitionCreated(BaseModel):
+    id: UUID
+    driving_session_id: UUID
+    state: str
+    ingestion_token: str
+    token_expires_at: datetime
+
+
+class StreamObservation(BaseModel):
+    message_id: UUID
+    observed_at: datetime
+    sequence: int | None = Field(default=None, ge=0)
+    signal: str = Field(min_length=1, max_length=100)
+    value: float
+    unit: str = Field(min_length=1, max_length=24)
+    source_record_id: str = Field(min_length=1, max_length=160)
+
+
+class AcquisitionBatch(BaseModel):
+    schema_version: Literal["1.0"]
+    batch_id: UUID
+    observations: list[StreamObservation] = Field(min_length=1, max_length=500)
+
+
+class AcquisitionBatchAccepted(BaseModel):
+    batch_id: UUID
+    accepted: int
+    topic: str = "telemetry.raw.v1"
+
+
+class AcquisitionStatusResponse(BaseModel):
+    id: UUID
+    driving_session_id: UUID
+    recipe_key: str
+    recipe_version: int
+    state: str
+    adapter: str
+    started_at: datetime
+    ended_at: datetime | None
+    quality: dict[str, Any]
+
+
+class AcquisitionFinalized(BaseModel):
+    id: UUID
+    state: Literal["completed"]
+    phase2: AnalysisResult
+    phase3: EventAnalysisResult
+    capability_report: dict[str, Any]
+    reconciliation: dict[str, int]

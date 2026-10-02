@@ -5,6 +5,8 @@ import type { components } from "../../../../packages/contracts/generated/api";
 
 type Recipe = components["schemas"]["LoggingRecipeResponse"];
 type Preflight = components["schemas"]["PreflightResponse"];
+type Vehicle = components["schemas"]["Vehicle"];
+type Acquisition = components["schemas"]["AcquisitionCreated"];
 
 const syntheticSignals = {
   "engine.rpm": "supported",
@@ -22,16 +24,28 @@ export function LiveAcquisition() {
   const [recipeKey, setRecipeKey] = useState("performance-pull");
   const [preflight, setPreflight] = useState<Preflight | null>(null);
   const [error, setError] = useState(false);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [acquisition, setAcquisition] = useState<Acquisition | null>(null);
+  const [liveState, setLiveState] = useState("idle");
+  const [latest, setLatest] = useState<Record<string, number>>({});
   const recipe = recipes.find((item) => item.key === recipeKey);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/domain/logging/recipes", { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("recipes unavailable");
-        return response.json() as Promise<Recipe[]>;
-      })
-      .then(setRecipes, () => !controller.signal.aborted && setError(true));
+    void Promise.all([
+      fetch("/api/domain/logging/recipes", { signal: controller.signal }).then(
+        (response) => response.json() as Promise<Recipe[]>,
+      ),
+      fetch("/api/domain/vehicles", { signal: controller.signal }).then(
+        (response) => response.json() as Promise<Vehicle[]>,
+      ),
+    ]).then(
+      ([items, vehicles]) => {
+        setRecipes(items);
+        setVehicle(vehicles[0] ?? null);
+      },
+      () => !controller.signal.aborted && setError(true),
+    );
     return () => controller.abort();
   }, []);
 
@@ -54,6 +68,76 @@ export function LiveAcquisition() {
       return;
     }
     setPreflight((await response.json()) as Preflight);
+  }
+
+  async function startSynthetic() {
+    if (!vehicle) {
+      setError(true);
+      return;
+    }
+    const created = await fetch("/api/domain/acquisitions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        vehicle_id: vehicle.id,
+        recipe_key: recipeKey,
+        adapter: "synthetic",
+        source_id: "web-synthetic",
+      }),
+    });
+    if (!created.ok) {
+      setError(true);
+      return;
+    }
+    const value = (await created.json()) as Acquisition;
+    setAcquisition(value);
+    setLiveState("active");
+    const stream = new EventSource(`/api/domain/acquisitions/${value.id}/live`);
+    stream.addEventListener("telemetry", (event) => {
+      const payload = JSON.parse((event as MessageEvent<string>).data) as {
+        state: string;
+        points: { signal: string; value: number }[];
+      };
+      setLiveState(payload.state);
+      setLatest(
+        Object.fromEntries(
+          payload.points.map((point) => [point.signal, point.value]),
+        ),
+      );
+      if (["completed", "failed"].includes(payload.state)) stream.close();
+    });
+    const started = await fetch(
+      `/api/domain/acquisitions/${value.id}/synthetic`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${value.ingestion_token}` },
+      },
+    );
+    if (!started.ok) {
+      stream.close();
+      setError(true);
+    }
+  }
+
+  async function stopAndFinalize() {
+    if (!acquisition) return;
+    const stopped = await fetch(
+      `/api/domain/acquisitions/${acquisition.id}/stop`,
+      {
+        method: "POST",
+        headers: { authorization: `Bearer ${acquisition.ingestion_token}` },
+      },
+    );
+    if (!stopped.ok) {
+      setError(true);
+      return;
+    }
+    setLiveState("finalizing");
+    const finalized = await fetch(
+      `/api/domain/acquisitions/${acquisition.id}/finalize`,
+      { method: "POST" },
+    );
+    setLiveState(finalized.ok ? "completed" : "failed");
   }
 
   return (
@@ -121,6 +205,41 @@ export function LiveAcquisition() {
       <button type="button" onClick={() => void runPreflight()}>
         Run synthetic device preflight
       </button>
+      <button
+        type="button"
+        disabled={!vehicle || liveState === "active"}
+        onClick={() => void startSynthetic()}
+      >
+        Start synthetic live acquisition
+      </button>
+      <button
+        type="button"
+        disabled={!acquisition || liveState !== "active"}
+        onClick={() => void stopAndFinalize()}
+      >
+        Stop and finalize
+      </button>
+      <div className="readiness" aria-live="polite">
+        <strong>Acquisition: {liveState}</strong>
+        <span>
+          Vehicle:{" "}
+          {vehicle?.nickname ?? vehicle?.model ?? "No vehicle available"}
+        </span>
+        <span>
+          RPM: {latest["engine.rpm"]?.toFixed(0) ?? "—"} · Speed:{" "}
+          {latest["vehicle.speed"]?.toFixed(1) ?? "—"} m/s · Throttle:{" "}
+          {latest["engine.throttle_position"]?.toFixed(1) ?? "—"}%
+        </span>
+        <span>
+          Boost: {latest["engine.boost_pressure"]?.toFixed(0) ?? "unavailable"}{" "}
+          Pa · IAT:{" "}
+          {latest["engine.intake_air_temperature"]?.toFixed(1) ?? "unavailable"}{" "}
+          K
+        </span>
+        <span>
+          Live observations are provisional · rolling window 60 seconds
+        </span>
+      </div>
       {error && (
         <p role="alert">Acquisition planning is temporarily unavailable.</p>
       )}

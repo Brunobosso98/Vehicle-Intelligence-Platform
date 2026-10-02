@@ -7,6 +7,7 @@ dependencies = [
  "asyncpg==0.31.0", "alembic==1.20.0", "opentelemetry-sdk==1.45.0", "opentelemetry-exporter-otlp-proto-http==1.45.0",
  "opentelemetry-exporter-prometheus==0.66b0", "opentelemetry-instrumentation-sqlalchemy==0.66b0",
  "aiokafka==0.13.0", "typer==0.21.0",
+ "httpx==0.28.1",
 ]
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"
@@ -32,10 +33,18 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/events/service.py" = ["E501", "S608"] # bounded SQL variants kept intact for query review
 "src/vehicle_platform/analysis/synthetic.py" = ["S311"] # deterministic fixtures, not security
 "src/vehicle_platform/events/synthetic.py" = ["S311"] # deterministic fixtures, not security
+"src/vehicle_platform/acquisition/service.py" = ["E501"] # bounded SQL and versioned envelopes kept reviewable
+"src/vehicle_platform/acquisition/worker.py" = ["E501"] # bounded SQL kept intact for transaction review
+"src/vehicle_platform/acquisition/collector.py" = ["E501"] # stable spool wire lines remain single records
+"src/vehicle_platform/acquisition/cli.py" = ["B008"] # Typer declarative option definitions
 [tool.mypy]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+[[tool.mypy.overrides]]
+module = ["aiokafka", "aiokafka.*"]
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
@@ -45,6 +54,8 @@ branch = true
 source = ["vehicle_platform"]
 omit = [
  "*/vehicle_platform/acquisition/cli.py", # CLI process boundary exercised by acceptance commands
+ "*/vehicle_platform/acquisition/service.py", # gateway/database/broker lifecycle requires real integration
+ "*/vehicle_platform/acquisition/worker.py", # Kafka offset and DB transaction semantics require real integration
  "*/vehicle_platform/api/routes.py", # HTTP/database paths run against disposable TimescaleDB
  "*/vehicle_platform/telemetry/service.py", # bulk SQL/idempotency requires real transaction semantics
  "*/vehicle_platform/analysis/service.py", # derived persistence/idempotency requires real transaction semantics

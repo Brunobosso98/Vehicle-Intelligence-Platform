@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from vehicle_platform.acquisition.adapters import Elm327Adapter, ReplayAdapter, SyntheticLiveAdapter
+from vehicle_platform.acquisition.collector import AcquisitionCollector, GatewayPublisher
 from vehicle_platform.acquisition.domain import DeviceCapabilities, Readiness, Support, preflight
 from vehicle_platform.acquisition.quality import assess_dataset, measure_signal_quality
 from vehicle_platform.acquisition.recipes import BY_KEY, BY_OBJECTIVE, RECIPES
@@ -146,3 +147,71 @@ def test_stream_contract_and_dataset_capability() -> None:
     assert report["pull_detection"].supported and not report["boost_analysis"].supported
     empty = measure_signal_quality("engine.rpm", (start,), 10)
     assert empty.stale_ratio == 1 and empty.missing_ratio == 1
+
+
+async def test_collector_retries_spools_and_replays_without_loss(tmp_path: Path) -> None:
+    spool = BoundedSpool(tmp_path / "collector-spool", 100_000)
+    adapter = SyntheticLiveAdapter(samples=3)
+    plan = preflight(BY_KEY["performance-pull"], await adapter.capabilities()).sampling_plan
+    failures = 4
+
+    async def unavailable(batch: tuple[object, ...]) -> None:
+        nonlocal failures
+        failures -= 1
+        raise OSError("network unavailable")
+
+    first = await AcquisitionCollector(spool, batch_size=10, retries=3).run(
+        adapter, plan, unavailable
+    )
+    assert first.produced > 0 and first.published == 0 and spool.occupancy_bytes > 0
+    accepted: list[object] = []
+
+    async def available(batch: tuple[object, ...]) -> None:
+        accepted.extend(batch)
+
+    second = await AcquisitionCollector(spool, batch_size=10).run(
+        SyntheticLiveAdapter(samples=1), plan, available
+    )
+    assert second.replayed == first.produced
+    assert second.published == len(accepted)
+    assert spool.occupancy_bytes == 0
+
+
+def test_collector_rejects_unbounded_configuration(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="bounds"):
+        AcquisitionCollector(BoundedSpool(tmp_path / "spool"), batch_size=501)
+    with pytest.raises(ValueError, match="TOKEN"):
+        GatewayPublisher("http://gateway", __import__("uuid").uuid4(), token="short")
+
+
+@pytest.mark.parametrize("status,error", [(202, None), (503, OSError), (422, ValueError)])
+async def test_gateway_publisher_classifies_responses(
+    monkeypatch: pytest.MonkeyPatch, status: int, error: type[Exception] | None
+) -> None:
+    class Response:
+        status_code = status
+
+    class Client:
+        def __init__(self, timeout: float) -> None:
+            assert timeout == 10
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def post(self, *args: object, **kwargs: object) -> Response:
+            assert "Authorization" in kwargs["headers"]  # type: ignore[operator]
+            return Response()
+
+    monkeypatch.setattr("vehicle_platform.acquisition.collector.httpx.AsyncClient", Client)
+    publisher = GatewayPublisher("http://gateway/", __import__("uuid").uuid4(), "x" * 43)
+    record = __import__(
+        "vehicle_platform.telemetry.domain", fromlist=["RawTelemetryRecord"]
+    ).RawTelemetryRecord(datetime.now(UTC), "engine.rpm", 1000, "rpm", "one", 1)
+    if error:
+        with pytest.raises(error):
+            await publisher((record,))
+    else:
+        await publisher((record,))

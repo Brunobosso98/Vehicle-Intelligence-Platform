@@ -1,7 +1,10 @@
 name: vehicle-platform
 services:
   broker:
-    image: docker.io/apache/kafka:4.1.0@sha256:bff074a5d0051dbc0bbbcd25b045bb1fe84833ec0d3c7c965d1797dd289ec88f
+    image: vehicle-platform-kafka:local
+    build:
+      context: .
+      dockerfile: infra/docker/kafka/Dockerfile
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -25,6 +28,27 @@ services:
       retries: 30
     volumes: ["broker-data:/tmp/kraft-combined-logs"]
     restart: unless-stopped
+  broker-init:
+    image: vehicle-platform-kafka:local
+    command:
+      [
+        "/opt/kafka/bin/kafka-topics.sh",
+        "--bootstrap-server",
+        "broker:9092",
+        "--create",
+        "--if-not-exists",
+        "--topic",
+        "telemetry.raw.v1",
+        "--partitions",
+        "3",
+        "--replication-factor",
+        "1",
+        "--config",
+        "retention.ms=86400000",
+      ]
+    depends_on:
+      broker: { condition: service_healthy }
+    restart: "no"
   db:
     image: vehicle-platform-timescaledb:local
     build:
@@ -70,7 +94,22 @@ services:
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
-      broker: { condition: service_healthy }
+      broker-init: { condition: service_completed_successfully }
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+  stream-consumer:
+    image: vehicle-platform-api:local
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: development
+      KAFKA_BOOTSTRAP_SERVERS: broker:9092
+    command: ["python", "-m", "vehicle_platform.acquisition.worker"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      broker-init: { condition: service_completed_successfully }
     read_only: true
     tmpfs: ["/tmp"]
     cap_drop: ["ALL"]

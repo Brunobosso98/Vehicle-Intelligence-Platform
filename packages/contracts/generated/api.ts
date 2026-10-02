@@ -1,4 +1,123 @@
 export interface paths {
+  "/api/v1/acquisitions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Acquisition */
+    post: operations["create_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Acquisition */
+    get: operations["get_acquisition"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/batches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publish Acquisition Batch */
+    post: operations["publish_acquisition_batch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/finalize": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Finalize Acquisition */
+    post: operations["finalize_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/live": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Stream Acquisition Live */
+    get: operations["stream_acquisition_live"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/stop": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stop Acquisition */
+    post: operations["stop_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/synthetic": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Start Synthetic Acquisition */
+    post: operations["start_synthetic_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/events": {
     parameters: {
       query?: never;
@@ -450,6 +569,132 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AcquisitionBatch */
+    AcquisitionBatch: {
+      /**
+       * Batch Id
+       * Format: uuid
+       */
+      batch_id: string;
+      /** Observations */
+      observations: components["schemas"]["StreamObservation"][];
+      /**
+       * Schema Version
+       * @constant
+       */
+      schema_version: "1.0";
+    };
+    /** AcquisitionBatchAccepted */
+    AcquisitionBatchAccepted: {
+      /** Accepted */
+      accepted: number;
+      /**
+       * Batch Id
+       * Format: uuid
+       */
+      batch_id: string;
+      /**
+       * Topic
+       * @default telemetry.raw.v1
+       */
+      topic: string;
+    };
+    /** AcquisitionCreate */
+    AcquisitionCreate: {
+      /**
+       * Adapter
+       * @enum {string}
+       */
+      adapter: "synthetic" | "replay" | "obd";
+      /** Configuration Id */
+      configuration_id?: string | null;
+      /** Recipe Key */
+      recipe_key: string;
+      /** Source Id */
+      source_id: string;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
+    /** AcquisitionCreated */
+    AcquisitionCreated: {
+      /**
+       * Driving Session Id
+       * Format: uuid
+       */
+      driving_session_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Ingestion Token */
+      ingestion_token: string;
+      /** State */
+      state: string;
+      /**
+       * Token Expires At
+       * Format: date-time
+       */
+      token_expires_at: string;
+    };
+    /** AcquisitionFinalized */
+    AcquisitionFinalized: {
+      /** Capability Report */
+      capability_report: {
+        [key: string]: unknown;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      phase2: components["schemas"]["AnalysisResult"];
+      phase3: components["schemas"]["EventAnalysisResult"];
+      /** Reconciliation */
+      reconciliation: {
+        [key: string]: number;
+      };
+      /**
+       * State
+       * @constant
+       */
+      state: "completed";
+    };
+    /** AcquisitionStatusResponse */
+    AcquisitionStatusResponse: {
+      /** Adapter */
+      adapter: string;
+      /**
+       * Driving Session Id
+       * Format: uuid
+       */
+      driving_session_id: string;
+      /** Ended At */
+      ended_at: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Quality */
+      quality: {
+        [key: string]: unknown;
+      };
+      /** Recipe Key */
+      recipe_key: string;
+      /** Recipe Version */
+      recipe_version: number;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /** State */
+      state: string;
+    };
     /** AnalysisRequest */
     AnalysisRequest: {
       /**
@@ -1120,6 +1365,29 @@ export interface components {
       /** Unit */
       unit: string;
     };
+    /** StreamObservation */
+    StreamObservation: {
+      /**
+       * Message Id
+       * Format: uuid
+       */
+      message_id: string;
+      /**
+       * Observed At
+       * Format: date-time
+       */
+      observed_at: string;
+      /** Sequence */
+      sequence?: number | null;
+      /** Signal */
+      signal: string;
+      /** Source Record Id */
+      source_record_id: string;
+      /** Unit */
+      unit: string;
+      /** Value */
+      value: number;
+    };
     /** TelemetryPoint */
     TelemetryPoint: {
       /**
@@ -1292,6 +1560,300 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  create_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcquisitionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionCreated"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionStatusResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  publish_acquisition_batch: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcquisitionBatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionBatchAccepted"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  finalize_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionFinalized"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  stream_acquisition_live: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  stop_acquisition: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionStatusResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  start_synthetic_acquisition: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_vehicle_events: {
     parameters: {
       query: {

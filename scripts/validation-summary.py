@@ -10,6 +10,7 @@ labels = {
     "Database and migrations": "DATABASE",
     "Canonical stack": "STACK",
     "E2E": "E2E",
+    "100k live stream": "STREAMING",
     "Container security": "SECURITY",
     "Observability": "OBSERVABILITY",
 }
