@@ -176,7 +176,7 @@ class QueryService:
             rows = (
                 await db.execute(
                     text(
-                        """SELECT sample_id,observed_at,signal_key,numeric_value,normalized_unit,quality,sequence_number FROM telemetry_samples WHERE session_id=:session_id AND signal_key = ANY(:signals) AND (:start IS NULL OR observed_at>=:start) AND (:end IS NULL OR observed_at<:end) ORDER BY observed_at,signal_key,COALESCE(sequence_number,-1),sample_id LIMIT :fetch"""
+                        """SELECT sample_id,observed_at,signal_key,numeric_value,normalized_unit,quality,sequence_number FROM telemetry_samples WHERE session_id=:session_id AND signal_key = ANY(:signals) AND (CAST(:start AS timestamptz) IS NULL OR observed_at>=CAST(:start AS timestamptz)) AND (CAST(:end AS timestamptz) IS NULL OR observed_at<CAST(:end AS timestamptz)) ORDER BY observed_at,signal_key,COALESCE(sequence_number,-1),sample_id LIMIT :fetch"""
                     ),
                     {
                         "session_id": session_id,
