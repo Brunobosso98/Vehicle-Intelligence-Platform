@@ -121,6 +121,29 @@ const pull = {
   data_completeness: 1,
 };
 const response = (body: unknown, ok = true) => ({ ok, json: async () => body });
+const detectedEvent = {
+  id: "event-1",
+  vehicle_id: "v",
+  session_id: "s",
+  segment_id: "seg",
+  pull_id: "pull-1",
+  analysis_run_id: "run-1",
+  event_type: "boost_drop",
+  category: "performance" as const,
+  started_at: "2026-01-01T00:00:02Z",
+  ended_at: "2026-01-01T00:00:04Z",
+  duration_ms: 2000,
+  severity: "moderate" as const,
+  confidence: 0.9,
+  algorithm_name: "pull-behavior-detector",
+  algorithm_version: "1.0.0",
+  configuration_hash: "hash",
+  baseline_type: "same_session_pulls" as const,
+  baseline_reference: { pull_count: 2 },
+  evidence: { signal: "engine.boost_pressure" },
+  quality_flags: [],
+  created_at: "2026-01-01T00:01:00Z",
+};
 
 describe("telemetry dashboard", () => {
   it("renders loading, vehicle, session, chart and signal interaction", async () => {
@@ -137,6 +160,8 @@ describe("telemetry dashboard", () => {
             { ...pull, id: "pull-2", quality_flags: ["missing_boost"] },
           ]),
         );
+      if (input.includes("/events"))
+        return Promise.resolve(response([detectedEvent]));
       if (input.includes("/telemetry"))
         return Promise.resolve(response(window));
       return Promise.resolve(response([session]));
@@ -149,6 +174,13 @@ describe("telemetry dashboard", () => {
       await screen.findByRole("img", { name: /engine.rpm/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("Derived session timeline")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Structured factual evidence"),
+    ).toBeInTheDocument();
+    await userEvent.selectOptions(
+      screen.getByLabelText("Filter by event type"),
+      "boost_drop",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Pull 2" }));
     const comparisons = screen.getAllByRole("checkbox", { name: "Compare" });
     await userEvent.click(comparisons[0]);

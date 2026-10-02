@@ -197,3 +197,56 @@ class AnalysisResult(BaseModel):
     segment_count: int
     pull_count: int
     reused: bool
+
+
+class EventAnalysisRequest(BaseModel):
+    replace: bool = False
+
+
+class EventAnalysisResult(BaseModel):
+    session_id: UUID
+    analysis_run_id: UUID
+    profile: str
+    configuration_hash: str
+    event_count: int
+    reused: bool
+
+
+class DetectedEvent(BaseModel):
+    id: UUID
+    vehicle_id: UUID
+    session_id: UUID
+    segment_id: UUID | None
+    pull_id: UUID | None
+    analysis_run_id: UUID
+    event_type: str
+    category: Literal[
+        "performance",
+        "thermal",
+        "fuel",
+        "ignition",
+        "combustion",
+        "mixture",
+        "sensor",
+        "telemetry_quality",
+        "control_behavior",
+    ]
+    started_at: datetime
+    ended_at: datetime
+    duration_ms: int
+    severity: Literal["info", "low", "moderate", "high"]
+    confidence: float = Field(ge=0, le=1)
+    algorithm_name: str
+    algorithm_version: str
+    configuration_hash: str
+    baseline_type: Literal[
+        "same_session_pulls",
+        "vehicle_configuration_history",
+        "profile_threshold",
+        "absolute_threshold",
+        "no_baseline",
+    ]
+    baseline_reference: dict[str, Any]
+    evidence: dict[str, Any]
+    quality_flags: list[str]
+    created_at: datetime

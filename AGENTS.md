@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0 and 1 passed canonical full-stack validation. Phase 2 session segmentation and pull detection is current; Phase 3 diagnosis and later infrastructure are not implemented.
+Phases 0, 1 and 2 passed canonical full-stack validation. Phase 3 factual event/anomaly detection is current; diagnosis and Phase 4+ infrastructure are not implemented.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and
@@ -14,3 +14,5 @@ Phases 0 and 1 passed canonical full-stack validation. Phase 2 session segmentat
   Read relevant context only: docs/architecture for boundaries, docs/testing for tests,
   docs/security for sensitive changes, docs/observability for instrumentation, docs/adr for decisions.
   Use local skills when their specific triggers apply. Do not implement future infrastructure speculatively.
+
+Event-detector changes require a positive synthetic case, a negative/false-positive case, ground-truth evaluation where applicable, version/configuration-hash review, documentation, and disposable-database integration validation. Anomaly detection is not diagnosis.
