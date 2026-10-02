@@ -6,6 +6,74 @@
   --muted: #adb8b6;
   --accent: #a9e7cc;
 }
+
+.live-acquisition select {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0.5rem 0 1.25rem;
+  padding: 0.75rem;
+  background: #101820;
+  color: #fff;
+  border: 1px solid #657786;
+}
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.recipe-grid div,
+.readiness {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid #33434f;
+  padding: 0.8rem;
+}
+.requirements {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.requirements li {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+}
+.requirements small {
+  grid-column: 2;
+  color: #9eb0bc;
+}
+.importance {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #58d6a8;
+}
+.importance.recommended {
+  color: #f3bd4f;
+}
+.importance.optional {
+  color: #9eb0bc;
+}
+.readiness {
+  margin-top: 1rem;
+  border-left: 4px solid #58d6a8;
+}
+.readiness.degraded {
+  border-left-color: #f3bd4f;
+}
+.readiness.blocked {
+  border-left-color: #f16d6d;
+}
+.safety-note {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #f3bd4f;
+}
 * {
   box-sizing: border-box;
 }

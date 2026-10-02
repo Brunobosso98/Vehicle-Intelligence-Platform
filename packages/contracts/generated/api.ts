@@ -1,4 +1,140 @@
 export interface paths {
+  "/api/v1/acquisitions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Acquisition */
+    post: operations["create_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Acquisition */
+    get: operations["get_acquisition"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/batches": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publish Acquisition Batch */
+    post: operations["publish_acquisition_batch"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/finalize": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Finalize Acquisition */
+    post: operations["finalize_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/findings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Acquisition Findings */
+    get: operations["list_acquisition_findings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/live": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Stream Acquisition Live */
+    get: operations["stream_acquisition_live"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/stop": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Stop Acquisition */
+    post: operations["stop_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/acquisitions/{acquisition_id}/synthetic": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Start Synthetic Acquisition */
+    post: operations["start_synthetic_acquisition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/events": {
     parameters: {
       query?: never;
@@ -27,6 +163,74 @@ export interface paths {
     get: operations["get_event"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/objectives": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Logging Objectives */
+    get: operations["list_logging_objectives"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Logging Recipes */
+    get: operations["list_logging_recipes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes/{recipe_key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Logging Recipe */
+    get: operations["get_logging_recipe"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes/{recipe_key}/preflight": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Preflight Logging Recipe */
+    post: operations["preflight_logging_recipe"];
     delete?: never;
     options?: never;
     head?: never;
@@ -113,6 +317,23 @@ export interface paths {
     put?: never;
     /** Analyze Session */
     post: operations["analyze_session"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/capabilities": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Assess Session Capabilities */
+    get: operations["assess_session_capabilities"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -382,6 +603,132 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AcquisitionBatch */
+    AcquisitionBatch: {
+      /**
+       * Batch Id
+       * Format: uuid
+       */
+      batch_id: string;
+      /** Observations */
+      observations: components["schemas"]["StreamObservation"][];
+      /**
+       * Schema Version
+       * @constant
+       */
+      schema_version: "1.0";
+    };
+    /** AcquisitionBatchAccepted */
+    AcquisitionBatchAccepted: {
+      /** Accepted */
+      accepted: number;
+      /**
+       * Batch Id
+       * Format: uuid
+       */
+      batch_id: string;
+      /**
+       * Topic
+       * @default telemetry.raw.v1
+       */
+      topic: string;
+    };
+    /** AcquisitionCreate */
+    AcquisitionCreate: {
+      /**
+       * Adapter
+       * @enum {string}
+       */
+      adapter: "synthetic" | "replay" | "obd";
+      /** Configuration Id */
+      configuration_id?: string | null;
+      /** Recipe Key */
+      recipe_key: string;
+      /** Source Id */
+      source_id: string;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
+    /** AcquisitionCreated */
+    AcquisitionCreated: {
+      /**
+       * Driving Session Id
+       * Format: uuid
+       */
+      driving_session_id: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Ingestion Token */
+      ingestion_token: string;
+      /** State */
+      state: string;
+      /**
+       * Token Expires At
+       * Format: date-time
+       */
+      token_expires_at: string;
+    };
+    /** AcquisitionFinalized */
+    AcquisitionFinalized: {
+      /** Capability Report */
+      capability_report: {
+        [key: string]: unknown;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      phase2: components["schemas"]["AnalysisResult"];
+      phase3: components["schemas"]["EventAnalysisResult"];
+      /** Reconciliation */
+      reconciliation: {
+        [key: string]: number;
+      };
+      /**
+       * State
+       * @constant
+       */
+      state: "completed";
+    };
+    /** AcquisitionStatusResponse */
+    AcquisitionStatusResponse: {
+      /** Adapter */
+      adapter: string;
+      /**
+       * Driving Session Id
+       * Format: uuid
+       */
+      driving_session_id: string;
+      /** Ended At */
+      ended_at: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Quality */
+      quality: {
+        [key: string]: unknown;
+      };
+      /** Recipe Key */
+      recipe_key: string;
+      /** Recipe Version */
+      recipe_version: number;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /** State */
+      state: string;
+    };
     /** AnalysisRequest */
     AnalysisRequest: {
       /**
@@ -679,6 +1026,31 @@ export interface components {
       /** Unknown Signals */
       unknown_signals: number;
     };
+    /** LoggingRecipeResponse */
+    LoggingRecipeResponse: {
+      /** Configuration Hash */
+      configuration_hash: string;
+      /** Description */
+      description: string;
+      /** Key */
+      key: string;
+      /** Minimum Duration Seconds */
+      minimum_duration_seconds: number;
+      /** Name */
+      name: string;
+      /** Notes */
+      notes: string[];
+      /** Objective */
+      objective: string;
+      /** Requirements */
+      requirements: components["schemas"]["RecipeSignal"][];
+      /** Supported Modes */
+      supported_modes: string[];
+      /** Vehicle Scope */
+      vehicle_scope: string;
+      /** Version */
+      version: number;
+    };
     /** Modification */
     Modification: {
       /** Category */
@@ -733,6 +1105,83 @@ export interface components {
       product?: string | null;
       /** Removed At */
       removed_at?: string | null;
+    };
+    /** ObjectiveResponse */
+    ObjectiveResponse: {
+      /** Key */
+      key: string;
+      /** Recipe Key */
+      recipe_key: string;
+    };
+    /** PreflightRequest */
+    PreflightRequest: {
+      /** Adapter */
+      adapter: string;
+      /**
+       * Discovery Supported
+       * @default true
+       */
+      discovery_supported: boolean;
+      /** Maximum Requests Per Second */
+      maximum_requests_per_second: number;
+      /** Signals */
+      signals: {
+        [key: string]:
+          | "supported"
+          | "unsupported"
+          | "unavailable"
+          | "unknown"
+          | "adapter_does_not_support_discovery";
+      };
+    };
+    /** PreflightResponse */
+    PreflightResponse: {
+      /** Expected Capabilities */
+      expected_capabilities: string[];
+      /** Optional Available */
+      optional_available: string[];
+      /**
+       * Readiness
+       * @enum {string}
+       */
+      readiness: "ready" | "degraded" | "blocked";
+      /** Recommended Available */
+      recommended_available: string[];
+      /** Required Available */
+      required_available: string[];
+      /** Required Missing */
+      required_missing: string[];
+      /** Sampling Plan */
+      sampling_plan: components["schemas"]["SamplingPlanResponse"][];
+      /** Unavailable Capabilities */
+      unavailable_capabilities: string[];
+      /** Warnings */
+      warnings: string[];
+    };
+    /** ProvisionalFindingResponse */
+    ProvisionalFindingResponse: {
+      /** Category */
+      category: string;
+      /** Ended At */
+      ended_at: string | null;
+      /** Evidence */
+      evidence: {
+        [key: string]: unknown;
+      };
+      /** Finding Type */
+      finding_type: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reconciliation Status */
+      reconciliation_status: string;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
     };
     /** Pull */
     Pull: {
@@ -838,6 +1287,40 @@ export interface components {
        */
       status: "ready";
     };
+    /** RecipeSignal */
+    RecipeSignal: {
+      /**
+       * Importance
+       * @enum {string}
+       */
+      importance: "required" | "recommended" | "optional";
+      /** Minimum Hz */
+      minimum_hz: number;
+      /** Missing Effect */
+      missing_effect: string[];
+      /** Preferred Hz */
+      preferred_hz: number;
+      /**
+       * Priority
+       * @enum {string}
+       */
+      priority: "critical_for_recipe" | "high" | "normal" | "low";
+      /** Reason */
+      reason: string;
+      /** Signal */
+      signal: string;
+    };
+    /** SamplingPlanResponse */
+    SamplingPlanResponse: {
+      /** Estimated Hz */
+      estimated_hz: number;
+      /** Priority */
+      priority: string;
+      /** Signal */
+      signal: string;
+      /** Target Hz */
+      target_hz: number;
+    };
     /** SessionCreate */
     SessionCreate: {
       /** Configuration Id */
@@ -940,6 +1423,29 @@ export interface components {
       name: string;
       /** Unit */
       unit: string;
+    };
+    /** StreamObservation */
+    StreamObservation: {
+      /**
+       * Message Id
+       * Format: uuid
+       */
+      message_id: string;
+      /**
+       * Observed At
+       * Format: date-time
+       */
+      observed_at: string;
+      /** Sequence */
+      sequence?: number | null;
+      /** Signal */
+      signal: string;
+      /** Source Record Id */
+      source_record_id: string;
+      /** Unit */
+      unit: string;
+      /** Value */
+      value: number;
     };
     /** TelemetryPoint */
     TelemetryPoint: {
@@ -1113,6 +1619,340 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  create_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcquisitionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionCreated"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionStatusResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  publish_acquisition_batch: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AcquisitionBatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionBatchAccepted"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  finalize_acquisition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionFinalized"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_acquisition_findings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProvisionalFindingResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  stream_acquisition_live: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  stop_acquisition: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AcquisitionStatusResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  start_synthetic_acquisition: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_vehicle_events: {
     parameters: {
       query: {
@@ -1173,6 +2013,148 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DetectedEvent"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_logging_objectives: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ObjectiveResponse"][];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_logging_recipes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggingRecipeResponse"][];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_logging_recipe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recipe_key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggingRecipeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  preflight_logging_recipe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recipe_key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PreflightRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PreflightResponse"];
         };
       };
       /** @description Validation Error */
@@ -1420,6 +2402,50 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnalysisResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  assess_session_capabilities: {
+    parameters: {
+      query?: {
+        recipe_key?: string;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Validation Error */

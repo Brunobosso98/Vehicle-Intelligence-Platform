@@ -76,7 +76,9 @@ test("real imported session renders telemetry and changes signal", async ({
   );
   expect(imported.ok()).toBeTruthy();
   await page.goto("/");
-  await expect(page.getByText("E2E reference")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "E2E reference" }),
+  ).toBeVisible();
   await expect(page.getByRole("img", { name: /engine.rpm/ })).toBeVisible();
   await page.getByLabel("Signal").selectOption("vehicle.speed");
   await expect(page.getByRole("img", { name: /vehicle.speed/ })).toBeVisible();
@@ -241,4 +243,158 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
       "No configured anomaly events were detected in this session.",
     ),
   ).toBeVisible();
+});
+
+test("Phase 4 durable live acquisition finalizes provisional telemetry canonically", async ({
+  page,
+  request,
+}) => {
+  const vehicleResponse = await request.post(
+    "http://127.0.0.1:8000/api/v1/vehicles",
+    {
+      data: {
+        manufacturer: "BMW",
+        model: "335i",
+        generation: "F30",
+        model_year: 2015,
+        engine_code: "N55",
+        nickname: "Phase 4 live N55",
+      },
+    },
+  );
+  const vehicle = (await vehicleResponse.json()) as { id: string };
+  const createdResponse = await request.post(
+    "http://127.0.0.1:8000/api/v1/acquisitions",
+    {
+      data: {
+        vehicle_id: vehicle.id,
+        recipe_key: "performance-pull",
+        adapter: "synthetic",
+        source_id: "playwright-synthetic",
+      },
+    },
+  );
+  expect(createdResponse.ok(), await createdResponse.text()).toBeTruthy();
+  const acquisition = (await createdResponse.json()) as {
+    id: string;
+    driving_session_id: string;
+    ingestion_token: string;
+  };
+  const started = new Date(Date.now() - 60_000).toISOString();
+  const rows = phase3Csv(true, started).split("\n").slice(1).filter(Boolean);
+  const canonical: Record<string, string> = {
+    rpm: "engine.rpm",
+    speed: "vehicle.speed",
+    throttle: "engine.throttle_position",
+    boost: "engine.boost_pressure",
+    iat: "engine.intake_air_temperature",
+    hpfp: "fuel.high_pressure",
+  };
+  const observations = rows.map((row, index) => {
+    const [observed_at, signal, value, unit, source_record_id] = row.split(",");
+    return {
+      message_id: crypto.randomUUID(),
+      observed_at,
+      sequence: index,
+      signal: canonical[signal],
+      value: Number(value),
+      unit,
+      source_record_id,
+    };
+  });
+  for (let offset = 0; offset < observations.length; offset += 500) {
+    const response = await request.post(
+      `http://127.0.0.1:8000/api/v1/acquisitions/${acquisition.id}/batches`,
+      {
+        headers: { authorization: `Bearer ${acquisition.ingestion_token}` },
+        data: {
+          schema_version: "1.0",
+          batch_id: crypto.randomUUID(),
+          observations: observations.slice(offset, offset + 500),
+        },
+      },
+    );
+    expect(response.status()).toBe(202);
+  }
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(
+          `http://127.0.0.1:8000/api/v1/sessions/${acquisition.driving_session_id}`,
+        );
+        return ((await response.json()) as { sample_count: number })
+          .sample_count;
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(observations.length);
+  const stopped = await request.post(
+    `http://127.0.0.1:8000/api/v1/acquisitions/${acquisition.id}/stop`,
+    { headers: { authorization: `Bearer ${acquisition.ingestion_token}` } },
+  );
+  expect(stopped.ok()).toBeTruthy();
+  const rejected = await request.post(
+    `http://127.0.0.1:8000/api/v1/acquisitions/${acquisition.id}/batches`,
+    {
+      headers: { authorization: `Bearer ${acquisition.ingestion_token}` },
+      data: {
+        schema_version: "1.0",
+        batch_id: crypto.randomUUID(),
+        observations: observations.slice(0, 1),
+      },
+    },
+  );
+  expect(rejected.status()).toBe(401);
+  const finalized = await request.post(
+    `http://127.0.0.1:8000/api/v1/acquisitions/${acquisition.id}/finalize`,
+  );
+  expect(finalized.ok(), await finalized.text()).toBeTruthy();
+  const result = (await finalized.json()) as {
+    state: string;
+    phase2: { pull_count: number };
+    phase3: { event_count: number };
+    capability_report: { recipe_adherence: boolean };
+  };
+  expect(result.state).toBe("completed");
+  expect(result.phase2.pull_count).toBe(3);
+  expect(result.phase3.event_count).toBeGreaterThan(0);
+  expect(result.capability_report.recipe_adherence).toBeTruthy();
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Plan a read-only acquisition" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /preflight/i }).click();
+  await expect(page.getByText("READY")).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase4-live-acquisition.png",
+    fullPage: true,
+  });
+
+  const degraded = await request.post(
+    "http://127.0.0.1:8000/api/v1/logging/recipes/performance-pull/preflight",
+    {
+      data: {
+        adapter: "synthetic-degraded",
+        maximum_requests_per_second: 30,
+        signals: {
+          "engine.rpm": "supported",
+          "vehicle.speed": "supported",
+          "engine.throttle_position": "supported",
+          "engine.boost_pressure": "unsupported",
+        },
+      },
+    },
+  );
+  expect(
+    (await degraded.json()) as {
+      readiness: string;
+      unavailable_capabilities: string[];
+    },
+  ).toEqual(
+    expect.objectContaining({
+      readiness: "degraded",
+      unavailable_capabilities: expect.arrayContaining(["boost_analysis"]),
+    }),
+  );
 });

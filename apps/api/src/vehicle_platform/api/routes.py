@@ -1,12 +1,43 @@
+import asyncio
+import json
+from dataclasses import asdict
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from sqlalchemy import text
+from starlette.responses import StreamingResponse
 
+from vehicle_platform.acquisition.domain import (
+    DeviceCapabilities,
+    LoggingRecipe,
+    Support,
+    preflight,
+)
+from vehicle_platform.acquisition.recipes import BY_KEY, RECIPES
+from vehicle_platform.acquisition.service import (
+    AcquisitionAuthError,
+    AcquisitionError,
+    AcquisitionService,
+)
 from vehicle_platform.analysis.service import AnalysisLimitError, SessionAnalysisService
 from vehicle_platform.api.contracts import ErrorResponse, Health, Ready, Version
 from vehicle_platform.api.domain_contracts import (
+    AcquisitionBatch,
+    AcquisitionBatchAccepted,
+    AcquisitionCreate,
+    AcquisitionCreated,
+    AcquisitionFinalized,
+    AcquisitionStatusResponse,
     AnalysisRequest,
     AnalysisResult,
     ConfigurationCreate,
@@ -16,8 +47,13 @@ from vehicle_platform.api.domain_contracts import (
     EventAnalysisResult,
     EventSummary,
     ImportResult,
+    LoggingRecipeResponse,
     Modification,
     ModificationCreate,
+    ObjectiveResponse,
+    PreflightRequest,
+    PreflightResponse,
+    ProvisionalFindingResponse,
     Pull,
     SessionCreate,
     SessionSegment,
@@ -301,6 +337,268 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
             for s in SIGNALS
         ]
 
+    def recipe_response(recipe: LoggingRecipe) -> LoggingRecipeResponse:
+        values = asdict(recipe)
+        values["configuration_hash"] = recipe.configuration_hash
+        return LoggingRecipeResponse.model_validate(values)
+
+    @routes.get(
+        "/api/v1/logging/objectives",
+        response_model=list[ObjectiveResponse],
+        operation_id="list_logging_objectives",
+    )
+    async def list_logging_objectives() -> list[ObjectiveResponse]:
+        return [ObjectiveResponse(key=item.objective, recipe_key=item.key) for item in RECIPES]
+
+    @routes.get(
+        "/api/v1/logging/recipes",
+        response_model=list[LoggingRecipeResponse],
+        operation_id="list_logging_recipes",
+    )
+    async def list_logging_recipes() -> list[LoggingRecipeResponse]:
+        return [recipe_response(item) for item in RECIPES]
+
+    @routes.get(
+        "/api/v1/logging/recipes/{recipe_key}",
+        response_model=LoggingRecipeResponse,
+        operation_id="get_logging_recipe",
+    )
+    async def get_logging_recipe(recipe_key: str) -> LoggingRecipeResponse:
+        recipe = BY_KEY.get(recipe_key)
+        if recipe is None:
+            raise HTTPException(404, "logging recipe not found")
+        return recipe_response(recipe)
+
+    @routes.post(
+        "/api/v1/logging/recipes/{recipe_key}/preflight",
+        response_model=PreflightResponse,
+        operation_id="preflight_logging_recipe",
+    )
+    async def preflight_logging_recipe(
+        recipe_key: str, payload: PreflightRequest
+    ) -> PreflightResponse:
+        recipe = BY_KEY.get(recipe_key)
+        if recipe is None:
+            raise HTTPException(404, "logging recipe not found")
+        capabilities = DeviceCapabilities(
+            payload.adapter,
+            {key: Support(value) for key, value in payload.signals.items()},
+            payload.maximum_requests_per_second,
+            payload.discovery_supported,
+        )
+        return PreflightResponse.model_validate(asdict(preflight(recipe, capabilities)))
+
+    def bearer(value: str | None) -> str:
+        if value is None or not value.startswith("Bearer ") or len(value) > 256:
+            raise HTTPException(401, "valid bearer acquisition credential required")
+        return value.removeprefix("Bearer ")
+
+    @routes.post(
+        "/api/v1/acquisitions",
+        response_model=AcquisitionCreated,
+        status_code=201,
+        operation_id="create_acquisition",
+    )
+    async def create_acquisition(
+        payload: AcquisitionCreate, request: Request
+    ) -> AcquisitionCreated:
+        try:
+            return await AcquisitionService(store(), settings, request.app.state.telemetry).create(
+                payload
+            )
+        except AcquisitionError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/acquisitions/{acquisition_id}/batches",
+        response_model=AcquisitionBatchAccepted,
+        status_code=202,
+        operation_id="publish_acquisition_batch",
+    )
+    async def publish_acquisition_batch(
+        acquisition_id: UUID,
+        payload: AcquisitionBatch,
+        request: Request,
+        authorization: str | None = Header(default=None),
+    ) -> AcquisitionBatchAccepted:
+        try:
+            return await AcquisitionService(store(), settings, request.app.state.telemetry).publish(
+                acquisition_id, bearer(authorization), payload
+            )
+        except AcquisitionAuthError as exc:
+            raise HTTPException(401, "invalid, expired, or closed acquisition credential") from exc
+        except AcquisitionError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/acquisitions/{acquisition_id}/synthetic",
+        status_code=202,
+        operation_id="start_synthetic_acquisition",
+    )
+    async def start_synthetic_acquisition(
+        acquisition_id: UUID,
+        background: BackgroundTasks,
+        request: Request,
+        authorization: str | None = Header(default=None),
+    ) -> dict[str, str]:
+        token = bearer(authorization)
+        service = AcquisitionService(store(), settings, request.app.state.telemetry)
+        try:
+            await service._authorized(acquisition_id, token)
+        except AcquisitionAuthError as exc:
+            raise HTTPException(401, "invalid, expired, or closed acquisition credential") from exc
+        background.add_task(service.run_synthetic, acquisition_id, token)
+        return {"status": "started", "provisional": "true"}
+
+    @routes.get(
+        "/api/v1/acquisitions/{acquisition_id}",
+        response_model=AcquisitionStatusResponse,
+        operation_id="get_acquisition",
+    )
+    async def get_acquisition(acquisition_id: UUID, request: Request) -> AcquisitionStatusResponse:
+        try:
+            return await AcquisitionService(store(), settings, request.app.state.telemetry).status(
+                acquisition_id
+            )
+        except LookupError as exc:
+            raise HTTPException(404, "acquisition not found") from exc
+
+    @routes.get(
+        "/api/v1/acquisitions/{acquisition_id}/live", operation_id="stream_acquisition_live"
+    )
+    async def stream_acquisition_live(acquisition_id: UUID) -> StreamingResponse:
+        async def events():
+            for _ in range(600):
+                async with store().session() as db:
+                    state = (
+                        (
+                            await db.execute(
+                                text("SELECT state,quality FROM acquisition_sessions WHERE id=:id"),
+                                {"id": acquisition_id},
+                            )
+                        )
+                        .mappings()
+                        .one_or_none()
+                    )
+                    if state is None:
+                        yield 'event: error\ndata: {"code":"not_found"}\n\n'
+                        return
+                    points = (
+                        (
+                            await db.execute(
+                                text(
+                                    """SELECT signal_key,numeric_value,normalized_unit,observed_at FROM telemetry_samples WHERE session_id=(SELECT driving_session_id FROM acquisition_sessions WHERE id=:id) ORDER BY observed_at DESC LIMIT 200"""
+                                ),
+                                {"id": acquisition_id},
+                            )
+                        )
+                        .mappings()
+                        .all()
+                    )
+                    findings = (
+                        (
+                            await db.execute(
+                                text(
+                                    """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at DESC LIMIT 20"""
+                                ),
+                                {"id": acquisition_id},
+                            )
+                        )
+                        .mappings()
+                        .all()
+                    )
+                payload = {
+                    "state": state["state"],
+                    "quality": state["quality"],
+                    "provisional": True,
+                    "window_seconds": 60,
+                    "points": [
+                        {
+                            "signal": row["signal_key"],
+                            "value": row["numeric_value"],
+                            "unit": row["normalized_unit"],
+                            "observed_at": row["observed_at"].isoformat(),
+                        }
+                        for row in reversed(points)
+                    ],
+                    "findings": [
+                        {
+                            **dict(row),
+                            "id": str(row["id"]),
+                            "started_at": row["started_at"].isoformat(),
+                            "ended_at": row["ended_at"].isoformat() if row["ended_at"] else None,
+                        }
+                        for row in reversed(findings)
+                    ],
+                }
+                yield f"event: telemetry\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
+                if state["state"] in {"completed", "failed"}:
+                    return
+                await asyncio.sleep(1)
+
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+        )
+
+    @routes.get(
+        "/api/v1/acquisitions/{acquisition_id}/findings",
+        response_model=list[ProvisionalFindingResponse],
+        operation_id="list_acquisition_findings",
+    )
+    async def list_acquisition_findings(
+        acquisition_id: UUID,
+    ) -> list[ProvisionalFindingResponse]:
+        async with store().session() as db:
+            exists = await db.scalar(
+                text("SELECT 1 FROM acquisition_sessions WHERE id=:id"),
+                {"id": acquisition_id},
+            )
+            if exists is None:
+                raise HTTPException(404, "acquisition not found")
+            rows = (
+                (
+                    await db.execute(
+                        text(
+                            """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at,id"""
+                        ),
+                        {"id": acquisition_id},
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        return [ProvisionalFindingResponse.model_validate(row) for row in rows]
+
+    @routes.post(
+        "/api/v1/acquisitions/{acquisition_id}/stop",
+        response_model=AcquisitionStatusResponse,
+        operation_id="stop_acquisition",
+    )
+    async def stop_acquisition(
+        acquisition_id: UUID, request: Request, authorization: str | None = Header(default=None)
+    ) -> AcquisitionStatusResponse:
+        try:
+            return await AcquisitionService(store(), settings, request.app.state.telemetry).stop(
+                acquisition_id, bearer(authorization)
+            )
+        except AcquisitionAuthError as exc:
+            raise HTTPException(401, "invalid, expired, or closed acquisition credential") from exc
+
+    @routes.post(
+        "/api/v1/acquisitions/{acquisition_id}/finalize",
+        response_model=AcquisitionFinalized,
+        operation_id="finalize_acquisition",
+    )
+    async def finalize_acquisition(acquisition_id: UUID, request: Request) -> AcquisitionFinalized:
+        try:
+            return await AcquisitionService(
+                store(), settings, request.app.state.telemetry
+            ).finalize(acquisition_id)
+        except AcquisitionError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
     @routes.get(
         "/api/v1/sessions/{session_id}/telemetry",
         response_model=TelemetryWindow,
@@ -319,6 +617,21 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         try:
             return await QueryService(store()).query(session_id, signal, start, end, limit)
         except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/capabilities",
+        response_model=dict[str, object],
+        operation_id="assess_session_capabilities",
+    )
+    async def assess_session_capabilities(
+        session_id: UUID, request: Request, recipe_key: str = Query("general-health")
+    ) -> dict[str, object]:
+        try:
+            return await AcquisitionService(
+                store(), settings, request.app.state.telemetry
+            ).capability_report(session_id, recipe_key)
+        except AcquisitionError as exc:
             raise HTTPException(422, str(exc)) from exc
 
     @routes.post(

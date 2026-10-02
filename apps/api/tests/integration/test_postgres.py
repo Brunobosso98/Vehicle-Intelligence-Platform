@@ -6,6 +6,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -25,6 +27,10 @@ def url() -> str:
 
 
 async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None:
+    script = ScriptDirectory.from_config(Config(api / "alembic.ini"))
+    heads = script.get_heads()
+    assert len(heads) == 1
+    expected_head = heads[0]
     engine = create_async_engine(url)
     async with engine.connect() as connection:
         assert await connection.scalar(text("SELECT to_regclass('alembic_version')")) is None
@@ -33,7 +39,7 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
     # idempotent head, full rollback, and final clean upgrade exercise both boundaries.
     for command, target in [
         ("upgrade", "head"),
-        ("downgrade", "0003"),
+        ("downgrade", "0004"),
         ("upgrade", "head"),
         ("upgrade", "head"),
         ("downgrade", "base"),
@@ -49,21 +55,27 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         assert await process.wait() == 0
 
     rollback = await asyncio.create_subprocess_exec(
-        str(api / ".venv/bin/alembic"), "downgrade", "0003", cwd=api, env=env
+        str(api / ".venv/bin/alembic"), "downgrade", "0004", cwd=api, env=env
     )
     assert await rollback.wait() == 0
     async with engine.connect() as connection:
-        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
+        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
         assert await connection.scalar(text("SELECT to_regclass('pulls')")) == "pulls"
-        assert await connection.scalar(text("SELECT to_regclass('detected_events')")) is None
-        assert await connection.scalar(text("SELECT to_regclass('event_analysis_runs')")) is None
+        assert (
+            await connection.scalar(text("SELECT to_regclass('detected_events')"))
+            == "detected_events"
+        )
+        assert await connection.scalar(text("SELECT to_regclass('acquisition_sessions')")) is None
     reupgrade = await asyncio.create_subprocess_exec(
         str(api / ".venv/bin/alembic"), "upgrade", "head", cwd=api, env=env
     )
     assert await reupgrade.wait() == 0
 
     async with engine.connect() as connection:
-        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == expected_head
+        )
         assert await connection.scalar(
             text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
         )
@@ -87,6 +99,11 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "pulls",
             "event_analysis_runs",
             "detected_events",
+            "acquisition_sessions",
+            "stream_receipts",
+            "provisional_findings",
+            "dataset_capability_reports",
+            "stream_dead_letters",
         }
         assert await connection.scalar(
             text(

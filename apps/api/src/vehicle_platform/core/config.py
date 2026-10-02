@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     build_timestamp: datetime | None = None
     readiness_timeout: float = Field(default=2.0, gt=0, le=30)
     otel_exporter_otlp_endpoint: str | None = None
+    kafka_bootstrap_servers: str = Field(default="broker:9092", min_length=1, max_length=255)
+    acquisition_token_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
+    acquisition_batch_limit: int = Field(default=500, ge=1, le=5000)
 
     @field_validator("git_sha", "build_timestamp", mode="before")
     @classmethod

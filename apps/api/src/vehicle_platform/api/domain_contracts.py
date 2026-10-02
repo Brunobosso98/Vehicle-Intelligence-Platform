@@ -256,3 +256,136 @@ class EventSummary(BaseModel):
     event_count: int
     by_category: dict[str, int]
     highest_severity: Literal["info", "low", "moderate", "high"] | None
+
+
+class RecipeSignal(BaseModel):
+    signal: str
+    importance: Literal["required", "recommended", "optional"]
+    reason: str
+    minimum_hz: float
+    preferred_hz: float
+    priority: Literal["critical_for_recipe", "high", "normal", "low"]
+    missing_effect: list[str]
+
+
+class LoggingRecipeResponse(BaseModel):
+    key: str
+    name: str
+    description: str
+    objective: str
+    version: int
+    configuration_hash: str
+    vehicle_scope: str
+    minimum_duration_seconds: int
+    supported_modes: list[str]
+    notes: list[str]
+    requirements: list[RecipeSignal]
+
+
+class ObjectiveResponse(BaseModel):
+    key: str
+    recipe_key: str
+
+
+class PreflightRequest(BaseModel):
+    adapter: str = Field(min_length=1, max_length=80)
+    signals: dict[
+        str,
+        Literal[
+            "supported",
+            "unsupported",
+            "unavailable",
+            "unknown",
+            "adapter_does_not_support_discovery",
+        ],
+    ] = Field(max_length=100)
+    maximum_requests_per_second: float = Field(gt=0, le=1000)
+    discovery_supported: bool = True
+
+
+class SamplingPlanResponse(BaseModel):
+    signal: str
+    priority: str
+    target_hz: float
+    estimated_hz: float
+
+
+class PreflightResponse(BaseModel):
+    readiness: Literal["ready", "degraded", "blocked"]
+    required_available: list[str]
+    required_missing: list[str]
+    recommended_available: list[str]
+    optional_available: list[str]
+    sampling_plan: list[SamplingPlanResponse]
+    expected_capabilities: list[str]
+    unavailable_capabilities: list[str]
+    warnings: list[str]
+
+
+class AcquisitionCreate(BaseModel):
+    vehicle_id: UUID
+    configuration_id: UUID | None = None
+    recipe_key: str = Field(min_length=1, max_length=80)
+    adapter: Literal["synthetic", "replay", "obd"]
+    source_id: str = Field(min_length=1, max_length=80)
+
+
+class AcquisitionCreated(BaseModel):
+    id: UUID
+    driving_session_id: UUID
+    state: str
+    ingestion_token: str
+    token_expires_at: datetime
+
+
+class StreamObservation(BaseModel):
+    message_id: UUID
+    observed_at: datetime
+    sequence: int | None = Field(default=None, ge=0)
+    signal: str = Field(min_length=1, max_length=100)
+    value: float
+    unit: str = Field(min_length=1, max_length=24)
+    source_record_id: str = Field(min_length=1, max_length=160)
+
+
+class AcquisitionBatch(BaseModel):
+    schema_version: Literal["1.0"]
+    batch_id: UUID
+    observations: list[StreamObservation] = Field(min_length=1, max_length=500)
+
+
+class AcquisitionBatchAccepted(BaseModel):
+    batch_id: UUID
+    accepted: int
+    topic: str = "telemetry.raw.v1"
+
+
+class AcquisitionStatusResponse(BaseModel):
+    id: UUID
+    driving_session_id: UUID
+    recipe_key: str
+    recipe_version: int
+    state: str
+    adapter: str
+    started_at: datetime
+    ended_at: datetime | None
+    quality: dict[str, Any]
+
+
+class AcquisitionFinalized(BaseModel):
+    id: UUID
+    state: Literal["completed"]
+    phase2: AnalysisResult
+    phase3: EventAnalysisResult
+    capability_report: dict[str, Any]
+    reconciliation: dict[str, int]
+
+
+class ProvisionalFindingResponse(BaseModel):
+    id: UUID
+    finding_type: str
+    category: str
+    started_at: datetime
+    ended_at: datetime | None
+    evidence: dict[str, Any]
+    reconciliation_status: str

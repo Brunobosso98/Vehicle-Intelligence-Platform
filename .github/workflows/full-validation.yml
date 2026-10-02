@@ -65,6 +65,10 @@ jobs:
         id: e2e
         continue-on-error: true
         run: make test-e2e
+      - name: Benchmark 100k live observations
+        id: streaming
+        continue-on-error: true
+        run: make live-stream-benchmark
       - name: Validate complete observability path
         id: observability
         continue-on-error: true
@@ -106,6 +110,7 @@ jobs:
           DATABASE: ${{ steps.database.outcome }}
           STACK: ${{ steps.stack.outcome }}
           E2E: ${{ steps.e2e.outcome }}
+          STREAMING: ${{ steps.streaming.outcome }}
           OBSERVABILITY: ${{ steps.observability.outcome }}
           SECURITY: ${{ steps.security.outcome }}
         run: python3 scripts/validation-summary.py
@@ -124,6 +129,7 @@ jobs:
           DATABASE: ${{ steps.database.outcome }}
           STACK: ${{ steps.stack.outcome }}
           E2E: ${{ steps.e2e.outcome }}
+          STREAMING: ${{ steps.streaming.outcome }}
           OBSERVABILITY: ${{ steps.observability.outcome }}
           SECURITY: ${{ steps.security.outcome }}
         run: |
@@ -132,5 +138,6 @@ jobs:
           test "$DATABASE" = success
           test "$STACK" = success
           test "$E2E" = success
+          test "$STREAMING" = success
           test "$OBSERVABILITY" = success
           test "$SECURITY" = success

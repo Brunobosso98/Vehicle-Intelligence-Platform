@@ -17,6 +17,16 @@ assert web["kind"] == "healthy" and web["ready"]["database"] == "ready"
 PY
 docker compose exec -T db sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   > .validation/summary/database-health.txt
+docker compose exec -T broker /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker:9092 \
+  --describe --topic telemetry.raw.v1 > .validation/summary/broker-health.txt
+test "$(docker compose ps stream-consumer --status running --quiet | wc -l)" = 1
+
+# Durable transport and consumer independently recover without exposing a host broker port.
+docker compose restart broker
+docker compose up -d --wait broker
+docker compose run --rm broker-init
+docker compose restart stream-consumer
+test "$(docker compose ps stream-consumer --status running --quiet | wc -l)" = 1
 
 # Existing contract: liveness remains available while readiness reports a DB dependency failure.
 docker compose stop db

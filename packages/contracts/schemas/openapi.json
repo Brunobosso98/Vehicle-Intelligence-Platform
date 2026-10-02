@@ -1,6 +1,182 @@
 {
   "components": {
     "schemas": {
+      "AcquisitionBatch": {
+        "properties": {
+          "batch_id": {
+            "format": "uuid",
+            "title": "Batch Id",
+            "type": "string"
+          },
+          "observations": {
+            "items": { "$ref": "#/components/schemas/StreamObservation" },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Observations",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": ["schema_version", "batch_id", "observations"],
+        "title": "AcquisitionBatch",
+        "type": "object"
+      },
+      "AcquisitionBatchAccepted": {
+        "properties": {
+          "accepted": { "title": "Accepted", "type": "integer" },
+          "batch_id": {
+            "format": "uuid",
+            "title": "Batch Id",
+            "type": "string"
+          },
+          "topic": {
+            "default": "telemetry.raw.v1",
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": ["batch_id", "accepted"],
+        "title": "AcquisitionBatchAccepted",
+        "type": "object"
+      },
+      "AcquisitionCreate": {
+        "properties": {
+          "adapter": {
+            "enum": ["synthetic", "replay", "obd"],
+            "title": "Adapter",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "recipe_key": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Recipe Key",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": ["vehicle_id", "recipe_key", "adapter", "source_id"],
+        "title": "AcquisitionCreate",
+        "type": "object"
+      },
+      "AcquisitionCreated": {
+        "properties": {
+          "driving_session_id": {
+            "format": "uuid",
+            "title": "Driving Session Id",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "ingestion_token": { "title": "Ingestion Token", "type": "string" },
+          "state": { "title": "State", "type": "string" },
+          "token_expires_at": {
+            "format": "date-time",
+            "title": "Token Expires At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "driving_session_id",
+          "state",
+          "ingestion_token",
+          "token_expires_at"
+        ],
+        "title": "AcquisitionCreated",
+        "type": "object"
+      },
+      "AcquisitionFinalized": {
+        "properties": {
+          "capability_report": {
+            "additionalProperties": true,
+            "title": "Capability Report",
+            "type": "object"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "phase2": { "$ref": "#/components/schemas/AnalysisResult" },
+          "phase3": { "$ref": "#/components/schemas/EventAnalysisResult" },
+          "reconciliation": {
+            "additionalProperties": { "type": "integer" },
+            "title": "Reconciliation",
+            "type": "object"
+          },
+          "state": { "const": "completed", "title": "State", "type": "string" }
+        },
+        "required": [
+          "id",
+          "state",
+          "phase2",
+          "phase3",
+          "capability_report",
+          "reconciliation"
+        ],
+        "title": "AcquisitionFinalized",
+        "type": "object"
+      },
+      "AcquisitionStatusResponse": {
+        "properties": {
+          "adapter": { "title": "Adapter", "type": "string" },
+          "driving_session_id": {
+            "format": "uuid",
+            "title": "Driving Session Id",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "quality": {
+            "additionalProperties": true,
+            "title": "Quality",
+            "type": "object"
+          },
+          "recipe_key": { "title": "Recipe Key", "type": "string" },
+          "recipe_version": { "title": "Recipe Version", "type": "integer" },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "state": { "title": "State", "type": "string" }
+        },
+        "required": [
+          "id",
+          "driving_session_id",
+          "recipe_key",
+          "recipe_version",
+          "state",
+          "adapter",
+          "started_at",
+          "ended_at",
+          "quality"
+        ],
+        "title": "AcquisitionStatusResponse",
+        "type": "object"
+      },
       "AnalysisRequest": {
         "properties": {
           "profile": {
@@ -460,6 +636,54 @@
         "title": "ImportResult",
         "type": "object"
       },
+      "LoggingRecipeResponse": {
+        "properties": {
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "description": { "title": "Description", "type": "string" },
+          "key": { "title": "Key", "type": "string" },
+          "minimum_duration_seconds": {
+            "title": "Minimum Duration Seconds",
+            "type": "integer"
+          },
+          "name": { "title": "Name", "type": "string" },
+          "notes": {
+            "items": { "type": "string" },
+            "title": "Notes",
+            "type": "array"
+          },
+          "objective": { "title": "Objective", "type": "string" },
+          "requirements": {
+            "items": { "$ref": "#/components/schemas/RecipeSignal" },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "supported_modes": {
+            "items": { "type": "string" },
+            "title": "Supported Modes",
+            "type": "array"
+          },
+          "vehicle_scope": { "title": "Vehicle Scope", "type": "string" },
+          "version": { "title": "Version", "type": "integer" }
+        },
+        "required": [
+          "key",
+          "name",
+          "description",
+          "objective",
+          "version",
+          "configuration_hash",
+          "vehicle_scope",
+          "minimum_duration_seconds",
+          "supported_modes",
+          "notes",
+          "requirements"
+        ],
+        "title": "LoggingRecipeResponse",
+        "type": "object"
+      },
       "Modification": {
         "properties": {
           "category": {
@@ -581,6 +805,155 @@
         },
         "required": ["category", "installed_at"],
         "title": "ModificationCreate",
+        "type": "object"
+      },
+      "ObjectiveResponse": {
+        "properties": {
+          "key": { "title": "Key", "type": "string" },
+          "recipe_key": { "title": "Recipe Key", "type": "string" }
+        },
+        "required": ["key", "recipe_key"],
+        "title": "ObjectiveResponse",
+        "type": "object"
+      },
+      "PreflightRequest": {
+        "properties": {
+          "adapter": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Adapter",
+            "type": "string"
+          },
+          "discovery_supported": {
+            "default": true,
+            "title": "Discovery Supported",
+            "type": "boolean"
+          },
+          "maximum_requests_per_second": {
+            "exclusiveMinimum": 0,
+            "maximum": 1000,
+            "title": "Maximum Requests Per Second",
+            "type": "number"
+          },
+          "signals": {
+            "additionalProperties": {
+              "enum": [
+                "supported",
+                "unsupported",
+                "unavailable",
+                "unknown",
+                "adapter_does_not_support_discovery"
+              ],
+              "type": "string"
+            },
+            "maxProperties": 100,
+            "title": "Signals",
+            "type": "object"
+          }
+        },
+        "required": ["adapter", "signals", "maximum_requests_per_second"],
+        "title": "PreflightRequest",
+        "type": "object"
+      },
+      "PreflightResponse": {
+        "properties": {
+          "expected_capabilities": {
+            "items": { "type": "string" },
+            "title": "Expected Capabilities",
+            "type": "array"
+          },
+          "optional_available": {
+            "items": { "type": "string" },
+            "title": "Optional Available",
+            "type": "array"
+          },
+          "readiness": {
+            "enum": ["ready", "degraded", "blocked"],
+            "title": "Readiness",
+            "type": "string"
+          },
+          "recommended_available": {
+            "items": { "type": "string" },
+            "title": "Recommended Available",
+            "type": "array"
+          },
+          "required_available": {
+            "items": { "type": "string" },
+            "title": "Required Available",
+            "type": "array"
+          },
+          "required_missing": {
+            "items": { "type": "string" },
+            "title": "Required Missing",
+            "type": "array"
+          },
+          "sampling_plan": {
+            "items": { "$ref": "#/components/schemas/SamplingPlanResponse" },
+            "title": "Sampling Plan",
+            "type": "array"
+          },
+          "unavailable_capabilities": {
+            "items": { "type": "string" },
+            "title": "Unavailable Capabilities",
+            "type": "array"
+          },
+          "warnings": {
+            "items": { "type": "string" },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "readiness",
+          "required_available",
+          "required_missing",
+          "recommended_available",
+          "optional_available",
+          "sampling_plan",
+          "expected_capabilities",
+          "unavailable_capabilities",
+          "warnings"
+        ],
+        "title": "PreflightResponse",
+        "type": "object"
+      },
+      "ProvisionalFindingResponse": {
+        "properties": {
+          "category": { "title": "Category", "type": "string" },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "finding_type": { "title": "Finding Type", "type": "string" },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "reconciliation_status": {
+            "title": "Reconciliation Status",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "finding_type",
+          "category",
+          "started_at",
+          "ended_at",
+          "evidence",
+          "reconciliation_status"
+        ],
+        "title": "ProvisionalFindingResponse",
         "type": "object"
       },
       "Pull": {
@@ -772,6 +1145,51 @@
         "title": "Ready",
         "type": "object"
       },
+      "RecipeSignal": {
+        "properties": {
+          "importance": {
+            "enum": ["required", "recommended", "optional"],
+            "title": "Importance",
+            "type": "string"
+          },
+          "minimum_hz": { "title": "Minimum Hz", "type": "number" },
+          "missing_effect": {
+            "items": { "type": "string" },
+            "title": "Missing Effect",
+            "type": "array"
+          },
+          "preferred_hz": { "title": "Preferred Hz", "type": "number" },
+          "priority": {
+            "enum": ["critical_for_recipe", "high", "normal", "low"],
+            "title": "Priority",
+            "type": "string"
+          },
+          "reason": { "title": "Reason", "type": "string" },
+          "signal": { "title": "Signal", "type": "string" }
+        },
+        "required": [
+          "signal",
+          "importance",
+          "reason",
+          "minimum_hz",
+          "preferred_hz",
+          "priority",
+          "missing_effect"
+        ],
+        "title": "RecipeSignal",
+        "type": "object"
+      },
+      "SamplingPlanResponse": {
+        "properties": {
+          "estimated_hz": { "title": "Estimated Hz", "type": "number" },
+          "priority": { "title": "Priority", "type": "string" },
+          "signal": { "title": "Signal", "type": "string" },
+          "target_hz": { "title": "Target Hz", "type": "number" }
+        },
+        "required": ["signal", "priority", "target_hz", "estimated_hz"],
+        "title": "SamplingPlanResponse",
+        "type": "object"
+      },
       "SessionCreate": {
         "properties": {
           "configuration_id": {
@@ -927,6 +1345,53 @@
           "aliases"
         ],
         "title": "Signal",
+        "type": "object"
+      },
+      "StreamObservation": {
+        "properties": {
+          "message_id": {
+            "format": "uuid",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "sequence": {
+            "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+            "title": "Sequence"
+          },
+          "signal": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Signal",
+            "type": "string"
+          },
+          "source_record_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Source Record Id",
+            "type": "string"
+          },
+          "unit": {
+            "maxLength": 24,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": { "title": "Value", "type": "number" }
+        },
+        "required": [
+          "message_id",
+          "observed_at",
+          "signal",
+          "value",
+          "unit",
+          "source_record_id"
+        ],
+        "title": "StreamObservation",
         "type": "object"
       },
       "TelemetryPoint": {
@@ -1255,6 +1720,403 @@
   "info": { "title": "Vehicle Intelligence Platform", "version": "0.1.0" },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/acquisitions": {
+      "post": {
+        "operationId": "create_acquisition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AcquisitionCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AcquisitionCreated" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}": {
+      "get": {
+        "operationId": "get_acquisition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/batches": {
+      "post": {
+        "operationId": "publish_acquisition_batch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AcquisitionBatch" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionBatchAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Publish Acquisition Batch"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/finalize": {
+      "post": {
+        "operationId": "finalize_acquisition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionFinalized"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Finalize Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/findings": {
+      "get": {
+        "operationId": "list_acquisition_findings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProvisionalFindingResponse"
+                  },
+                  "title": "Response List Acquisition Findings",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Acquisition Findings"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/live": {
+      "get": {
+        "operationId": "stream_acquisition_live",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "application/json": { "schema": {} } },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Stream Acquisition Live"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/stop": {
+      "post": {
+        "operationId": "stop_acquisition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Stop Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/synthetic": {
+      "post": {
+        "operationId": "start_synthetic_acquisition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": { "type": "string" },
+                  "title": "Response Start Synthetic Acquisition",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Start Synthetic Acquisition"
+      }
+    },
     "/api/v1/events": {
       "get": {
         "operationId": "list_vehicle_events",
@@ -1369,6 +2231,154 @@
           }
         },
         "summary": "Get Event"
+      }
+    },
+    "/api/v1/logging/objectives": {
+      "get": {
+        "operationId": "list_logging_objectives",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/ObjectiveResponse" },
+                  "title": "Response List Logging Objectives",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Logging Objectives"
+      }
+    },
+    "/api/v1/logging/recipes": {
+      "get": {
+        "operationId": "list_logging_recipes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LoggingRecipeResponse"
+                  },
+                  "title": "Response List Logging Recipes",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Logging Recipes"
+      }
+    },
+    "/api/v1/logging/recipes/{recipe_key}": {
+      "get": {
+        "operationId": "get_logging_recipe",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipe_key",
+            "required": true,
+            "schema": { "title": "Recipe Key", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggingRecipeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Logging Recipe"
+      }
+    },
+    "/api/v1/logging/recipes/{recipe_key}/preflight": {
+      "post": {
+        "operationId": "preflight_logging_recipe",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipe_key",
+            "required": true,
+            "schema": { "title": "Recipe Key", "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PreflightRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PreflightResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preflight Logging Recipe"
       }
     },
     "/api/v1/pulls": {
@@ -1653,6 +2663,64 @@
           }
         },
         "summary": "Analyze Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}/capabilities": {
+      "get": {
+        "operationId": "assess_session_capabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recipe_key",
+            "required": false,
+            "schema": {
+              "default": "general-health",
+              "title": "Recipe Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Assess Session Capabilities",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Assess Session Capabilities"
       }
     },
     "/api/v1/sessions/{session_id}/events": {
