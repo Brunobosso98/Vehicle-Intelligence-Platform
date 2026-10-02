@@ -94,6 +94,143 @@
         "title": "ConfigurationCreate",
         "type": "object"
       },
+      "DetectedEvent": {
+        "properties": {
+          "algorithm_name": { "title": "Algorithm Name", "type": "string" },
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "analysis_run_id": {
+            "format": "uuid",
+            "title": "Analysis Run Id",
+            "type": "string"
+          },
+          "baseline_reference": {
+            "additionalProperties": true,
+            "title": "Baseline Reference",
+            "type": "object"
+          },
+          "baseline_type": {
+            "enum": [
+              "same_session_pulls",
+              "vehicle_configuration_history",
+              "profile_threshold",
+              "absolute_threshold",
+              "no_baseline"
+            ],
+            "title": "Baseline Type",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "performance",
+              "thermal",
+              "fuel",
+              "ignition",
+              "combustion",
+              "mixture",
+              "sensor",
+              "telemetry_quality",
+              "control_behavior"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "duration_ms": { "title": "Duration Ms", "type": "integer" },
+          "ended_at": {
+            "format": "date-time",
+            "title": "Ended At",
+            "type": "string"
+          },
+          "event_type": { "title": "Event Type", "type": "string" },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "pull_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Pull Id"
+          },
+          "quality_flags": {
+            "items": { "type": "string" },
+            "title": "Quality Flags",
+            "type": "array"
+          },
+          "segment_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Segment Id"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": ["info", "low", "moderate", "high"],
+            "title": "Severity",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "vehicle_id",
+          "session_id",
+          "segment_id",
+          "pull_id",
+          "analysis_run_id",
+          "event_type",
+          "category",
+          "started_at",
+          "ended_at",
+          "duration_ms",
+          "severity",
+          "confidence",
+          "algorithm_name",
+          "algorithm_version",
+          "configuration_hash",
+          "baseline_type",
+          "baseline_reference",
+          "evidence",
+          "quality_flags",
+          "created_at"
+        ],
+        "title": "DetectedEvent",
+        "type": "object"
+      },
       "DrivingSession": {
         "properties": {
           "configuration_id": {
@@ -191,6 +328,64 @@
         },
         "required": ["error"],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EventAnalysisRequest": {
+        "properties": {
+          "replace": { "default": false, "title": "Replace", "type": "boolean" }
+        },
+        "title": "EventAnalysisRequest",
+        "type": "object"
+      },
+      "EventAnalysisResult": {
+        "properties": {
+          "analysis_run_id": {
+            "format": "uuid",
+            "title": "Analysis Run Id",
+            "type": "string"
+          },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "event_count": { "title": "Event Count", "type": "integer" },
+          "profile": { "title": "Profile", "type": "string" },
+          "reused": { "title": "Reused", "type": "boolean" },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "analysis_run_id",
+          "profile",
+          "configuration_hash",
+          "event_count",
+          "reused"
+        ],
+        "title": "EventAnalysisResult",
+        "type": "object"
+      },
+      "EventSummary": {
+        "properties": {
+          "by_category": {
+            "additionalProperties": { "type": "integer" },
+            "title": "By Category",
+            "type": "object"
+          },
+          "event_count": { "title": "Event Count", "type": "integer" },
+          "highest_severity": {
+            "anyOf": [
+              { "enum": ["info", "low", "moderate", "high"], "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Highest Severity"
+          }
+        },
+        "required": ["event_count", "by_category", "highest_severity"],
+        "title": "EventSummary",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1060,6 +1255,122 @@
   "info": { "title": "Vehicle Intelligence Platform", "version": "0.1.0" },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/events": {
+      "get": {
+        "operationId": "list_vehicle_events",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "maxLength": 80, "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/DetectedEvent" },
+                  "title": "Response List Vehicle Events",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Vehicle Events"
+      }
+    },
+    "/api/v1/events/{event_id}": {
+      "get": {
+        "operationId": "get_event",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DetectedEvent" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Event"
+      }
+    },
     "/api/v1/pulls": {
       "get": {
         "operationId": "list_pulls",
@@ -1342,6 +1653,237 @@
           }
         },
         "summary": "Analyze Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}/events": {
+      "get": {
+        "operationId": "list_session_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "maxLength": 80, "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(performance|thermal|fuel|ignition|combustion|mixture|sensor|telemetry_quality|control_behavior)$",
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "pattern": "^(info|low|moderate|high)$", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pull_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Pull Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/DetectedEvent" },
+                  "title": "Response List Session Events",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Session Events"
+      }
+    },
+    "/api/v1/sessions/{session_id}/events/analyze": {
+      "post": {
+        "operationId": "analyze_session_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EventAnalysisRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventAnalysisResult" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Analyze Session Events"
+      }
+    },
+    "/api/v1/sessions/{session_id}/events/summary": {
+      "get": {
+        "operationId": "summarize_session_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventSummary" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Summarize Session Events"
       }
     },
     "/api/v1/sessions/{session_id}/imports/csv": {

@@ -10,7 +10,11 @@ from vehicle_platform.api.domain_contracts import (
     AnalysisRequest,
     AnalysisResult,
     ConfigurationCreate,
+    DetectedEvent,
     DrivingSession,
+    EventAnalysisRequest,
+    EventAnalysisResult,
+    EventSummary,
     ImportResult,
     Modification,
     ModificationCreate,
@@ -25,6 +29,7 @@ from vehicle_platform.api.domain_contracts import (
     VehicleUpdate,
 )
 from vehicle_platform.core.config import Settings
+from vehicle_platform.events.service import EventAnalysisLimitError, EventAnalysisService
 from vehicle_platform.infrastructure.database import Database, DatabaseProbe
 from vehicle_platform.telemetry.domain import SIGNALS
 from vehicle_platform.telemetry.service import IngestionService, QueryService
@@ -364,6 +369,72 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         result = await SessionAnalysisService(store()).pull(pull_id)
         if result is None:
             raise HTTPException(404, "pull not found")
+        return result
+
+    @routes.post(
+        "/api/v1/sessions/{session_id}/events/analyze",
+        response_model=EventAnalysisResult,
+        operation_id="analyze_session_events",
+    )
+    async def analyze_session_events(
+        session_id: UUID, payload: EventAnalysisRequest, request: Request
+    ) -> EventAnalysisResult:
+        try:
+            return await EventAnalysisService(store(), request.app.state.telemetry).run(
+                session_id, payload.replace
+            )
+        except LookupError as exc:
+            raise HTTPException(404, "session not found") from exc
+        except EventAnalysisLimitError as exc:
+            raise HTTPException(413, str(exc)) from exc
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/events",
+        response_model=list[DetectedEvent],
+        operation_id="list_session_events",
+    )
+    async def list_session_events(
+        session_id: UUID,
+        event_type: str | None = Query(default=None, max_length=80),
+        category: str | None = Query(
+            default=None,
+            pattern="^(performance|thermal|fuel|ignition|combustion|mixture|sensor|telemetry_quality|control_behavior)$",
+        ),
+        severity: str | None = Query(default=None, pattern="^(info|low|moderate|high)$"),
+        pull_id: UUID | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = Query(100, ge=1, le=500),
+    ) -> list[DetectedEvent]:
+        return await EventAnalysisService(store()).events(
+            session_id, None, event_type, category, severity, pull_id, start, end, limit
+        )
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/events/summary",
+        response_model=EventSummary,
+        operation_id="summarize_session_events",
+    )
+    async def summarize_session_events(session_id: UUID) -> EventSummary:
+        return await EventAnalysisService(store()).summary(session_id)
+
+    @routes.get(
+        "/api/v1/events", response_model=list[DetectedEvent], operation_id="list_vehicle_events"
+    )
+    async def list_vehicle_events(
+        vehicle_id: UUID,
+        event_type: str | None = Query(default=None, max_length=80),
+        limit: int = Query(100, ge=1, le=500),
+    ) -> list[DetectedEvent]:
+        return await EventAnalysisService(store()).events(
+            None, vehicle_id, event_type, None, None, None, None, None, limit
+        )
+
+    @routes.get("/api/v1/events/{event_id}", response_model=DetectedEvent, operation_id="get_event")
+    async def get_event(event_id: UUID) -> DetectedEvent:
+        result = await EventAnalysisService(store()).event(event_id)
+        if result is None:
+            raise HTTPException(404, "event not found")
         return result
 
     return routes

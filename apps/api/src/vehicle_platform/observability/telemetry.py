@@ -104,6 +104,20 @@ class Telemetry:
         self.telemetry_windows_analyzed = meter.create_counter(
             "analysis.telemetry.windows", unit="{window}"
         )
+        # Phase 3 labels are bounded detector/category/outcome vocabularies only.
+        self.event_analysis_runs = meter.create_counter("events.analysis.runs", unit="{run}")
+        self.event_detector_duration = meter.create_histogram("events.detector.duration", unit="s")
+        self.events_produced = meter.create_counter("events.produced", unit="{event}")
+        self.event_detector_unavailable = meter.create_counter(
+            "events.detector.unavailable", unit="{detector}"
+        )
+        self.event_insufficient_data = meter.create_counter(
+            "events.detector.insufficient_data", unit="{detector}"
+        )
+        self.events_consolidated = meter.create_counter("events.consolidated", unit="{event}")
+        self.event_analysis_failures = meter.create_counter(
+            "events.analysis.failures", unit="{failure}"
+        )
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

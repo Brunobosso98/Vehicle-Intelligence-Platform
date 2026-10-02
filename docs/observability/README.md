@@ -32,3 +32,12 @@ Analysis traces separate telemetry loading, alignment, segmentation, pull detect
 persistence. Counters/histograms use only detector profile, version and outcome labels; IDs, VINs
 and raw telemetry arrays are forbidden labels/log fields. Operational summaries include counts,
 elapsed time and quality warnings.
+
+# Phase 3 events
+
+Event analysis emits bounded-label run, detector-duration, category production, unavailable,
+insufficient-data, consolidation and failure metrics. Labels contain only detector, category, outcome,
+event-type class or failure class—never vehicle/session/pull/event IDs, VIN, or raw evidence. Trace
+spans separate telemetry load, baseline construction, detector execution, consolidation and
+persistence. Integration through the canonical observability stack validates export alongside the
+existing HTTP/SQL path; unit validation asserts the metric surface and prohibited-label absence.

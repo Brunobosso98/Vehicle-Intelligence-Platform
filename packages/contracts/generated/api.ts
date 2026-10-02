@@ -1,4 +1,38 @@
 export interface paths {
+  "/api/v1/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Vehicle Events */
+    get: operations["list_vehicle_events"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/events/{event_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Event */
+    get: operations["get_event"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/pulls": {
     parameters: {
       query?: never;
@@ -79,6 +113,57 @@ export interface paths {
     put?: never;
     /** Analyze Session */
     post: operations["analyze_session"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Session Events */
+    get: operations["list_session_events"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/events/analyze": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Analyze Session Events */
+    post: operations["analyze_session_events"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/events/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Summarize Session Events */
+    get: operations["summarize_session_events"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -354,6 +439,99 @@ export interface components {
       /** Provenance */
       provenance: string;
     };
+    /** DetectedEvent */
+    DetectedEvent: {
+      /** Algorithm Name */
+      algorithm_name: string;
+      /** Algorithm Version */
+      algorithm_version: string;
+      /**
+       * Analysis Run Id
+       * Format: uuid
+       */
+      analysis_run_id: string;
+      /** Baseline Reference */
+      baseline_reference: {
+        [key: string]: unknown;
+      };
+      /**
+       * Baseline Type
+       * @enum {string}
+       */
+      baseline_type:
+        | "same_session_pulls"
+        | "vehicle_configuration_history"
+        | "profile_threshold"
+        | "absolute_threshold"
+        | "no_baseline";
+      /**
+       * Category
+       * @enum {string}
+       */
+      category:
+        | "performance"
+        | "thermal"
+        | "fuel"
+        | "ignition"
+        | "combustion"
+        | "mixture"
+        | "sensor"
+        | "telemetry_quality"
+        | "control_behavior";
+      /** Confidence */
+      confidence: number;
+      /** Configuration Hash */
+      configuration_hash: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Duration Ms */
+      duration_ms: number;
+      /**
+       * Ended At
+       * Format: date-time
+       */
+      ended_at: string;
+      /** Event Type */
+      event_type: string;
+      /** Evidence */
+      evidence: {
+        [key: string]: unknown;
+      };
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Pull Id */
+      pull_id: string | null;
+      /** Quality Flags */
+      quality_flags: string[];
+      /** Segment Id */
+      segment_id: string | null;
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "low" | "moderate" | "high";
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
     /** DrivingSession */
     DrivingSession: {
       /** Configuration Id */
@@ -418,6 +596,46 @@ export interface components {
     /** ErrorResponse */
     ErrorResponse: {
       error: components["schemas"]["ErrorDetail"];
+    };
+    /** EventAnalysisRequest */
+    EventAnalysisRequest: {
+      /**
+       * Replace
+       * @default false
+       */
+      replace: boolean;
+    };
+    /** EventAnalysisResult */
+    EventAnalysisResult: {
+      /**
+       * Analysis Run Id
+       * Format: uuid
+       */
+      analysis_run_id: string;
+      /** Configuration Hash */
+      configuration_hash: string;
+      /** Event Count */
+      event_count: number;
+      /** Profile */
+      profile: string;
+      /** Reused */
+      reused: boolean;
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+    };
+    /** EventSummary */
+    EventSummary: {
+      /** By Category */
+      by_category: {
+        [key: string]: number;
+      };
+      /** Event Count */
+      event_count: number;
+      /** Highest Severity */
+      highest_severity: ("info" | "low" | "moderate" | "high") | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -895,6 +1113,88 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  list_vehicle_events: {
+    parameters: {
+      query: {
+        vehicle_id: string;
+        event_type?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectedEvent"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_event: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectedEvent"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_pulls: {
     parameters: {
       query: {
@@ -1120,6 +1420,138 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnalysisResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_session_events: {
+    parameters: {
+      query?: {
+        event_type?: string | null;
+        category?: string | null;
+        severity?: string | null;
+        pull_id?: string | null;
+        start?: string | null;
+        end?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DetectedEvent"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  analyze_session_events: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EventAnalysisRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventAnalysisResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  summarize_session_events: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventSummary"];
         };
       };
       /** @description Validation Error */
