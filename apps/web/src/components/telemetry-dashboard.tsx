@@ -67,29 +67,115 @@ export function TelemetryDashboard() {
     const points = window?.points ?? [];
     if (points.length < 2) return "";
     const values = points.map((point) => point.value);
-    const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
-    return points.map((point, index) => `${(index / (points.length - 1)) * 700},${180 - ((point.value - min) / span) * 150}`).join(" ");
+    const min = Math.min(...values),
+      max = Math.max(...values),
+      span = max - min || 1;
+    return points
+      .map(
+        (point, index) =>
+          `${(index / (points.length - 1)) * 700},${180 - ((point.value - min) / span) * 150}`,
+      )
+      .join(" ");
   }, [window]);
 
   return (
     <section className="telemetry-card" aria-labelledby="telemetry-heading">
       <div className="section-label">VEHICLE &amp; TELEMETRY · PHASE 1</div>
       <h2 id="telemetry-heading">Telemetry timeline</h2>
-      {vehicles === null && !error && <p role="status">Loading vehicles and signals…</p>}
-      {error && <div role="alert"><p>Telemetry could not be loaded.</p><button onClick={() => setAttempt((value) => value + 1)}>Retry</button></div>}
-      {vehicles?.length === 0 && <p>No vehicles yet. Create a vehicle and import a session through the API.</p>}
-      {vehicles?.[0] && <>
-        <h3>{vehicles[0].nickname ?? `${vehicles[0].manufacturer} ${vehicles[0].model}`}</h3>
-        <p>{vehicles[0].generation} · {vehicles[0].model_year} · {vehicles[0].engine_code}</p>
-        {sessions.length === 0 ? <p>No telemetry sessions are available.</p> : <>
-          <dl className="status-list"><div><dt>Source</dt><dd>{sessions[0].source_type}</dd></div><div><dt>Samples</dt><dd>{sessions[0].sample_count}</dd></div><div><dt>Started</dt><dd>{sessions[0].started_at ? new Date(sessions[0].started_at).toLocaleString() : "—"}</dd></div></dl>
-          <label htmlFor="signal">Signal</label>
-          <select id="signal" value={selected} onChange={(event) => { setWindow(null); setSelected(event.target.value); }}>
-            {catalog.map((signal) => <option key={signal.key} value={signal.key}>{signal.name} ({signal.unit})</option>)}
-          </select>
-          {window === null ? <p role="status">Loading telemetry…</p> : window.points.length === 0 ? <p>No points in this time window.</p> : <figure><svg viewBox="0 0 700 200" role="img" aria-label={`${selected} time-series chart`}><polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="3" /></svg><figcaption>{window.returned} points · {window.points[0]?.unit}{window.truncated ? " · bounded response; narrow the window" : ""}</figcaption></figure>}
-        </>}
-      </>}
+      {vehicles === null && !error && (
+        <p role="status">Loading vehicles and signals…</p>
+      )}
+      {error && (
+        <div role="alert">
+          <p>Telemetry could not be loaded.</p>
+          <button onClick={() => setAttempt((value) => value + 1)}>
+            Retry
+          </button>
+        </div>
+      )}
+      {vehicles?.length === 0 && (
+        <p>
+          No vehicles yet. Create a vehicle and import a session through the
+          API.
+        </p>
+      )}
+      {vehicles?.[0] && (
+        <>
+          <h3>
+            {vehicles[0].nickname ??
+              `${vehicles[0].manufacturer} ${vehicles[0].model}`}
+          </h3>
+          <p>
+            {vehicles[0].generation} · {vehicles[0].model_year} ·{" "}
+            {vehicles[0].engine_code}
+          </p>
+          {sessions.length === 0 ? (
+            <p>No telemetry sessions are available.</p>
+          ) : (
+            <>
+              <dl className="status-list">
+                <div>
+                  <dt>Source</dt>
+                  <dd>{sessions[0].source_type}</dd>
+                </div>
+                <div>
+                  <dt>Samples</dt>
+                  <dd>{sessions[0].sample_count}</dd>
+                </div>
+                <div>
+                  <dt>Started</dt>
+                  <dd>
+                    {sessions[0].started_at
+                      ? new Date(sessions[0].started_at).toLocaleString()
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <label htmlFor="signal">Signal</label>
+              <select
+                id="signal"
+                value={selected}
+                onChange={(event) => {
+                  setWindow(null);
+                  setSelected(event.target.value);
+                }}
+              >
+                {catalog.map((signal) => (
+                  <option key={signal.key} value={signal.key}>
+                    {signal.name} ({signal.unit})
+                  </option>
+                ))}
+              </select>
+              {window === null ? (
+                <p role="status">Loading telemetry…</p>
+              ) : window.points.length === 0 ? (
+                <p>No points in this time window.</p>
+              ) : (
+                <figure>
+                  <svg
+                    viewBox="0 0 700 200"
+                    role="img"
+                    aria-label={`${selected} time-series chart`}
+                  >
+                    <polyline
+                      points={polyline}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                  </svg>
+                  <figcaption>
+                    {window.returned} points · {window.points[0]?.unit}
+                    {window.truncated
+                      ? " · bounded response; narrow the window"
+                      : ""}
+                  </figcaption>
+                </figure>
+              )}
+            </>
+          )}
+        </>
+      )}
     </section>
   );
 }

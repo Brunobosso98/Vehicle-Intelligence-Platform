@@ -195,7 +195,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("sample_id", "observed_at"),
     )
     op.execute(
-        "SELECT create_hypertable('telemetry_samples', by_range('observed_at'), if_not_exists => TRUE, chunk_time_interval => INTERVAL '1 day')"
+        "SELECT create_hypertable('telemetry_samples', 'observed_at', "
+        "if_not_exists => TRUE, chunk_time_interval => INTERVAL '1 day')"
     )
     op.create_index(
         "ix_telemetry_session_signal_time",
