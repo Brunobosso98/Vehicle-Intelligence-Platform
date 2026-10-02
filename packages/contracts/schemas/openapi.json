@@ -2576,6 +2576,64 @@
         "summary": "Analyze Session"
       }
     },
+    "/api/v1/sessions/{session_id}/capabilities": {
+      "get": {
+        "operationId": "assess_session_capabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recipe_key",
+            "required": false,
+            "schema": {
+              "default": "general-health",
+              "title": "Recipe Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Assess Session Capabilities",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Assess Session Capabilities"
+      }
+    },
     "/api/v1/sessions/{session_id}/events": {
       "get": {
         "operationId": "list_session_events",

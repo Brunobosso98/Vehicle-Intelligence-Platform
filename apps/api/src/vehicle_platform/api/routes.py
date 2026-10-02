@@ -568,6 +568,21 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
 
+    @routes.get(
+        "/api/v1/sessions/{session_id}/capabilities",
+        response_model=dict[str, object],
+        operation_id="assess_session_capabilities",
+    )
+    async def assess_session_capabilities(
+        session_id: UUID, request: Request, recipe_key: str = Query("general-health")
+    ) -> dict[str, object]:
+        try:
+            return await AcquisitionService(
+                store(), settings, request.app.state.telemetry
+            ).capability_report(session_id, recipe_key)
+        except AcquisitionError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     @routes.post(
         "/api/v1/sessions/{session_id}/analysis",
         response_model=AnalysisResult,

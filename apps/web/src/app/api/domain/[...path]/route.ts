@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
+async function proxy(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
@@ -8,19 +8,34 @@ export async function GET(
   const base = process.env.API_BASE_URL ?? "http://api:8000";
   const target = new URL(`/api/v1/${path.join("/")}`, base);
   target.search = request.nextUrl.search;
+  const liveStream = request.method === "GET" && path.at(-1) === "live";
   try {
+    const authorization = request.headers.get("authorization");
     const response = await fetch(target, {
+      method: request.method,
       cache: "no-store",
-      signal: AbortSignal.timeout(5000),
-    });
-    const body = await response.text();
-    return new NextResponse(body, {
-      status: response.status,
       headers: {
-        "content-type":
-          response.headers.get("content-type") ?? "application/json",
+        ...(authorization ? { authorization } : {}),
+        ...(request.method === "POST"
+          ? { "content-type": "application/json" }
+          : {}),
       },
+      body: request.method === "POST" ? await request.text() : undefined,
+      signal: liveStream ? undefined : AbortSignal.timeout(10_000),
     });
+    return new NextResponse(
+      liveStream ? response.body : await response.arrayBuffer(),
+      {
+        status: response.status,
+        headers: {
+          "content-type":
+            response.headers.get("content-type") ?? "application/json",
+          ...(liveStream
+            ? { "cache-control": "no-store", "x-accel-buffering": "no" }
+            : {}),
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { error: "domain API unavailable" },
@@ -28,3 +43,6 @@ export async function GET(
     );
   }
 }
+
+export const GET = proxy;
+export const POST = proxy;

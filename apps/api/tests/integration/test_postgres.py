@@ -103,6 +103,7 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "stream_receipts",
             "provisional_findings",
             "dataset_capability_reports",
+            "stream_dead_letters",
         }
         assert await connection.scalar(
             text(

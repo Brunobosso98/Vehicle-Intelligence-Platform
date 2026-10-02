@@ -414,3 +414,24 @@ class AcquisitionService:
                 for r in recipe.requirements
             ),
         }
+
+    async def capability_report(self, session_id: UUID, recipe_key: str) -> dict[str, object]:
+        recipe = BY_KEY.get(recipe_key)
+        if recipe is None:
+            raise AcquisitionError("unknown logging recipe")
+        report = await self._capability_report(session_id, recipe_key, recipe.configuration_hash)
+        async with self.database.session() as db:
+            await db.execute(
+                text(
+                    """INSERT INTO dataset_capability_reports(driving_session_id,recipe_key,recipe_configuration_hash,duration_seconds,report) VALUES(:session,:recipe,:hash,:duration,CAST(:report AS jsonb)) ON CONFLICT ON CONSTRAINT uq_dataset_capability_recipe DO UPDATE SET duration_seconds=EXCLUDED.duration_seconds,report=EXCLUDED.report,created_at=now()"""
+                ),
+                {
+                    "session": session_id,
+                    "recipe": recipe_key,
+                    "hash": recipe.configuration_hash,
+                    "duration": report["duration_seconds"],
+                    "report": json.dumps(report),
+                },
+            )
+            await db.commit()
+        return report

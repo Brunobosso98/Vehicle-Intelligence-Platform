@@ -3,7 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from vehicle_platform.acquisition.adapters import Elm327Adapter, ReplayAdapter, SyntheticLiveAdapter
+from vehicle_platform.acquisition.adapters import (
+    Elm327Adapter,
+    ElmTcpTransport,
+    ReplayAdapter,
+    SyntheticLiveAdapter,
+)
 from vehicle_platform.acquisition.collector import AcquisitionCollector, GatewayPublisher
 from vehicle_platform.acquisition.domain import DeviceCapabilities, Readiness, Support, preflight
 from vehicle_platform.acquisition.quality import assess_dataset, measure_signal_quality
@@ -118,6 +123,48 @@ async def test_elm327_only_uses_allowlisted_read_commands() -> None:
     assert (await anext(source)).signal == "engine.rpm"
     await source.aclose()
     await adapter.close()
+    with pytest.raises(ValueError, match="Mode 01"):
+        await ElmTcpTransport("127.0.0.1").request("04", 0.1)
+
+
+async def test_elm_tcp_transport_connects_reads_reuses_and_closes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Reader:
+        async def readuntil(self, separator: bytes) -> bytes:
+            assert separator == b">"
+            return b"41 0C 1F 40>"
+
+    class Writer:
+        def __init__(self) -> None:
+            self.writes: list[bytes] = []
+            self.closed = False
+
+        def write(self, value: bytes) -> None:
+            self.writes.append(value)
+
+        async def drain(self) -> None:
+            return None
+
+        def close(self) -> None:
+            self.closed = True
+
+        async def wait_closed(self) -> None:
+            return None
+
+    writer = Writer()
+
+    async def connect(host: str, port: int):
+        assert host == "adapter" and port == 35000
+        return Reader(), writer
+
+    monkeypatch.setattr("vehicle_platform.acquisition.adapters.asyncio.open_connection", connect)
+    transport = ElmTcpTransport("adapter")
+    assert await transport.request("010C", 1) == "41 0C 1F 40>"
+    assert await transport.request("ATE0", 1) == "41 0C 1F 40>"
+    assert writer.writes == [b"010C\r", b"ATE0\r"]
+    await transport.close()
+    assert writer.closed and transport.writer is None
 
 
 def test_bounded_spool_replays_and_reports_overflow(tmp_path: Path) -> None:

@@ -141,6 +141,40 @@ class ElmTransport(Protocol):
     async def close(self) -> None: ...
 
 
+class ElmTcpTransport:
+    """Concrete ELM327 TCP/RFCOMM bridge transport with a strict read-only command allowlist."""
+
+    def __init__(self, host: str, port: int = 35000) -> None:
+        self.host, self.port = host, port
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
+
+    async def request(self, command: str, request_timeout: float) -> str:
+        normalized = command.strip().upper()
+        if not (
+            normalized.startswith("AT") or (normalized.startswith("01") and len(normalized) == 4)
+        ):
+            raise ValueError("only ELM setup and standard OBD-II Mode 01 reads are permitted")
+        if self.writer is None or self.reader is None:
+            self.reader, self.writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port), timeout=request_timeout
+            )
+        reader, writer = self.reader, self.writer
+        if reader is None or writer is None:
+            raise ConnectionError("ELM transport connection unavailable")
+        writer.write((normalized + "\r").encode("ascii"))
+        await writer.drain()
+        response = await asyncio.wait_for(reader.readuntil(b">"), timeout=request_timeout)
+        return response.decode("ascii", errors="replace")
+
+    async def close(self) -> None:
+        if self.writer is not None:
+            self.writer.close()
+            await self.writer.wait_closed()
+        self.reader = None
+        self.writer = None
+
+
 @dataclass(frozen=True)
 class StandardPid:
     command: str

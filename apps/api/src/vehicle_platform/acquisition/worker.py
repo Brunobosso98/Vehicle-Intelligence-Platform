@@ -217,7 +217,27 @@ class StreamConsumer:
                 records = await consumer.getmany(timeout_ms=1000, max_records=500)
                 for messages in records.values():
                     for message in messages:
-                        await self.persist(json.loads(message.value))
+                        try:
+                            await self.persist(json.loads(message.value))
+                        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                            category = (
+                                "malformed_json"
+                                if isinstance(exc, json.JSONDecodeError)
+                                else "invalid_stream_contract"
+                            )
+                            message_id = hashlib.sha256(message.value).hexdigest()
+                            async with self.database.session() as db:
+                                await db.execute(
+                                    text(
+                                        "INSERT INTO stream_dead_letters(message_id,topic,error_category) VALUES(:id,:topic,:category) ON CONFLICT DO NOTHING"
+                                    ),
+                                    {
+                                        "id": message_id,
+                                        "topic": "telemetry.raw.v1",
+                                        "category": category,
+                                    },
+                                )
+                                await db.commit()
                 if records:
                     await consumer.commit()
         finally:
