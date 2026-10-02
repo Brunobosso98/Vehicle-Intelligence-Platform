@@ -99,8 +99,15 @@ third-party findings are recorded with a shorter 2026-10-15 expiry because remed
 vendor refresh or an explicitly tested Tempo 3/Grafana 13 migration. The observability profile binds
 its administrative endpoints to loopback and is not a production deployment.
 
+The available major-version candidates were also scanned before accepting that residual risk.
+Tempo 3.0.3 retained the same 12 High findings, while Grafana 13.2.2 increased the result to 104 High
+occurrences across 33 unique advisories. Neither candidate is a security remediation, and adopting
+either would add major-version compatibility risk without reducing the relevant findings. The
+working 2.10.8 and 12.4.12 releases therefore remain selected, with every exception scoped to its
+exact immutable image digest. Collector 0.161.0 and Prometheus 3.15.0 are likewise digest-pinned;
+both produced zero Critical and zero High findings in the canonical scan.
+
 OpenTelemetry Collector 0.162.0 was not accepted as a remediation in this run because its container
 manifest was not published by the upstream release pipeline; the scanner returned MANIFEST_UNKNOWN.
 The repository therefore uses the immediately prior published 0.161.0 image and keeps it subject to
 the same fail-closed image policy.
-

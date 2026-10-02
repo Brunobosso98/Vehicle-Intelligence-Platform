@@ -70,7 +70,7 @@ services:
     restart: unless-stopped
   otel-collector:
     profiles: ["observability"]
-    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.0
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.0@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       ["./infra/docker/observability/collector.yaml:/etc/otel/config.yaml:ro"]
@@ -78,7 +78,7 @@ services:
     depends_on: ["tempo"]
   prometheus:
     profiles: ["observability"]
-    image: quay.io/prometheus/prometheus:v3.15.0
+    image: quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     volumes:
       [
         "./infra/docker/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro",
@@ -92,7 +92,7 @@ services:
     ports: ["127.0.0.1:9090:9090"]
   tempo:
     profiles: ["observability"]
-    image: grafana/tempo:2.10.8
+    image: grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       [
@@ -102,7 +102,7 @@ services:
     ports: ["127.0.0.1:3200:3200"]
   grafana:
     profiles: ["observability"]
-    image: grafana/grafana:12.4.12
+    image: grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
