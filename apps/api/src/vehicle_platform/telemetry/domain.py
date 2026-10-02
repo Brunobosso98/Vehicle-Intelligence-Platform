@@ -71,6 +71,45 @@ SIGNALS = (
         24,
         ("battery_voltage",),
     ),
+    SignalDefinition(
+        "environment.ambient_air_temperature",
+        "Ambient air temperature",
+        "thermal",
+        "K",
+        180,
+        340,
+        ("ambient_temp", "0146"),
+    ),
+    SignalDefinition(
+        "fuel.equivalence_ratio",
+        "Commanded equivalence ratio",
+        "fuel",
+        "ratio",
+        0.5,
+        2.0,
+        ("lambda", "0144"),
+    ),
+    SignalDefinition(
+        "fuel.low_pressure", "Low fuel pressure", "fuel", "Pa", 0, 2_000_000, ("lpfp",)
+    ),
+    SignalDefinition(
+        "engine.accelerator_position",
+        "Accelerator pedal position",
+        "engine",
+        "%",
+        0,
+        100,
+        ("pedal", "0149"),
+    ),
+    SignalDefinition(
+        "engine.ignition_timing",
+        "Ignition timing advance",
+        "engine",
+        "deg",
+        -90,
+        90,
+        ("timing", "010e"),
+    ),
 )
 SIGNAL_BY_KEY = {signal.key: signal for signal in SIGNALS}
 SIGNAL_BY_ALIAS = {

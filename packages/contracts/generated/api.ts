@@ -33,6 +33,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/logging/objectives": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Logging Objectives */
+    get: operations["list_logging_objectives"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Logging Recipes */
+    get: operations["list_logging_recipes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes/{recipe_key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Logging Recipe */
+    get: operations["get_logging_recipe"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/logging/recipes/{recipe_key}/preflight": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Preflight Logging Recipe */
+    post: operations["preflight_logging_recipe"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/pulls": {
     parameters: {
       query?: never;
@@ -679,6 +747,31 @@ export interface components {
       /** Unknown Signals */
       unknown_signals: number;
     };
+    /** LoggingRecipeResponse */
+    LoggingRecipeResponse: {
+      /** Configuration Hash */
+      configuration_hash: string;
+      /** Description */
+      description: string;
+      /** Key */
+      key: string;
+      /** Minimum Duration Seconds */
+      minimum_duration_seconds: number;
+      /** Name */
+      name: string;
+      /** Notes */
+      notes: string[];
+      /** Objective */
+      objective: string;
+      /** Requirements */
+      requirements: components["schemas"]["RecipeSignal"][];
+      /** Supported Modes */
+      supported_modes: string[];
+      /** Vehicle Scope */
+      vehicle_scope: string;
+      /** Version */
+      version: number;
+    };
     /** Modification */
     Modification: {
       /** Category */
@@ -733,6 +826,58 @@ export interface components {
       product?: string | null;
       /** Removed At */
       removed_at?: string | null;
+    };
+    /** ObjectiveResponse */
+    ObjectiveResponse: {
+      /** Key */
+      key: string;
+      /** Recipe Key */
+      recipe_key: string;
+    };
+    /** PreflightRequest */
+    PreflightRequest: {
+      /** Adapter */
+      adapter: string;
+      /**
+       * Discovery Supported
+       * @default true
+       */
+      discovery_supported: boolean;
+      /** Maximum Requests Per Second */
+      maximum_requests_per_second: number;
+      /** Signals */
+      signals: {
+        [key: string]:
+          | "supported"
+          | "unsupported"
+          | "unavailable"
+          | "unknown"
+          | "adapter_does_not_support_discovery";
+      };
+    };
+    /** PreflightResponse */
+    PreflightResponse: {
+      /** Expected Capabilities */
+      expected_capabilities: string[];
+      /** Optional Available */
+      optional_available: string[];
+      /**
+       * Readiness
+       * @enum {string}
+       */
+      readiness: "ready" | "degraded" | "blocked";
+      /** Recommended Available */
+      recommended_available: string[];
+      /** Required Available */
+      required_available: string[];
+      /** Required Missing */
+      required_missing: string[];
+      /** Sampling Plan */
+      sampling_plan: components["schemas"]["SamplingPlanResponse"][];
+      /** Unavailable Capabilities */
+      unavailable_capabilities: string[];
+      /** Warnings */
+      warnings: string[];
     };
     /** Pull */
     Pull: {
@@ -837,6 +982,40 @@ export interface components {
        * @constant
        */
       status: "ready";
+    };
+    /** RecipeSignal */
+    RecipeSignal: {
+      /**
+       * Importance
+       * @enum {string}
+       */
+      importance: "required" | "recommended" | "optional";
+      /** Minimum Hz */
+      minimum_hz: number;
+      /** Missing Effect */
+      missing_effect: string[];
+      /** Preferred Hz */
+      preferred_hz: number;
+      /**
+       * Priority
+       * @enum {string}
+       */
+      priority: "critical_for_recipe" | "high" | "normal" | "low";
+      /** Reason */
+      reason: string;
+      /** Signal */
+      signal: string;
+    };
+    /** SamplingPlanResponse */
+    SamplingPlanResponse: {
+      /** Estimated Hz */
+      estimated_hz: number;
+      /** Priority */
+      priority: string;
+      /** Signal */
+      signal: string;
+      /** Target Hz */
+      target_hz: number;
     };
     /** SessionCreate */
     SessionCreate: {
@@ -1173,6 +1352,148 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["DetectedEvent"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_logging_objectives: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ObjectiveResponse"][];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_logging_recipes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggingRecipeResponse"][];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_logging_recipe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recipe_key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LoggingRecipeResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  preflight_logging_recipe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        recipe_key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PreflightRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PreflightResponse"];
         };
       };
       /** @description Validation Error */

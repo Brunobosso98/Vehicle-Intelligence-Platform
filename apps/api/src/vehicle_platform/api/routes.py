@@ -1,9 +1,17 @@
+from dataclasses import asdict
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import text
 
+from vehicle_platform.acquisition.domain import (
+    DeviceCapabilities,
+    LoggingRecipe,
+    Support,
+    preflight,
+)
+from vehicle_platform.acquisition.recipes import BY_KEY, RECIPES
 from vehicle_platform.analysis.service import AnalysisLimitError, SessionAnalysisService
 from vehicle_platform.api.contracts import ErrorResponse, Health, Ready, Version
 from vehicle_platform.api.domain_contracts import (
@@ -16,8 +24,12 @@ from vehicle_platform.api.domain_contracts import (
     EventAnalysisResult,
     EventSummary,
     ImportResult,
+    LoggingRecipeResponse,
     Modification,
     ModificationCreate,
+    ObjectiveResponse,
+    PreflightRequest,
+    PreflightResponse,
     Pull,
     SessionCreate,
     SessionSegment,
@@ -300,6 +312,57 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
             )
             for s in SIGNALS
         ]
+
+    def recipe_response(recipe: LoggingRecipe) -> LoggingRecipeResponse:
+        values = asdict(recipe)
+        values["configuration_hash"] = recipe.configuration_hash
+        return LoggingRecipeResponse.model_validate(values)
+
+    @routes.get(
+        "/api/v1/logging/objectives",
+        response_model=list[ObjectiveResponse],
+        operation_id="list_logging_objectives",
+    )
+    async def list_logging_objectives() -> list[ObjectiveResponse]:
+        return [ObjectiveResponse(key=item.objective, recipe_key=item.key) for item in RECIPES]
+
+    @routes.get(
+        "/api/v1/logging/recipes",
+        response_model=list[LoggingRecipeResponse],
+        operation_id="list_logging_recipes",
+    )
+    async def list_logging_recipes() -> list[LoggingRecipeResponse]:
+        return [recipe_response(item) for item in RECIPES]
+
+    @routes.get(
+        "/api/v1/logging/recipes/{recipe_key}",
+        response_model=LoggingRecipeResponse,
+        operation_id="get_logging_recipe",
+    )
+    async def get_logging_recipe(recipe_key: str) -> LoggingRecipeResponse:
+        recipe = BY_KEY.get(recipe_key)
+        if recipe is None:
+            raise HTTPException(404, "logging recipe not found")
+        return recipe_response(recipe)
+
+    @routes.post(
+        "/api/v1/logging/recipes/{recipe_key}/preflight",
+        response_model=PreflightResponse,
+        operation_id="preflight_logging_recipe",
+    )
+    async def preflight_logging_recipe(
+        recipe_key: str, payload: PreflightRequest
+    ) -> PreflightResponse:
+        recipe = BY_KEY.get(recipe_key)
+        if recipe is None:
+            raise HTTPException(404, "logging recipe not found")
+        capabilities = DeviceCapabilities(
+            payload.adapter,
+            {key: Support(value) for key, value in payload.signals.items()},
+            payload.maximum_requests_per_second,
+            payload.discovery_supported,
+        )
+        return PreflightResponse.model_validate(asdict(preflight(recipe, capabilities)))
 
     @routes.get(
         "/api/v1/sessions/{session_id}/telemetry",

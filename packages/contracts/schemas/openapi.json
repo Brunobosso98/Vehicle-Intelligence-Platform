@@ -460,6 +460,54 @@
         "title": "ImportResult",
         "type": "object"
       },
+      "LoggingRecipeResponse": {
+        "properties": {
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "description": { "title": "Description", "type": "string" },
+          "key": { "title": "Key", "type": "string" },
+          "minimum_duration_seconds": {
+            "title": "Minimum Duration Seconds",
+            "type": "integer"
+          },
+          "name": { "title": "Name", "type": "string" },
+          "notes": {
+            "items": { "type": "string" },
+            "title": "Notes",
+            "type": "array"
+          },
+          "objective": { "title": "Objective", "type": "string" },
+          "requirements": {
+            "items": { "$ref": "#/components/schemas/RecipeSignal" },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "supported_modes": {
+            "items": { "type": "string" },
+            "title": "Supported Modes",
+            "type": "array"
+          },
+          "vehicle_scope": { "title": "Vehicle Scope", "type": "string" },
+          "version": { "title": "Version", "type": "integer" }
+        },
+        "required": [
+          "key",
+          "name",
+          "description",
+          "objective",
+          "version",
+          "configuration_hash",
+          "vehicle_scope",
+          "minimum_duration_seconds",
+          "supported_modes",
+          "notes",
+          "requirements"
+        ],
+        "title": "LoggingRecipeResponse",
+        "type": "object"
+      },
       "Modification": {
         "properties": {
           "category": {
@@ -581,6 +629,116 @@
         },
         "required": ["category", "installed_at"],
         "title": "ModificationCreate",
+        "type": "object"
+      },
+      "ObjectiveResponse": {
+        "properties": {
+          "key": { "title": "Key", "type": "string" },
+          "recipe_key": { "title": "Recipe Key", "type": "string" }
+        },
+        "required": ["key", "recipe_key"],
+        "title": "ObjectiveResponse",
+        "type": "object"
+      },
+      "PreflightRequest": {
+        "properties": {
+          "adapter": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Adapter",
+            "type": "string"
+          },
+          "discovery_supported": {
+            "default": true,
+            "title": "Discovery Supported",
+            "type": "boolean"
+          },
+          "maximum_requests_per_second": {
+            "exclusiveMinimum": 0,
+            "maximum": 1000,
+            "title": "Maximum Requests Per Second",
+            "type": "number"
+          },
+          "signals": {
+            "additionalProperties": {
+              "enum": [
+                "supported",
+                "unsupported",
+                "unavailable",
+                "unknown",
+                "adapter_does_not_support_discovery"
+              ],
+              "type": "string"
+            },
+            "maxProperties": 100,
+            "title": "Signals",
+            "type": "object"
+          }
+        },
+        "required": ["adapter", "signals", "maximum_requests_per_second"],
+        "title": "PreflightRequest",
+        "type": "object"
+      },
+      "PreflightResponse": {
+        "properties": {
+          "expected_capabilities": {
+            "items": { "type": "string" },
+            "title": "Expected Capabilities",
+            "type": "array"
+          },
+          "optional_available": {
+            "items": { "type": "string" },
+            "title": "Optional Available",
+            "type": "array"
+          },
+          "readiness": {
+            "enum": ["ready", "degraded", "blocked"],
+            "title": "Readiness",
+            "type": "string"
+          },
+          "recommended_available": {
+            "items": { "type": "string" },
+            "title": "Recommended Available",
+            "type": "array"
+          },
+          "required_available": {
+            "items": { "type": "string" },
+            "title": "Required Available",
+            "type": "array"
+          },
+          "required_missing": {
+            "items": { "type": "string" },
+            "title": "Required Missing",
+            "type": "array"
+          },
+          "sampling_plan": {
+            "items": { "$ref": "#/components/schemas/SamplingPlanResponse" },
+            "title": "Sampling Plan",
+            "type": "array"
+          },
+          "unavailable_capabilities": {
+            "items": { "type": "string" },
+            "title": "Unavailable Capabilities",
+            "type": "array"
+          },
+          "warnings": {
+            "items": { "type": "string" },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "readiness",
+          "required_available",
+          "required_missing",
+          "recommended_available",
+          "optional_available",
+          "sampling_plan",
+          "expected_capabilities",
+          "unavailable_capabilities",
+          "warnings"
+        ],
+        "title": "PreflightResponse",
         "type": "object"
       },
       "Pull": {
@@ -770,6 +928,51 @@
           }
         },
         "title": "Ready",
+        "type": "object"
+      },
+      "RecipeSignal": {
+        "properties": {
+          "importance": {
+            "enum": ["required", "recommended", "optional"],
+            "title": "Importance",
+            "type": "string"
+          },
+          "minimum_hz": { "title": "Minimum Hz", "type": "number" },
+          "missing_effect": {
+            "items": { "type": "string" },
+            "title": "Missing Effect",
+            "type": "array"
+          },
+          "preferred_hz": { "title": "Preferred Hz", "type": "number" },
+          "priority": {
+            "enum": ["critical_for_recipe", "high", "normal", "low"],
+            "title": "Priority",
+            "type": "string"
+          },
+          "reason": { "title": "Reason", "type": "string" },
+          "signal": { "title": "Signal", "type": "string" }
+        },
+        "required": [
+          "signal",
+          "importance",
+          "reason",
+          "minimum_hz",
+          "preferred_hz",
+          "priority",
+          "missing_effect"
+        ],
+        "title": "RecipeSignal",
+        "type": "object"
+      },
+      "SamplingPlanResponse": {
+        "properties": {
+          "estimated_hz": { "title": "Estimated Hz", "type": "number" },
+          "priority": { "title": "Priority", "type": "string" },
+          "signal": { "title": "Signal", "type": "string" },
+          "target_hz": { "title": "Target Hz", "type": "number" }
+        },
+        "required": ["signal", "priority", "target_hz", "estimated_hz"],
+        "title": "SamplingPlanResponse",
         "type": "object"
       },
       "SessionCreate": {
@@ -1369,6 +1572,154 @@
           }
         },
         "summary": "Get Event"
+      }
+    },
+    "/api/v1/logging/objectives": {
+      "get": {
+        "operationId": "list_logging_objectives",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/ObjectiveResponse" },
+                  "title": "Response List Logging Objectives",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Logging Objectives"
+      }
+    },
+    "/api/v1/logging/recipes": {
+      "get": {
+        "operationId": "list_logging_recipes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LoggingRecipeResponse"
+                  },
+                  "title": "Response List Logging Recipes",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Logging Recipes"
+      }
+    },
+    "/api/v1/logging/recipes/{recipe_key}": {
+      "get": {
+        "operationId": "get_logging_recipe",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipe_key",
+            "required": true,
+            "schema": { "title": "Recipe Key", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggingRecipeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Logging Recipe"
+      }
+    },
+    "/api/v1/logging/recipes/{recipe_key}/preflight": {
+      "post": {
+        "operationId": "preflight_logging_recipe",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recipe_key",
+            "required": true,
+            "schema": { "title": "Recipe Key", "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PreflightRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PreflightResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preflight Logging Recipe"
       }
     },
     "/api/v1/pulls": {

@@ -118,6 +118,19 @@ class Telemetry:
         self.event_analysis_failures = meter.create_counter(
             "events.analysis.failures", unit="{failure}"
         )
+        # Phase 4 attributes use bounded state/category vocabularies only.
+        self.acquisition_active = meter.create_up_down_counter("acquisition.sessions.active")
+        self.acquisition_observations = meter.create_counter("acquisition.observations.received")
+        self.acquisition_persisted = meter.create_counter("acquisition.observations.persisted")
+        self.stream_publish_failures = meter.create_counter("acquisition.stream.publish_failures")
+        self.consumer_lag = meter.create_histogram("acquisition.consumer.lag", unit="{message}")
+        self.acquisition_dropped = meter.create_counter("acquisition.observations.dropped")
+        self.acquisition_duplicates = meter.create_counter("acquisition.observations.duplicate")
+        self.acquisition_reconnects = meter.create_counter("acquisition.reconnects")
+        self.spool_occupancy = meter.create_histogram("acquisition.spool.occupancy", unit="By")
+        self.live_analysis_latency = meter.create_histogram("acquisition.live_analysis.duration", unit="s")
+        self.finalization_duration = meter.create_histogram("acquisition.finalization.duration", unit="s")
+        self.provisional_events = meter.create_counter("acquisition.provisional.events")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

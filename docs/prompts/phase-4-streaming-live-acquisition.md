@@ -28,7 +28,7 @@ Phase 4 transforms the platform from an offline telemetry-analysis system into a
 
 Target flow:
 
-~~~
+```
 Known analysis objective
         ↓
 Structured Logging Recipe
@@ -56,7 +56,7 @@ Phase 3 factual event detection
 Live provisional feedback
         ↓
 Canonical final analysis
-~~~
+```
 
 Critical boundary:
 
@@ -72,13 +72,13 @@ Do not implement free-text intent understanding, an agent, LangGraph, MCP, RAG, 
 
 Run:
 
-~~~
+```
 git status
 git branch --show-current
 git log --oneline -10
 git remote -v
 git merge-base HEAD b6c415a66cf282d80866901a77e48c0a6c266bf8
-~~~
+```
 
 Current branch must be:
 
@@ -90,23 +90,23 @@ b6c415a66cf282d80866901a77e48c0a6c266bf8
 
 If origin is missing:
 
-~~~
+```
 git remote add origin https://github.com/Brunobosso98/Vehicle-Intelligence-Platform.git
-~~~
+```
 
 If origin exists with the wrong URL:
 
-~~~
+```
 git remote set-url origin https://github.com/Brunobosso98/Vehicle-Intelligence-Platform.git
-~~~
+```
 
 Then verify:
 
-~~~
+```
 git remote -v
 git ls-remote origin refs/heads/codex/phase-4-streaming-live-acquisition
 git push --dry-run origin HEAD:codex/phase-4-streaming-live-acquisition
-~~~
+```
 
 If authentication cannot publish, fix it before substantial implementation.
 
@@ -218,7 +218,7 @@ The platform observes; it does not command the driver or vehicle.
 
 Introduce explicit boundaries for:
 
-~~~
+```
 Vehicle / OBD adapter
         ↓
 Local Acquisition Collector
@@ -236,7 +236,7 @@ Live Analysis Coordinator
 WebSocket or SSE
         ↓
 Next.js live dashboard
-~~~
+```
 
 Preserve a modular architecture.
 
@@ -319,12 +319,12 @@ Do not claim exactly-once unless proven end to end.
 
 Expected behavior:
 
-~~~
+```
 collector may resend
 stream may redeliver
 consumer may retry
 database remains idempotent
-~~~
+```
 
 Reuse Phase 1 canonical telemetry identity/idempotency.
 
@@ -387,14 +387,14 @@ No frontend logic belongs in the collector.
 
 Provide a usable CLI along these lines:
 
-~~~
+```
 vehicle-collector devices
 vehicle-collector probe
 vehicle-collector recipes
 vehicle-collector preflight --recipe performance-pull
 vehicle-collector start --recipe performance-pull
 vehicle-collector replay session.csv
-~~~
+```
 
 Exact names may differ.
 
@@ -416,13 +416,13 @@ Create a generic read-only adapter protocol.
 
 Conceptually:
 
-~~~
+```
 class VehicleDataAdapter(Protocol):
     async def connect(self) -> None: ...
     async def capabilities(self) -> DeviceCapabilities: ...
     async def read(self, plan: SamplingPlan) -> AsyncIterator[RawTelemetryRecord]: ...
     async def close(self) -> None: ...
-~~~
+```
 
 Exact interface may differ.
 
@@ -543,13 +543,13 @@ Do not silently mutate historical recipe meaning.
 
 Implement deterministic mapping:
 
-~~~
+```
 known objective
     ↓
 structured recipe
     ↓
 signal requirements
-~~~
+```
 
 Initial objective keys should include at least:
 
@@ -592,20 +592,24 @@ Create a structured recipe for performance-pull acquisition.
 Example semantics:
 
 Required:
+
 - engine RPM;
 - vehicle speed;
 - throttle position.
 
 Strongly recommended:
+
 - boost / manifold pressure;
 - intake air temperature.
 
 Recommended where available:
+
 - high-pressure fuel pressure;
 - lambda/equivalence ratio;
 - ignition-related channels.
 
 Context:
+
 - oil temperature;
 - coolant temperature.
 
@@ -679,14 +683,14 @@ Potential fields:
 
 Example concept:
 
-~~~
+```
 signal: engine.boost_pressure
 importance: recommended
 preferred_hz: 10
 reason: supports boost behavior and pull comparison
 missing_effect:
   - boost anomaly detection unavailable
-~~~
+```
 
 ---
 
@@ -1347,14 +1351,14 @@ After import, report actual recipe coverage.
 
 Example concept:
 
-~~~
+```
 Requested recipe: Performance Pull
 
 Required coverage: 3/3
 Recommended coverage: 2/4
 
 Result: usable with limitations
-~~~
+```
 
 Expose exact limitations.
 
@@ -1409,7 +1413,7 @@ Support deterministic modes:
 
 Test:
 
-~~~
+```
 streaming
 ↓
 network unavailable
@@ -1423,7 +1427,7 @@ replay
 deduplication
 ↓
 zero canonical loss
-~~~
+```
 
 within configured spool capacity.
 
@@ -1510,9 +1514,9 @@ IMPORTANT: do not repeat the previous stale migration assertion problem.
 
 Never scatter hardcoded assumptions like:
 
-~~~
+```
 assert version == "0004"
-~~~
+```
 
 through unrelated integration tests after creating a newer head.
 
@@ -1614,14 +1618,17 @@ Add typed bounded APIs consistent with repository conventions.
 At minimum support equivalent functionality for:
 
 ### Logging objectives
+
 - list known objectives.
 
 ### Recipes
+
 - list recipes;
 - get recipe;
 - preflight a recipe.
 
 ### Acquisition
+
 - create acquisition session;
 - get acquisition session;
 - start/activate if appropriate;
@@ -1630,9 +1637,11 @@ At minimum support equivalent functionality for:
 - inspect quality.
 
 ### Ingestion
+
 - authenticated bounded telemetry batch ingestion or equivalent streaming gateway.
 
 ### Live client
+
 - versioned WebSocket or SSE channel for acquisition status, telemetry snapshot, quality, provisional pull/event, and finalization progress.
 
 Keep routes coherent rather than creating unnecessary RPC endpoints.
@@ -1678,7 +1687,7 @@ For each requested signal show why it matters.
 
 Example:
 
-~~~
+```
 Boost pressure
 Recommended
 
@@ -1686,7 +1695,7 @@ Used for:
 - boost behavior
 - pull comparison
 - boost drop / overshoot events
-~~~
+```
 
 Use factual deterministic copy.
 
@@ -1696,7 +1705,7 @@ Use factual deterministic copy.
 
 Display something equivalent to:
 
-~~~
+```
 Signal             Requirement     Device      Planned rate
 RPM                Required        ✓           10 Hz
 Vehicle speed      Required        ✓           10 Hz
@@ -1705,7 +1714,7 @@ Boost              Recommended     ✓           10 Hz
 IAT                Recommended     ✓            5 Hz
 HPFP               Recommended     ✕            —
 Timing correction  Optional        Unknown      —
-~~~
+```
 
 Do not imply unavailable channels were measured.
 
@@ -1762,14 +1771,14 @@ Do not use diagnosis wording.
 
 On stop:
 
-~~~
+```
 Finalizing session...
 
 ✓ Telemetry persisted
 ✓ Phase 2 complete
 ✓ Phase 3 complete
 ✓ Dataset capability assessment complete
-~~~
+```
 
 If a stage fails, report it without implying telemetry was lost.
 
@@ -1803,6 +1812,7 @@ contracts-check must pass.
 Add thorough tests for:
 
 ### Recipes
+
 - validation;
 - version/hash determinism;
 - objective mapping;
@@ -1812,6 +1822,7 @@ Add thorough tests for:
 - post-log assessment.
 
 ### Sampling
+
 - priorities;
 - target rate;
 - slow adapter;
@@ -1822,6 +1833,7 @@ Add thorough tests for:
 - actual rate measurement.
 
 ### Collector
+
 - start/stop;
 - graceful shutdown;
 - reconnect;
@@ -1833,6 +1845,7 @@ Add thorough tests for:
 - failure state.
 
 ### Stream
+
 - serialization;
 - schema version;
 - unknown version rejection;
@@ -1844,6 +1857,7 @@ Add thorough tests for:
 - bounded queue.
 
 ### Live analysis
+
 - provisional pull;
 - provisional event;
 - event closure;
@@ -1859,7 +1873,7 @@ Use real Docker dependencies and disposable TimescaleDB.
 
 Required full path:
 
-~~~
+```
 synthetic collector
 ↓
 gateway
@@ -1869,7 +1883,7 @@ durable broker
 consumer
 ↓
 TimescaleDB
-~~~
+```
 
 Verify canonical observations persisted.
 
@@ -2069,20 +2083,24 @@ Broker must remain internal by default.
 ## 94. Failure behavior
 
 ### Database unavailable
+
 Consumer retries safely.
 Do not acknowledge offsets as durable prematurely.
 Broker retains uncommitted/unprocessed data according to chosen semantics.
 
 ### Stream unavailable
+
 Collector/gateway uses bounded spool and visible warnings.
 No silent discard.
 
 ### Device disconnect
+
 Mark acquisition state.
 Attempt bounded reconnect where supported.
 Do not infer engine failure.
 
 ### One bad signal
+
 Other channels continue if possible.
 Mark that signal degraded/unavailable.
 Update recipe capability assessment.
@@ -2201,7 +2219,9 @@ Phase 4 should provide the generic mapping architecture needed to add the adapte
 Create strong ADRs for at least:
 
 ### Streaming architecture
+
 Document:
+
 - broker selection;
 - delivery semantics;
 - replay;
@@ -2211,7 +2231,9 @@ Document:
 - local spool.
 
 ### Acquisition lifecycle / recipes
+
 Document:
+
 - recipe model;
 - sampling planner;
 - preflight;
@@ -2267,12 +2289,12 @@ Phase 4 must not make old gates disappear.
 
 A good verify-cloud shape is conceptually:
 
-~~~
+```
 verify-local
 phase3-acceptance
 phase4-acceptance
 security-cloud
-~~~
+```
 
 ---
 
@@ -2432,10 +2454,10 @@ Detect it first.
 
 If unavailable, run all non-Docker validation, including repository-equivalent targets such as:
 
-~~~
+```
 make verify-cloud
 make phase4-acceptance
-~~~
+```
 
 Docker-dependent validation must be reported as CI REQUIRED, never locally passed.
 
@@ -2669,6 +2691,7 @@ PHASE 4 DELIVERY REPORT
 Include:
 
 ### Repository
+
 - branch;
 - baseline;
 - commits;
@@ -2677,6 +2700,7 @@ Include:
 - working tree state.
 
 ### Architecture
+
 - collector architecture;
 - adapter architecture;
 - broker decision;
@@ -2688,12 +2712,14 @@ Include:
 - backpressure.
 
 ### Hardware
+
 - implemented generic adapter path;
 - real physical hardware validation status;
 - Vgate vLinker validation status;
 - BMW proprietary/enhanced signals intentionally unsupported if unvalidated.
 
 ### Recipes
+
 - objectives;
 - recipes;
 - required/recommended/optional signals;
@@ -2704,6 +2730,7 @@ Include:
 - post-log assessment.
 
 ### Live system
+
 - telemetry flow;
 - sample-rate monitoring;
 - provisional Phase 2;
@@ -2712,6 +2739,7 @@ Include:
 - UI.
 
 ### Migrations
+
 - previous head;
 - new head;
 - dynamic head validation;
@@ -2719,7 +2747,9 @@ Include:
 - confirmation that stale migration-literal issue was prevented.
 
 ### Reliability
+
 Report real results for:
+
 - disconnect/reconnect;
 - spool replay;
 - duplicate delivery;
@@ -2730,7 +2760,9 @@ Report real results for:
 - graceful shutdown.
 
 ### Performance
+
 Report actual benchmark values:
+
 - observations sent;
 - observations persisted;
 - observations lost;
@@ -2741,6 +2773,7 @@ Report actual benchmark values:
 - buffer behavior.
 
 ### Testing
+
 - backend tests;
 - frontend tests;
 - collector tests;
@@ -2753,23 +2786,28 @@ Report actual benchmark values:
 - Phase 4 acceptance.
 
 ### Security
+
 - acquisition authentication;
 - resource/rate bounds;
 - broker exposure;
 - scans.
 
 ### Observability
+
 - metrics;
 - traces;
 - stream health.
 
 ### GitHub
+
 - CI run ID and result;
 - Security run ID and result;
 - canonical full-validation run ID and result.
 
 ### Explicit deferrals
+
 List:
+
 - Phase 5 advanced analytics;
 - MCP;
 - agents;

@@ -6,7 +6,10 @@ dependencies = [
  "fastapi==0.142.2", "uvicorn[standard]==0.54.0", "pydantic-settings==2.15.0", "sqlalchemy[asyncio]==2.1.1", "python-multipart==0.0.31",
  "asyncpg==0.31.0", "alembic==1.20.0", "opentelemetry-sdk==1.45.0", "opentelemetry-exporter-otlp-proto-http==1.45.0",
  "opentelemetry-exporter-prometheus==0.66b0", "opentelemetry-instrumentation-sqlalchemy==0.66b0",
+ "aiokafka==0.13.0", "typer==0.21.0",
 ]
+[project.scripts]
+vehicle-collector = "vehicle_platform.acquisition.cli:app"
 [dependency-groups]
 dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
@@ -41,6 +44,7 @@ markers = ["integration: disposable PostgreSQL/Timescale database required"]
 branch = true
 source = ["vehicle_platform"]
 omit = [
+ "*/vehicle_platform/acquisition/cli.py", # CLI process boundary exercised by acceptance commands
  "*/vehicle_platform/api/routes.py", # HTTP/database paths run against disposable TimescaleDB
  "*/vehicle_platform/telemetry/service.py", # bulk SQL/idempotency requires real transaction semantics
  "*/vehicle_platform/analysis/service.py", # derived persistence/idempotency requires real transaction semantics

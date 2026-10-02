@@ -256,3 +256,67 @@ class EventSummary(BaseModel):
     event_count: int
     by_category: dict[str, int]
     highest_severity: Literal["info", "low", "moderate", "high"] | None
+
+
+class RecipeSignal(BaseModel):
+    signal: str
+    importance: Literal["required", "recommended", "optional"]
+    reason: str
+    minimum_hz: float
+    preferred_hz: float
+    priority: Literal["critical_for_recipe", "high", "normal", "low"]
+    missing_effect: list[str]
+
+
+class LoggingRecipeResponse(BaseModel):
+    key: str
+    name: str
+    description: str
+    objective: str
+    version: int
+    configuration_hash: str
+    vehicle_scope: str
+    minimum_duration_seconds: int
+    supported_modes: list[str]
+    notes: list[str]
+    requirements: list[RecipeSignal]
+
+
+class ObjectiveResponse(BaseModel):
+    key: str
+    recipe_key: str
+
+
+class PreflightRequest(BaseModel):
+    adapter: str = Field(min_length=1, max_length=80)
+    signals: dict[
+        str,
+        Literal[
+            "supported",
+            "unsupported",
+            "unavailable",
+            "unknown",
+            "adapter_does_not_support_discovery",
+        ],
+    ] = Field(max_length=100)
+    maximum_requests_per_second: float = Field(gt=0, le=1000)
+    discovery_supported: bool = True
+
+
+class SamplingPlanResponse(BaseModel):
+    signal: str
+    priority: str
+    target_hz: float
+    estimated_hz: float
+
+
+class PreflightResponse(BaseModel):
+    readiness: Literal["ready", "degraded", "blocked"]
+    required_available: list[str]
+    required_missing: list[str]
+    recommended_available: list[str]
+    optional_available: list[str]
+    sampling_plan: list[SamplingPlanResponse]
+    expected_capabilities: list[str]
+    unavailable_capabilities: list[str]
+    warnings: list[str]

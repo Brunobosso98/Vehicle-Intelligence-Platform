@@ -81,6 +81,31 @@ async def test_validation_handler(settings: Settings) -> None:
         assert response.json()["error"]["code"] == "VALIDATION_ERROR"
 
 
+async def test_logging_recipe_and_preflight_contracts(settings: Settings) -> None:
+    app = create_app(settings, Probe())
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client,
+    ):
+        objectives = (await client.get("/api/v1/logging/objectives")).json()
+        assert {item["key"] for item in objectives} >= {"performance_pull", "general_health"}
+        recipe = (await client.get("/api/v1/logging/recipes/performance-pull")).json()
+        assert len(recipe["configuration_hash"]) == 64
+        required = {
+            item["signal"] for item in recipe["requirements"] if item["importance"] == "required"
+        }
+        response = await client.post(
+            "/api/v1/logging/recipes/performance-pull/preflight",
+            json={
+                "adapter": "synthetic",
+                "signals": {signal: "supported" for signal in required},
+                "maximum_requests_per_second": 30,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["readiness"] == "degraded"
+
+
 async def test_real_trace_metric_and_log_correlation(settings: Settings) -> None:
     signals = Telemetry(settings)
     exporter = InMemorySpanExporter()
@@ -236,5 +261,26 @@ def test_phase3_metrics_use_only_bounded_labels(settings: Settings) -> None:
     assert "events_analysis_runs_total" in metrics
     assert "events_detector_duration_seconds" in metrics
     assert 'category="performance"' in metrics
+    assert "session_id" not in metrics and "vehicle_id" not in metrics and "vin" not in metrics
+    signals.shutdown()
+
+
+def test_phase4_metrics_use_only_bounded_labels(settings: Settings) -> None:
+    signals = Telemetry(settings)
+    signals.acquisition_active.add(1, {"state": "active"})
+    signals.acquisition_observations.add(20, {"source": "synthetic"})
+    signals.acquisition_persisted.add(19, {"outcome": "accepted"})
+    signals.stream_publish_failures.add(1, {"classification": "unavailable"})
+    signals.consumer_lag.record(2, {"topic": "telemetry.raw.v1"})
+    signals.acquisition_dropped.add(1, {"reason": "spool_full"})
+    signals.acquisition_duplicates.add(1, {"source": "consumer"})
+    signals.acquisition_reconnects.add(1, {"adapter": "synthetic"})
+    signals.spool_occupancy.record(1024, {"level": "normal"})
+    signals.live_analysis_latency.record(.01, {"outcome": "provisional"})
+    signals.finalization_duration.record(.2, {"outcome": "completed"})
+    signals.provisional_events.add(1, {"category": "performance"})
+    metrics = signals.render_metrics().decode()
+    assert "acquisition_observations_received" in metrics
+    assert "acquisition_consumer_lag" in metrics
     assert "session_id" not in metrics and "vehicle_id" not in metrics and "vin" not in metrics
     signals.shutdown()

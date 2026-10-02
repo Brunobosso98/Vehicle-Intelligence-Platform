@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0, 1 and 2 passed canonical full-stack validation. Phase 3 factual event/anomaly detection is current; diagnosis and Phase 4+ infrastructure are not implemented.
+Phases 0–3 passed canonical full-stack validation. Phase 4 streaming and read-only live acquisition is current; diagnosis and Phase 5+ infrastructure are not implemented.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and
@@ -16,3 +16,5 @@ Phases 0, 1 and 2 passed canonical full-stack validation. Phase 3 factual event/
   Use local skills when their specific triggers apply. Do not implement future infrastructure speculatively.
 
 Event-detector changes require a positive synthetic case, a negative/false-positive case, ground-truth evaluation where applicable, version/configuration-hash review, documentation, and disposable-database integration validation. Anomaly detection is not diagnosis.
+
+Stream-contract changes require explicit schema versioning, backward-compatibility review, replay/idempotency tests, and documentation. Logging-recipe changes require rationale and availability for every signal, defined degraded behavior, a deterministic synthetic test, version/configuration-hash review, and documentation.

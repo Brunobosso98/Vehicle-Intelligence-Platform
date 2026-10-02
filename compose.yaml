@@ -1,5 +1,35 @@
 name: vehicle-platform
 services:
+  broker:
+    image: docker.io/redpandadata/redpanda:v25.3.6@sha256:ac152ec27adccf9482af2649d293f398eb03c860d7469fc49f86e30d870ea408
+    command:
+      [
+        "redpanda",
+        "start",
+        "--mode",
+        "dev-container",
+        "--smp",
+        "1",
+        "--memory",
+        "512M",
+        "--reserve-memory",
+        "0M",
+        "--kafka-addr",
+        "internal://0.0.0.0:9092",
+        "--advertise-kafka-addr",
+        "internal://broker:9092",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "rpk cluster health --brokers=broker:9092 | grep -q 'Healthy:.*true'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes: ["redpanda-data:/var/lib/redpanda/data"]
+    restart: unless-stopped
   db:
     image: vehicle-platform-timescaledb:local
     build:
@@ -41,9 +71,11 @@ services:
       ENVIRONMENT: development
       APP_VERSION: ${APP_VERSION:-0.1.0}
       NO_PROXY: localhost,127.0.0.1,api,db,otel-collector,tempo
+      KAFKA_BOOTSTRAP_SERVERS: broker:9092
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
+      broker: { condition: service_healthy }
     read_only: true
     tmpfs: ["/tmp"]
     cap_drop: ["ALL"]
@@ -118,3 +150,4 @@ volumes:
   postgres-data:
   prometheus-data:
   tempo-data:
+  redpanda-data:
