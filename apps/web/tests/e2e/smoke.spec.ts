@@ -85,7 +85,7 @@ test("real imported session renders telemetry and changes signal", async ({
 function phase3Csv(anomalous: boolean): string {
   const rows = ["timestamp,signal,value,unit,record_id,sequence"];
   let sequence = 0;
-  for (let tick = 0; tick <= 180; tick += 1) {
+  for (let tick = 0; tick <= 155; tick += 1) {
     const second = tick / 5;
     const pullIndex =
       second >= 5 && second < 11
@@ -115,8 +115,6 @@ function phase3Csv(anomalous: boolean): string {
                 : 300 + offset * 0.5,
               "K",
             ],
-            ["oil_temp", 365, "K"],
-            ["coolant_temp", 360, "K"],
             [
               "hpfp",
               anomalous && pullIndex === 1 && offset >= 2 ? 14000000 : 19000000,
@@ -129,8 +127,6 @@ function phase3Csv(anomalous: boolean): string {
             ["throttle", 20, "%"],
             ["boost", 5000, "Pa"],
             ["iat", 301, "K"],
-            ["oil_temp", 365, "K"],
-            ["coolant_temp", 360, "K"],
             ["hpfp", 8000000, "Pa"],
           ];
     const timestamp = new Date(
