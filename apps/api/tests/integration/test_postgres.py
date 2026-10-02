@@ -186,14 +186,24 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         for frame in reversed(
             scenario.frames
         ):  # ingestion order must not affect event-time analysis
-            for signal_key, value in frame.values.items():
-                if value is None or signal_key not in aliases:
-                    continue
-                alias, unit = aliases[signal_key]
-                lines.append(
-                    f"{frame.observed_at.isoformat()},{alias},{value},{unit},{sequence},{sequence}"
+            for subdivision in reversed(range(5)):
+                observed_at = frame.observed_at + __import__("datetime").timedelta(
+                    seconds=subdivision / 5
                 )
-                sequence += 1
+                for signal_key, raw_value in frame.values.items():
+                    if raw_value is None or signal_key not in aliases:
+                        continue
+                    value = raw_value
+                    if (frame.values.get("engine.throttle_position") or 0) >= 70:
+                        if signal_key == "engine.rpm":
+                            value += subdivision * 100
+                        elif signal_key == "vehicle.speed":
+                            value += subdivision * 0.4
+                    alias, unit = aliases[signal_key]
+                    lines.append(
+                        f"{observed_at.isoformat()},{alias},{value},{unit},{sequence},{sequence}"
+                    )
+                    sequence += 1
         imported = await client.post(
             f"/api/v1/sessions/{multi_session['id']}/imports/csv",
             files={"file": ("multi.csv", "\n".join(lines), "text/csv")},

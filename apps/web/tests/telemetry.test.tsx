@@ -181,9 +181,18 @@ describe("telemetry dashboard", () => {
       screen.getByLabelText("Filter by event type"),
       "boost_drop",
     );
-    await userEvent.selectOptions(screen.getByLabelText("Filter by category"), "performance");
-    await userEvent.selectOptions(screen.getByLabelText("Filter by severity"), "moderate");
-    await userEvent.selectOptions(screen.getByLabelText("Filter by pull"), "pull-1");
+    await userEvent.selectOptions(
+      screen.getByLabelText("Filter by category"),
+      "performance",
+    );
+    await userEvent.selectOptions(
+      screen.getByLabelText("Filter by severity"),
+      "moderate",
+    );
+    await userEvent.selectOptions(
+      screen.getByLabelText("Filter by pull"),
+      "pull-1",
+    );
     await userEvent.click(screen.getByRole("button", { name: "Pull 2" }));
     const comparisons = screen.getAllByRole("checkbox", { name: "Compare" });
     await userEvent.click(comparisons[0]);
