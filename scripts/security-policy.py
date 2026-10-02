@@ -35,7 +35,7 @@ def load_exceptions(path: Path) -> list[dict[str, Any]]:
     if payload.get("version") != 1:
         raise ValueError("container risk acceptance file must use version 1")
     exceptions = payload.get("exceptions") or []
-    today = dt.date.today()
+    today = dt.datetime.now(dt.UTC).date()
     for item in exceptions:
         required = {"id", "images", "vulnerability_id", "owner", "expires", "rationale"}
         missing = required - set(item)
