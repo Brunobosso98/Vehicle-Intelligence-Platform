@@ -164,48 +164,56 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
           vehicle_id: vehicle.id,
           source_type: "csv",
           source_reference: "synthetic-phase-3",
-          started_at: startedAt,
+          started_at: new Date(
+            Date.parse(startedAt) + (Date.now() % 86_400_000),
+          ).toISOString(),
           metadata: { synthetic: true },
         },
       },
     );
     const session = (await response.json()) as { id: string };
-    expect(
-      (
-        await request.post(
-          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
-          {
-            multipart: {
-              file: {
-                name: "phase3.csv",
-                mimeType: "text/csv",
-                buffer: Buffer.from(phase3Csv(anomalous)),
-              },
-            },
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase3.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(phase3Csv(anomalous)),
           },
-        )
-      ).ok(),
-    ).toBeTruthy();
+        },
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    const analysis = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+      { data: { profile: "generic-v1" } },
+    );
+    const analysisBody = await analysis.text();
+    expect(analysis.ok(), analysisBody).toBeTruthy();
     expect(
-      (
-        await request.post(
-          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
-          { data: { profile: "generic-v1" } },
-        )
-      ).ok(),
-    ).toBeTruthy();
-    expect(
-      (
-        await request.post(
-          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
-          { data: {} },
-        )
-      ).ok(),
-    ).toBeTruthy();
+      (JSON.parse(analysisBody) as { pull_count: number }).pull_count,
+    ).toBe(3);
+    const eventAnalysis = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
+      { data: {} },
+    );
+    expect(eventAnalysis.ok(), await eventAnalysis.text()).toBeTruthy();
+    const events = await request.get(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events`,
+    );
+    expect(events.ok()).toBeTruthy();
+    if (anomalous) {
+      expect((await events.json()) as { event_type: string }[]).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ event_type: "boost_drop" }),
+        ]),
+      );
+    }
     return session;
   };
 
-  await createSession("2027-01-01T00:00:00Z", true);
+  await createSession("2090-01-01T00:00:00Z", true);
   await page.goto("/");
   await expect(page.getByRole("button", { name: /boost drop/i })).toBeVisible();
   await page.getByRole("button", { name: /boost drop/i }).click();
@@ -218,7 +226,7 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
     page.getByLabel("Events associated with selected pull"),
   ).toContainText("boost drop");
 
-  await createSession("2028-01-01T00:00:00Z", false);
+  await createSession("2091-01-01T00:00:00Z", false);
   await page.reload();
   await expect(
     page.getByText(
