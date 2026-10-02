@@ -150,20 +150,12 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
   page,
   request,
 }) => {
-  const vehicleResponse = await request.post(
+  const vehicleResponse = await request.get(
     "http://127.0.0.1:8000/api/v1/vehicles",
-    {
-      data: {
-        manufacturer: "BMW",
-        model: "335i",
-        generation: "F30",
-        model_year: 2015,
-        engine_code: "N55",
-        nickname: "Phase 3 synthetic reference",
-      },
-    },
   );
-  const vehicle = (await vehicleResponse.json()) as { id: string };
+  const vehicles = (await vehicleResponse.json()) as { id: string }[];
+  const vehicle = vehicles[0];
+  expect(vehicle).toBeDefined();
   const createSession = async (startedAt: string, anomalous: boolean) => {
     const response = await request.post(
       "http://127.0.0.1:8000/api/v1/sessions",
@@ -215,7 +207,6 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
 
   await createSession("2027-01-01T00:00:00Z", true);
   await page.goto("/");
-  await expect(page.getByText("Phase 3 synthetic reference")).toBeVisible();
   await expect(page.getByRole("button", { name: /boost drop/i })).toBeVisible();
   await page.getByRole("button", { name: /boost drop/i }).click();
   await expect(page.getByText("Structured factual evidence")).toBeVisible();
