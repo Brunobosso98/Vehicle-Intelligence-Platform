@@ -85,3 +85,22 @@ remain advisory-tracking responsibilities rather than first-party code ownership
 evidence is still a Phase 0 prerequisite. The next canonical run will exercise the non-fail-fast scan
 driver and retain per-image evidence for API, Web, Collector, Prometheus, Tempo, and Grafana even
 when the database image continues to violate policy.
+
+## Canonical rerun 36952758342
+
+The hardened database runtime now scans with **0 Critical and 0 High** findings. Prometheus 3.15.0
+also scans with **0 Critical and 0 High**. API/Web retain only the eight previously analyzed Debian
+Trixie High CVEs and are evaluated through exact image/CVE/package acceptance records that expire
+2026-11-01; any unlisted High or any Critical remains blocking.
+
+Tempo 2.10.8, the latest patch in the existing 2.10 line, scans with 0 Critical and 12 High findings.
+Grafana 12.4.12, the latest 12.4 patch, scans with 0 Critical and 2 High findings. Those exact
+third-party findings are recorded with a shorter 2026-10-15 expiry because remediation requires a
+vendor refresh or an explicitly tested Tempo 3/Grafana 13 migration. The observability profile binds
+its administrative endpoints to loopback and is not a production deployment.
+
+OpenTelemetry Collector 0.162.0 was not accepted as a remediation in this run because its container
+manifest was not published by the upstream release pipeline; the scanner returned MANIFEST_UNKNOWN.
+The repository therefore uses the immediately prior published 0.161.0 image and keeps it subject to
+the same fail-closed image policy.
+
