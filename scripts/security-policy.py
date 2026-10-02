@@ -40,7 +40,9 @@ def load_exceptions(path: Path) -> list[dict[str, Any]]:
         required = {"id", "images", "vulnerability_id", "owner", "expires", "rationale"}
         missing = required - set(item)
         if missing:
-            raise ValueError(f"exception {item.get('id', '<unknown>')} missing: {sorted(missing)}")
+            raise ValueError(
+                f"exception {item.get('id', '<unknown>')} missing: {sorted(missing)}"
+            )
         expires = dt.date.fromisoformat(str(item["expires"]))
         if expires < today:
             raise ValueError(f"exception {item['id']} expired on {expires.isoformat()}")
@@ -92,7 +94,9 @@ def main() -> int:
 
     summary = {
         "image": args.image,
-        "critical_count": sum(1 for item in findings if item.get("Severity") == "CRITICAL"),
+        "critical_count": sum(
+            1 for item in findings if item.get("Severity") == "CRITICAL"
+        ),
         "high_count": sum(1 for item in findings if item.get("Severity") == "HIGH"),
         "accepted_high_count": len(accepted_high),
         "blocked_count": len(blocked),
