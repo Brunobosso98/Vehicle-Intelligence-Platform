@@ -168,19 +168,24 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
       },
     );
     const session = (await response.json()) as { id: string };
-    const imported = await request.post(
-      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
-      {
-        multipart: {
-          file: {
-            name: "phase3.csv",
-            mimeType: "text/csv",
-            buffer: Buffer.from(phase3Csv(anomalous)),
+    const [header, ...csvRows] = phase3Csv(anomalous).split("\n");
+    for (let offset = 0; offset < csvRows.length; offset += 200) {
+      const imported = await request.post(
+        `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+        {
+          multipart: {
+            file: {
+              name: `phase3-${offset}.csv`,
+              mimeType: "text/csv",
+              buffer: Buffer.from(
+                [header, ...csvRows.slice(offset, offset + 200)].join("\n"),
+              ),
+            },
           },
         },
-      },
-    );
-    expect(imported.ok(), await imported.text()).toBeTruthy();
+      );
+      expect(imported.ok(), await imported.text()).toBeTruthy();
+    }
     const analysis = await request.post(
       `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
       { data: { profile: "generic-v1" } },
