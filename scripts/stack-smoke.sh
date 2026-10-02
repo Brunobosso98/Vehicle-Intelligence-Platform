@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/lib/wait-http.sh
 mkdir -p .validation/summary
 curl -fsS http://127.0.0.1:8000/health/live > .validation/summary/api-live.json
 curl -fsS http://127.0.0.1:8000/health/ready > .validation/summary/api-ready.json
@@ -23,5 +24,6 @@ test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/health/liv
 test "$(curl -sS -o .validation/summary/readiness-db-down.json -w '%{http_code}' \
   http://127.0.0.1:8000/health/ready)" = 503
 docker compose up -d --wait db
-curl -fsS http://127.0.0.1:8000/health/ready > .validation/summary/api-ready-restored.json
+wait_http_status http://127.0.0.1:8000/health/ready 200 \
+  .validation/summary/api-ready-restored.json 60 2
 echo "Canonical stack and dependency-failure behavior verified."

@@ -111,3 +111,40 @@ workspace XDG cache, and `pnpm audit --prod --audit-level high` both returned ex
 These checks do not establish that full image downloads/builds, an empty-cache bootstrap,
 or the complete security/observability gates have passed. Historical network failures remain
 recorded above; their cause was not isolated between upstream services and the environment proxy.
+
+## Canonical GitHub workflow run (2026-10-02)
+
+Executing pull request 13 published the implementation as head commit `570aab1` and triggered
+[`Phase 0 full validation` run 36945217453](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/36945217453).
+The workflow completed **FAIL**. Cloud validation, both canonical application builds, disposable
+database/migrations, stack behavior, and Playwright E2E completed successfully. Stack-log capture,
+summary generation, and artifact upload also completed. The uploaded canonical summary records both
+container security and observability as **FAIL**; the observability artifact nevertheless confirms
+log correlation, the initial Tempo trace, Prometheus request/duration/readiness metrics, and Grafana
+health before a later one-shot health request returned HTTP 503.
+
+The image-security command failed policy, and the final enforcement step correctly kept the job
+red. The uploaded artifact is named
+`phase-0-full-validation-3d374adca803e3e1e48985627bd3a837685cda53`; `3d374adc` is GitHub's PR
+merge commit, while `570aab1` is the reviewed head commit. Public run/check metadata was inspected
+through GitHub's API. Artifact contents and step logs require an authenticated GitHub session and
+were not available to this execution shell, so their contents are not claimed here.
+
+A fresh local Trivy scan of the exact current database image digest
+`timescale/timescaledb:2.30.2-pg17@sha256:b346edcdb51a1fd6020e3965e0bd1c9f3406fa6d5fbce1e28f4852587ef934e2`
+confirmed **70 High/Critical occurrences across 39 unique CVEs**, including three Critical findings:
+CVE-2025-68121 in the Go standard library embedded in `gosu`, plus CVE-2026-33815 and
+CVE-2026-33816 in pgx embedded in `timescaledb-parallel-copy`. Every Critical has a published fixed
+version. Docker Hub reports that `2.30.2-pg17` is also the current `latest-pg17` digest, so there is
+no newer compatible official TimescaleDB tag to adopt at this time.
+
+The image scan driver was changed after this run to scan every declared image and accumulate a
+failing result instead of stopping at the first vulnerable image. This does not ignore or suppress
+findings: any image policy violation still makes `make security` return non-zero, while producing
+complete per-image JSON evidence for diagnosis.
+
+The observability validator now uses bounded polling for component health, Tempo propagation,
+Prometheus query results, API readiness after database recovery, and Collector recovery. HTTP 404
+during trace propagation and transient recovery responses remain intermediate retry states; expiry
+of any bounded window remains a hard failure. A new canonical run is required before either fixed
+stage can be recorded as PASS.

@@ -1,7 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/lib/wait-http.sh
 mkdir -p .validation/observability
+
+wait_prometheus_query() {
+  local query=$1
+  local output=$2
+  local deadline=$((SECONDS + 60))
+  while ((SECONDS < deadline)); do
+    if curl -fsSG --data-urlencode "query=${query}" http://127.0.0.1:9090/api/v1/query \
+      > "${output}.tmp" && QUERY_OUTPUT="${output}.tmp" apps/api/.venv/bin/python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+payload = json.loads(Path(os.environ["QUERY_OUTPUT"]).read_text())
+assert payload["status"] == "success" and payload["data"]["result"]
+PY
+    then
+      mv "${output}.tmp" "$output"
+      return 0
+    fi
+    sleep 2
+  done
+  [[ ! -f "${output}.tmp" ]] || mv "${output}.tmp" "$output"
+  echo "Timed out waiting for Prometheus query results: ${query}" >&2
+  return 1
+}
+
 request_id="phase0-full-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 trace_id=$(printf '%032x' "${GITHUB_RUN_ID:-$RANDOM}")
 span_id=$(printf '%016x' "${GITHUB_RUN_ATTEMPT:-1}")
@@ -19,11 +46,8 @@ for attempt in {1..30}; do
 done
 test -s .validation/observability/correlated-log.json
 
-for attempt in {1..30}; do
-  if curl -fsS "http://127.0.0.1:3200/api/traces/${trace_id}" \
-    > .validation/observability/tempo-trace.json; then break; fi
-  sleep 1
-done
+wait_http_status "http://127.0.0.1:3200/api/traces/${trace_id}" 200 \
+  .validation/observability/tempo-trace.json 60 2
 apps/api/.venv/bin/python - <<'PY'
 import json
 from pathlib import Path
@@ -35,9 +59,10 @@ PY
 docker compose stop db
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/health/ready)" = 503
 docker compose up -d --wait db
+wait_http_status http://127.0.0.1:8000/health/ready 200 \
+  .validation/observability/api-ready-recovered.json 60 2
 for query in http_server_requests_total http_server_duration_seconds_count service_readiness_failures_total; do
-  curl -fsSG --data-urlencode "query=${query}" http://127.0.0.1:9090/api/v1/query \
-    > ".validation/observability/prometheus-${query}.json"
+  wait_prometheus_query "$query" ".validation/observability/prometheus-${query}.json"
 done
 apps/api/.venv/bin/python - <<'PY'
 import json
@@ -47,27 +72,30 @@ for path in Path(".validation/observability").glob("prometheus-*.json"):
     payload = json.loads(path.read_text())
     assert payload["status"] == "success" and payload["data"]["result"], path
 PY
-curl -fsS http://127.0.0.1:3001/api/health > .validation/observability/grafana-health.json
-curl -fsS http://127.0.0.1:9090/-/healthy > .validation/observability/prometheus-health.txt
-curl -fsS http://127.0.0.1:3200/ready > .validation/observability/tempo-health.txt
-curl -fsS http://127.0.0.1:13133/ > .validation/observability/collector-health.txt
+wait_http_status http://127.0.0.1:3001/api/health 200 \
+  .validation/observability/grafana-health.json 60 2
+wait_http_status http://127.0.0.1:9090/-/healthy 200 \
+  .validation/observability/prometheus-health.txt 60 2
+wait_http_status http://127.0.0.1:3200/ready 200 \
+  .validation/observability/tempo-health.txt 60 2
+wait_http_status http://127.0.0.1:13133/ 200 \
+  .validation/observability/collector-health.txt 60 2
 
 docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
   --profile observability stop otel-collector
 curl -fsS http://127.0.0.1:8000/health/live > .validation/observability/api-without-collector.json
 docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
   --profile observability up -d --wait otel-collector
+wait_http_status http://127.0.0.1:13133/ 200 \
+  .validation/observability/collector-recovery-health.txt 60 2
 recovery_request="${request_id}-recovered"
 recovery_trace_id=$(printf '%032x' "$(( ${GITHUB_RUN_ID:-$RANDOM} + 1 ))")
 curl -fsS -H "X-Request-ID: ${recovery_request}" \
   -H "traceparent: 00-${recovery_trace_id}-${span_id}-01" \
   http://127.0.0.1:8000/health/live \
   > .validation/observability/recovery-request.json
-for attempt in {1..30}; do
-  if curl -fsS "http://127.0.0.1:3200/api/traces/${recovery_trace_id}" \
-    > .validation/observability/recovery-tempo-trace.json; then break; fi
-  sleep 1
-done
+wait_http_status "http://127.0.0.1:3200/api/traces/${recovery_trace_id}" 200 \
+  .validation/observability/recovery-tempo-trace.json 60 2
 apps/api/.venv/bin/python - <<'PY'
 import json
 from pathlib import Path

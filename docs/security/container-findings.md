@@ -58,10 +58,19 @@ one High Alpine package issue with a published fix (`libexpat` CVE-2026-93990, 2
 (installed Go 1.24.6; fixed 1.24.13/1.25.7) and CVE-2026-33815 in pgx within
 `timescaledb-parallel-copy` (installed 5.7.2; fixed 5.9.0).
 
+Canonical GitHub Actions run
+[`36945217453`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/36945217453)
+failed its image-security stage and final enforcement on this policy violation. A fresh scan of the
+exact `2.30.2-pg17` digest found 70 High/Critical occurrences across 39 unique CVEs, including three
+Critical findings: CVE-2025-68121 in `gosu` and CVE-2026-33815/CVE-2026-33816 in
+`timescaledb-parallel-copy`. Each has a published fixed dependency/runtime version. Docker Hub
+currently maps `latest-pg17` to the same digest, so no newer compatible official tag is available.
+
 This upstream image therefore fails the Phase 0 zero-Critical deliverable policy. The repository
 does not own those binaries, but must update to a safe supported Timescale release/tag before
-closure. The scan loop correctly stopped with a non-zero result; Collector, Prometheus, Tempo,
-Grafana and first-party application image scans consequently did not run. No finding was hidden.
+closure. The scan driver now continues across every declared image, writes each machine-readable
+report, accumulates failures, and exits non-zero at the end. This preserves fail-closed policy while
+preventing one vulnerable infrastructure image from hiding the scan status of later images.
 
 The Dockerfiles use multi-stage builds. The API runtime copies only its virtual environment,
 Alembic configuration and migrations; uv is builder-only. The Web runtime copies Next standalone
@@ -71,7 +80,8 @@ and Node's built-in `fetch` supplies the Web health check, so curl/wget are unne
 
 Prior runtime execution confirmed UID 10001. Compose declares read-only roots, `/tmp` tmpfs,
 all capabilities dropped and `no-new-privileges`. Those controls and runtime contents require a
-fresh image inspection before current acceptance. The database scan **FAILED**; first-party API/Web
-and Collector, Prometheus, Tempo and Grafana scans are **NOT RUN** because the fail-fast scan loop
-stopped at the database image. Third-party findings remain advisory-tracking responsibilities rather
-than first-party code ownership, but complete scan evidence is still a Phase 0 prerequisite.
+fresh image inspection before current acceptance. The database scan **FAILED**. Third-party findings
+remain advisory-tracking responsibilities rather than first-party code ownership, but complete scan
+evidence is still a Phase 0 prerequisite. The next canonical run will exercise the non-fail-fast scan
+driver and retain per-image evidence for API, Web, Collector, Prometheus, Tempo, and Grafana even
+when the database image continues to violate policy.

@@ -16,6 +16,15 @@ executor. The cloud gate passed locally, but creating the workflow is not execut
 Container builds, stack/database/integration/E2E, image security and full observability remain
 **CI REQUIRED** until that commit-tied workflow runs successfully.
 
+Pull request 13 triggered canonical GitHub Actions run `36945217453` for head commit `570aab1`.
+Cloud validation, application images, database/migrations, the canonical stack, and E2E passed.
+The canonical summary records both observability and image security as **FAIL**, and final
+enforcement correctly failed the workflow. Phase 0 therefore remains **NOT COMPLETE**. The
+observability artifact proves correlation, trace, metrics, and Grafana health before a later
+one-shot health request received HTTP 503. The exact current TimescaleDB image has three Critical
+findings in bundled Go binaries with published fixes, while Docker Hub currently offers no newer
+compatible official `pg17` tag than the scanned `2.30.2-pg17` digest.
+
 ## Closure rerun result
 
 A detached checkout at commit `99b5356` bootstrapped successfully with initially empty isolated uv
@@ -35,7 +44,7 @@ for final acceptance.
 
 Modular FastAPI monolith with explicit HTTP/config/database/observability boundaries, separate
 Next.js UI, generated contracts and optional local observability. No future domain/services are faked.
-Permanent observation-only vehicle safety boundary. Nine ADRs record decisions and actual trade-offs.
+Permanent observation-only vehicle safety boundary. Ten ADRs record decisions and actual trade-offs.
 
 ## Repository
 
@@ -162,6 +171,8 @@ hypertables, event detection, streaming, analytics, MCP, agents, RAG, ML/MLOps/e
 0004 OpenTelemetry and released contrib numbering exception; 0005 contracts;
 0006 Codex context; 0007 trunk-based development; 0008 ESLint official compatibility bridge;
 0009 runtime security and validation-only fallback.
+
+0010 hardened pinned TimescaleDB runtime helper overlay.
 
 ## Recommended first task for Phase 1
 

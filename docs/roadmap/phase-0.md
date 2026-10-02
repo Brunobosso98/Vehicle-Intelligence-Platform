@@ -9,7 +9,7 @@ Status as validated on 2026-10-01. **Phase 0 remains open.** See
 | F0-001 | Repository/toolchain foundation | Locks created; bootstrap passed in original workspace; empty-cache clone blocked by HTTP 503                             |
 | F0-002 | Codex context architecture      | Five scoped AGENTS implemented; static validation recorded in report                                                     |
 | F0-003 | Repository skills               | Four skills implemented; static validation recorded in report                                                            |
-| F0-004 | Documentation architecture      | Architecture docs and nine ADRs implemented; link/YAML checks recorded in report                                         |
+| F0-004 | Documentation architecture      | Architecture docs and ten ADRs implemented; link/YAML checks recorded in report                                          |
 | F0-005 | Backend foundation              | Unit/types/lint/build and real live/ready behavior validated; final clean rebuild blocked by network                     |
 | F0-006 | Database foundation             | Clean upgrade/downgrade/re-upgrade/readiness passed on source-built PG17.11/Timescale2.30.2; upstream image pull blocked |
 | F0-007 | API contracts                   | OpenAPI model tests and generated drift gate passed                                                                      |

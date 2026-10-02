@@ -1,7 +1,10 @@
 name: vehicle-platform
 services:
   db:
-    image: timescale/timescaledb:2.30.2-pg17
+    image: vehicle-platform-timescaledb:local
+    build:
+      context: .
+      dockerfile: infra/docker/timescaledb/Dockerfile
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?Run make bootstrap}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make bootstrap}
