@@ -25,3 +25,10 @@ and backend-queryable observability. Phase 0 canonical validation passed before 
 Future synthetic and golden datasets: normal-session, heat-soak, boost-drop, fuel-pressure-drop,
 timing-correction and sensor-failure. Add real dataset files only when used by event/ML regression tests.
 A meaningful ingestion performance baseline belongs to Phase 1, not an artificial health benchmark.
+
+Phase 2 golden tests generate, rather than commit, deterministic mixed-drive, false-positive
+throttle, short-burst, missing-boost, irregular-sampling, telemetry-gap and noisy-signal data.
+Detection acceptance is precision and recall ≥0.95 and mean start/end boundary error ≤1.5 seconds
+at 5, 10 and 20 Hz. Disposable Timescale integration validates migration, persistence,
+idempotency and configuration isolation; real-stack E2E validates timeline, inspection and factual
+comparison. The canonical workflow records the 100k-observation benchmark without a brittle SLO.

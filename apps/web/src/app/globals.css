@@ -140,6 +140,62 @@ button {
 button:hover {
   background: #2b3934;
 }
+.segment-timeline {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  margin: 16px 0 28px;
+}
+.segment {
+  min-width: 110px;
+  text-align: left;
+  border-top: 5px solid #87908d;
+}
+.segment span {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.segment-pull {
+  border-top-color: #ffd166;
+}
+.segment-idle {
+  border-top-color: #84a59d;
+}
+.segment-warm_up {
+  border-top-color: #f28482;
+}
+.segment-cruise {
+  border-top-color: #8ecae6;
+}
+.segment-deceleration {
+  border-top-color: #b8a1d9;
+}
+.pull-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pull-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.comparison {
+  overflow-x: auto;
+  border-top: 1px solid #394641;
+  margin-top: 24px;
+}
+.comparison table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.comparison th,
+.comparison td {
+  padding: 10px;
+  border-bottom: 1px solid #394641;
+  text-align: left;
+}
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 5px;

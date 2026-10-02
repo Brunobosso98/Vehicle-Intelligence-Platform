@@ -15,7 +15,7 @@ export default function Home() {
         >
           N55<span> / INTELLIGENCE LAB</span>
         </Link>
-        <span className="phase">PHASE 1</span>
+        <span className="phase">PHASE 2</span>
       </header>
       <main id="main">
         <div className="eyebrow">VEHICLE INTELLIGENCE PLATFORM</div>
@@ -33,8 +33,8 @@ export default function Home() {
         <section className="scope" aria-labelledby="scope-heading">
           <h2 id="scope-heading">O ponto de partida</h2>
           <p>
-            The foundation now represents vehicles, configurations and imported
-            telemetry. Detection and diagnosis remain intentionally deferred.
+            Sessions now expose reproducible segments and acceleration pulls.
+            Diagnostic interpretation remains intentionally deferred.
           </p>
         </section>
       </main>

@@ -125,3 +125,75 @@ class Signal(BaseModel):
     minimum: float
     maximum: float
     aliases: list[str]
+
+
+SegmentKind = Literal[
+    "idle", "warm_up", "cruise", "acceleration", "pull", "deceleration", "unknown"
+]
+
+
+class AnalysisRequest(BaseModel):
+    profile: Literal["generic-v1", "bmw-f30-n55-heuristic-v1"] = "generic-v1"
+    replace: bool = False
+
+
+class SessionSegment(BaseModel):
+    id: UUID
+    session_id: UUID
+    segment_type: SegmentKind
+    started_at: datetime
+    ended_at: datetime
+    duration_ms: int
+    confidence: float
+    detector_name: str
+    algorithm_version: str
+    configuration_hash: str
+    quality_flags: list[str]
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
+class Pull(BaseModel):
+    id: UUID
+    session_id: UUID
+    segment_id: UUID | None
+    vehicle_id: UUID
+    configuration_id: UUID | None
+    started_at: datetime
+    ended_at: datetime
+    duration_ms: int
+    start_rpm: float | None
+    end_rpm: float | None
+    min_rpm: float | None
+    max_rpm: float | None
+    start_speed: float | None
+    end_speed: float | None
+    max_speed: float | None
+    max_boost: float | None
+    average_boost: float | None
+    start_iat: float | None
+    end_iat: float | None
+    iat_delta: float | None
+    max_oil_temperature: float | None
+    max_coolant_temperature: float | None
+    average_throttle: float | None
+    max_throttle: float | None
+    sample_count: int
+    data_completeness: float
+    confidence: float
+    detector_name: str
+    algorithm_version: str
+    configuration_hash: str
+    quality_flags: list[str]
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
+class AnalysisResult(BaseModel):
+    session_id: UUID
+    profile: str
+    algorithm_version: str
+    configuration_hash: str
+    segment_count: int
+    pull_count: int
+    reused: bool

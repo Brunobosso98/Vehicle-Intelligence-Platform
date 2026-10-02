@@ -6,11 +6,13 @@ telemetria e documentação em análises explicáveis e auditáveis.
 
 ## Estado atual
 
-Fase 0 foi concluída pelo gate canônico antes da Fase 1. A Fase 1 implementa veículos,
+Fases 0 e 1 foram concluídas pelo gate canônico. A Fase 2 implementa sessões derivadas,
+alinhamento temporal determinístico, segmentação e detecção reprodutível de pulls. A Fase 1 mantém veículos,
 configurações e modificações históricas, sessões importadas, catálogo/unidades canônicas,
 ingestão CSV idempotente, fonte sintética, hypertable Timescale, consultas limitadas e timeline web.
-Detecção de sessões/eventos, streaming, análises, MCP, agentes, RAG e ML permanecem planejados.
+Diagnóstico de anomalias, streaming, MCP, agentes, RAG e ML permanecem planejados.
 Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
+[desenho de análise da Fase 2](docs/architecture/phase-2-session-analysis.md) e o
 [relatório histórico da Fase 0](docs/roadmap/phase-0-completion-report.md).
 
 ```mermaid

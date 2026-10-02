@@ -41,7 +41,7 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         assert await process.wait() == 0
 
     async with engine.connect() as connection:
-        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0002"
+        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
         assert await connection.scalar(
             text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
         )
@@ -61,6 +61,8 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "modifications",
             "driving_sessions",
             "telemetry_samples",
+            "session_segments",
+            "pulls",
         }
         assert await connection.scalar(
             text(
@@ -118,4 +120,15 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             )
         ).json()["points"]
         assert [point["value"] for point in points] == [1000, 1200]
+        analysis = await client.post(
+            f"/api/v1/sessions/{session['id']}/analysis", json={"profile": "generic-v1"}
+        )
+        assert analysis.status_code == 200
+        assert analysis.json()["configuration_hash"]
+        replay_analysis = await client.post(
+            f"/api/v1/sessions/{session['id']}/analysis", json={"profile": "generic-v1"}
+        )
+        assert replay_analysis.status_code == 200
+        assert await client.get(f"/api/v1/sessions/{session['id']}/segments")
+        assert await client.get(f"/api/v1/sessions/{session['id']}/pulls")
     await engine.dispose()

@@ -88,6 +88,22 @@ class Telemetry:
         self.db_batch_duration = meter.create_histogram("telemetry.db.batch.duration", unit="s")
         self.query_duration = meter.create_histogram("telemetry.query.duration", unit="s")
         self.query_points = meter.create_counter("telemetry.query.points", unit="{sample}")
+        # Detector labels are bounded profile/version/outcome values; entity IDs are prohibited.
+        self.detection_runs = meter.create_counter("analysis.detection.runs", unit="{run}")
+        self.detection_duration = meter.create_histogram("analysis.detection.duration", unit="s")
+        self.segments_produced = meter.create_counter(
+            "analysis.segments.produced", unit="{segment}"
+        )
+        self.pulls_detected = meter.create_counter("analysis.pulls.detected", unit="{pull}")
+        self.low_confidence_pulls = meter.create_counter(
+            "analysis.pulls.low_confidence", unit="{pull}"
+        )
+        self.detector_failures = meter.create_counter(
+            "analysis.detector.failures", unit="{failure}"
+        )
+        self.telemetry_windows_analyzed = meter.create_counter(
+            "analysis.telemetry.windows", unit="{window}"
+        )
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

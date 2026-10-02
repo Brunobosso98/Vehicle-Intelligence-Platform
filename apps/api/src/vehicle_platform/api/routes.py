@@ -4,14 +4,19 @@ from uuid import UUID
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import text
 
+from vehicle_platform.analysis.service import AnalysisLimitError, SessionAnalysisService
 from vehicle_platform.api.contracts import ErrorResponse, Health, Ready, Version
 from vehicle_platform.api.domain_contracts import (
+    AnalysisRequest,
+    AnalysisResult,
     ConfigurationCreate,
     DrivingSession,
     ImportResult,
     Modification,
     ModificationCreate,
+    Pull,
     SessionCreate,
+    SessionSegment,
     Signal,
     TelemetryWindow,
     Vehicle,
@@ -310,5 +315,55 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
             return await QueryService(store()).query(session_id, signal, start, end, limit)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/sessions/{session_id}/analysis",
+        response_model=AnalysisResult,
+        operation_id="analyze_session",
+    )
+    async def analyze_session(session_id: UUID, payload: AnalysisRequest) -> AnalysisResult:
+        try:
+            return await SessionAnalysisService(store()).run(
+                session_id, payload.profile, payload.replace
+            )
+        except LookupError as exc:
+            raise HTTPException(404, "session not found") from exc
+        except AnalysisLimitError as exc:
+            raise HTTPException(413, str(exc)) from exc
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/segments",
+        response_model=list[SessionSegment],
+        operation_id="list_session_segments",
+    )
+    async def list_session_segments(
+        session_id: UUID,
+        segment_type: str | None = Query(
+            default=None, pattern="^(idle|warm_up|cruise|acceleration|pull|deceleration|unknown)$"
+        ),
+        limit: int = Query(200, ge=1, le=500),
+    ) -> list[SessionSegment]:
+        return await SessionAnalysisService(store()).segments(session_id, segment_type, limit)
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/pulls",
+        response_model=list[Pull],
+        operation_id="list_session_pulls",
+    )
+    async def list_session_pulls(
+        session_id: UUID, limit: int = Query(100, ge=1, le=200)
+    ) -> list[Pull]:
+        return await SessionAnalysisService(store()).pulls(session_id, None, limit)
+
+    @routes.get("/api/v1/pulls", response_model=list[Pull], operation_id="list_pulls")
+    async def list_pulls(vehicle_id: UUID, limit: int = Query(100, ge=1, le=200)) -> list[Pull]:
+        return await SessionAnalysisService(store()).pulls(None, vehicle_id, limit)
+
+    @routes.get("/api/v1/pulls/{pull_id}", response_model=Pull, operation_id="get_pull")
+    async def get_pull(pull_id: UUID) -> Pull:
+        result = await SessionAnalysisService(store()).pull(pull_id)
+        if result is None:
+            raise HTTPException(404, "pull not found")
+        return result
 
     return routes
