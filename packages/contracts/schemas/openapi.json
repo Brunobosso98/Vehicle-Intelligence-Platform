@@ -917,6 +917,45 @@
         "title": "PreflightResponse",
         "type": "object"
       },
+      "ProvisionalFindingResponse": {
+        "properties": {
+          "category": { "title": "Category", "type": "string" },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "finding_type": { "title": "Finding Type", "type": "string" },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "reconciliation_status": {
+            "title": "Reconciliation Status",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "finding_type",
+          "category",
+          "started_at",
+          "ended_at",
+          "evidence",
+          "reconciliation_status"
+        ],
+        "title": "ProvisionalFindingResponse",
+        "type": "object"
+      },
       "Pull": {
         "properties": {
           "algorithm_version": {
@@ -1874,6 +1913,56 @@
           }
         },
         "summary": "Finalize Acquisition"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/findings": {
+      "get": {
+        "operationId": "list_acquisition_findings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProvisionalFindingResponse"
+                  },
+                  "title": "Response List Acquisition Findings",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Acquisition Findings"
       }
     },
     "/api/v1/acquisitions/{acquisition_id}/live": {

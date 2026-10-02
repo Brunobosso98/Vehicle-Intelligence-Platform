@@ -53,6 +53,7 @@ from vehicle_platform.api.domain_contracts import (
     ObjectiveResponse,
     PreflightRequest,
     PreflightResponse,
+    ProvisionalFindingResponse,
     Pull,
     SessionCreate,
     SessionSegment,
@@ -494,6 +495,18 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
                         .mappings()
                         .all()
                     )
+                    findings = (
+                        (
+                            await db.execute(
+                                text(
+                                    """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at DESC LIMIT 20"""
+                                ),
+                                {"id": acquisition_id},
+                            )
+                        )
+                        .mappings()
+                        .all()
+                    )
                 payload = {
                     "state": state["state"],
                     "quality": state["quality"],
@@ -508,6 +521,15 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
                         }
                         for row in reversed(points)
                     ],
+                    "findings": [
+                        {
+                            **dict(row),
+                            "id": str(row["id"]),
+                            "started_at": row["started_at"].isoformat(),
+                            "ended_at": row["ended_at"].isoformat() if row["ended_at"] else None,
+                        }
+                        for row in reversed(findings)
+                    ],
                 }
                 yield f"event: telemetry\ndata: {json.dumps(payload, separators=(',', ':'))}\n\n"
                 if state["state"] in {"completed", "failed"}:
@@ -519,6 +541,35 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
             media_type="text/event-stream",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
+
+    @routes.get(
+        "/api/v1/acquisitions/{acquisition_id}/findings",
+        response_model=list[ProvisionalFindingResponse],
+        operation_id="list_acquisition_findings",
+    )
+    async def list_acquisition_findings(
+        acquisition_id: UUID,
+    ) -> list[ProvisionalFindingResponse]:
+        async with store().session() as db:
+            exists = await db.scalar(
+                text("SELECT 1 FROM acquisition_sessions WHERE id=:id"),
+                {"id": acquisition_id},
+            )
+            if exists is None:
+                raise HTTPException(404, "acquisition not found")
+            rows = (
+                (
+                    await db.execute(
+                        text(
+                            """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at,id"""
+                        ),
+                        {"id": acquisition_id},
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        return [ProvisionalFindingResponse.model_validate(row) for row in rows]
 
     @routes.post(
         "/api/v1/acquisitions/{acquisition_id}/stop",

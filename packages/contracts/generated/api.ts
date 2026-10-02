@@ -67,6 +67,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/acquisitions/{acquisition_id}/findings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Acquisition Findings */
+    get: operations["list_acquisition_findings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/acquisitions/{acquisition_id}/live": {
     parameters: {
       query?: never;
@@ -1141,6 +1158,31 @@ export interface components {
       /** Warnings */
       warnings: string[];
     };
+    /** ProvisionalFindingResponse */
+    ProvisionalFindingResponse: {
+      /** Category */
+      category: string;
+      /** Ended At */
+      ended_at: string | null;
+      /** Evidence */
+      evidence: {
+        [key: string]: unknown;
+      };
+      /** Finding Type */
+      finding_type: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Reconciliation Status */
+      reconciliation_status: string;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+    };
     /** Pull */
     Pull: {
       /** Algorithm Version */
@@ -1723,6 +1765,46 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AcquisitionFinalized"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  list_acquisition_findings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        acquisition_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProvisionalFindingResponse"][];
         };
       };
       /** @description Validation Error */

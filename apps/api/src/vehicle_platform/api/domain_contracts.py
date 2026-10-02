@@ -379,3 +379,13 @@ class AcquisitionFinalized(BaseModel):
     phase3: EventAnalysisResult
     capability_report: dict[str, Any]
     reconciliation: dict[str, int]
+
+
+class ProvisionalFindingResponse(BaseModel):
+    id: UUID
+    finding_type: str
+    category: str
+    started_at: datetime
+    ended_at: datetime | None
+    evidence: dict[str, Any]
+    reconciliation_status: str

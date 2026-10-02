@@ -106,7 +106,11 @@ class StreamConsumer:
         acquisition_id = UUID(str(envelope["acquisition_session_id"]))
         self.windows[acquisition_id].append(Observation(observed, signal_key, value, sid))
         self.counts[acquisition_id] += 1
-        if self.counts[acquisition_id] % 500 == 0:
+        count = self.counts[acquisition_id]
+        # Early live sessions need prompt feedback; mature streams use a wider
+        # cadence to keep analysis bounded independently of session length.
+        cadence = 100 if count <= 2000 else 500
+        if count % cadence == 0:
             await self._provisional(acquisition_id)
         return True
 

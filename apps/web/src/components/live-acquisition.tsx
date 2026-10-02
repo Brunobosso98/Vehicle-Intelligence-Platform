@@ -7,6 +7,22 @@ type Recipe = components["schemas"]["LoggingRecipeResponse"];
 type Preflight = components["schemas"]["PreflightResponse"];
 type Vehicle = components["schemas"]["Vehicle"];
 type Acquisition = components["schemas"]["AcquisitionCreated"];
+type Finalized = components["schemas"]["AcquisitionFinalized"];
+
+type LiveFinding = {
+  id: string;
+  finding_type: string;
+  reconciliation_status: string;
+};
+
+type SignalQuality = {
+  signal: string;
+  target_hz: number;
+  actual_hz: number;
+  jitter_seconds: number;
+  stale_ratio: number;
+  missing_ratio: number;
+};
 
 const syntheticSignals = {
   "engine.rpm": "supported",
@@ -28,6 +44,9 @@ export function LiveAcquisition() {
   const [acquisition, setAcquisition] = useState<Acquisition | null>(null);
   const [liveState, setLiveState] = useState("idle");
   const [latest, setLatest] = useState<Record<string, number>>({});
+  const [findings, setFindings] = useState<LiveFinding[]>([]);
+  const [signalQuality, setSignalQuality] = useState<SignalQuality[]>([]);
+  const [finalized, setFinalized] = useState<Finalized | null>(null);
   const recipe = recipes.find((item) => item.key === recipeKey);
 
   useEffect(() => {
@@ -97,8 +116,12 @@ export function LiveAcquisition() {
       const payload = JSON.parse((event as MessageEvent<string>).data) as {
         state: string;
         points: { signal: string; value: number }[];
+        findings?: LiveFinding[];
+        quality?: { signals?: SignalQuality[] };
       };
       setLiveState(payload.state);
+      setFindings(payload.findings ?? []);
+      setSignalQuality(payload.quality?.signals ?? []);
       setLatest(
         Object.fromEntries(
           payload.points.map((point) => [point.signal, point.value]),
@@ -137,7 +160,12 @@ export function LiveAcquisition() {
       `/api/domain/acquisitions/${acquisition.id}/finalize`,
       { method: "POST" },
     );
-    setLiveState(finalized.ok ? "completed" : "failed");
+    if (finalized.ok) {
+      setFinalized((await finalized.json()) as Finalized);
+      setLiveState("completed");
+    } else {
+      setLiveState("failed");
+    }
   }
 
   return (
@@ -247,10 +275,61 @@ export function LiveAcquisition() {
         <div className={`readiness ${preflight.readiness}`} role="status">
           <strong>{preflight.readiness.toUpperCase()}</strong>
           <span>{preflight.sampling_plan.length} signals planned</span>
+          <div className="capability-matrix" aria-label="Capability matrix">
+            {preflight.sampling_plan.map((item) => (
+              <span key={item.signal}>
+                {item.signal}: supported · {item.estimated_hz.toFixed(1)} Hz
+                planned
+              </span>
+            ))}
+          </div>
           <span>
             {preflight.unavailable_capabilities.length
               ? `Unavailable: ${preflight.unavailable_capabilities.join(", ")}`
               : "All requested capabilities available"}
+          </span>
+        </div>
+      )}
+      {signalQuality.length > 0 && (
+        <div className="readiness" aria-label="Actual signal quality">
+          <strong>Measured signal rates</strong>
+          {signalQuality.slice(0, 8).map((item) => (
+            <span key={item.signal}>
+              {item.signal}: {item.actual_hz.toFixed(1)} Hz actual /{" "}
+              {item.target_hz.toFixed(1)} Hz target ·{" "}
+              {(item.missing_ratio * 100).toFixed(1)}% missing
+            </span>
+          ))}
+        </div>
+      )}
+      {findings.length > 0 && (
+        <div className="readiness" aria-label="Provisional live findings">
+          <strong>LIVE / PROVISIONAL</strong>
+          {findings.map((finding) => (
+            <span key={finding.id}>
+              {finding.finding_type.replaceAll("_", " ")} ·{" "}
+              {finding.reconciliation_status}
+            </span>
+          ))}
+        </div>
+      )}
+      {finalized && (
+        <div
+          className="readiness completed"
+          aria-label="Canonical final results"
+        >
+          <strong>FINAL CANONICAL RESULTS</strong>
+          <span>✓ Telemetry persisted</span>
+          <span>
+            ✓ Phase 2 complete · {finalized.phase2.pull_count} pull(s)
+          </span>
+          <span>
+            ✓ Phase 3 complete · {finalized.phase3.event_count} factual event(s)
+          </span>
+          <span>✓ Dataset capability assessment complete</span>
+          <span>
+            Reconciled: {finalized.reconciliation.confirmed ?? 0} confirmed ·{" "}
+            {finalized.reconciliation.absent ?? 0} absent
           </span>
         </div>
       )}

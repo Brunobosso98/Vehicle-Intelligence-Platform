@@ -130,7 +130,17 @@ test("starts, streams, stops, and finalizes a synthetic acquisition", async () =
       new Response(JSON.stringify({ state: "stopping" }), { status: 200 }),
     )
     .mockResolvedValueOnce(
-      new Response(JSON.stringify({ state: "completed" }), { status: 200 }),
+      new Response(
+        JSON.stringify({
+          id: "00000000-0000-0000-0000-000000000002",
+          state: "completed",
+          phase2: { pull_count: 1 },
+          phase3: { event_count: 1 },
+          capability_report: {},
+          reconciliation: { confirmed: 1, absent: 0 },
+        }),
+        { status: 200 },
+      ),
     );
   render(<LiveAcquisition />);
   const start = await screen.findByRole("button", { name: /start synthetic/i });
@@ -142,6 +152,25 @@ test("starts, streams, stops, and finalizes a synthetic acquisition", async () =
     new MessageEvent("telemetry", {
       data: JSON.stringify({
         state: "active",
+        quality: {
+          signals: [
+            {
+              signal: "engine.rpm",
+              target_hz: 10,
+              actual_hz: 9.8,
+              jitter_seconds: 0.01,
+              stale_ratio: 0,
+              missing_ratio: 0.02,
+            },
+          ],
+        },
+        findings: [
+          {
+            id: "finding-1",
+            finding_type: "possible_pull",
+            reconciliation_status: "pending",
+          },
+        ],
         points: [
           { signal: "engine.rpm", value: 3500 },
           { signal: "vehicle.speed", value: 25 },
@@ -150,10 +179,13 @@ test("starts, streams, stops, and finalizes a synthetic acquisition", async () =
     }),
   );
   expect(await screen.findByText(/RPM: 3500/)).toBeInTheDocument();
+  expect(screen.getByText(/9.8 Hz actual/)).toBeInTheDocument();
+  expect(screen.getByText(/possible pull · pending/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /stop and finalize/i }));
   await waitFor(() =>
     expect(screen.getByText(/Acquisition: completed/i)).toBeInTheDocument(),
   );
+  expect(screen.getByText(/FINAL CANONICAL RESULTS/)).toBeInTheDocument();
   telemetry?.(
     new MessageEvent("telemetry", {
       data: JSON.stringify({ state: "completed", points: [] }),
