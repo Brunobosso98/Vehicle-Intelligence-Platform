@@ -115,6 +115,8 @@ services:
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
     restart: unless-stopped
+    healthcheck:
+      disable: true
   web:
     image: vehicle-platform-web:local
     build:
