@@ -223,6 +223,10 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
   await page.getByRole("button", { name: /boost drop/i }).click();
   await expect(page.getByText("Structured factual evidence")).toBeVisible();
   await expect(page.getByText("pull-behavior-detector 1.0.0")).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase3-event-inspector.png",
+    fullPage: true,
+  });
   await page.getByLabel("Filter by event type").selectOption("boost_drop");
   await page.getByLabel("Filter by severity").selectOption("high");
   await page.getByRole("button", { name: "Pull 3" }).click();
