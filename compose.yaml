@@ -1,34 +1,29 @@
 name: vehicle-platform
 services:
   broker:
-    image: docker.io/redpandadata/redpanda:v25.3.6@sha256:ac152ec27adccf9482af2649d293f398eb03c860d7469fc49f86e30d870ea408
-    command:
-      [
-        "redpanda",
-        "start",
-        "--mode",
-        "dev-container",
-        "--smp",
-        "1",
-        "--memory",
-        "512M",
-        "--reserve-memory",
-        "0M",
-        "--kafka-addr",
-        "internal://0.0.0.0:9092",
-        "--advertise-kafka-addr",
-        "internal://broker:9092",
-      ]
+    image: docker.io/apache/kafka:4.1.0@sha256:bff074a5d0051dbc0bbbcd25b045bb1fe84833ec0d3c7c965d1797dd289ec88f
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "rpk cluster health --brokers=broker:9092 | grep -q 'Healthy:.*true'",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null",
         ]
       interval: 5s
       timeout: 5s
       retries: 30
-    volumes: ["redpanda-data:/var/lib/redpanda/data"]
+    volumes: ["broker-data:/tmp/kraft-combined-logs"]
     restart: unless-stopped
   db:
     image: vehicle-platform-timescaledb:local
@@ -150,4 +145,4 @@ volumes:
   postgres-data:
   prometheus-data:
   tempo-data:
-  redpanda-data:
+  broker-data:
