@@ -3,7 +3,7 @@ name = "vehicle-platform-api"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
- "fastapi==0.142.2", "uvicorn[standard]==0.54.0", "pydantic-settings==2.15.0", "sqlalchemy[asyncio]==2.1.1", "python-multipart==0.0.22",
+ "fastapi==0.142.2", "uvicorn[standard]==0.54.0", "pydantic-settings==2.15.0", "sqlalchemy[asyncio]==2.1.1", "python-multipart==0.0.31",
  "asyncpg==0.31.0", "alembic==1.20.0", "opentelemetry-sdk==1.45.0", "opentelemetry-exporter-otlp-proto-http==1.45.0",
  "opentelemetry-exporter-prometheus==0.66b0", "opentelemetry-instrumentation-sqlalchemy==0.66b0",
 ]
