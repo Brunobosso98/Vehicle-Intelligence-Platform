@@ -41,6 +41,7 @@ source = ["vehicle_platform"]
 omit = [
  "*/vehicle_platform/api/routes.py", # HTTP/database paths run against disposable TimescaleDB
  "*/vehicle_platform/telemetry/service.py", # bulk SQL/idempotency requires real transaction semantics
+ "*/vehicle_platform/analysis/service.py", # derived persistence/idempotency requires real transaction semantics
 ]
 [tool.coverage.report]
 fail_under = 90

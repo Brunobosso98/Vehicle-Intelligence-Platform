@@ -125,12 +125,20 @@ const response = (body: unknown, ok = true) => ({ ok, json: async () => body });
 describe("telemetry dashboard", () => {
   it("renders loading, vehicle, session, chart and signal interaction", async () => {
     const fetcher = vi.fn((input: string) => {
-      if (input.endsWith("/vehicles")) return Promise.resolve(response([vehicle]));
+      if (input.endsWith("/vehicles"))
+        return Promise.resolve(response([vehicle]));
       if (input.endsWith("/signals")) return Promise.resolve(response(signals));
-      if (input.includes("/segments")) return Promise.resolve(response([segment]));
+      if (input.includes("/segments"))
+        return Promise.resolve(response([segment]));
       if (input.includes("/pulls"))
-        return Promise.resolve(response([pull, { ...pull, id: "pull-2", quality_flags: ["missing_boost"] }]));
-      if (input.includes("/telemetry")) return Promise.resolve(response(window));
+        return Promise.resolve(
+          response([
+            pull,
+            { ...pull, id: "pull-2", quality_flags: ["missing_boost"] },
+          ]),
+        );
+      if (input.includes("/telemetry"))
+        return Promise.resolve(response(window));
       return Promise.resolve(response([session]));
     });
     vi.stubGlobal("fetch", fetcher);
@@ -151,7 +159,9 @@ describe("telemetry dashboard", () => {
       screen.getByLabelText("Signal"),
       "vehicle.speed",
     );
-    await waitFor(() => expect(fetcher.mock.calls.length).toBeGreaterThanOrEqual(7));
+    await waitFor(() =>
+      expect(fetcher.mock.calls.length).toBeGreaterThanOrEqual(7),
+    );
   });
   it("shows empty vehicle and empty session states", async () => {
     vi.stubGlobal(
@@ -194,13 +204,18 @@ describe("telemetry dashboard", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: string) => {
-        if (input.endsWith("/vehicles")) return Promise.resolve(response([vehicle]));
-        if (input.endsWith("/signals")) return Promise.resolve(response(signals));
-        if (input.includes("sessions?")) return Promise.resolve(response([session]));
+        if (input.endsWith("/vehicles"))
+          return Promise.resolve(response([vehicle]));
+        if (input.endsWith("/signals"))
+          return Promise.resolve(response(signals));
+        if (input.includes("sessions?"))
+          return Promise.resolve(response([session]));
         return Promise.reject(new Error("private backend failure"));
       }),
     );
     render(<TelemetryDashboard />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Telemetry could not be loaded");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Telemetry could not be loaded",
+    );
   });
 });

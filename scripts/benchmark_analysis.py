@@ -6,7 +6,10 @@ from dataclasses import replace
 from datetime import timedelta
 
 from vehicle_platform.analysis.alignment import align_observations
-from vehicle_platform.analysis.detectors import HeuristicPullDetector, HeuristicSegmentDetector
+from vehicle_platform.analysis.detectors import (
+    HeuristicPullDetector,
+    HeuristicSegmentDetector,
+)
 from vehicle_platform.analysis.domain import DetectorProfile
 from vehicle_platform.analysis.synthetic import mixed_drive
 
@@ -17,7 +20,11 @@ def main() -> None:
     for repetition in range(5):
         shift = timedelta(seconds=170 * repetition)
         observations.extend(
-            replace(item, observed_at=item.observed_at + shift, sample_id=f"{repetition}:{item.sample_id}")
+            replace(
+                item,
+                observed_at=item.observed_at + shift,
+                sample_id=f"{repetition}:{item.sample_id}",
+            )
             for item in source
         )
     profile = DetectorProfile()
