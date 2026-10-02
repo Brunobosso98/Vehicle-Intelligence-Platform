@@ -116,7 +116,14 @@ services:
     security_opt: ["no-new-privileges:true"]
     restart: unless-stopped
     healthcheck:
-      disable: true
+      test:
+        [
+          "CMD-SHELL",
+          "grep -aq vehicle_platform.acquisition.worker /proc/1/cmdline",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
   web:
     image: vehicle-platform-web:local
     build:
