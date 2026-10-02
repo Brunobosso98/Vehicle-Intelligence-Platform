@@ -82,7 +82,7 @@ test("real imported session renders telemetry and changes signal", async ({
   await expect(page.getByRole("img", { name: /vehicle.speed/ })).toBeVisible();
 });
 
-function phase3Csv(anomalous: boolean): string {
+function phase3Csv(anomalous: boolean, startedAt: string): string {
   const rows = ["timestamp,signal,value,unit,record_id,sequence"];
   let sequence = 0;
   for (let tick = 0; tick <= 155; tick += 1) {
@@ -130,7 +130,7 @@ function phase3Csv(anomalous: boolean): string {
             ["hpfp", 8000000, "Pa"],
           ];
     const timestamp = new Date(
-      Date.parse("2027-01-01T00:00:00Z") + tick * 200,
+      Date.parse(startedAt) + tick * 200,
     ).toISOString();
     for (const [signal, value, unit] of values) {
       rows.push(
@@ -153,6 +153,9 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
   const vehicle = vehicles[0];
   expect(vehicle).toBeDefined();
   const createSession = async (startedAt: string, anomalous: boolean) => {
+    const sessionStartedAt = new Date(
+      Date.parse(startedAt) + (Date.now() % 86_400_000),
+    ).toISOString();
     const response = await request.post(
       "http://127.0.0.1:8000/api/v1/sessions",
       {
@@ -160,15 +163,15 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
           vehicle_id: vehicle.id,
           source_type: "csv",
           source_reference: "synthetic-phase-3",
-          started_at: new Date(
-            Date.parse(startedAt) + (Date.now() % 86_400_000),
-          ).toISOString(),
+          started_at: sessionStartedAt,
           metadata: { synthetic: true },
         },
       },
     );
     const session = (await response.json()) as { id: string };
-    const [header, ...csvRows] = phase3Csv(anomalous).split("\n");
+    const [header, ...csvRows] = phase3Csv(anomalous, sessionStartedAt).split(
+      "\n",
+    );
     for (let offset = 0; offset < csvRows.length; offset += 200) {
       const imported = await request.post(
         `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
