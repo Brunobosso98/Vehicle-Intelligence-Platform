@@ -276,8 +276,8 @@ def test_phase4_metrics_use_only_bounded_labels(settings: Settings) -> None:
     signals.acquisition_duplicates.add(1, {"source": "consumer"})
     signals.acquisition_reconnects.add(1, {"adapter": "synthetic"})
     signals.spool_occupancy.record(1024, {"level": "normal"})
-    signals.live_analysis_latency.record(.01, {"outcome": "provisional"})
-    signals.finalization_duration.record(.2, {"outcome": "completed"})
+    signals.live_analysis_latency.record(0.01, {"outcome": "provisional"})
+    signals.finalization_duration.record(0.2, {"outcome": "completed"})
     signals.provisional_events.add(1, {"category": "performance"})
     metrics = signals.render_metrics().decode()
     assert "acquisition_observations_received" in metrics

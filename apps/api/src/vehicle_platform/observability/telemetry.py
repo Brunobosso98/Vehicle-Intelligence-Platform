@@ -128,8 +128,12 @@ class Telemetry:
         self.acquisition_duplicates = meter.create_counter("acquisition.observations.duplicate")
         self.acquisition_reconnects = meter.create_counter("acquisition.reconnects")
         self.spool_occupancy = meter.create_histogram("acquisition.spool.occupancy", unit="By")
-        self.live_analysis_latency = meter.create_histogram("acquisition.live_analysis.duration", unit="s")
-        self.finalization_duration = meter.create_histogram("acquisition.finalization.duration", unit="s")
+        self.live_analysis_latency = meter.create_histogram(
+            "acquisition.live_analysis.duration", unit="s"
+        )
+        self.finalization_duration = meter.create_histogram(
+            "acquisition.finalization.duration", unit="s"
+        )
         self.provisional_events = meter.create_counter("acquisition.provisional.events")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
