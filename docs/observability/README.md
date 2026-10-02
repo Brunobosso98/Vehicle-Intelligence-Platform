@@ -25,3 +25,10 @@ Collector failure must not affect request outcomes: bounded asynchronous exporte
 no startup dependency. Export failures remain visible in SDK diagnostics. Unit tests capture a real
 request span and assert its trace ID equals the structured log trace ID; a live export check is separate.
 The profile is local-only and unauthenticated; never publish its ports to public interfaces.
+
+# Phase 2 analysis
+
+Analysis traces separate telemetry loading, alignment, segmentation, pull detection, metrics and
+persistence. Counters/histograms use only detector profile, version and outcome labels; IDs, VINs
+and raw telemetry arrays are forbidden labels/log fields. Operational summaries include counts,
+elapsed time and quality warnings.

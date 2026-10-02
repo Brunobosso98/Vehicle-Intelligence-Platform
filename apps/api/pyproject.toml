@@ -25,6 +25,8 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/api/routes.py" = ["E501", "B008", "S608"]
 "src/vehicle_platform/telemetry/domain.py" = ["S311"] # deterministic fixtures, not security
 "src/vehicle_platform/telemetry/service.py" = ["E501"] # SQL kept intact for query review
+"src/vehicle_platform/analysis/service.py" = ["E501", "S608"] # bounded SQL variants kept intact for query review
+"src/vehicle_platform/analysis/synthetic.py" = ["S311"] # deterministic fixtures, not security
 [tool.mypy]
 python_version = "3.12"
 strict = true

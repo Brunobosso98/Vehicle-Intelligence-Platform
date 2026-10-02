@@ -1,6 +1,51 @@
 {
   "components": {
     "schemas": {
+      "AnalysisRequest": {
+        "properties": {
+          "profile": {
+            "default": "generic-v1",
+            "enum": ["generic-v1", "bmw-f30-n55-heuristic-v1"],
+            "title": "Profile",
+            "type": "string"
+          },
+          "replace": { "default": false, "title": "Replace", "type": "boolean" }
+        },
+        "title": "AnalysisRequest",
+        "type": "object"
+      },
+      "AnalysisResult": {
+        "properties": {
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "profile": { "title": "Profile", "type": "string" },
+          "pull_count": { "title": "Pull Count", "type": "integer" },
+          "reused": { "title": "Reused", "type": "boolean" },
+          "segment_count": { "title": "Segment Count", "type": "integer" },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "profile",
+          "algorithm_version",
+          "configuration_hash",
+          "segment_count",
+          "pull_count",
+          "reused"
+        ],
+        "title": "AnalysisResult",
+        "type": "object"
+      },
       "Body_import_csv": {
         "properties": {
           "file": {
@@ -343,6 +388,177 @@
         "title": "ModificationCreate",
         "type": "object"
       },
+      "Pull": {
+        "properties": {
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "average_boost": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Average Boost"
+          },
+          "average_throttle": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Average Throttle"
+          },
+          "confidence": { "title": "Confidence", "type": "number" },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_completeness": {
+            "title": "Data Completeness",
+            "type": "number"
+          },
+          "detector_name": { "title": "Detector Name", "type": "string" },
+          "duration_ms": { "title": "Duration Ms", "type": "integer" },
+          "end_iat": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "End Iat"
+          },
+          "end_rpm": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "End Rpm"
+          },
+          "end_speed": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "End Speed"
+          },
+          "ended_at": {
+            "format": "date-time",
+            "title": "Ended At",
+            "type": "string"
+          },
+          "iat_delta": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Iat Delta"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "max_boost": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Boost"
+          },
+          "max_coolant_temperature": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Coolant Temperature"
+          },
+          "max_oil_temperature": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Oil Temperature"
+          },
+          "max_rpm": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Rpm"
+          },
+          "max_speed": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Speed"
+          },
+          "max_throttle": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Max Throttle"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "min_rpm": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Min Rpm"
+          },
+          "quality_flags": {
+            "items": { "type": "string" },
+            "title": "Quality Flags",
+            "type": "array"
+          },
+          "sample_count": { "title": "Sample Count", "type": "integer" },
+          "segment_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Segment Id"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "start_iat": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Start Iat"
+          },
+          "start_rpm": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Start Rpm"
+          },
+          "start_speed": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Start Speed"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "segment_id",
+          "vehicle_id",
+          "configuration_id",
+          "started_at",
+          "ended_at",
+          "duration_ms",
+          "start_rpm",
+          "end_rpm",
+          "min_rpm",
+          "max_rpm",
+          "start_speed",
+          "end_speed",
+          "max_speed",
+          "max_boost",
+          "average_boost",
+          "start_iat",
+          "end_iat",
+          "iat_delta",
+          "max_oil_temperature",
+          "max_coolant_temperature",
+          "average_throttle",
+          "max_throttle",
+          "sample_count",
+          "data_completeness",
+          "confidence",
+          "detector_name",
+          "algorithm_version",
+          "configuration_hash",
+          "quality_flags",
+          "metadata",
+          "created_at"
+        ],
+        "title": "Pull",
+        "type": "object"
+      },
       "Ready": {
         "properties": {
           "database": {
@@ -414,6 +630,82 @@
         },
         "required": ["vehicle_id", "source_type", "started_at"],
         "title": "SessionCreate",
+        "type": "object"
+      },
+      "SessionSegment": {
+        "properties": {
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "confidence": { "title": "Confidence", "type": "number" },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "detector_name": { "title": "Detector Name", "type": "string" },
+          "duration_ms": { "title": "Duration Ms", "type": "integer" },
+          "ended_at": {
+            "format": "date-time",
+            "title": "Ended At",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "quality_flags": {
+            "items": { "type": "string" },
+            "title": "Quality Flags",
+            "type": "array"
+          },
+          "segment_type": {
+            "enum": [
+              "idle",
+              "warm_up",
+              "cruise",
+              "acceleration",
+              "pull",
+              "deceleration",
+              "unknown"
+            ],
+            "title": "Segment Type",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "segment_type",
+          "started_at",
+          "ended_at",
+          "duration_ms",
+          "confidence",
+          "detector_name",
+          "algorithm_version",
+          "configuration_hash",
+          "quality_flags",
+          "metadata",
+          "created_at"
+        ],
+        "title": "SessionSegment",
         "type": "object"
       },
       "Signal": {
@@ -768,6 +1060,106 @@
   "info": { "title": "Vehicle Intelligence Platform", "version": "0.1.0" },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/pulls": {
+      "get": {
+        "operationId": "list_pulls",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/Pull" },
+                  "title": "Response List Pulls",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Pulls"
+      }
+    },
+    "/api/v1/pulls/{pull_id}": {
+      "get": {
+        "operationId": "get_pull",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pull_id",
+            "required": true,
+            "schema": { "format": "uuid", "title": "Pull Id", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Pull" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Pull"
+      }
+    },
     "/api/v1/sessions": {
       "get": {
         "operationId": "list_sessions",
@@ -900,6 +1292,58 @@
         "summary": "Get Session"
       }
     },
+    "/api/v1/sessions/{session_id}/analysis": {
+      "post": {
+        "operationId": "analyze_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalysisRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AnalysisResult" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Analyze Session"
+      }
+    },
     "/api/v1/sessions/{session_id}/imports/csv": {
       "post": {
         "operationId": "import_csv",
@@ -950,6 +1394,141 @@
           }
         },
         "summary": "Import Csv"
+      }
+    },
+    "/api/v1/sessions/{session_id}/pulls": {
+      "get": {
+        "operationId": "list_session_pulls",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/Pull" },
+                  "title": "Response List Session Pulls",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Session Pulls"
+      }
+    },
+    "/api/v1/sessions/{session_id}/segments": {
+      "get": {
+        "operationId": "list_session_segments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "segment_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(idle|warm_up|cruise|acceleration|pull|deceleration|unknown)$",
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Segment Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/SessionSegment" },
+                  "title": "Response List Session Segments",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Session Segments"
       }
     },
     "/api/v1/sessions/{session_id}/telemetry": {

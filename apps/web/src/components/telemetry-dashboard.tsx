@@ -7,6 +7,8 @@ type Vehicle = components["schemas"]["Vehicle"];
 type Session = components["schemas"]["DrivingSession"];
 type Window = components["schemas"]["TelemetryWindow"];
 type Signal = components["schemas"]["Signal"];
+type Segment = components["schemas"]["SessionSegment"];
+type Pull = components["schemas"]["Pull"];
 
 async function json<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { cache: "no-store", signal });
@@ -20,6 +22,10 @@ export function TelemetryDashboard() {
   const [catalog, setCatalog] = useState<Signal[]>([]);
   const [selected, setSelected] = useState("engine.rpm");
   const [window, setWindow] = useState<Window | null>(null);
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [pulls, setPulls] = useState<Pull[]>([]);
+  const [activePull, setActivePull] = useState<Pull | null>(null);
+  const [compared, setCompared] = useState<string[]>([]);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -55,6 +61,23 @@ export function TelemetryDashboard() {
   useEffect(() => {
     const controller = new AbortController();
     if (sessions[0]) {
+      void Promise.all([
+        json<Segment[]>(
+          `/api/domain/sessions/${sessions[0].id}/segments?limit=500`,
+          controller.signal,
+        ),
+        json<Pull[]>(
+          `/api/domain/sessions/${sessions[0].id}/pulls?limit=100`,
+          controller.signal,
+        ),
+      ]).then(
+        ([segmentData, pullData]) => {
+          setSegments(segmentData);
+          setPulls(pullData);
+          setActivePull(pullData[0] ?? null);
+        },
+        () => !controller.signal.aborted && setError(true),
+      );
       void json<Window>(
         `/api/domain/sessions/${sessions[0].id}/telemetry?signal=${encodeURIComponent(selected)}&limit=2000`,
         controller.signal,
@@ -81,7 +104,7 @@ export function TelemetryDashboard() {
   return (
     <section className="telemetry-card" aria-labelledby="telemetry-heading">
       <div className="section-label">VEHICLE &amp; TELEMETRY · PHASE 1</div>
-      <h2 id="telemetry-heading">Telemetry timeline</h2>
+      <h2 id="telemetry-heading">Session intelligence</h2>
       {vehicles === null && !error && (
         <p role="status">Loading vehicles and signals…</p>
       )}
@@ -131,6 +154,149 @@ export function TelemetryDashboard() {
                   </dd>
                 </div>
               </dl>
+              <h3>Derived session timeline</h3>
+              {segments.length === 0 ? (
+                <p>
+                  No derived segments yet. Run session analysis through the API.
+                </p>
+              ) : (
+                <div
+                  className="segment-timeline"
+                  role="list"
+                  aria-label="Driving session segments"
+                >
+                  {segments.map((segment) => (
+                    <button
+                      key={segment.id}
+                      role="listitem"
+                      className={`segment segment-${segment.segment_type}`}
+                      title={`${segment.segment_type}, ${segment.duration_ms / 1000} seconds`}
+                    >
+                      <strong>{segment.segment_type.replace("_", " ")}</strong>
+                      <span>{(segment.duration_ms / 1000).toFixed(1)}s</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <h3>Pull inspector</h3>
+              {pulls.length === 0 ? (
+                <p>No qualifying acceleration pulls were detected.</p>
+              ) : (
+                <>
+                  <div className="pull-list" aria-label="Detected pulls">
+                    {pulls.map((pull, index) => (
+                      <div key={pull.id}>
+                        <button
+                          aria-pressed={activePull?.id === pull.id}
+                          onClick={() => setActivePull(pull)}
+                        >
+                          Pull {index + 1}
+                        </button>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={compared.includes(pull.id)}
+                            disabled={
+                              !compared.includes(pull.id) &&
+                              compared.length >= 3
+                            }
+                            onChange={() =>
+                              setCompared((items) =>
+                                items.includes(pull.id)
+                                  ? items.filter((id) => id !== pull.id)
+                                  : [...items, pull.id],
+                              )
+                            }
+                          />{" "}
+                          Compare
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  {activePull && (
+                    <dl
+                      className="status-list"
+                      aria-label="Selected pull metrics"
+                    >
+                      <div>
+                        <dt>Duration</dt>
+                        <dd>{(activePull.duration_ms / 1000).toFixed(1)} s</dd>
+                      </div>
+                      <div>
+                        <dt>RPM range</dt>
+                        <dd>
+                          {activePull.start_rpm?.toFixed(0) ?? "—"}–
+                          {activePull.end_rpm?.toFixed(0) ?? "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Speed range</dt>
+                        <dd>
+                          {activePull.start_speed?.toFixed(1) ?? "—"}–
+                          {activePull.end_speed?.toFixed(1) ?? "—"} m/s
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Boost avg / max</dt>
+                        <dd>
+                          {activePull.average_boost?.toFixed(0) ?? "—"} /{" "}
+                          {activePull.max_boost?.toFixed(0) ?? "—"} Pa
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>IAT change</dt>
+                        <dd>{activePull.iat_delta?.toFixed(1) ?? "—"} K</dd>
+                      </div>
+                      <div>
+                        <dt>Confidence</dt>
+                        <dd>
+                          {Math.round(activePull.confidence * 100)}% heuristic
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Quality</dt>
+                        <dd>
+                          {activePull.quality_flags.length
+                            ? activePull.quality_flags.join(", ")
+                            : "complete"}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+                  {compared.length >= 2 && (
+                    <div className="comparison" aria-label="Pull comparison">
+                      <h4>Factual comparison</h4>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Pull</th>
+                            <th>Duration</th>
+                            <th>RPM</th>
+                            <th>Max boost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {compared.map((id) => {
+                            const pull = pulls.find((item) => item.id === id)!;
+                            return (
+                              <tr key={id}>
+                                <th>{pulls.indexOf(pull) + 1}</th>
+                                <td>{(pull.duration_ms / 1000).toFixed(1)}s</td>
+                                <td>
+                                  {pull.min_rpm?.toFixed(0)}–
+                                  {pull.max_rpm?.toFixed(0)}
+                                </td>
+                                <td>{pull.max_boost?.toFixed(0) ?? "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+              <h3>Raw telemetry</h3>
               <label htmlFor="signal">Signal</label>
               <select
                 id="signal"
