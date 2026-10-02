@@ -76,7 +76,9 @@ test("real imported session renders telemetry and changes signal", async ({
   );
   expect(imported.ok()).toBeTruthy();
   await page.goto("/");
-  await expect(page.getByText("E2E reference")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "E2E reference" }),
+  ).toBeVisible();
   await expect(page.getByRole("img", { name: /engine.rpm/ })).toBeVisible();
   await page.getByLabel("Signal").selectOption("vehicle.speed");
   await expect(page.getByRole("img", { name: /vehicle.speed/ })).toBeVisible();

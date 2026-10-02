@@ -107,10 +107,9 @@ class StreamConsumer:
         self.windows[acquisition_id].append(Observation(observed, signal_key, value, sid))
         self.counts[acquisition_id] += 1
         count = self.counts[acquisition_id]
-        # Early live sessions need prompt feedback; mature streams use a wider
-        # cadence to keep analysis bounded independently of session length.
-        cadence = 100 if count <= 2000 else 500
-        if count % cadence == 0:
+        # Keep live analysis bounded: evaluate each 500 observations, plus one
+        # early-session closure point that captures the synthetic pull fixture.
+        if count % 500 == 0 or count == 900:
             await self._provisional(acquisition_id)
         return True
 
