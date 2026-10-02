@@ -1,6 +1,135 @@
 {
   "components": {
     "schemas": {
+      "Body_import_csv": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": ["file"],
+        "title": "Body_import_csv",
+        "type": "object"
+      },
+      "ConfigurationCreate": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "effective_at": {
+            "format": "date-time",
+            "title": "Effective At",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "provenance": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Provenance",
+            "type": "string"
+          }
+        },
+        "required": ["effective_at", "description", "provenance"],
+        "title": "ConfigurationCreate",
+        "type": "object"
+      },
+      "DrivingSession": {
+        "properties": {
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "sample_count": { "title": "Sample Count", "type": "integer" },
+          "source_reference": {
+            "anyOf": [
+              { "maxLength": 255, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Reference"
+          },
+          "source_timezone": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Timezone"
+          },
+          "source_type": {
+            "enum": ["csv", "synthetic", "obd"],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["pending", "ingesting", "completed", "failed"],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vehicle_id",
+          "source_type",
+          "started_at",
+          "id",
+          "sample_count",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DrivingSession",
+        "type": "object"
+      },
       "ErrorDetail": {
         "properties": {
           "code": { "title": "Code", "type": "string" },
@@ -19,6 +148,17 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -29,6 +169,178 @@
           }
         },
         "title": "Health",
+        "type": "object"
+      },
+      "ImportResult": {
+        "properties": {
+          "accepted": { "title": "Accepted", "type": "integer" },
+          "conflicts": { "title": "Conflicts", "type": "integer" },
+          "duplicates": { "title": "Duplicates", "type": "integer" },
+          "end_observed_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "End Observed At"
+          },
+          "invalid_timestamps": {
+            "title": "Invalid Timestamps",
+            "type": "integer"
+          },
+          "invalid_units": { "title": "Invalid Units", "type": "integer" },
+          "rejected": { "title": "Rejected", "type": "integer" },
+          "rows_read": { "title": "Rows Read", "type": "integer" },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "start_observed_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Start Observed At"
+          },
+          "unknown_signals": { "title": "Unknown Signals", "type": "integer" }
+        },
+        "required": [
+          "session_id",
+          "rows_read",
+          "accepted",
+          "rejected",
+          "duplicates",
+          "conflicts",
+          "unknown_signals",
+          "invalid_units",
+          "invalid_timestamps",
+          "start_observed_at",
+          "end_observed_at"
+        ],
+        "title": "ImportResult",
+        "type": "object"
+      },
+      "Modification": {
+        "properties": {
+          "category": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "installed_at": {
+            "format": "date-time",
+            "title": "Installed At",
+            "type": "string"
+          },
+          "manufacturer": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Manufacturer"
+          },
+          "notes": {
+            "anyOf": [
+              { "maxLength": 1000, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Notes"
+          },
+          "product": {
+            "anyOf": [
+              { "maxLength": 120, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Product"
+          },
+          "removed_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Removed At"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "installed_at",
+          "id",
+          "vehicle_id",
+          "created_at"
+        ],
+        "title": "Modification",
+        "type": "object"
+      },
+      "ModificationCreate": {
+        "properties": {
+          "category": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "installed_at": {
+            "format": "date-time",
+            "title": "Installed At",
+            "type": "string"
+          },
+          "manufacturer": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Manufacturer"
+          },
+          "notes": {
+            "anyOf": [
+              { "maxLength": 1000, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Notes"
+          },
+          "product": {
+            "anyOf": [
+              { "maxLength": 120, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Product"
+          },
+          "removed_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Removed At"
+          }
+        },
+        "required": ["category", "installed_at"],
+        "title": "ModificationCreate",
         "type": "object"
       },
       "Ready": {
@@ -47,6 +359,379 @@
           }
         },
         "title": "Ready",
+        "type": "object"
+      },
+      "SessionCreate": {
+        "properties": {
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "source_reference": {
+            "anyOf": [
+              { "maxLength": 255, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Reference"
+          },
+          "source_timezone": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Timezone"
+          },
+          "source_type": {
+            "enum": ["csv", "synthetic", "obd"],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": ["vehicle_id", "source_type", "started_at"],
+        "title": "SessionCreate",
+        "type": "object"
+      },
+      "Signal": {
+        "properties": {
+          "aliases": {
+            "items": { "type": "string" },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "category": { "title": "Category", "type": "string" },
+          "key": { "title": "Key", "type": "string" },
+          "maximum": { "title": "Maximum", "type": "number" },
+          "minimum": { "title": "Minimum", "type": "number" },
+          "name": { "title": "Name", "type": "string" },
+          "unit": { "title": "Unit", "type": "string" }
+        },
+        "required": [
+          "key",
+          "name",
+          "category",
+          "unit",
+          "minimum",
+          "maximum",
+          "aliases"
+        ],
+        "title": "Signal",
+        "type": "object"
+      },
+      "TelemetryPoint": {
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "quality": { "title": "Quality", "type": "string" },
+          "sample_id": { "title": "Sample Id", "type": "string" },
+          "sequence": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Sequence"
+          },
+          "signal": { "title": "Signal", "type": "string" },
+          "unit": { "title": "Unit", "type": "string" },
+          "value": { "title": "Value", "type": "number" }
+        },
+        "required": [
+          "sample_id",
+          "observed_at",
+          "signal",
+          "value",
+          "unit",
+          "quality",
+          "sequence"
+        ],
+        "title": "TelemetryPoint",
+        "type": "object"
+      },
+      "TelemetryWindow": {
+        "properties": {
+          "end": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "End"
+          },
+          "points": {
+            "items": { "$ref": "#/components/schemas/TelemetryPoint" },
+            "title": "Points",
+            "type": "array"
+          },
+          "returned": { "title": "Returned", "type": "integer" },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "start": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Start"
+          },
+          "truncated": { "title": "Truncated", "type": "boolean" }
+        },
+        "required": [
+          "session_id",
+          "points",
+          "returned",
+          "truncated",
+          "start",
+          "end"
+        ],
+        "title": "TelemetryWindow",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": { "title": "Context", "type": "object" },
+          "input": { "title": "Input" },
+          "loc": {
+            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": { "title": "Message", "type": "string" },
+          "type": { "title": "Error Type", "type": "string" }
+        },
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "Vehicle": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "engine_code": {
+            "anyOf": [
+              { "maxLength": 40, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine Code"
+          },
+          "generation": {
+            "anyOf": [
+              { "maxLength": 40, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Generation"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "manufacturer": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "model_year": {
+            "anyOf": [
+              { "maximum": 2200, "minimum": 1886, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Model Year"
+          },
+          "nickname": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Nickname"
+          },
+          "transmission": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Transmission"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vin": {
+            "anyOf": [
+              { "maxLength": 17, "minLength": 11, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Vin"
+          }
+        },
+        "required": ["manufacturer", "model", "id", "created_at", "updated_at"],
+        "title": "Vehicle",
+        "type": "object"
+      },
+      "VehicleConfiguration": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "effective_at": {
+            "format": "date-time",
+            "title": "Effective At",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Ended At"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "provenance": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Provenance",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "effective_at",
+          "description",
+          "provenance",
+          "id",
+          "vehicle_id",
+          "created_at"
+        ],
+        "title": "VehicleConfiguration",
+        "type": "object"
+      },
+      "VehicleCreate": {
+        "properties": {
+          "engine_code": {
+            "anyOf": [
+              { "maxLength": 40, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine Code"
+          },
+          "generation": {
+            "anyOf": [
+              { "maxLength": 40, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Generation"
+          },
+          "manufacturer": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "model_year": {
+            "anyOf": [
+              { "maximum": 2200, "minimum": 1886, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Model Year"
+          },
+          "nickname": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Nickname"
+          },
+          "transmission": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Transmission"
+          },
+          "vin": {
+            "anyOf": [
+              { "maxLength": 17, "minLength": 11, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Vin"
+          }
+        },
+        "required": ["manufacturer", "model"],
+        "title": "VehicleCreate",
+        "type": "object"
+      },
+      "VehicleUpdate": {
+        "properties": {
+          "nickname": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Nickname"
+          },
+          "transmission": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Transmission"
+          }
+        },
+        "title": "VehicleUpdate",
         "type": "object"
       },
       "Version": {
@@ -83,6 +768,681 @@
   "info": { "title": "Vehicle Intelligence Platform", "version": "0.1.0" },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/sessions": {
+      "get": {
+        "operationId": "list_sessions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "vehicle_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Vehicle Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/DrivingSession" },
+                  "title": "Response List Sessions",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Sessions"
+      },
+      "post": {
+        "operationId": "create_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SessionCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DrivingSession" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}": {
+      "get": {
+        "operationId": "get_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DrivingSession" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}/imports/csv": {
+      "post": {
+        "operationId": "import_csv",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/Body_import_csv" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ImportResult" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Import Csv"
+      }
+    },
+    "/api/v1/sessions/{session_id}/telemetry": {
+      "get": {
+        "operationId": "query_telemetry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "signal",
+            "required": true,
+            "schema": {
+              "items": { "type": "string" },
+              "minItems": 1,
+              "title": "Signal",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 2000,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TelemetryWindow" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Query Telemetry"
+      }
+    },
+    "/api/v1/signals": {
+      "get": {
+        "operationId": "list_signals",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/Signal" },
+                  "title": "Response List Signals",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Signals"
+      }
+    },
+    "/api/v1/vehicles": {
+      "get": {
+        "operationId": "list_vehicles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/Vehicle" },
+                  "title": "Response List Vehicles",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Vehicles"
+      },
+      "post": {
+        "operationId": "create_vehicle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VehicleCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Vehicle" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Vehicle"
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}": {
+      "get": {
+        "operationId": "get_vehicle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Vehicle" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Vehicle"
+      },
+      "patch": {
+        "operationId": "update_vehicle",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VehicleUpdate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Vehicle" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Update Vehicle"
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/configurations": {
+      "get": {
+        "operationId": "list_configurations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "effective_at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Effective At"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VehicleConfiguration"
+                  },
+                  "title": "Response List Configurations",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Configurations"
+      },
+      "post": {
+        "operationId": "create_configuration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConfigurationCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleConfiguration"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Configuration"
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/modifications": {
+      "get": {
+        "operationId": "list_modifications",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/Modification" },
+                  "title": "Response List Modifications",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List Modifications"
+      },
+      "post": {
+        "operationId": "create_modification",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ModificationCreate" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Modification" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create Modification"
+      }
+    },
     "/health/live": {
       "get": {
         "operationId": "health_live",

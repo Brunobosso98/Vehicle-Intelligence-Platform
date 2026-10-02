@@ -179,3 +179,7 @@ hypertables, event detection, streaming, analytics, MCP, agents, RAG, ML/MLOps/e
 First close the listed Phase 0 blockers and rerun canonical make verify plus full observability profile.
 Then implement Vehicle/VehicleConfiguration with identifiers, migrations, typed contracts and real
 integration tests, following [the Phase 1 outline](phase-1-outline.md).
+
+## Final canonical closure (recorded before Phase 1)
+
+The failures and blockers above are retained as historical evidence from earlier revisions. After the documented remediations, the real canonical GitHub Actions full gate passed and Phase 0 was merged to `main` at `9e625fd8b995fe0189bc26275159c7ceea893dd6`. Phase 0 is therefore complete; Phase 1 vehicle and telemetry core is now current. This addendum does not reinterpret the earlier failed runs as passes.

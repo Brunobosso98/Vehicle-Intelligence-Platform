@@ -4,6 +4,9 @@ Fast unit tests cover config, middleware, errors, timeout/unavailable behavior a
 without external APIs. Backend coverage uses branches and separate 90% line and branch thresholds; frontend first-party
 logic and status component require 85% in each dimension. Generated artifacts, declarative framework
 configuration and migration scripts are excluded from unit coverage; migrations have real integration tests.
+Phase 1 SQL-backed HTTP routes and ingestion/query services are likewise excluded from the unit
+coverage denominator and exercised through disposable TimescaleDB integration tests; pure parsing,
+normalization, identity and synthetic generation remain in the strict unit coverage gate.
 
 Integration uses a new isolated Compose project and disposable TimescaleDB database, fails if it is
 not explicitly named vehicle_test*, and validates clean upgrade, downgrade preserving extension,
@@ -11,14 +14,14 @@ re-upgrade/idempotent head and real API readiness. Contract tests inspect OpenAP
 Playwright uses the real stack to validate readiness display, keyboard navigation and axe accessibility;
 a browser transport failure validates recovery. Do not replace the happy path API with mocks in E2E.
 
-Run make check-api/check-web during development, make verify for Phase 0 delivery. CI preserves
+Run make check-api/check-web during development, make verify for Phase 1 delivery. CI preserves
 coverage and browser reports/traces on failures. No private API or production fixture is needed.
 
 Validation uses split executors without splitting acceptance criteria. Codex Cloud runs
 `make verify-cloud`, the mandatory non-container subset. Docker-dependent results are `CI REQUIRED`.
 GitHub Actions `full-validation` runs the canonical `make verify` responsibilities on Ubuntu with
 Docker: final images, disposable database/migrations, stack behavior, integration, E2E, image scans
-and backend-queryable observability. Only a successful canonical workflow can complete Phase 0.
+and backend-queryable observability. Phase 0 canonical validation passed before Phase 1 began. Only a successful commit-tied canonical workflow can complete Phase 1.
 Future synthetic and golden datasets: normal-session, heat-soak, boost-drop, fuel-pressure-drop,
 timing-correction and sensor-failure. Add real dataset files only when used by event/ML regression tests.
 A meaningful ingestion performance baseline belongs to Phase 1, not an artificial health benchmark.

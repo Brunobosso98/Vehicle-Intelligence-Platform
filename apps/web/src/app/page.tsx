@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SystemStatusPanel } from "../components/system-status";
+import { TelemetryDashboard } from "../components/telemetry-dashboard";
 export default function Home() {
   return (
     <>
@@ -14,7 +15,7 @@ export default function Home() {
         >
           N55<span> / INTELLIGENCE LAB</span>
         </Link>
-        <span className="phase">FASE 0</span>
+        <span className="phase">PHASE 1</span>
       </header>
       <main id="main">
         <div className="eyebrow">VEHICLE INTELLIGENCE PLATFORM</div>
@@ -28,12 +29,12 @@ export default function Home() {
           de veículos. A jornada começa com o BMW N55.
         </p>
         <SystemStatusPanel />
+        <TelemetryDashboard />
         <section className="scope" aria-labelledby="scope-heading">
           <h2 id="scope-heading">O ponto de partida</h2>
           <p>
-            A fundação conecta aplicação, API e banco de dados. Telemetria,
-            análises e inteligência veicular serão adicionadas nas próximas
-            fases.
+            The foundation now represents vehicles, configurations and imported
+            telemetry. Detection and diagnosis remain intentionally deferred.
           </p>
         </section>
       </main>
