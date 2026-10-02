@@ -11,7 +11,7 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local observability-up observability-check observability-full stack-check docs-check
+.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance observability-up observability-check observability-full stack-check docs-check
 help:
 	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
@@ -84,7 +84,10 @@ docs-check:
 verify-local: check-api check-web contracts-check docs-check
 	pnpm format:check
 	$(MAKE) build
-verify-cloud: verify-local security-cloud
+phase3-acceptance:
+	$(API)/python scripts/evaluate_events.py
+	$(API)/python scripts/benchmark_events.py
+verify-cloud: verify-local phase3-acceptance security-cloud
 verify: verify-cloud containers test-integration
 	$(MAKE) up
 	$(MAKE) stack-check

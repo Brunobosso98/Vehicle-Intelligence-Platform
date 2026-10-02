@@ -29,8 +29,16 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
     async with engine.connect() as connection:
         assert await connection.scalar(text("SELECT to_regclass('alembic_version')")) is None
     env = os.environ | {"DATABASE_URL": url, "ENVIRONMENT": "test"}
-    for target in ["head", "base", "head", "head"]:
-        command = "downgrade" if target == "base" else "upgrade"
+    # Clean upgrade, one-revision rollback preserving the Phase 2 schema, re-upgrade,
+    # idempotent head, full rollback, and final clean upgrade exercise both boundaries.
+    for command, target in [
+        ("upgrade", "head"),
+        ("downgrade", "0003"),
+        ("upgrade", "head"),
+        ("upgrade", "head"),
+        ("downgrade", "base"),
+        ("upgrade", "head"),
+    ]:
         process = await asyncio.create_subprocess_exec(
             str(api / ".venv/bin/alembic"),
             command,
@@ -40,8 +48,22 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         )
         assert await process.wait() == 0
 
+    rollback = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "downgrade", "0003", cwd=api, env=env
+    )
+    assert await rollback.wait() == 0
     async with engine.connect() as connection:
         assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0003"
+        assert await connection.scalar(text("SELECT to_regclass('pulls')")) == "pulls"
+        assert await connection.scalar(text("SELECT to_regclass('detected_events')")) is None
+        assert await connection.scalar(text("SELECT to_regclass('event_analysis_runs')")) is None
+    reupgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", "head", cwd=api, env=env
+    )
+    assert await reupgrade.wait() == 0
+
+    async with engine.connect() as connection:
+        assert await connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004"
         assert await connection.scalar(
             text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
         )
@@ -63,6 +85,8 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "telemetry_samples",
             "session_segments",
             "pulls",
+            "event_analysis_runs",
+            "detected_events",
         }
         assert await connection.scalar(
             text(
@@ -131,4 +155,84 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         assert replay_analysis.status_code == 200
         assert await client.get(f"/api/v1/sessions/{session['id']}/segments")
         assert await client.get(f"/api/v1/sessions/{session['id']}/pulls")
+
+        # A real persisted multi-anomaly session validates Phase 2 -> Phase 3 ordering,
+        # same-session baselines, filters, details, replacement and repeated-run reuse.
+        from vehicle_platform.events.synthetic import golden_scenarios
+
+        scenario = golden_scenarios()[-1]
+        multi_session = (
+            await client.post(
+                "/api/v1/sessions",
+                json={
+                    "vehicle_id": vehicle["id"],
+                    "source_type": "csv",
+                    "started_at": scenario.frames[0].observed_at.isoformat(),
+                },
+            )
+        ).json()
+        aliases = {
+            "engine.rpm": ("rpm", "rpm"),
+            "vehicle.speed": ("speed", "m/s"),
+            "engine.throttle_position": ("throttle", "%"),
+            "engine.boost_pressure": ("boost", "Pa"),
+            "engine.intake_air_temperature": ("iat", "K"),
+            "engine.oil_temperature": ("oil_temp", "K"),
+            "engine.coolant_temperature": ("coolant_temp", "K"),
+            "fuel.high_pressure": ("hpfp", "Pa"),
+        }
+        lines = ["timestamp,signal,value,unit,record_id,sequence"]
+        sequence = 0
+        for frame in reversed(
+            scenario.frames
+        ):  # ingestion order must not affect event-time analysis
+            for signal_key, value in frame.values.items():
+                if value is None or signal_key not in aliases:
+                    continue
+                alias, unit = aliases[signal_key]
+                lines.append(
+                    f"{frame.observed_at.isoformat()},{alias},{value},{unit},{sequence},{sequence}"
+                )
+                sequence += 1
+        imported = await client.post(
+            f"/api/v1/sessions/{multi_session['id']}/imports/csv",
+            files={"file": ("multi.csv", "\n".join(lines), "text/csv")},
+        )
+        assert imported.status_code == 200
+        phase_two = await client.post(
+            f"/api/v1/sessions/{multi_session['id']}/analysis",
+            json={"profile": "generic-v1"},
+        )
+        assert phase_two.status_code == 200 and phase_two.json()["pull_count"] == 3
+        event_run = await client.post(
+            f"/api/v1/sessions/{multi_session['id']}/events/analyze", json={}
+        )
+        assert event_run.status_code == 200 and event_run.json()["event_count"] >= 3
+        repeated = await client.post(
+            f"/api/v1/sessions/{multi_session['id']}/events/analyze", json={}
+        )
+        assert repeated.json()["reused"] is True
+        events = (
+            await client.get(
+                f"/api/v1/sessions/{multi_session['id']}/events",
+                params={"category": "performance", "severity": "high"},
+            )
+        ).json()
+        assert any(event["event_type"] == "boost_drop" for event in events)
+        detail = await client.get(f"/api/v1/events/{events[0]['id']}")
+        assert detail.status_code == 200 and detail.json()["evidence"]
+        summary = await client.get(f"/api/v1/sessions/{multi_session['id']}/events/summary")
+        assert summary.status_code == 200
+        assert summary.json()["event_count"] == event_run.json()["event_count"]
+        assert summary.json()["highest_severity"] in {"low", "moderate", "high"}
+        replacement = await client.post(
+            f"/api/v1/sessions/{multi_session['id']}/events/analyze", json={"replace": True}
+        )
+        assert replacement.status_code == 200 and replacement.json()["reused"] is False
+        after = (await client.get(f"/api/v1/sessions/{multi_session['id']}/events")).json()
+        identities = {
+            (event["event_type"], event["algorithm_name"], event["started_at"], event["ended_at"])
+            for event in after
+        }
+        assert len(identities) == len(after)
     await engine.dispose()

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from datetime import timedelta
 from statistics import median
@@ -110,6 +110,27 @@ class BaseDetector:
 
 def _series(frames: Sequence[AlignedFrame], signal: str) -> list[float]:
     return [value for frame in frames if (value := frame.values.get(signal)) is not None]
+
+
+def _contiguous_runs(
+    frames: Sequence[AlignedFrame], predicate: Callable[[AlignedFrame], bool], max_step: float
+) -> list[list[AlignedFrame]]:
+    runs: list[list[AlignedFrame]] = []
+    current: list[AlignedFrame] = []
+    for frame in frames:
+        contiguous = not current or (
+            not frame.gap_before
+            and (frame.observed_at - current[-1].observed_at).total_seconds() <= max_step
+        )
+        if predicate(frame) and contiguous:
+            current.append(frame)
+        else:
+            if current:
+                runs.append(current)
+            current = [frame] if predicate(frame) else []
+    if current:
+        runs.append(current)
+    return runs
 
 
 class PullBehaviorDetector(BaseDetector):
@@ -377,16 +398,23 @@ class QualityDetector(BaseDetector):
                     )
                 )
         for signal in self.watched:
-            missing = [
-                f
-                for f in frames
-                if f.values.get(signal) is None and f.values.get("engine.rpm") is not None
-            ]
-            if (
-                missing
-                and (missing[-1].observed_at - missing[0].observed_at).total_seconds()
-                >= self.profile.dropout_seconds
-            ):
+
+            def signal_missing(frame: AlignedFrame, watched_signal: str = signal) -> bool:
+                return (
+                    frame.values.get(watched_signal) is None
+                    and frame.values.get("engine.rpm") is not None
+                )
+
+            missing_runs = _contiguous_runs(
+                frames,
+                signal_missing,
+                self.profile.dropout_seconds,
+            )
+            for missing in missing_runs:
+                if (missing[-1].observed_at - missing[0].observed_at).total_seconds() < (
+                    self.profile.dropout_seconds
+                ):
+                    continue
                 events.append(
                     self.candidate(
                         "sensor_dropout",
@@ -408,21 +436,37 @@ class QualityDetector(BaseDetector):
             ("engine.boost_pressure", "engine.rpm"),
             ("vehicle.speed", "engine.rpm"),
         ):
-            values = _series(frames, signal)
-            relatives = _series(frames, related)
-            duration = (frames[-1].observed_at - frames[0].observed_at).total_seconds()
-            if (
-                len(values) >= 3
-                and duration >= self.profile.stuck_seconds
-                and max(values) - min(values) < 1e-6
-                and relatives
-                and max(relatives) - min(relatives) > 300
-            ):
+            present = [frame for frame in frames if frame.values.get(signal) is not None]
+            runs = _contiguous_runs(
+                present,
+                lambda frame: True,
+                self.profile.dropout_seconds,
+            )
+            constant_runs: list[list[AlignedFrame]] = []
+            for run in runs:
+                start = 0
+                for index in range(1, len(run) + 1):
+                    if index == len(run) or run[index].values.get(signal) != run[start].values.get(
+                        signal
+                    ):
+                        constant_runs.append(run[start:index])
+                        start = index
+            for stuck in constant_runs:
+                values = _series(stuck, signal)
+                relatives = _series(stuck, related)
+                duration = (stuck[-1].observed_at - stuck[0].observed_at).total_seconds()
+                if not (
+                    len(values) >= 3
+                    and duration >= self.profile.stuck_seconds
+                    and relatives
+                    and max(relatives) - min(relatives) > 300
+                ):
+                    continue
                 events.append(
                     self.candidate(
                         "signal_stuck",
                         EventCategory.SENSOR,
-                        frames,
+                        stuck,
                         severity=Severity.LOW,
                         confidence=0.88,
                         baseline=BaselineType.PROFILE_THRESHOLD,

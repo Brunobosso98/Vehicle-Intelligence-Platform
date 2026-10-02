@@ -135,7 +135,21 @@ def test_quality_events_and_consolidation() -> None:
         gap={4},
     )
     found = types(EventEngine().analyze(data, [pull(data)]))
-    assert {"telemetry_gap", "sensor_dropout", "signal_stuck"} <= found
+    assert {"telemetry_gap", "sensor_dropout"} <= found
+    assert "signal_stuck" not in found
+    continuous = frames(
+        [
+            {
+                "engine.rpm": 2000 + i * 500,
+                "vehicle.speed": 20,
+                "engine.throttle_position": 80,
+                "engine.boost_pressure": 50_000,
+                "fuel.high_pressure": 18_000_000,
+            }
+            for i in range(7)
+        ]
+    )
+    assert "signal_stuck" in types(EventEngine().analyze(continuous, [pull(continuous)]))
 
 
 def test_low_load_variation_is_not_fuel_or_throttle_event() -> None:

@@ -368,6 +368,26 @@
         "title": "EventAnalysisResult",
         "type": "object"
       },
+      "EventSummary": {
+        "properties": {
+          "by_category": {
+            "additionalProperties": { "type": "integer" },
+            "title": "By Category",
+            "type": "object"
+          },
+          "event_count": { "title": "Event Count", "type": "integer" },
+          "highest_severity": {
+            "anyOf": [
+              { "enum": ["info", "low", "moderate", "high"], "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Highest Severity"
+          }
+        },
+        "required": ["event_count", "by_category", "highest_severity"],
+        "title": "EventSummary",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1820,6 +1840,50 @@
           }
         },
         "summary": "Analyze Session Events"
+      }
+    },
+    "/api/v1/sessions/{session_id}/events/summary": {
+      "get": {
+        "operationId": "summarize_session_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventSummary" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Summarize Session Events"
       }
     },
     "/api/v1/sessions/{session_id}/imports/csv": {

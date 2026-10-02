@@ -28,6 +28,9 @@ export function TelemetryDashboard() {
   const [events, setEvents] = useState<DetectedEvent[]>([]);
   const [activeEvent, setActiveEvent] = useState<DetectedEvent | null>(null);
   const [eventFilter, setEventFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [pullFilter, setPullFilter] = useState("all");
   const [activePull, setActivePull] = useState<Pull | null>(null);
   const [compared, setCompared] = useState<string[]>([]);
   const [error, setError] = useState(false);
@@ -120,7 +123,11 @@ export function TelemetryDashboard() {
       .join(" ");
   }, [window]);
   const visibleEvents = events.filter(
-    (event) => eventFilter === "all" || event.event_type === eventFilter,
+    (event) =>
+      (eventFilter === "all" || event.event_type === eventFilter) &&
+      (categoryFilter === "all" || event.category === categoryFilter) &&
+      (severityFilter === "all" || event.severity === severityFilter) &&
+      (pullFilter === "all" || event.pull_id === pullFilter),
   );
 
   return (
@@ -215,6 +222,49 @@ export function TelemetryDashboard() {
                     </option>
                   ),
                 )}
+              </select>
+              <label htmlFor="category-filter">Filter by category</label>
+              <select
+                id="category-filter"
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+              >
+                <option value="all">All categories</option>
+                {[...new Set(events.map((event) => event.category))].map(
+                  (category) => (
+                    <option key={category} value={category}>
+                      {category.replaceAll("_", " ")}
+                    </option>
+                  ),
+                )}
+              </select>
+              <label htmlFor="severity-filter">Filter by severity</label>
+              <select
+                id="severity-filter"
+                value={severityFilter}
+                onChange={(event) => setSeverityFilter(event.target.value)}
+              >
+                <option value="all">All severities</option>
+                {[...new Set(events.map((event) => event.severity))].map(
+                  (severity) => (
+                    <option key={severity} value={severity}>
+                      {severity}
+                    </option>
+                  ),
+                )}
+              </select>
+              <label htmlFor="pull-filter">Filter by pull</label>
+              <select
+                id="pull-filter"
+                value={pullFilter}
+                onChange={(event) => setPullFilter(event.target.value)}
+              >
+                <option value="all">All pulls</option>
+                {pulls.map((pull, index) => (
+                  <option key={pull.id} value={pull.id}>
+                    Pull {index + 1}
+                  </option>
+                ))}
               </select>
               {visibleEvents.length === 0 ? (
                 <p>

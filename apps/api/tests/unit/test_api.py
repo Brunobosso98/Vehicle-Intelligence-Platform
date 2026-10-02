@@ -215,3 +215,26 @@ async def test_non_ascii_correlation_header_is_regenerated(settings: Settings) -
         response = await client.get("/health/live", headers=[(b"x-request-id", b"\xff")])
         assert response.status_code == 200
         assert len(response.headers["x-request-id"]) == 36
+
+
+def test_phase3_metrics_use_only_bounded_labels(settings: Settings) -> None:
+    signals = Telemetry(settings)
+    signals.event_analysis_runs.add(1, {"outcome": "completed"})
+    signals.event_detector_duration.record(
+        0.01, {"detector": "pull-behavior-detector", "outcome": "event_detected"}
+    )
+    signals.events_produced.add(1, {"category": "performance"})
+    signals.event_detector_unavailable.add(
+        1, {"detector": "pull-behavior-detector", "outcome": "detector_not_applicable"}
+    )
+    signals.event_insufficient_data.add(
+        1, {"detector": "pull-behavior-detector", "outcome": "insufficient_data"}
+    )
+    signals.events_consolidated.add(1, {"event_type": "boost_drop"})
+    signals.event_analysis_failures.add(1, {"classification": "bounded_limit"})
+    metrics = signals.render_metrics().decode()
+    assert "events_analysis_runs_total" in metrics
+    assert "events_detector_duration_seconds" in metrics
+    assert 'category="performance"' in metrics
+    assert "session_id" not in metrics and "vehicle_id" not in metrics and "vin" not in metrics
+    signals.shutdown()

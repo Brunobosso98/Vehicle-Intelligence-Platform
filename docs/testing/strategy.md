@@ -32,3 +32,14 @@ Detection acceptance is precision and recall ≥0.95 and mean start/end boundary
 at 5, 10 and 20 Hz. Disposable Timescale integration validates migration, persistence,
 idempotency and configuration isolation; real-stack E2E validates timeline, inspection and factual
 comparison. The canonical workflow records the 100k-observation benchmark without a brittle SLO.
+
+# Phase 3 acceptance
+
+Phase 3 uses eleven independently configured golden scenarios: normal repeated pulls, noisy healthy,
+boost drop, boost overshoot, repeated-pull IAT rise, fuel-pressure drop, sensor dropout, signal stuck,
+telemetry gap, throttle closure, and a multi-anomaly session. `make phase3-acceptance` prints per-class
+and micro/macro TP/FP/FN, precision, recall, F1, boundary errors, and healthy false positives, then
+runs informational normal, multi-anomaly, and 100k+ observation benchmarks. The gate requires at
+least 0.95 precision/recall/F1 and zero false positives in both healthy scenarios; latency is recorded
+but deliberately not gated. Disposable Timescale integration validates revision 0004 downgrade to
+the intact Phase 2 schema, re-upgrade, real persistence, filters, details, replacement and idempotency.

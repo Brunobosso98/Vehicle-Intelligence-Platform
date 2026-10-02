@@ -14,6 +14,7 @@ from vehicle_platform.api.domain_contracts import (
     DrivingSession,
     EventAnalysisRequest,
     EventAnalysisResult,
+    EventSummary,
     ImportResult,
     Modification,
     ModificationCreate,
@@ -376,10 +377,12 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         operation_id="analyze_session_events",
     )
     async def analyze_session_events(
-        session_id: UUID, payload: EventAnalysisRequest
+        session_id: UUID, payload: EventAnalysisRequest, request: Request
     ) -> EventAnalysisResult:
         try:
-            return await EventAnalysisService(store()).run(session_id, payload.replace)
+            return await EventAnalysisService(store(), request.app.state.telemetry).run(
+                session_id, payload.replace
+            )
         except LookupError as exc:
             raise HTTPException(404, "session not found") from exc
         except EventAnalysisLimitError as exc:
@@ -406,6 +409,14 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         return await EventAnalysisService(store()).events(
             session_id, None, event_type, category, severity, pull_id, start, end, limit
         )
+
+    @routes.get(
+        "/api/v1/sessions/{session_id}/events/summary",
+        response_model=EventSummary,
+        operation_id="summarize_session_events",
+    )
+    async def summarize_session_events(session_id: UUID) -> EventSummary:
+        return await EventAnalysisService(store()).summary(session_id)
 
     @routes.get(
         "/api/v1/events", response_model=list[DetectedEvent], operation_id="list_vehicle_events"

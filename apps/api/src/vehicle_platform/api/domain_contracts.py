@@ -250,3 +250,9 @@ class DetectedEvent(BaseModel):
     evidence: dict[str, Any]
     quality_flags: list[str]
     created_at: datetime
+
+
+class EventSummary(BaseModel):
+    event_count: int
+    by_category: dict[str, int]
+    highest_severity: Literal["info", "low", "moderate", "high"] | None

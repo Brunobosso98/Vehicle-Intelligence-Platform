@@ -153,6 +153,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/sessions/{session_id}/events/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Summarize Session Events */
+    get: operations["summarize_session_events"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/sessions/{session_id}/imports/csv": {
     parameters: {
       query?: never;
@@ -608,6 +625,17 @@ export interface components {
        * Format: uuid
        */
       session_id: string;
+    };
+    /** EventSummary */
+    EventSummary: {
+      /** By Category */
+      by_category: {
+        [key: string]: number;
+      };
+      /** Event Count */
+      event_count: number;
+      /** Highest Severity */
+      highest_severity: ("info" | "low" | "moderate" | "high") | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -1484,6 +1512,46 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["EventAnalysisResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  summarize_session_events: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EventSummary"];
         };
       };
       /** @description Validation Error */
