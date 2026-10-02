@@ -68,13 +68,18 @@ h1 {
   line-height: 1.7;
   color: var(--muted);
 }
-.status-card {
+.status-card,
+.telemetry-card {
   max-width: 640px;
   background: var(--surface);
   border: 1px solid #394641;
   padding: 30px;
   margin: 48px 0;
 }
+.telemetry-card { max-width: 850px; }
+.telemetry-card select { display: block; margin: 10px 0 24px; padding: 10px; background: var(--surface); color: var(--text); border: 1px solid #798e86; }
+.telemetry-card svg { width: 100%; background: #11191b; color: var(--accent); border: 1px solid #394641; }
+.telemetry-card figcaption { color: var(--muted); margin-top: 8px; }
 .section-label {
   font-size: 10px;
   color: var(--accent);

@@ -1,7 +1,7 @@
 # Roadmap
 
-- Phase 0 — Engineering Foundation (implemented foundation; see validation status)
-- Phase 1 — Vehicle & Telemetry Core (planned)
+- Phase 0 — Engineering Foundation (complete; canonical full validation passed before Phase 1)
+- Phase 1 — Vehicle & Telemetry Core (current)
 - Phase 2 — Sessions & Pull Detection (planned)
 - Phase 3 — Event / Anomaly Engine (planned)
 - Phase 4 — Streaming Architecture (planned)
@@ -15,4 +15,4 @@
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
 
-Only Phase 0 is in scope. No future capabilities are claimed as implemented.
+Only Phase 1 is in scope. No Phase 2+ capabilities are claimed as implemented.

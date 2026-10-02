@@ -25,3 +25,7 @@ Status as validated on 2026-10-01. **Phase 0 remains open.** See
 | F0-017 | Developer experience            | Make targets and local instructions implemented; cold bootstrap blocked by public registry HTTP 503                      |
 | F0-018 | Documentation/runbooks          | Implemented for actual foundation behavior only                                                                          |
 | F0-019 | Final validation                | Blocked: canonical make verify non-zero, full profile/clean bootstrap/network and security findings                      |
+
+## Closure
+
+Phase 0's final canonical full-stack gate passed before Phase 1 began and the foundation was merged at `9e625fd8b995fe0189bc26275159c7ceea893dd6`. Earlier failed runs remain historical evidence in the completion report.

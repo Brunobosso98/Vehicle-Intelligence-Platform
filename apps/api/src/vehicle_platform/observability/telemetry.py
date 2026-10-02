@@ -81,6 +81,13 @@ class Telemetry:
             ),
         )
         self.readiness_failures = meter.create_counter("service.readiness.failures")
+        # Labels are deliberately source/outcome only; never vehicle, VIN, session or sample IDs.
+        self.imports = meter.create_counter("telemetry.imports", unit="{import}")
+        self.import_rows = meter.create_counter("telemetry.import.rows", unit="{sample}")
+        self.import_duration = meter.create_histogram("telemetry.import.duration", unit="s")
+        self.db_batch_duration = meter.create_histogram("telemetry.db.batch.duration", unit="s")
+        self.query_duration = meter.create_histogram("telemetry.query.duration", unit="s")
+        self.query_points = meter.create_counter("telemetry.query.points", unit="{sample}")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()
