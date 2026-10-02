@@ -1,7 +1,10 @@
 name: vehicle-platform
 services:
   db:
-    image: timescale/timescaledb:2.30.2-pg17
+    image: vehicle-platform-timescaledb:local
+    build:
+      context: .
+      dockerfile: infra/docker/timescaledb/Dockerfile
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?Run make bootstrap}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make bootstrap}
@@ -22,6 +25,8 @@ services:
       dockerfile: apps/api/Dockerfile
       args:
         APP_VERSION: ${APP_VERSION:-0.1.0}
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-1970-01-01T00:00:00Z}
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENVIRONMENT: development
@@ -49,6 +54,10 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0}
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-1970-01-01T00:00:00Z}
     environment:
       API_BASE_URL: http://api:8000
     ports: ["127.0.0.1:3000:3000"]
@@ -61,14 +70,15 @@ services:
     restart: unless-stopped
   otel-collector:
     profiles: ["observability"]
-    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.146.1@sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.0@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       ["./infra/docker/observability/collector.yaml:/etc/otel/config.yaml:ro"]
+    ports: ["127.0.0.1:13133:13133"]
     depends_on: ["tempo"]
   prometheus:
     profiles: ["observability"]
-    image: quay.io/prometheus/prometheus:v3.10.0@sha256:7571a304e67fbd794be02422b13627dc7de822152f74e99e2bef95d29eceecde
+    image: quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     volumes:
       [
         "./infra/docker/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro",
@@ -82,16 +92,17 @@ services:
     ports: ["127.0.0.1:9090:9090"]
   tempo:
     profiles: ["observability"]
-    image: grafana/tempo:2.10.2
+    image: grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       [
         "./infra/docker/observability/tempo.yaml:/etc/tempo.yaml:ro",
         "tempo-data:/var/tempo",
       ]
+    ports: ["127.0.0.1:3200:3200"]
   grafana:
     profiles: ["observability"]
-    image: grafana/grafana:12.4.1
+    image: grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer

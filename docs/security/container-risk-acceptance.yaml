@@ -1,0 +1,243 @@
+version: 1
+exceptions:
+  - id: api-web-cve-2025-69720
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2025-69720
+    packages: ["libncursesw6", "libtinfo6", "ncurses-base", "ncurses-bin"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The affected infocmp CLI is not invoked by either service; containers are non-root, read-only, and expose no shell-driven input."
+  - id: api-web-cve-2026-16742
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-16742
+    packages: ["libsystemd0", "libudev1"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit path requires systemd-homed/local logged-in users; these service containers run neither systemd nor homed."
+  - id: api-web-cve-2026-54369
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-54369
+    packages: ["libacl1"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The affected privileged ACL pathname path is not used; services are non-root with read-only roots."
+  - id: api-web-cve-2026-76642
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-76642
+    packages:
+      [
+        "bsdutils",
+        "libblkid1",
+        "liblastlog2-2",
+        "libmount1",
+        "libsmartcols1",
+        "libuuid1",
+        "login",
+        "mount",
+        "util-linux",
+      ]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires privileged mount helpers/hooks; services drop all capabilities and do not invoke mount."
+  - id: api-web-cve-2026-78408
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78408
+    packages:
+      [
+        "bsdutils",
+        "libblkid1",
+        "liblastlog2-2",
+        "libmount1",
+        "libsmartcols1",
+        "libuuid1",
+        "login",
+        "mount",
+        "util-linux",
+      ]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free."
+  - id: api-web-cve-2026-78409
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78409
+    packages:
+      [
+        "bsdutils",
+        "libblkid1",
+        "liblastlog2-2",
+        "libmount1",
+        "libsmartcols1",
+        "libuuid1",
+        "login",
+        "mount",
+        "util-linux",
+      ]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires fstab-authorized mount operations not exposed by either service container."
+  - id: api-web-cve-2026-78410
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-78410
+    packages:
+      [
+        "bsdutils",
+        "libblkid1",
+        "liblastlog2-2",
+        "libmount1",
+        "libsmartcols1",
+        "libuuid1",
+        "login",
+        "mount",
+        "util-linux",
+      ]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires SUID mount/fstab bind mount control; no such path or capability exists in the services."
+  - id: api-web-cve-2026-9538
+    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    vulnerability_id: CVE-2026-9538
+    packages: ["perl-base"]
+    owner: repository-maintainer
+    expires: 2026-11-01
+    rationale: "The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither service executes Perl or accepts archive uploads."
+
+  - id: tempo-2-10-8-cve-2026-43871
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-43871
+    packages: ["github.com/apache/thrift"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is the latest 2.10 patch; Tempo 3 requires a configuration/architecture migration. The Phase 0 profile is loopback-only and non-production."
+  - id: tempo-2-10-8-cve-2026-56854
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56854
+    packages: ["golang.org/x/crypto"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
+  - id: tempo-2-10-8-cve-2026-84304
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-84304
+    packages: ["google.golang.org/grpc"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
+  - id: tempo-2-10-8-cve-2026-84445
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-84445
+    packages: ["google.golang.org/grpc"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
+  - id: tempo-2-10-8-cve-2026-33818
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-33818
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-39821
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-39821
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-46600
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-46600
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-56853
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56853
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-56858
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56858
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-56859
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56859
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-56860
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56860
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: tempo-2-10-8-cve-2026-56862
+    images:
+      [
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+      ]
+    vulnerability_id: CVE-2026-56862
+    packages: ["stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
+  - id: grafana-12-4-12-cve-2026-21728
+    images:
+      [
+        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
+      ]
+    vulnerability_id: CVE-2026-21728
+    packages: ["github.com/grafana/tempo"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Latest 12.4 patch still embeds the affected Tempo module. Grafana is loopback-only, anonymous Viewer only, and used solely for local Phase 0 observability."
+  - id: grafana-12-4-12-cve-2026-28377
+    images:
+      [
+        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
+      ]
+    vulnerability_id: CVE-2026-28377
+    packages: ["github.com/grafana/tempo"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "Latest 12.4 patch still embeds the affected Tempo module. Grafana is loopback-only, anonymous Viewer only, and used solely for local Phase 0 observability."

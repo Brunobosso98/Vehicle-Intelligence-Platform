@@ -3,6 +3,10 @@
 Phase 0 is an engineering foundation; Phase 1 telemetry is not implemented.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
+- Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and
+  report every Docker-dependent check as `CI REQUIRED`, never PASS or silently skipped. GitHub
+  Actions `full-validation` is the canonical Phase 0 Docker/full-stack executor, and Phase 0
+  completion requires that workflow to pass. See `docs/testing/strategy.md`.
 - Observe and analyze only. Never control brakes, steering, throttle, flash or write the ECU.
 - Preserve explicit module boundaries. Add dependencies only for a concrete need; pin and lock them.
 - Version every schema change through Alembic; never edit an applied revision. Review data/lock risks.

@@ -1,0 +1,136 @@
+name: Phase 0 full validation
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: full-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-validation:
+    name: Canonical Docker and full-stack gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GIT_SHA: ${{ github.sha }}
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: 0.12.19
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - name: Set reproducible build metadata
+        run: echo "BUILD_TIMESTAMP=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
+      - name: Install locked dependencies and security tools
+        run: |
+          make bootstrap
+          bash scripts/install-security-tools.sh
+          pnpm --filter @vehicle-platform/web exec playwright install --with-deps chromium
+
+      - name: Cloud-compatible validation
+        id: cloud
+        continue-on-error: true
+        run: make verify-cloud
+      - name: Build canonical application images
+        id: containers
+        continue-on-error: true
+        run: make containers
+      - name: Validate disposable database and migrations
+        id: database
+        continue-on-error: true
+        run: make test-integration
+      - name: Start and validate canonical stack
+        id: stack
+        continue-on-error: true
+        run: |
+          make up
+          make stack-check
+      - name: Run canonical Playwright E2E
+        id: e2e
+        continue-on-error: true
+        run: make test-e2e
+      - name: Validate complete observability path
+        id: observability
+        continue-on-error: true
+        run: |
+          make observability-up
+          make observability-full
+      - name: Scan all canonical images
+        id: security
+        continue-on-error: true
+        run: make security
+
+      - name: Capture stack logs
+        if: always()
+        run: |
+          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability}
+          if ! docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
+            --profile observability ps --format json > validation-artifacts/summary/compose-ps.json; then
+            echo '{"status":"NOT RUN","reason":"compose status unavailable"}' \
+              > validation-artifacts/summary/compose-ps.json
+          fi
+          if ! docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
+            --profile observability logs --no-color > validation-artifacts/summary/compose.log; then
+            echo 'Compose logs unavailable because stack startup failed.' \
+              > validation-artifacts/summary/compose.log
+          fi
+          test ! -f apps/api/coverage.xml || cp apps/api/coverage.xml validation-artifacts/coverage/
+          test ! -d apps/web/coverage || cp -r apps/web/coverage validation-artifacts/coverage/web
+          test ! -d apps/web/playwright-report || cp -r apps/web/playwright-report validation-artifacts/playwright/
+          test ! -d apps/web/test-results || cp -r apps/web/test-results validation-artifacts/playwright/
+          test ! -d .validation/security || cp -r .validation/security/. validation-artifacts/security/
+          test ! -d .validation/observability || cp -r .validation/observability/. validation-artifacts/observability/
+          test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
+
+      - name: Write commit-tied validation summary
+        if: always()
+        env:
+          CLOUD: ${{ steps.cloud.outcome }}
+          CONTAINERS: ${{ steps.containers.outcome }}
+          DATABASE: ${{ steps.database.outcome }}
+          STACK: ${{ steps.stack.outcome }}
+          E2E: ${{ steps.e2e.outcome }}
+          OBSERVABILITY: ${{ steps.observability.outcome }}
+          SECURITY: ${{ steps.security.outcome }}
+        run: python3 scripts/validation-summary.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: phase-0-full-validation-${{ github.sha }}
+          path: validation-artifacts
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce canonical full gate
+        if: always()
+        env:
+          CLOUD: ${{ steps.cloud.outcome }}
+          CONTAINERS: ${{ steps.containers.outcome }}
+          DATABASE: ${{ steps.database.outcome }}
+          STACK: ${{ steps.stack.outcome }}
+          E2E: ${{ steps.e2e.outcome }}
+          OBSERVABILITY: ${{ steps.observability.outcome }}
+          SECURITY: ${{ steps.security.outcome }}
+        run: |
+          test "$CLOUD" = success
+          test "$CONTAINERS" = success
+          test "$DATABASE" = success
+          test "$STACK" = success
+          test "$E2E" = success
+          test "$OBSERVABILITY" = success
+          test "$SECURITY" = success

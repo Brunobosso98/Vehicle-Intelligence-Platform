@@ -11,9 +11,9 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security verify verify-local observability-up observability-check docs-check
+.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local observability-up observability-check observability-full stack-check docs-check
 help:
-	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security verify'
+	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
 	bash scripts/bootstrap.sh
 dev: up
@@ -66,20 +66,29 @@ build:
 	pnpm --filter @vehicle-platform/web build
 containers:
 	docker compose build
+security-cloud:
+	bash scripts/security-cloud.sh
 security:
 	bash scripts/security.sh
 observability-up:
 	docker compose -f compose.yaml -f infra/docker/observability/compose.yaml --profile observability up -d --build --wait
 observability-check:
 	$(API)/python scripts/observability-smoke.py
+observability-full:
+	bash scripts/observability-validation.sh
+stack-check:
+	bash scripts/stack-smoke.sh
 docs-check:
 	$(API)/python scripts/check_context.py
 	@set -e; for script in scripts/*.sh; do bash -n "$$script"; done
 verify-local: check-api check-web contracts-check docs-check
 	pnpm format:check
 	$(MAKE) build
-verify: verify-local containers test-integration
+verify-cloud: verify-local security-cloud
+verify: verify-cloud containers test-integration
 	$(MAKE) up
+	$(MAKE) stack-check
 	$(MAKE) test-e2e
 	$(MAKE) security
-	$(MAKE) observability-check
+	$(MAKE) observability-up
+	$(MAKE) observability-full
