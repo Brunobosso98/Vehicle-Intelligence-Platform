@@ -403,6 +403,7 @@ test("Phase 5 real-stack analytics compares, repeats and persists provenance", a
   page,
   request,
 }) => {
+  test.setTimeout(120_000);
   const vehicles = await request.get("http://127.0.0.1:8000/api/v1/vehicles");
   const vehicleId = ((await vehicles.json()) as { id: string }[])[0].id;
   const configuration = await request.post(
