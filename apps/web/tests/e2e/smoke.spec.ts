@@ -421,6 +421,47 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     "Phase 5 configuration B",
     "2070-01-01T00:00:00Z",
   );
+  const analyticsCsv = (changed: boolean, startedAt: string) => {
+    const rows = ["timestamp,signal,value,unit,record_id,sequence"];
+    let sequence = 0;
+    for (let tick = 0; tick <= 90; tick += 1) {
+      const second = tick / 5;
+      const start =
+        second >= 1 && second <= 5
+          ? 1
+          : second >= 7 && second <= 11
+            ? 7
+            : second >= 13 && second <= 17
+              ? 13
+              : -1;
+      const offset = start < 0 ? 0 : second - start;
+      const signals: [string, number, string][] =
+        start >= 0
+          ? [
+              ["rpm", 2800 + offset * 450, "rpm"],
+              ["speed", 18 + offset * (changed ? 1.7 : 2), "m/s"],
+              ["throttle", 90, "%"],
+              ["boost", (changed ? 105000 : 120000) + offset * 500, "Pa"],
+              ["iat", (changed ? 315 : 300) + offset, "K"],
+              ["hpfp", changed ? 17500000 : 19000000, "Pa"],
+            ]
+          : [
+              ["rpm", 2200, "rpm"],
+              ["speed", 16, "m/s"],
+              ["throttle", 20, "%"],
+              ["boost", 5000, "Pa"],
+              ["iat", changed ? 314 : 299, "K"],
+              ["hpfp", 12000000, "Pa"],
+            ];
+      for (const [signal, value, unit] of signals) {
+        rows.push(
+          `${new Date(Date.parse(startedAt) + tick * 200).toISOString()},${signal},${value},${unit},p5-${sequence},${sequence}`,
+        );
+        sequence += 1;
+      }
+    }
+    return rows.join("\n");
+  };
   for (const [configurationId, year, changed] of [
     [configurationA.id, 2061, false],
     [configurationA.id, 2062, false],
@@ -449,7 +490,7 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
           file: {
             name: "phase5.csv",
             mimeType: "text/csv",
-            buffer: Buffer.from(phase3Csv(changed, startedAt)),
+            buffer: Buffer.from(analyticsCsv(changed, startedAt)),
           },
         },
       },
