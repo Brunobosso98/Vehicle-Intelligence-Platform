@@ -398,3 +398,161 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
     }),
   );
 });
+
+test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
+  test.setTimeout(600_000);
+  const vehicles = (await (
+    await request.get("http://127.0.0.1:8000/api/v1/vehicles")
+  ).json()) as { id: string }[];
+  const vehicleId = vehicles[0].id;
+  async function configuration(description: string, effective_at: string) {
+    const response = await request.post(
+      `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
+      { data: { effective_at, description, provenance: "phase5-browser-e2e" } },
+    );
+    expect(response.ok(), await response.text()).toBeTruthy();
+    return (await response.json()) as { id: string };
+  }
+  const configurationA = await configuration(
+    "Phase 5 configuration A",
+    "2060-01-01T00:00:00Z",
+  );
+  const configurationB = await configuration(
+    "Phase 5 configuration B",
+    "2070-01-01T00:00:00Z",
+  );
+  const analyticsCsv = (changed: boolean, startedAt: string) => {
+    const rows = ["timestamp,signal,value,unit,record_id,sequence"];
+    let sequence = 0;
+    for (let tick = 0; tick <= 90; tick += 1) {
+      const second = tick / 5;
+      const start =
+        second >= 1 && second <= 5
+          ? 1
+          : second >= 7 && second <= 11
+            ? 7
+            : second >= 13 && second <= 17
+              ? 13
+              : -1;
+      const offset = start < 0 ? 0 : second - start;
+      const signals: [string, number, string][] =
+        start >= 0
+          ? [
+              ["rpm", 2800 + offset * 450, "rpm"],
+              ["speed", 18 + offset * (changed ? 1.7 : 2), "m/s"],
+              ["throttle", 90, "%"],
+              ["boost", (changed ? 105000 : 120000) + offset * 500, "Pa"],
+              ["iat", (changed ? 315 : 300) + offset, "K"],
+              ["hpfp", changed ? 17500000 : 19000000, "Pa"],
+            ]
+          : [
+              ["rpm", 2200, "rpm"],
+              ["speed", 16, "m/s"],
+              ["throttle", 20, "%"],
+              ["boost", 5000, "Pa"],
+              ["iat", changed ? 314 : 299, "K"],
+              ["hpfp", 12000000, "Pa"],
+            ];
+      for (const [signal, value, unit] of signals) {
+        rows.push(
+          `${new Date(Date.parse(startedAt) + tick * 200).toISOString()},${signal},${value},${unit},p5-${sequence},${sequence}`,
+        );
+        sequence += 1;
+      }
+    }
+    return rows.join("\n");
+  };
+  for (const [configurationId, year, changed] of [
+    [configurationA.id, 2061, false],
+    [configurationA.id, 2062, false],
+    [configurationA.id, 2063, false],
+    [configurationB.id, 2071, true],
+    [configurationB.id, 2072, true],
+    [configurationB.id, 2073, true],
+  ] as const) {
+    const startedAt = `${year}-01-01T00:00:00Z`;
+    const created = await request.post(
+      "http://127.0.0.1:8000/api/v1/sessions",
+      {
+        data: {
+          vehicle_id: vehicleId,
+          configuration_id: configurationId,
+          source_type: "csv",
+          started_at: startedAt,
+        },
+      },
+    );
+    const session = (await created.json()) as { id: string };
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase5.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(analyticsCsv(changed, startedAt)),
+          },
+        },
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    const analyzed = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+      { data: { profile: "generic-v1" } },
+    );
+    expect(analyzed.ok(), await analyzed.text()).toBeTruthy();
+  }
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Analytics workspace" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Observed association is not root-cause/),
+  ).toBeVisible();
+  const choices = page.getByRole("checkbox");
+  await choices.nth(0).check();
+  await choices.nth(1).check();
+  await page.getByRole("button", { name: "Compare pulls" }).click();
+  const result = page.locator(".analytics-result");
+  await expect(
+    result.getByRole("heading", { name: "RPM-normalized comparison" }),
+  ).toBeVisible();
+  await expect(result.getByText("Algorithm")).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase5-pull-comparison.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Analyze repeated pulls" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Repeated-pull progression" }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Vehicle configuration")
+    .selectOption(configurationA.id);
+  await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Observed historical baseline" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "View boost history" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Configuration-segmented history" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Compare configurations" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Observed before/after difference" }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase5-history-before-after.png",
+    fullPage: true,
+  });
+  const insufficient = await configuration(
+    "Phase 5 insufficient history",
+    "2080-01-01T00:00:00Z",
+  );
+  await page.reload();
+  await page.getByLabel("Vehicle configuration").selectOption(insufficient.id);
+  await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Historical analytics are unavailable",
+  );
+});

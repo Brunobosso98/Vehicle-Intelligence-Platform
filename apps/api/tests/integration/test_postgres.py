@@ -104,12 +104,70 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "provisional_findings",
             "dataset_capability_reports",
             "stream_dead_letters",
+            "analytics_runs",
         }
         assert await connection.scalar(
             text(
                 "SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables "
                 "WHERE hypertable_name='telemetry_samples')"
             )
+        )
+
+    # Phase 5 semantic boundary: discover the current head and direct parent rather than
+    # duplicating a stale revision literal in migration guards.
+    head_revision = script.get_revision(expected_head)
+    assert head_revision is not None and head_revision.down_revision is not None
+    phase5_parent = str(head_revision.down_revision)
+    phase5_downgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "downgrade", phase5_parent, cwd=api, env=env
+    )
+    assert await phase5_downgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == phase5_parent
+        )
+        assert await connection.scalar(text("SELECT to_regclass('analytics_runs')")) is None
+        for retained in (
+            "acquisition_sessions",
+            "stream_receipts",
+            "provisional_findings",
+            "dataset_capability_reports",
+            "stream_dead_letters",
+            "detected_events",
+            "event_analysis_runs",
+            "pulls",
+            "telemetry_samples",
+        ):
+            assert (
+                await connection.scalar(text("SELECT to_regclass(:table)"), {"table": retained})
+                == retained
+            )
+        assert await connection.scalar(
+            text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
+        )
+        assert await connection.scalar(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables "
+                "WHERE hypertable_name='telemetry_samples')"
+            )
+        )
+    phase5_reupgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", expected_head, cwd=api, env=env
+    )
+    assert await phase5_reupgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == expected_head
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('analytics_runs')"))
+            == "analytics_runs"
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('acquisition_sessions')"))
+            == "acquisition_sessions"
         )
     app = create_app(Settings(database_url=url, environment="test"))
     async with (
@@ -262,4 +320,154 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             for event in after
         }
         assert len(identities) == len(after)
+        phase5_pulls = (await client.get(f"/api/v1/sessions/{multi_session['id']}/pulls")).json()
+        pull_ids = [pull["id"] for pull in phase5_pulls]
+        analytics = await client.post(
+            "/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids}
+        )
+        assert analytics.status_code == 200
+        payload = analytics.json()
+        assert payload["algorithm_version"] == "1.0.0"
+        assert len(payload["configuration_hash"]) == 64
+        assert payload["result"]["sequence"]
+        reused = await client.post("/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids})
+        assert reused.json()["id"] == payload["id"] and reused.json()["reused"] is True
+        recomputed = await client.post(
+            "/api/v1/analytics/pulls/repeated",
+            json={"pull_ids": pull_ids, "recompute": True},
+        )
+        assert recomputed.status_code == 200 and recomputed.json()["id"] != payload["id"]
+        async with engine.connect() as connection:
+            persisted = await connection.scalar(
+                text("SELECT count(*) FROM analytics_runs WHERE analytics_type='repeated_pulls'")
+            )
+            assert persisted == 2
+        configuration_a = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2020-01-01T00:00:00Z",
+                    "description": "A",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        configuration_b = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2030-01-01T00:00:00Z",
+                    "description": "B",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "UPDATE driving_sessions SET configuration_id=:configuration WHERE id=:session"
+                ),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+            await connection.execute(
+                text("UPDATE pulls SET configuration_id=:configuration WHERE session_id=:session"),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+
+        sessions_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: [multi_session["id"]],
+            configuration_b["id"]: [],
+        }
+        pulls_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: pull_ids,
+            configuration_b["id"]: [],
+        }
+        for configuration in (
+            configuration_a,
+            configuration_a,
+            configuration_b,
+            configuration_b,
+            configuration_b,
+        ):
+            created = (
+                await client.post(
+                    "/api/v1/sessions",
+                    json={
+                        "vehicle_id": vehicle["id"],
+                        "configuration_id": configuration["id"],
+                        "source_type": "csv",
+                        "started_at": scenario.frames[0].observed_at.isoformat(),
+                    },
+                )
+            ).json()
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/imports/csv",
+                    files={"file": ("history.csv", "\n".join(lines), "text/csv")},
+                )
+            ).status_code == 200
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/analysis", json={"profile": "generic-v1"}
+                )
+            ).status_code == 200
+            sessions_by_configuration[configuration["id"]].append(created["id"])
+            history_pulls = (await client.get(f"/api/v1/sessions/{created['id']}/pulls")).json()
+            pulls_by_configuration[configuration["id"]].extend(pull["id"] for pull in history_pulls)
+
+        comparison = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:2]},
+        )
+        assert comparison.status_code == 200 and comparison.json()["result"]["common_rpm_range"]
+        session_result = await client.post(
+            f"/api/v1/sessions/{sessions_by_configuration[configuration_a['id']][1]}/analytics",
+            json={},
+        )
+        assert session_result.status_code == 200
+        cross = await client.post(
+            "/api/v1/analytics/sessions/compare",
+            params=[
+                ("session_ids", item)
+                for item in sessions_by_configuration[configuration_a["id"]][:2]
+            ],
+            json={},
+        )
+        assert cross.status_code == 200
+        baseline_a = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={},
+        )
+        assert baseline_a.status_code == 200 and baseline_a.json()["result"]["session_count"] >= 3
+        rebuilt = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={"recompute": True},
+        )
+        assert rebuilt.json()["id"] != baseline_a.json()["id"]
+        trend_result = await client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/boost", json={})
+        assert set(trend_result.json()["result"]["segments_by_configuration"]) == {
+            configuration_a["id"],
+            configuration_b["id"],
+        }
+        query = [
+            ("after_pull_ids", item) for item in pulls_by_configuration[configuration_b["id"]][:3]
+        ]
+        before_after = await client.post(
+            "/api/v1/analytics/configurations/compare",
+            params=query,
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:3]},
+        )
+        assert before_after.status_code == 200 and before_after.json()["result"][
+            "sample_sizes"
+        ] == {"before": 3, "after": 3}
+        isolated = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={
+                "pull_ids": [
+                    pulls_by_configuration[configuration_a["id"]][0],
+                    pulls_by_configuration[configuration_b["id"]][0],
+                ]
+            },
+        )
+        assert isolated.json()["result"]["sufficiency"] == "insufficient"
     await engine.dispose()

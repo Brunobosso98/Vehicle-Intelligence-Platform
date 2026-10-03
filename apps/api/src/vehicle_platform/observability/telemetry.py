@@ -135,6 +135,18 @@ class Telemetry:
             "acquisition.finalization.duration", unit="s"
         )
         self.provisional_events = meter.create_counter("acquisition.provisional.events")
+        # Phase 5 labels are bounded analytics type/status/rejection vocabularies only.
+        self.analytics_runs = meter.create_counter("analytics.runs", unit="{run}")
+        self.analytics_duration = meter.create_histogram("analytics.duration", unit="s")
+        self.analytics_pull_comparisons = meter.create_counter("analytics.pull.comparisons")
+        self.analytics_rejected_comparisons = meter.create_counter("analytics.comparisons.rejected")
+        self.analytics_insufficient = meter.create_counter("analytics.insufficient_data")
+        self.analytics_baseline_builds = meter.create_counter("analytics.baseline.builds")
+        self.analytics_baseline_contributors = meter.create_histogram(
+            "analytics.baseline.contributors", unit="{pull}"
+        )
+        self.analytics_trend_builds = meter.create_counter("analytics.trend.builds")
+        self.analytics_failures = meter.create_counter("analytics.failures")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()
