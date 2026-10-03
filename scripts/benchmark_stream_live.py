@@ -72,7 +72,7 @@ async def main() -> None:
         # Shared CI runners can drain Kafka/TimescaleDB more slowly than developer machines.
         # This remains a lossless completion gate, not a latency SLO; Phase 4 deliberately did
         # not establish an exact end-to-end time objective.
-        deadline = time.monotonic() + 300
+        deadline = time.monotonic() + 600
         persisted = 0
         while time.monotonic() < deadline:
             session = (
