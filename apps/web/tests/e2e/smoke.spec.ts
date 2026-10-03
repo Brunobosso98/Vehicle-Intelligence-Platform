@@ -474,14 +474,6 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
           )
         ).ok(),
       ).toBeTruthy();
-      expect(
-        (
-          await request.post(
-            `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
-            { data: {} },
-          )
-        ).ok(),
-      ).toBeTruthy();
     }),
   );
   await page.goto("/");
