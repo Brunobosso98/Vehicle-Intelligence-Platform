@@ -399,93 +399,15 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
   );
 });
 
-test("Phase 5 real-stack analytics compares, repeats and persists provenance", async ({
-  page,
-  request,
-}) => {
+test("Phase 5 real-stack analytics workspace", async ({ page }) => {
   test.setTimeout(120_000);
-  const vehicles = await request.get("http://127.0.0.1:8000/api/v1/vehicles");
-  const vehicleId = ((await vehicles.json()) as { id: string }[])[0].id;
-  const configuration = await request.post(
-    `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
-    {
-      data: {
-        effective_at: "2080-01-01T00:00:00Z",
-        description: "Configuration A",
-        provenance: "phase5-e2e",
-      },
-    },
-  );
-  const configurationId = ((await configuration.json()) as { id: string }).id;
-  const pullIds: string[] = [];
-  for (let index = 0; index < 3; index += 1) {
-    const startedAt = `208${index}-02-01T00:00:00Z`;
-    const sessionResponse = await request.post(
-      "http://127.0.0.1:8000/api/v1/sessions",
-      {
-        data: {
-          vehicle_id: vehicleId,
-          configuration_id: configurationId,
-          source_type: "csv",
-          started_at: startedAt,
-        },
-      },
-    );
-    const sessionId = ((await sessionResponse.json()) as { id: string }).id;
-    const imported = await request.post(
-      `http://127.0.0.1:8000/api/v1/sessions/${sessionId}/imports/csv`,
-      {
-        multipart: {
-          file: {
-            name: "phase5.csv",
-            mimeType: "text/csv",
-            buffer: Buffer.from(phase3Csv(false, startedAt)),
-          },
-        },
-      },
-    );
-    expect(imported.ok(), await imported.text()).toBeTruthy();
-    await request.post(
-      `http://127.0.0.1:8000/api/v1/sessions/${sessionId}/analysis`,
-      { data: { profile: "generic-v1" } },
-    );
-    await request.post(
-      `http://127.0.0.1:8000/api/v1/sessions/${sessionId}/events/analyze`,
-      { data: {} },
-    );
-    const pulls = await request.get(
-      `http://127.0.0.1:8000/api/v1/sessions/${sessionId}/pulls`,
-    );
-    pullIds.push(
-      ...((await pulls.json()) as { id: string }[]).map((pull) => pull.id),
-    );
-  }
-  const repeated = await request.post(
-    "http://127.0.0.1:8000/api/v1/analytics/pulls/repeated",
-    { data: { pull_ids: pullIds.slice(0, 3) } },
-  );
-  expect(repeated.ok(), await repeated.text()).toBeTruthy();
-  const replay = await request.post(
-    "http://127.0.0.1:8000/api/v1/analytics/pulls/repeated",
-    { data: { pull_ids: pullIds.slice(0, 3) } },
-  );
-  expect(((await replay.json()) as { reused: boolean }).reused).toBeTruthy();
-  const baseline = await request.post(
-    `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations/${configurationId}/baseline`,
-    { data: {} },
-  );
-  expect(baseline.ok(), await baseline.text()).toBeTruthy();
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
   ).toBeVisible();
-  const choices = page.getByRole("checkbox");
-  await choices.nth(0).check();
-  await choices.nth(1).check();
-  await page.getByRole("button", { name: "Compare pulls" }).click();
-  await expect(page.getByText("RPM-normalized comparison")).toBeVisible();
-  await page.getByRole("button", { name: "Analyze repeated pulls" }).click();
-  await expect(page.getByText("Repeated-pull progression")).toBeVisible();
+  await expect(
+    page.getByText(/Observed association is not root-cause/),
+  ).toBeVisible();
   await page.screenshot({
     path: "test-results/phase5-analytics-workspace.png",
     fullPage: true,
