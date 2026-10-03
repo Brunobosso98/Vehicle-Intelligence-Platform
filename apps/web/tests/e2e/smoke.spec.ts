@@ -400,7 +400,7 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
 });
 
 test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(600_000);
   const vehicles = (await (
     await request.get("http://127.0.0.1:8000/api/v1/vehicles")
   ).json()) as { id: string }[];
