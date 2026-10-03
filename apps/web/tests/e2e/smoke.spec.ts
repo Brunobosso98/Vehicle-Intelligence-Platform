@@ -429,57 +429,61 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     "Configuration B",
     "2080-01-01T00:00:00Z",
   );
-  for (const [configuration, year] of [
-    [a, 2071],
-    [a, 2072],
-    [a, 2073],
-    [b, 2081],
-    [b, 2082],
-    [b, 2083],
-  ] as const) {
-    const startedAt = `${year}-01-01T00:00:00Z`;
-    const sessionResponse = await request.post(
-      "http://127.0.0.1:8000/api/v1/sessions",
-      {
-        data: {
-          vehicle_id: vehicleId,
-          configuration_id: configuration.id,
-          source_type: "csv",
-          started_at: startedAt,
-        },
-      },
-    );
-    const session = (await sessionResponse.json()) as { id: string };
-    const imported = await request.post(
-      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
-      {
-        multipart: {
-          file: {
-            name: "phase5.csv",
-            mimeType: "text/csv",
-            buffer: Buffer.from(phase3Csv(year >= 2080, startedAt)),
+  await Promise.all(
+    (
+      [
+        [a, 2071],
+        [a, 2072],
+        [a, 2073],
+        [b, 2081],
+        [b, 2082],
+        [b, 2083],
+      ] as const
+    ).map(async ([configuration, year]) => {
+      const startedAt = `${year}-01-01T00:00:00Z`;
+      const sessionResponse = await request.post(
+        "http://127.0.0.1:8000/api/v1/sessions",
+        {
+          data: {
+            vehicle_id: vehicleId,
+            configuration_id: configuration.id,
+            source_type: "csv",
+            started_at: startedAt,
           },
         },
-      },
-    );
-    expect(imported.ok(), await imported.text()).toBeTruthy();
-    expect(
-      (
-        await request.post(
-          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
-          { data: { profile: "generic-v1" } },
-        )
-      ).ok(),
-    ).toBeTruthy();
-    expect(
-      (
-        await request.post(
-          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
-          { data: {} },
-        )
-      ).ok(),
-    ).toBeTruthy();
-  }
+      );
+      const session = (await sessionResponse.json()) as { id: string };
+      const imported = await request.post(
+        `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+        {
+          multipart: {
+            file: {
+              name: "phase5.csv",
+              mimeType: "text/csv",
+              buffer: Buffer.from(phase3Csv(year >= 2080, startedAt)),
+            },
+          },
+        },
+      );
+      expect(imported.ok(), await imported.text()).toBeTruthy();
+      expect(
+        (
+          await request.post(
+            `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+            { data: { profile: "generic-v1" } },
+          )
+        ).ok(),
+      ).toBeTruthy();
+      expect(
+        (
+          await request.post(
+            `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
+            { data: {} },
+          )
+        ).ok(),
+      ).toBeTruthy();
+    }),
+  );
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
