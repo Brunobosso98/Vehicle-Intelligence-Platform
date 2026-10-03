@@ -38,6 +38,33 @@ test("compares selected pulls and exposes evidence provenance", async () => {
           generated_at: "2026-01-01T00:00:00Z",
         }),
       ),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "repeated",
+          status: "completed",
+          result: {
+            sufficiency: "sufficient",
+            sequence: [
+              {
+                index: 1,
+                pull_id: "pull-a",
+                start_iat: 300,
+                median_boost: 100000,
+                minimum_fuel_pressure: 19000000,
+                median_speed: 20,
+                event_count: 0,
+              },
+            ],
+            repeatability: { median_boost: { median: 100000, mad: 0, iqr: 0 } },
+          },
+          algorithm_version: "1.0.0",
+          configuration_hash: "1234567890abcdef",
+          source_fingerprint: "fingerprint",
+          generated_at: "2026-01-01T00:00:00Z",
+        }),
+      ),
     );
   render(<AnalyticsWorkspace />);
   const choices = await screen.findAllByRole("checkbox");
@@ -54,6 +81,13 @@ test("compares selected pulls and exposes evidence provenance", async () => {
   expect(
     screen.getByText(/Observed association is not root-cause/),
   ).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Analyze repeated pulls" }),
+  );
+  expect(
+    await screen.findByText("Repeated-pull progression"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("table")).toHaveTextContent("100000");
 });
 
 test("shows insufficient history and sanitized request failure", async () => {
