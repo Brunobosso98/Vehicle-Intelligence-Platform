@@ -30,6 +30,8 @@ from vehicle_platform.acquisition.service import (
     AcquisitionService,
 )
 from vehicle_platform.analysis.service import AnalysisLimitError, SessionAnalysisService
+from vehicle_platform.analytics.domain import AnalyticsConfig
+from vehicle_platform.analytics.service import AnalyticsLimitError, AnalyticsService
 from vehicle_platform.api.contracts import ErrorResponse, Health, Ready, Version
 from vehicle_platform.api.domain_contracts import (
     AcquisitionBatch,
@@ -40,6 +42,8 @@ from vehicle_platform.api.domain_contracts import (
     AcquisitionStatusResponse,
     AnalysisRequest,
     AnalysisResult,
+    AnalyticsRequest,
+    AnalyticsResultResponse,
     ConfigurationCreate,
     DetectedEvent,
     DrivingSession,
@@ -749,5 +753,100 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         if result is None:
             raise HTTPException(404, "event not found")
         return result
+
+    def analytics_config(payload: AnalyticsRequest) -> AnalyticsConfig:
+        return AnalyticsConfig(
+            rpm_bin_size=payload.rpm_bin_size,
+            minimum_bin_samples=payload.minimum_bin_samples,
+            maximum_gap_seconds=payload.maximum_gap_seconds,
+        )
+
+    @routes.post(
+        "/api/v1/pulls/{pull_id}/analytics",
+        response_model=AnalyticsResultResponse,
+        operation_id="get_pull_analytics",
+    )
+    async def get_pull_analytics(
+        pull_id: UUID, payload: AnalyticsRequest
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).pull(
+                pull_id, analytics_config(payload), payload.recompute
+            )
+        except LookupError as exc:
+            raise HTTPException(404, "pull not found") from exc
+
+    @routes.post(
+        "/api/v1/analytics/pulls/compare",
+        response_model=AnalyticsResultResponse,
+        operation_id="compare_pull_analytics",
+    )
+    async def compare_pull_analytics(payload: AnalyticsRequest) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).comparison(
+                payload.pull_ids, analytics_config(payload), payload.recompute
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except LookupError as exc:
+            raise HTTPException(404, "pull not found") from exc
+
+    @routes.post(
+        "/api/v1/analytics/pulls/repeated",
+        response_model=AnalyticsResultResponse,
+        operation_id="analyze_repeated_pulls",
+    )
+    async def analyze_repeated_pulls(payload: AnalyticsRequest) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).repeated(
+                payload.pull_ids, analytics_config(payload), payload.recompute
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/vehicles/{vehicle_id}/configurations/{configuration_id}/baseline",
+        response_model=AnalyticsResultResponse,
+        operation_id="build_vehicle_baseline",
+    )
+    async def build_vehicle_baseline(
+        vehicle_id: UUID, configuration_id: UUID, payload: AnalyticsRequest
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).vehicle_baseline(
+                vehicle_id, configuration_id, analytics_config(payload), payload.recompute
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/vehicles/{vehicle_id}/trends/{metric}",
+        response_model=AnalyticsResultResponse,
+        operation_id="get_vehicle_trends",
+    )
+    async def get_vehicle_trends(
+        vehicle_id: UUID, metric: str, payload: AnalyticsRequest
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).trends(
+                vehicle_id, metric, analytics_config(payload)
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/analytics/configurations/compare",
+        response_model=AnalyticsResultResponse,
+        operation_id="compare_configurations",
+    )
+    async def compare_configurations(
+        payload: AnalyticsRequest, after_pull_ids: list[UUID] = Query(max_length=20)
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).modifications(
+                payload.pull_ids, after_pull_ids, analytics_config(payload)
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     return routes
