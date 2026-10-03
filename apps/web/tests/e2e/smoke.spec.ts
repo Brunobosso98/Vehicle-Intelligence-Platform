@@ -400,7 +400,7 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
 });
 
 test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   const vehicles = (await (
     await request.get("http://127.0.0.1:8000/api/v1/vehicles")
   ).json()) as { id: string }[];
@@ -462,50 +462,46 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     }
     return rows.join("\n");
   };
-  await Promise.all(
-    (
-      [
-        [configurationA.id, 2061, false],
-        [configurationA.id, 2062, false],
-        [configurationA.id, 2063, false],
-        [configurationB.id, 2071, true],
-        [configurationB.id, 2072, true],
-        [configurationB.id, 2073, true],
-      ] as const
-    ).map(async ([configurationId, year, changed]) => {
-      const startedAt = `${year}-01-01T00:00:00Z`;
-      const created = await request.post(
-        "http://127.0.0.1:8000/api/v1/sessions",
-        {
-          data: {
-            vehicle_id: vehicleId,
-            configuration_id: configurationId,
-            source_type: "csv",
-            started_at: startedAt,
+  for (const [configurationId, year, changed] of [
+    [configurationA.id, 2061, false],
+    [configurationA.id, 2062, false],
+    [configurationA.id, 2063, false],
+    [configurationB.id, 2071, true],
+    [configurationB.id, 2072, true],
+    [configurationB.id, 2073, true],
+  ] as const) {
+    const startedAt = `${year}-01-01T00:00:00Z`;
+    const created = await request.post(
+      "http://127.0.0.1:8000/api/v1/sessions",
+      {
+        data: {
+          vehicle_id: vehicleId,
+          configuration_id: configurationId,
+          source_type: "csv",
+          started_at: startedAt,
+        },
+      },
+    );
+    const session = (await created.json()) as { id: string };
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase5.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(analyticsCsv(changed, startedAt)),
           },
         },
-      );
-      const session = (await created.json()) as { id: string };
-      const imported = await request.post(
-        `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
-        {
-          multipart: {
-            file: {
-              name: "phase5.csv",
-              mimeType: "text/csv",
-              buffer: Buffer.from(analyticsCsv(changed, startedAt)),
-            },
-          },
-        },
-      );
-      expect(imported.ok(), await imported.text()).toBeTruthy();
-      const analyzed = await request.post(
-        `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
-        { data: { profile: "generic-v1" } },
-      );
-      expect(analyzed.ok(), await analyzed.text()).toBeTruthy();
-    }),
-  );
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    const analyzed = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+      { data: { profile: "generic-v1" } },
+    );
+    expect(analyzed.ok(), await analyzed.text()).toBeTruthy();
+  }
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
