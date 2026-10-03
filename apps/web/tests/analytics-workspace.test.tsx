@@ -216,6 +216,22 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
         before: { sufficiency: "sufficient" },
         after: { sufficiency: "sufficient" },
       }),
+    )
+    .mockResolvedValueOnce(
+      response({
+        sufficiency: "insufficient",
+        point_count: 0,
+        limitations: ["insufficient_comparable_history"],
+      }),
+    )
+    .mockResolvedValueOnce(
+      response({
+        sufficiency: "insufficient",
+        session_count: 0,
+        pull_count: 0,
+        excluded_pull_count: 2,
+        envelopes: {},
+      }),
     );
   render(<AnalyticsWorkspace />);
   await screen.findByLabelText("Vehicle configuration");
@@ -241,5 +257,18 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
       selector: "h3",
     }),
   ).toBeInTheDocument();
-  expect(screen.getByText(/3 pulls/)).toBeInTheDocument();
+  expect(screen.getAllByText(/3 pulls/).length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole("button", { name: "View boost history" }));
+  expect(
+    await screen.findByText("Insufficient comparable history for this trend."),
+  ).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Vehicle configuration"), {
+    target: { value: "config-b" },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Build historical baseline" }),
+  );
+  expect(
+    await screen.findByText(/0 sessions · 0 contributing pulls/),
+  ).toBeInTheDocument();
 });
