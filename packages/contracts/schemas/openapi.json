@@ -2363,6 +2363,61 @@
         "summary": "Analyze Repeated Pulls"
       }
     },
+    "/api/v1/analytics/sessions/compare": {
+      "post": {
+        "operationId": "compare_sessions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "session_ids",
+            "required": true,
+            "schema": {
+              "items": { "format": "uuid", "type": "string" },
+              "maxItems": 10,
+              "title": "Session Ids",
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Compare Sessions"
+      }
+    },
     "/api/v1/events": {
       "get": {
         "operationId": "list_vehicle_events",
@@ -2959,6 +3014,60 @@
           }
         },
         "summary": "Analyze Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}/analytics": {
+      "post": {
+        "operationId": "get_session_analytics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Session Analytics"
       }
     },
     "/api/v1/sessions/{session_id}/capabilities": {

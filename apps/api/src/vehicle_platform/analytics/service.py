@@ -208,6 +208,47 @@ class AnalyticsService:
             "repeated_pulls", pulls, config, lambda: repeated_pulls(pulls, config), recompute
         )
 
+    async def session(
+        self, session_id: UUID, config: AnalyticsConfig, recompute: bool = False
+    ) -> AnalyticsResultResponse:
+        async with self.database.session() as db:
+            ids: list[UUID] = list(
+                (
+                    await db.execute(
+                        text(
+                            "SELECT id FROM pulls WHERE session_id=:id ORDER BY started_at LIMIT 20"
+                        ),
+                        {"id": session_id},
+                    )
+                ).scalars()
+            )
+        pulls = await self._load(ids)
+        return await self._persist(
+            "session", pulls, config, lambda: repeated_pulls(pulls, config), recompute
+        )
+
+    async def cross_sessions(
+        self, session_ids: list[UUID], config: AnalyticsConfig, recompute: bool = False
+    ) -> AnalyticsResultResponse:
+        if not 2 <= len(session_ids) <= 10:
+            raise AnalyticsLimitError("cross-session comparison requires 2 to 10 sessions")
+        async with self.database.session() as db:
+            ids: list[UUID] = list(
+                (
+                    await db.execute(
+                        text(
+                            "SELECT id FROM pulls WHERE session_id = ANY(:ids) "
+                            "ORDER BY started_at,id LIMIT 20"
+                        ),
+                        {"ids": session_ids},
+                    )
+                ).scalars()
+            )
+        pulls = await self._load(ids)
+        return await self._persist(
+            "cross_session", pulls, config, lambda: compare_pulls(pulls, config), recompute
+        )
+
     async def vehicle_baseline(
         self,
         vehicle_id: UUID,

@@ -805,6 +805,36 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
             raise HTTPException(422, str(exc)) from exc
 
     @routes.post(
+        "/api/v1/sessions/{session_id}/analytics",
+        response_model=AnalyticsResultResponse,
+        operation_id="get_session_analytics",
+    )
+    async def get_session_analytics(
+        session_id: UUID, payload: AnalyticsRequest
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).session(
+                session_id, analytics_config(payload), payload.recompute
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
+        "/api/v1/analytics/sessions/compare",
+        response_model=AnalyticsResultResponse,
+        operation_id="compare_sessions",
+    )
+    async def compare_sessions(
+        payload: AnalyticsRequest, session_ids: list[UUID] = Query(max_length=10)
+    ) -> AnalyticsResultResponse:
+        try:
+            return await AnalyticsService(store()).cross_sessions(
+                session_ids, analytics_config(payload), payload.recompute
+            )
+        except AnalyticsLimitError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post(
         "/api/v1/vehicles/{vehicle_id}/configurations/{configuration_id}/baseline",
         response_model=AnalyticsResultResponse,
         operation_id="build_vehicle_baseline",
