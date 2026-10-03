@@ -285,4 +285,132 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
                 text("SELECT count(*) FROM analytics_runs WHERE analytics_type='repeated_pulls'")
             )
             assert persisted == 2
+        configuration_a = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2020-01-01T00:00:00Z",
+                    "description": "A",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        configuration_b = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2030-01-01T00:00:00Z",
+                    "description": "B",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "UPDATE driving_sessions SET configuration_id=:configuration WHERE id=:session"
+                ),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+            await connection.execute(
+                text("UPDATE pulls SET configuration_id=:configuration WHERE session_id=:session"),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+
+        sessions_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: [multi_session["id"]],
+            configuration_b["id"]: [],
+        }
+        pulls_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: pull_ids,
+            configuration_b["id"]: [],
+        }
+        for configuration in (
+            configuration_a,
+            configuration_a,
+            configuration_b,
+            configuration_b,
+            configuration_b,
+        ):
+            created = (
+                await client.post(
+                    "/api/v1/sessions",
+                    json={
+                        "vehicle_id": vehicle["id"],
+                        "configuration_id": configuration["id"],
+                        "source_type": "csv",
+                        "started_at": scenario.frames[0].observed_at.isoformat(),
+                    },
+                )
+            ).json()
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/imports/csv",
+                    files={"file": ("history.csv", "\n".join(lines), "text/csv")},
+                )
+            ).status_code == 200
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/analysis", json={"profile": "generic-v1"}
+                )
+            ).status_code == 200
+            sessions_by_configuration[configuration["id"]].append(created["id"])
+            history_pulls = (await client.get(f"/api/v1/sessions/{created['id']}/pulls")).json()
+            pulls_by_configuration[configuration["id"]].extend(pull["id"] for pull in history_pulls)
+
+        comparison = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:2]},
+        )
+        assert comparison.status_code == 200 and comparison.json()["result"]["common_rpm_range"]
+        session_result = await client.post(
+            f"/api/v1/sessions/{sessions_by_configuration[configuration_a['id']][1]}/analytics",
+            json={},
+        )
+        assert session_result.status_code == 200
+        cross = await client.post(
+            "/api/v1/analytics/sessions/compare",
+            params=[
+                ("session_ids", item)
+                for item in sessions_by_configuration[configuration_a["id"]][:2]
+            ],
+            json={},
+        )
+        assert cross.status_code == 200
+        baseline_a = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={},
+        )
+        assert baseline_a.status_code == 200 and baseline_a.json()["result"]["session_count"] >= 3
+        rebuilt = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={"recompute": True},
+        )
+        assert rebuilt.json()["id"] != baseline_a.json()["id"]
+        trend_result = await client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/boost", json={})
+        assert set(trend_result.json()["result"]["segments_by_configuration"]) == {
+            configuration_a["id"],
+            configuration_b["id"],
+        }
+        query = [
+            ("after_pull_ids", item) for item in pulls_by_configuration[configuration_b["id"]][:3]
+        ]
+        before_after = await client.post(
+            "/api/v1/analytics/configurations/compare",
+            params=query,
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:3]},
+        )
+        assert before_after.status_code == 200 and before_after.json()["result"][
+            "sample_sizes"
+        ] == {"before": 3, "after": 3}
+        isolated = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={
+                "pull_ids": [
+                    pulls_by_configuration[configuration_a["id"]][0],
+                    pulls_by_configuration[configuration_b["id"]][0],
+                ]
+            },
+        )
+        assert isolated.json()["result"]["sufficiency"] == "insufficient"
     await engine.dispose()

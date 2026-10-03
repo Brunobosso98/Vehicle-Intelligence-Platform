@@ -5,6 +5,7 @@ import type { components } from "../../../../packages/contracts/generated/api";
 
 type Pull = components["schemas"]["Pull"];
 type Vehicle = components["schemas"]["Vehicle"];
+type Configuration = components["schemas"]["VehicleConfiguration"];
 type Result = components["schemas"]["AnalyticsResultResponse"];
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -20,22 +21,34 @@ export function AnalyticsWorkspace() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState("comparison");
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [configurations, setConfigurations] = useState<Configuration[]>([]);
+  const [configurationId, setConfigurationId] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
     void request<Vehicle[]>("/api/domain/vehicles", {
       signal: controller.signal,
     })
-      .then((vehicles) =>
-        vehicles[0]
-          ? request<Pull[]>(
-              `/api/domain/pulls?vehicle_id=${vehicles[0].id}&limit=20`,
-              {
-                signal: controller.signal,
-              },
-            )
-          : [],
-      )
+      .then(async (vehicles) => {
+        const current = vehicles[0];
+        setVehicle(current ?? null);
+        if (current) {
+          const configs = await request<Configuration[]>(
+            `/api/domain/vehicles/${current.id}/configurations`,
+            { signal: controller.signal },
+          );
+          setConfigurations(configs);
+          setConfigurationId(configs[0]?.id ?? "");
+          return request<Pull[]>(
+            `/api/domain/pulls?vehicle_id=${current.id}&limit=20`,
+            {
+              signal: controller.signal,
+            },
+          );
+        }
+        return [];
+      })
       .then(
         setPulls,
         () =>
@@ -67,6 +80,45 @@ export function AnalyticsWorkspace() {
     }
   }
 
+  async function history(kind: "baseline" | "trend" | "before-after") {
+    if (!vehicle) return;
+    setBusy(true);
+    setError("");
+    try {
+      let url = `/api/domain/vehicles/${vehicle.id}/trends/boost`;
+      let body: Record<string, unknown> = {};
+      if (kind === "baseline") {
+        url = `/api/domain/vehicles/${vehicle.id}/configurations/${configurationId}/baseline`;
+      } else if (kind === "before-after") {
+        const [before, after] = configurations.slice(0, 2);
+        const beforeIds = pulls
+          .filter((pull) => pull.configuration_id === before?.id)
+          .map((pull) => pull.id);
+        const afterIds = pulls
+          .filter((pull) => pull.configuration_id === after?.id)
+          .map((pull) => pull.id);
+        const query = new URLSearchParams();
+        afterIds.forEach((id) => query.append("after_pull_ids", id));
+        url = `/api/domain/analytics/configurations/compare?${query}`;
+        body = { pull_ids: beforeIds };
+      }
+      setResult(
+        await request<Result>(url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+      );
+      setView(kind);
+    } catch {
+      setError(
+        "Historical analytics are unavailable for the selected evidence.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const payload = result?.result as
     | {
         sufficiency?: string;
@@ -77,6 +129,29 @@ export function AnalyticsWorkspace() {
           string,
           { median?: number; mad?: number; iqr?: number }
         >;
+        session_count?: number;
+        pull_count?: number;
+        excluded_pull_count?: number;
+        envelopes?: Record<
+          string,
+          Array<{
+            rpm_start: number;
+            rpm_end: number;
+            median?: number;
+            p25?: number;
+            p75?: number;
+            unit?: string;
+          }>
+        >;
+        segments_by_configuration?: Record<
+          string,
+          Array<{ observed_at: string; value: number; unit: string }>
+        >;
+        point_count?: number;
+        sample_sizes?: { before: number; after: number };
+        before?: { sufficiency?: string; pull_count?: number };
+        after?: { sufficiency?: string; pull_count?: number };
+        language?: string;
         profiles?: Array<{
           curves?: { boost?: Array<{ rpm_start: number; median?: number }> };
         }>;
@@ -151,7 +226,13 @@ export function AnalyticsWorkspace() {
           <h3>
             {view === "comparison"
               ? "RPM-normalized comparison"
-              : "Repeated-pull progression"}
+              : view === "repeated pulls"
+                ? "Repeated-pull progression"
+                : view === "baseline"
+                  ? "Observed historical baseline"
+                  : view === "trend"
+                    ? "Configuration-segmented history"
+                    : "Observed before/after difference"}
           </h3>
           <dl className="status-list">
             <div>
@@ -223,6 +304,87 @@ export function AnalyticsWorkspace() {
               ))}
             </dl>
           ) : null}
+          {view === "baseline" ? (
+            <>
+              <p>
+                {payload?.session_count ?? 0} sessions ·{" "}
+                {payload?.pull_count ?? 0} contributing pulls ·{" "}
+                {payload?.excluded_pull_count ?? 0} excluded
+              </p>
+              <table>
+                <caption>Observed boost RPM-bin envelope</caption>
+                <thead>
+                  <tr>
+                    <th>RPM bin</th>
+                    <th>P25</th>
+                    <th>Median</th>
+                    <th>P75</th>
+                    <th>Unit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(payload?.envelopes?.boost ?? []).map((bin) => (
+                    <tr key={bin.rpm_start}>
+                      <th>
+                        {bin.rpm_start}–{bin.rpm_end}
+                      </th>
+                      <td>{bin.p25 ?? "Unavailable"}</td>
+                      <td>{bin.median ?? "Unavailable"}</td>
+                      <td>{bin.p75 ?? "Unavailable"}</td>
+                      <td>{bin.unit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
+          {view === "trend" ? (
+            <>
+              {payload?.segments_by_configuration &&
+                Object.entries(payload.segments_by_configuration).map(
+                  ([configuration, points]) => (
+                    <section key={configuration}>
+                      <h4>Configuration {configuration}</h4>
+                      <p>{points.length} historical observations</p>
+                      <ol>
+                        {points.map((point) => (
+                          <li key={point.observed_at}>
+                            {new Date(point.observed_at).toLocaleDateString()}:{" "}
+                            {point.value} {point.unit}
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                  ),
+                )}
+              {!payload?.point_count ? (
+                <p role="status">
+                  Insufficient comparable history for this trend.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {view === "before-after" ? (
+            <>
+              <p>{payload?.language}</p>
+              <dl>
+                <div>
+                  <dt>Before sample</dt>
+                  <dd>
+                    {payload?.sample_sizes?.before ?? 0} pulls (
+                    {payload?.before?.sufficiency ?? "insufficient"})
+                  </dd>
+                </div>
+                <div>
+                  <dt>After sample</dt>
+                  <dd>
+                    {payload?.sample_sizes?.after ?? 0} pulls (
+                    {payload?.after?.sufficiency ?? "insufficient"})
+                  </dd>
+                </div>
+              </dl>
+            </>
+          ) : null}
           {curves.some((curve) =>
             curve.some((point) => point.median != null),
           ) ? (
@@ -286,6 +448,30 @@ export function AnalyticsWorkspace() {
         </article>
         <article>
           <h3>Observed baseline</h3>
+          <label htmlFor="baseline-configuration">Vehicle configuration</label>
+          <select
+            id="baseline-configuration"
+            value={configurationId}
+            onChange={(event) => setConfigurationId(event.target.value)}
+          >
+            {configurations.map((configuration) => (
+              <option key={configuration.id} value={configuration.id}>
+                {configuration.description}
+              </option>
+            ))}
+          </select>
+          <button
+            disabled={!configurationId || busy}
+            onClick={() => void history("baseline")}
+          >
+            Build historical baseline
+          </button>
+          <button
+            disabled={!vehicle || busy}
+            onClick={() => void history("trend")}
+          >
+            View boost history
+          </button>
           <p>
             Baselines and trends are isolated by configuration and appear only
             after three comparable sessions; contributor counts, versions and
@@ -298,6 +484,12 @@ export function AnalyticsWorkspace() {
             Before/after views report configuration sample counts and factual
             deltas only. They never claim that a modification caused a change.
           </p>
+          <button
+            disabled={configurations.length < 2 || busy}
+            onClick={() => void history("before-after")}
+          >
+            Compare configurations
+          </button>
         </article>
       </div>
     </section>

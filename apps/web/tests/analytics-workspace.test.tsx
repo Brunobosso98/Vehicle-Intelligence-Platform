@@ -4,11 +4,21 @@ import { AnalyticsWorkspace } from "../src/components/analytics-workspace";
 
 afterEach(() => vi.restoreAllMocks());
 
-const pull = (id: string) => ({ id, min_rpm: 3000, max_rpm: 5000 });
+const pull = (id: string, configuration_id = "config-a") => ({
+  id,
+  configuration_id,
+  min_rpm: 3000,
+  max_rpm: 5000,
+});
+const configs = [
+  { id: "config-a", description: "Stock" },
+  { id: "config-b", description: "Recorded change" },
+];
 
 test("compares selected pulls and exposes evidence provenance", async () => {
   vi.spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
     .mockResolvedValueOnce(
       new Response(
         JSON.stringify([
@@ -103,6 +113,7 @@ test("compares selected pulls and exposes evidence provenance", async () => {
 test("shows insufficient history and sanitized request failure", async () => {
   vi.spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
     .mockResolvedValueOnce(
       new Response(JSON.stringify([pull("one"), pull("two")])),
     )
@@ -139,4 +150,96 @@ test("handles an empty vehicle collection", async () => {
     await screen.findByText(/Only one or no comparable pull/),
   ).toBeInTheDocument();
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+});
+
+test("renders baseline, segmented trends and factual before-after evidence", async () => {
+  const response = (result: object) =>
+    new Response(
+      JSON.stringify({
+        id: "run",
+        status: "completed",
+        algorithm_version: "1.0.0",
+        configuration_hash: "abcdef1234567890",
+        source_fingerprint: "sources",
+        generated_at: "2026-01-01T00:00:00Z",
+        result,
+      }),
+    );
+  vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([pull("a", "config-a"), pull("b", "config-b")]),
+      ),
+    )
+    .mockResolvedValueOnce(
+      response({
+        sufficiency: "sufficient",
+        session_count: 3,
+        pull_count: 6,
+        excluded_pull_count: 1,
+        envelopes: {
+          boost: [
+            {
+              rpm_start: 3000,
+              rpm_end: 3250,
+              p25: 99000,
+              median: 100000,
+              p75: 101000,
+              unit: "Pa",
+            },
+          ],
+        },
+      }),
+    )
+    .mockResolvedValueOnce(
+      response({
+        sufficiency: "sufficient",
+        point_count: 2,
+        segments_by_configuration: {
+          "config-a": [
+            { observed_at: "2026-01-01T00:00:00Z", value: 100000, unit: "Pa" },
+          ],
+          "config-b": [
+            { observed_at: "2026-02-01T00:00:00Z", value: 105000, unit: "Pa" },
+          ],
+        },
+      }),
+    )
+    .mockResolvedValueOnce(
+      response({
+        sufficiency: "sufficient",
+        language:
+          "Observed before/after difference; association is not root-cause diagnosis.",
+        sample_sizes: { before: 3, after: 4 },
+        before: { sufficiency: "sufficient" },
+        after: { sufficiency: "sufficient" },
+      }),
+    );
+  render(<AnalyticsWorkspace />);
+  await screen.findByLabelText("Vehicle configuration");
+  fireEvent.click(
+    screen.getByRole("button", { name: "Build historical baseline" }),
+  );
+  expect(
+    await screen.findByText("Observed historical baseline"),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/3 sessions · 6 contributing pulls/),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "View boost history" }));
+  expect(
+    await screen.findByText("Configuration-segmented history"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Configuration config-b")).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Compare configurations" }),
+  );
+  expect(
+    await screen.findByText("Observed before/after difference", {
+      selector: "h3",
+    }),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/3 pulls/)).toBeInTheDocument();
 });

@@ -399,8 +399,87 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
   );
 });
 
-test("Phase 5 real-stack analytics workspace", async ({ page }) => {
-  test.setTimeout(120_000);
+test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
+  test.setTimeout(240_000);
+  const vehiclesResponse = await request.get(
+    "http://127.0.0.1:8000/api/v1/vehicles",
+  );
+  const vehicleId = ((await vehiclesResponse.json()) as { id: string }[])[0].id;
+  const createConfiguration = async (
+    description: string,
+    effectiveAt: string,
+  ) => {
+    const response = await request.post(
+      `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
+      {
+        data: {
+          effective_at: effectiveAt,
+          description,
+          provenance: "phase5-e2e",
+        },
+      },
+    );
+    return (await response.json()) as { id: string };
+  };
+  const a = await createConfiguration(
+    "Configuration A",
+    "2070-01-01T00:00:00Z",
+  );
+  const b = await createConfiguration(
+    "Configuration B",
+    "2080-01-01T00:00:00Z",
+  );
+  for (const [configuration, year] of [
+    [a, 2071],
+    [a, 2072],
+    [a, 2073],
+    [b, 2081],
+    [b, 2082],
+    [b, 2083],
+  ] as const) {
+    const startedAt = `${year}-01-01T00:00:00Z`;
+    const sessionResponse = await request.post(
+      "http://127.0.0.1:8000/api/v1/sessions",
+      {
+        data: {
+          vehicle_id: vehicleId,
+          configuration_id: configuration.id,
+          source_type: "csv",
+          started_at: startedAt,
+        },
+      },
+    );
+    const session = (await sessionResponse.json()) as { id: string };
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase5.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(phase3Csv(year >= 2080, startedAt)),
+          },
+        },
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    expect(
+      (
+        await request.post(
+          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+          { data: { profile: "generic-v1" } },
+        )
+      ).ok(),
+    ).toBeTruthy();
+    expect(
+      (
+        await request.post(
+          `http://127.0.0.1:8000/api/v1/sessions/${session.id}/events/analyze`,
+          { data: {} },
+        )
+      ).ok(),
+    ).toBeTruthy();
+  }
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
@@ -408,6 +487,25 @@ test("Phase 5 real-stack analytics workspace", async ({ page }) => {
   await expect(
     page.getByText(/Observed association is not root-cause/),
   ).toBeVisible();
+  const pulls = page.getByRole("checkbox");
+  await pulls.nth(0).check();
+  await pulls.nth(1).check();
+  await page.getByRole("button", { name: "Compare pulls" }).click();
+  await expect(page.getByText("RPM-normalized comparison")).toBeVisible();
+  await expect(page.getByText(/3000|3200|common/i)).toBeVisible();
+  await page.getByRole("button", { name: "Analyze repeated pulls" }).click();
+  await expect(page.getByText("Repeated-pull progression")).toBeVisible();
+  await expect(page.getByRole("table")).toContainText("Start IAT");
+  await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(page.getByText("Observed historical baseline")).toBeVisible();
+  await expect(page.getByText(/3 sessions/)).toBeVisible();
+  await page.getByRole("button", { name: "View boost history" }).click();
+  await expect(page.getByText("Configuration-segmented history")).toBeVisible();
+  await page.getByRole("button", { name: "Compare configurations" }).click();
+  await expect(
+    page.getByText("Observed before/after difference", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/3 pulls/).first()).toBeVisible();
   await page.screenshot({
     path: "test-results/phase5-analytics-workspace.png",
     fullPage: true,
