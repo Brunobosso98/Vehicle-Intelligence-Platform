@@ -403,17 +403,8 @@ test("Phase 5 real-stack analytics compares, repeats and persists provenance", a
   page,
   request,
 }) => {
-  const vehicle = await request.post("http://127.0.0.1:8000/api/v1/vehicles", {
-    data: {
-      manufacturer: "BMW",
-      model: "335i",
-      generation: "F30",
-      model_year: 2015,
-      engine_code: "N55",
-      nickname: "Phase 5 E2E",
-    },
-  });
-  const vehicleId = ((await vehicle.json()) as { id: string }).id;
+  const vehicles = await request.get("http://127.0.0.1:8000/api/v1/vehicles");
+  const vehicleId = ((await vehicles.json()) as { id: string }[])[0].id;
   const configuration = await request.post(
     `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
     {
