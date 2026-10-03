@@ -9,7 +9,7 @@ coverage denominator and exercised through disposable TimescaleDB integration te
 normalization, identity and synthetic generation remain in the strict unit coverage gate.
 
 Integration uses a new isolated Compose project and disposable TimescaleDB database, fails if it is
-not explicitly named vehicle_test*, and validates clean upgrade, downgrade preserving extension,
+not explicitly named vehicle_test\*, and validates clean upgrade, downgrade preserving extension,
 re-upgrade/idempotent head and real API readiness. Contract tests inspect OpenAPI and regenerate TS.
 Playwright uses the real stack to validate readiness display, keyboard navigation and axe accessibility;
 a browser transport failure validates recovery. Do not replace the happy path API with mocks in E2E.
