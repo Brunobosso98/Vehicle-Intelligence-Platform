@@ -10,7 +10,14 @@ test("compares selected pulls and exposes evidence provenance", async () => {
   vi.spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
     .mockResolvedValueOnce(
-      new Response(JSON.stringify([pull("pull-a"), pull("pull-b"), pull("pull-c"), pull("pull-d")])),
+      new Response(
+        JSON.stringify([
+          pull("pull-a"),
+          pull("pull-b"),
+          pull("pull-c"),
+          pull("pull-d"),
+        ]),
+      ),
     )
     .mockResolvedValueOnce(
       new Response(
@@ -39,16 +46,22 @@ test("compares selected pulls and exposes evidence provenance", async () => {
   fireEvent.click(choices[2]);
   expect(choices[3]).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Compare pulls" }));
-  expect(await screen.findByText("RPM-normalized comparison")).toBeInTheDocument();
+  expect(
+    await screen.findByText("RPM-normalized comparison"),
+  ).toBeInTheDocument();
   expect(screen.getByText("3000–5000")).toBeInTheDocument();
   expect(screen.getByRole("img")).toHaveAccessibleName(/Boost pressure/);
-  expect(screen.getByText(/Observed association is not root-cause/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Observed association is not root-cause/),
+  ).toBeInTheDocument();
 });
 
 test("shows insufficient history and sanitized request failure", async () => {
   vi.spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
-    .mockResolvedValueOnce(new Response(JSON.stringify([pull("one"), pull("two")])))
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify([pull("one"), pull("two")])),
+    )
     .mockResolvedValueOnce(new Response("no", { status: 422 }));
   render(<AnalyticsWorkspace />);
   const choices = await screen.findAllByRole("checkbox");
@@ -57,19 +70,29 @@ test("shows insufficient history and sanitized request failure", async () => {
   fireEvent.click(choices[0]);
   fireEvent.click(choices[1]);
   fireEvent.click(screen.getByRole("button", { name: "Compare pulls" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("could not be compared");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "could not be compared",
+  );
 });
 
 test("shows a load failure and empty normalized curve without interpolation", async () => {
-  vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("private detail"));
+  vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(
+    new Error("private detail"),
+  );
   const { unmount } = render(<AnalyticsWorkspace />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Analytics data is unavailable");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Analytics data is unavailable",
+  );
   unmount();
 });
 
 test("handles an empty vehicle collection", async () => {
-  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify([])));
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+    new Response(JSON.stringify([])),
+  );
   render(<AnalyticsWorkspace />);
-  expect(await screen.findByText(/Only one or no comparable pull/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Only one or no comparable pull/),
+  ).toBeInTheDocument();
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 });

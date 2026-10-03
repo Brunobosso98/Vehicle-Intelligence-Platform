@@ -28,7 +28,7 @@ Phase 5 transforms canonical telemetry, sessions, pulls, events, acquisition pro
 
 The target progression is:
 
-~~~
+```
 Canonical telemetry
     ↓
 Driving sessions
@@ -52,7 +52,7 @@ Vehicle/configuration baselines
 Modification before/after analytics
     ↓
 Longitudinal trends
-~~~
+```
 
 Phase 5 answers questions such as:
 
@@ -82,13 +82,13 @@ Those belong to later reasoning, knowledge, or diagnostic phases.
 
 Before substantial implementation run:
 
-~~~
+```
 git status
 git branch --show-current
 git log --oneline -10
 git remote -v
 git merge-base HEAD 341ca6e8eb5f0383edefe191452285f5539d2b6d
-~~~
+```
 
 Current branch must be:
 
@@ -100,10 +100,10 @@ It must descend from:
 
 Verify the remote branch and push ability:
 
-~~~
+```
 git ls-remote origin refs/heads/codex/phase-5-automotive-analytics
 git push --dry-run origin HEAD:codex/phase-5-automotive-analytics
-~~~
+```
 
 If origin is missing or wrong, repair it.
 
@@ -208,7 +208,7 @@ Create a coherent analytics layer on top of canonical persisted data.
 
 Conceptually:
 
-~~~
+```
 Telemetry + Pulls + Events + Configuration + Acquisition Quality
         ↓
 Comparable Window Builder
@@ -234,7 +234,7 @@ Trend Analytics
 Persisted versioned analytics results
         ↓
 Typed API + Analytics Workspace
-~~~
+```
 
 Keep HTTP routes thin.
 
@@ -371,14 +371,14 @@ Represent comparability transparently.
 
 Example result:
 
-~~~
+```
 overall: 0.84
 rpm_overlap: 0.96
 duration_similarity: 0.88
 throttle_similarity: 0.90
 thermal_similarity: 0.63
 quality_similarity: 0.94
-~~~
+```
 
 Weights must be documented and versioned.
 
@@ -525,12 +525,12 @@ For ordered comparable pulls in the same session compute:
 
 This should support views such as:
 
-~~~
+```
 Pull 1 start IAT 39 C
 Pull 2 start IAT 45 C
 Pull 3 start IAT 52 C
 Pull 4 start IAT 58 C
-~~~
+```
 
 No causal conclusion.
 
@@ -637,11 +637,11 @@ Potential measures:
 
 Example:
 
-~~~
+```
 Boost consistency: MAD 1.8%
 HPFP consistency: MAD 1.1%
 Acceleration interval spread: 0.12 s
-~~~
+```
 
 Document formulas.
 
@@ -1052,59 +1052,83 @@ Use synthetic BMW 335i F30/N55 only as a development fixture, never authoritativ
 At minimum implement:
 
 ### A. Identical repeated pulls
+
 Expected:
+
 - near-zero differences;
 - high repeatability;
 - no false trend.
 
 ### B. Progressive IAT accumulation
+
 Expected:
+
 - pull start/end IAT increases;
 - repeated-pull thermal accumulation detected;
 - no causal “heat soak” statement.
 
 ### C. Progressive boost reduction
+
 Expected:
+
 - normalized boost falls in specified RPM bins;
 - factual sequence trend.
 
 ### D. Fuel-pressure degradation pattern
+
 Expected:
+
 - lower high-pressure fuel metrics in defined bins;
 - no HPFP diagnosis.
 
 ### E. Slower normalized acceleration
+
 Expected:
+
 - controlled increase in acceleration interval/time;
 - detected only in comparable windows.
 
 ### F. Noisy but unchanged vehicle
+
 Expected:
+
 - robust summaries remain near baseline;
 - no false material trend.
 
 ### G. Different configuration
+
 Expected:
+
 - same-configuration baseline does not mix the new configuration automatically.
 
 ### H. Before/after configuration change
+
 Expected:
+
 - correct separation and factual delta.
 
 ### I. Sparse/poor-quality session
+
 Expected:
+
 - insufficient/limited analytics rather than fabricated conclusions.
 
 ### J. Non-overlapping pulls
+
 Expected:
+
 - comparison rejected.
 
 ### K. Different sample rates
+
 Expected:
+
 - normalized analytics remain stable within tolerance.
 
 ### L. Out-of-order/duplicate canonical input
+
 Expected:
+
 - deterministic results consistent with canonical Phase 1/2 semantics.
 
 ---
@@ -1365,9 +1389,9 @@ No “winner” language.
 
 Provide a sequence view:
 
-~~~
+```
 Pull 1 | Pull 2 | Pull 3 | Pull 4
-~~~
+```
 
 Show factual values such as:
 
@@ -1768,11 +1792,13 @@ Create a deterministic acceptance dataset containing multiple sessions and two c
 Suggested structure:
 
 Configuration A:
+
 - 3+ sessions;
 - multiple comparable pulls;
 - stable baseline plus one progressive thermal sequence.
 
 Configuration B:
+
 - 2+ sessions;
 - deliberate controlled factual differences.
 
@@ -2244,6 +2270,7 @@ PHASE 5 DELIVERY REPORT
 Include:
 
 ### Status
+
 Only state:
 PHASE 5: COMPLETE
 PHASE 6: READY
@@ -2251,6 +2278,7 @@ PHASE 6: READY
 when all software acceptance criteria and commit-tied canonical GitHub workflows are green.
 
 ### Repository
+
 - branch;
 - baseline;
 - commits;
@@ -2259,6 +2287,7 @@ when all software acceptance criteria and commit-tied canonical GitHub workflows
 - working tree.
 
 ### Architecture
+
 - analytics pipeline;
 - normalization;
 - comparability;
@@ -2266,6 +2295,7 @@ when all software acceptance criteria and commit-tied canonical GitHub workflows
 - versioning/idempotency.
 
 ### Metrics implemented
+
 - pull metrics;
 - boost;
 - thermal;
@@ -2275,6 +2305,7 @@ when all software acceptance criteria and commit-tied canonical GitHub workflows
 - correlation/association where applicable.
 
 ### Higher-level analytics
+
 - repeated pulls;
 - session analytics;
 - cross-session;
@@ -2283,27 +2314,34 @@ when all software acceptance criteria and commit-tied canonical GitHub workflows
 - modification/configuration comparison.
 
 ### Synthetic/golden validation
+
 Report scenarios and numeric tolerances/results.
 
 ### Data sufficiency / false conclusions
+
 Report rejected comparisons, poor-quality cases, and insufficient-history behavior.
 
 ### Benchmark
+
 Report observations, sessions, pulls, timings, memory where measured.
 
 ### API
+
 List endpoints.
 
 ### Frontend
+
 Describe Analytics workspace and screenshots.
 
 ### Migrations
+
 - previous discovered head;
 - new head;
 - downgrade/re-upgrade;
 - structural migration guard.
 
 ### Testing
+
 - unit;
 - integration;
 - E2E;
@@ -2313,21 +2351,25 @@ Describe Analytics workspace and screenshots.
 - phase5 acceptance.
 
 ### Observability
+
 - metrics;
 - traces;
 - bounded cardinality.
 
 ### Security
+
 - resource limits;
 - validation;
 - scans.
 
 ### GitHub
+
 - CI run ID/result;
 - Security run ID/result;
 - canonical full-validation run ID/result.
 
 ### Explicit deferrals
+
 - root-cause diagnosis;
 - repair recommendations;
 - Phase 6 MCP;
