@@ -9,7 +9,9 @@ const pull = (id: string) => ({ id, min_rpm: 3000, max_rpm: 5000 });
 test("compares selected pulls and exposes evidence provenance", async () => {
   vi.spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
-    .mockResolvedValueOnce(new Response(JSON.stringify([pull("pull-a"), pull("pull-b")])))
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify([pull("pull-a"), pull("pull-b"), pull("pull-c"), pull("pull-d")])),
+    )
     .mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -34,6 +36,8 @@ test("compares selected pulls and exposes evidence provenance", async () => {
   const choices = await screen.findAllByRole("checkbox");
   fireEvent.click(choices[0]);
   fireEvent.click(choices[1]);
+  fireEvent.click(choices[2]);
+  expect(choices[3]).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Compare pulls" }));
   expect(await screen.findByText("RPM-normalized comparison")).toBeInTheDocument();
   expect(screen.getByText("3000–5000")).toBeInTheDocument();
@@ -61,4 +65,11 @@ test("shows a load failure and empty normalized curve without interpolation", as
   const { unmount } = render(<AnalyticsWorkspace />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Analytics data is unavailable");
   unmount();
+});
+
+test("handles an empty vehicle collection", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify([])));
+  render(<AnalyticsWorkspace />);
+  expect(await screen.findByText(/Only one or no comparable pull/)).toBeInTheDocument();
+  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 });
