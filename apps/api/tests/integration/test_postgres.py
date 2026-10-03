@@ -263,4 +263,26 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             for event in after
         }
         assert len(identities) == len(after)
+        phase5_pulls = (await client.get(f"/api/v1/sessions/{multi_session['id']}/pulls")).json()
+        pull_ids = [pull["id"] for pull in phase5_pulls]
+        analytics = await client.post(
+            "/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids}
+        )
+        assert analytics.status_code == 200
+        payload = analytics.json()
+        assert payload["algorithm_version"] == "1.0.0"
+        assert len(payload["configuration_hash"]) == 64
+        assert payload["result"]["sequence"]
+        reused = await client.post("/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids})
+        assert reused.json()["id"] == payload["id"] and reused.json()["reused"] is True
+        recomputed = await client.post(
+            "/api/v1/analytics/pulls/repeated",
+            json={"pull_ids": pull_ids, "recompute": True},
+        )
+        assert recomputed.status_code == 200 and recomputed.json()["id"] != payload["id"]
+        async with engine.connect() as connection:
+            persisted = await connection.scalar(
+                text("SELECT count(*) FROM analytics_runs WHERE analytics_type='repeated_pulls'")
+            )
+            assert persisted == 2
     await engine.dispose()

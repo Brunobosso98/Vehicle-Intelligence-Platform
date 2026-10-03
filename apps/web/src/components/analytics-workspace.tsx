@@ -19,6 +19,7 @@ export function AnalyticsWorkspace() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState("comparison");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,17 +45,18 @@ export function AnalyticsWorkspace() {
     return () => controller.abort();
   }, []);
 
-  async function compare() {
+  async function analyze(kind: "compare" | "repeated") {
     setBusy(true);
     setError("");
     try {
       setResult(
-        await request<Result>("/api/domain/analytics/pulls/compare", {
+        await request<Result>(`/api/domain/analytics/pulls/${kind === "compare" ? "compare" : "repeated"}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ pull_ids: selected }),
         }),
       );
+      setView(kind === "compare" ? "comparison" : "repeated pulls");
     } catch {
       setError("The selected pulls could not be compared.");
     } finally {
@@ -67,6 +69,8 @@ export function AnalyticsWorkspace() {
         sufficiency?: string;
         common_rpm_range?: number[];
         limitations?: string[];
+        sequence?: Array<Record<string, string | number | null>>;
+        repeatability?: Record<string, { median?: number; mad?: number; iqr?: number }>;
         profiles?: Array<{
           curves?: { boost?: Array<{ rpm_start: number; median?: number }> };
         }>;
@@ -123,16 +127,19 @@ export function AnalyticsWorkspace() {
           ))}
           <button
             disabled={selected.length < 2 || busy}
-            onClick={() => void compare()}
+            onClick={() => void analyze("compare")}
           >
             {busy ? "Calculating…" : "Compare pulls"}
+          </button>
+          <button disabled={selected.length < 2 || busy} onClick={() => void analyze("repeated")}>
+            Analyze repeated pulls
           </button>
         </fieldset>
       )}
       {error && <p role="alert">{error}</p>}
       {result && (
         <div className="analytics-result">
-          <h3>RPM-normalized comparison</h3>
+          <h3>{view === "comparison" ? "RPM-normalized comparison" : "Repeated-pull progression"}</h3>
           <dl className="status-list">
             <div>
               <dt>Evidence</dt>
@@ -158,6 +165,12 @@ export function AnalyticsWorkspace() {
           {payload?.limitations?.length ? (
             <p role="status">Limitations: {payload.limitations.join(", ")}</p>
           ) : null}
+          {payload?.sequence?.length ? (
+            <table><caption>Thermal, boost, fuel and performance progression</caption><thead><tr><th>Pull</th><th>Start IAT (K)</th><th>Boost median (Pa)</th><th>Fuel minimum (Pa)</th><th>Speed median (m/s)</th><th>Events</th></tr></thead><tbody>
+              {payload.sequence.map((row) => <tr key={String(row.pull_id)}><th>{String(row.index)}</th><td>{String(row.start_iat ?? "Unavailable")}</td><td>{String(row.median_boost ?? "Unavailable")}</td><td>{String(row.minimum_fuel_pressure ?? "Unavailable")}</td><td>{String(row.median_speed ?? "Unavailable")}</td><td>{String(row.event_count)}</td></tr>)}
+            </tbody></table>
+          ) : null}
+          {payload?.repeatability ? <dl>{Object.entries(payload.repeatability).map(([metric, value]) => <div key={metric}><dt>{metric.replaceAll("_", " ")} repeatability</dt><dd>median {value.median ?? "unavailable"}; MAD {value.mad ?? "unavailable"}; IQR {value.iqr ?? "unavailable"}</dd></div>)}</dl> : null}
           {curves.some((curve) =>
             curve.some((point) => point.median != null),
           ) ? (
@@ -208,26 +221,27 @@ export function AnalyticsWorkspace() {
           </details>
         </div>
       )}
-      <div className="analytics-empty-grid">
+      <div className="analytics-empty-grid" aria-label="Historical analytics availability">
         <article>
           <h3>Repeated pulls</h3>
           <p>
-            Thermal progression, repeatability, fuel pressure and acceleration
-            remain factual measurements.
+            Select pulls and use “Analyze repeated pulls” to inspect thermal,
+            repeatability, fuel-pressure and measured performance progression.
           </p>
         </article>
         <article>
           <h3>Observed baseline</h3>
           <p>
-            Vehicle/configuration history appears only after three comparable
-            sessions.
+            Baselines and trends are isolated by configuration and appear only
+            after three comparable sessions; contributor counts, versions and
+            limitations remain part of provenance.
           </p>
         </article>
         <article>
           <h3>Configuration boundary</h3>
           <p>
-            Before/after differences do not establish that a modification caused
-            a change.
+            Before/after views report configuration sample counts and factual
+            deltas only. They never claim that a modification caused a change.
           </p>
         </article>
       </div>
