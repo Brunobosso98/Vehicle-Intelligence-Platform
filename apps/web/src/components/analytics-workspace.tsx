@@ -50,11 +50,14 @@ export function AnalyticsWorkspace() {
     setError("");
     try {
       setResult(
-        await request<Result>(`/api/domain/analytics/pulls/${kind === "compare" ? "compare" : "repeated"}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ pull_ids: selected }),
-        }),
+        await request<Result>(
+          `/api/domain/analytics/pulls/${kind === "compare" ? "compare" : "repeated"}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ pull_ids: selected }),
+          },
+        ),
       );
       setView(kind === "compare" ? "comparison" : "repeated pulls");
     } catch {
@@ -70,7 +73,10 @@ export function AnalyticsWorkspace() {
         common_rpm_range?: number[];
         limitations?: string[];
         sequence?: Array<Record<string, string | number | null>>;
-        repeatability?: Record<string, { median?: number; mad?: number; iqr?: number }>;
+        repeatability?: Record<
+          string,
+          { median?: number; mad?: number; iqr?: number }
+        >;
         profiles?: Array<{
           curves?: { boost?: Array<{ rpm_start: number; median?: number }> };
         }>;
@@ -131,7 +137,10 @@ export function AnalyticsWorkspace() {
           >
             {busy ? "Calculating…" : "Compare pulls"}
           </button>
-          <button disabled={selected.length < 2 || busy} onClick={() => void analyze("repeated")}>
+          <button
+            disabled={selected.length < 2 || busy}
+            onClick={() => void analyze("repeated")}
+          >
             Analyze repeated pulls
           </button>
         </fieldset>
@@ -139,7 +148,11 @@ export function AnalyticsWorkspace() {
       {error && <p role="alert">{error}</p>}
       {result && (
         <div className="analytics-result">
-          <h3>{view === "comparison" ? "RPM-normalized comparison" : "Repeated-pull progression"}</h3>
+          <h3>
+            {view === "comparison"
+              ? "RPM-normalized comparison"
+              : "Repeated-pull progression"}
+          </h3>
           <dl className="status-list">
             <div>
               <dt>Evidence</dt>
@@ -166,11 +179,50 @@ export function AnalyticsWorkspace() {
             <p role="status">Limitations: {payload.limitations.join(", ")}</p>
           ) : null}
           {payload?.sequence?.length ? (
-            <table><caption>Thermal, boost, fuel and performance progression</caption><thead><tr><th>Pull</th><th>Start IAT (K)</th><th>Boost median (Pa)</th><th>Fuel minimum (Pa)</th><th>Speed median (m/s)</th><th>Events</th></tr></thead><tbody>
-              {payload.sequence.map((row) => <tr key={String(row.pull_id)}><th>{String(row.index)}</th><td>{String(row.start_iat ?? "Unavailable")}</td><td>{String(row.median_boost ?? "Unavailable")}</td><td>{String(row.minimum_fuel_pressure ?? "Unavailable")}</td><td>{String(row.median_speed ?? "Unavailable")}</td><td>{String(row.event_count)}</td></tr>)}
-            </tbody></table>
+            <table>
+              <caption>
+                Thermal, boost, fuel and performance progression
+              </caption>
+              <thead>
+                <tr>
+                  <th>Pull</th>
+                  <th>Start IAT (K)</th>
+                  <th>Boost median (Pa)</th>
+                  <th>Fuel minimum (Pa)</th>
+                  <th>Speed median (m/s)</th>
+                  <th>Events</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payload.sequence.map((row) => (
+                  <tr key={String(row.pull_id)}>
+                    <th>{String(row.index)}</th>
+                    <td>{String(row.start_iat ?? "Unavailable")}</td>
+                    <td>{String(row.median_boost ?? "Unavailable")}</td>
+                    <td>
+                      {String(row.minimum_fuel_pressure ?? "Unavailable")}
+                    </td>
+                    <td>{String(row.median_speed ?? "Unavailable")}</td>
+                    <td>{String(row.event_count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : null}
-          {payload?.repeatability ? <dl>{Object.entries(payload.repeatability).map(([metric, value]) => <div key={metric}><dt>{metric.replaceAll("_", " ")} repeatability</dt><dd>median {value.median ?? "unavailable"}; MAD {value.mad ?? "unavailable"}; IQR {value.iqr ?? "unavailable"}</dd></div>)}</dl> : null}
+          {payload?.repeatability ? (
+            <dl>
+              {Object.entries(payload.repeatability).map(([metric, value]) => (
+                <div key={metric}>
+                  <dt>{metric.replaceAll("_", " ")} repeatability</dt>
+                  <dd>
+                    median {value.median ?? "unavailable"}; MAD{" "}
+                    {value.mad ?? "unavailable"}; IQR{" "}
+                    {value.iqr ?? "unavailable"}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
           {curves.some((curve) =>
             curve.some((point) => point.median != null),
           ) ? (
@@ -221,7 +273,10 @@ export function AnalyticsWorkspace() {
           </details>
         </div>
       )}
-      <div className="analytics-empty-grid" aria-label="Historical analytics availability">
+      <div
+        className="analytics-empty-grid"
+        aria-label="Historical analytics availability"
+      >
         <article>
           <h3>Repeated pulls</h3>
           <p>
