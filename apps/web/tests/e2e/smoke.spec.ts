@@ -399,7 +399,68 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
   );
 });
 
-test("Phase 5 real-stack analytics workspace", async ({ page }) => {
+test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
+  test.setTimeout(240_000);
+  const vehicles = (await (
+    await request.get("http://127.0.0.1:8000/api/v1/vehicles")
+  ).json()) as { id: string }[];
+  const vehicleId = vehicles[0].id;
+  async function configuration(description: string, effective_at: string) {
+    const response = await request.post(
+      `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
+      { data: { effective_at, description, provenance: "phase5-browser-e2e" } },
+    );
+    expect(response.ok(), await response.text()).toBeTruthy();
+    return (await response.json()) as { id: string };
+  }
+  const configurationA = await configuration(
+    "Phase 5 configuration A",
+    "2060-01-01T00:00:00Z",
+  );
+  const configurationB = await configuration(
+    "Phase 5 configuration B",
+    "2070-01-01T00:00:00Z",
+  );
+  for (const [configurationId, year, changed] of [
+    [configurationA.id, 2061, false],
+    [configurationA.id, 2062, false],
+    [configurationA.id, 2063, false],
+    [configurationB.id, 2071, true],
+    [configurationB.id, 2072, true],
+    [configurationB.id, 2073, true],
+  ] as const) {
+    const startedAt = `${year}-01-01T00:00:00Z`;
+    const created = await request.post(
+      "http://127.0.0.1:8000/api/v1/sessions",
+      {
+        data: {
+          vehicle_id: vehicleId,
+          configuration_id: configurationId,
+          source_type: "csv",
+          started_at: startedAt,
+        },
+      },
+    );
+    const session = (await created.json()) as { id: string };
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase5.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(phase3Csv(changed, startedAt)),
+          },
+        },
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
+    const analyzed = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
+      { data: { profile: "generic-v1" } },
+    );
+    expect(analyzed.ok(), await analyzed.text()).toBeTruthy();
+  }
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
@@ -407,8 +468,68 @@ test("Phase 5 real-stack analytics workspace", async ({ page }) => {
   await expect(
     page.getByText(/Observed association is not root-cause/),
   ).toBeVisible();
+  const choices = page.getByRole("checkbox");
+  await choices.nth(0).check();
+  await choices.nth(1).check();
+  await page.getByRole("button", { name: "Compare pulls" }).click();
+  const result = page.locator(".analytics-result");
+  await expect(
+    result.getByRole("heading", { name: "RPM-normalized comparison" }),
+  ).toBeVisible();
+  await expect(result.getByText("Common RPM")).toBeVisible();
+  await expect(
+    result.getByRole("img", { name: /Boost pressure by RPM/ }),
+  ).toBeVisible();
+  await expect(result.getByText("Algorithm")).toBeVisible();
+  await page.getByRole("button", { name: "Analyze repeated pulls" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Repeated-pull progression" }),
+  ).toBeVisible();
+  await expect(result.getByRole("table")).toContainText("Start IAT");
+  await expect(result).toContainText("repeatability");
   await page.screenshot({
-    path: "test-results/phase5-analytics-workspace.png",
+    path: "test-results/phase5-pull-repeatability.png",
     fullPage: true,
   });
+  await page
+    .getByLabel("Vehicle configuration")
+    .selectOption(configurationA.id);
+  await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Observed historical baseline" }),
+  ).toBeVisible();
+  await expect(result).toContainText("3 sessions");
+  await expect(result.getByRole("table")).toContainText("RPM-bin envelope");
+  await expect(result.getByText("Analytics provenance")).toBeVisible();
+  await page.getByRole("button", { name: "View boost history" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Configuration-segmented history" }),
+  ).toBeVisible();
+  await expect(
+    result.getByRole("heading", { name: `Configuration ${configurationA.id}` }),
+  ).toBeVisible();
+  await expect(
+    result.getByRole("heading", { name: `Configuration ${configurationB.id}` }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Compare configurations" }).click();
+  await expect(
+    result.getByRole("heading", { name: "Observed before/after difference" }),
+  ).toBeVisible();
+  await expect(result.getByText("Before sample")).toBeVisible();
+  await expect(result.getByText("After sample")).toBeVisible();
+  await expect(result).toContainText("not root-cause diagnosis");
+  await page.screenshot({
+    path: "test-results/phase5-history-before-after.png",
+    fullPage: true,
+  });
+  const insufficient = await configuration(
+    "Phase 5 insufficient history",
+    "2080-01-01T00:00:00Z",
+  );
+  await page.reload();
+  await page.getByLabel("Vehicle configuration").selectOption(insufficient.id);
+  await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Historical analytics are unavailable",
+  );
 });

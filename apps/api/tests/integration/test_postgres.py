@@ -112,6 +112,63 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
                 "WHERE hypertable_name='telemetry_samples')"
             )
         )
+
+    # Phase 5 semantic boundary: discover the current head and direct parent rather than
+    # duplicating a stale revision literal in migration guards.
+    head_revision = script.get_revision(expected_head)
+    assert head_revision is not None and head_revision.down_revision is not None
+    phase5_parent = str(head_revision.down_revision)
+    phase5_downgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "downgrade", phase5_parent, cwd=api, env=env
+    )
+    assert await phase5_downgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == phase5_parent
+        )
+        assert await connection.scalar(text("SELECT to_regclass('analytics_runs')")) is None
+        for retained in (
+            "acquisition_sessions",
+            "stream_receipts",
+            "provisional_findings",
+            "dataset_capability_reports",
+            "stream_dead_letters",
+            "detected_events",
+            "event_analysis_runs",
+            "pulls",
+            "telemetry_samples",
+        ):
+            assert (
+                await connection.scalar(text("SELECT to_regclass(:table)"), {"table": retained})
+                == retained
+            )
+        assert await connection.scalar(
+            text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
+        )
+        assert await connection.scalar(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables "
+                "WHERE hypertable_name='telemetry_samples')"
+            )
+        )
+    phase5_reupgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", expected_head, cwd=api, env=env
+    )
+    assert await phase5_reupgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == expected_head
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('analytics_runs')"))
+            == "analytics_runs"
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('acquisition_sessions')"))
+            == "acquisition_sessions"
+        )
     app = create_app(Settings(database_url=url, environment="test"))
     async with (
         app.router.lifespan_context(app),
