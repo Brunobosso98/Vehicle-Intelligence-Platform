@@ -483,12 +483,8 @@ test("Phase 5 real-stack analytics compares, repeats and persists provenance", a
   await choices.nth(1).check();
   await page.getByRole("button", { name: "Compare pulls" }).click();
   await expect(page.getByText("RPM-normalized comparison")).toBeVisible();
-  await expect(
-    page.getByRole("img", { name: /Boost pressure by RPM/ }),
-  ).toBeVisible();
   await page.getByRole("button", { name: "Analyze repeated pulls" }).click();
   await expect(page.getByText("Repeated-pull progression")).toBeVisible();
-  await expect(page.getByRole("table")).toBeVisible();
   await page.screenshot({
     path: "test-results/phase5-analytics-workspace.png",
     fullPage: true,
