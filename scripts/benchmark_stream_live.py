@@ -69,7 +69,10 @@ async def main() -> None:
             response.raise_for_status()
             latencies.append(time.perf_counter() - before)
         producer_seconds = time.perf_counter() - started
-        deadline = time.monotonic() + 180
+        # Shared CI runners can drain Kafka/TimescaleDB more slowly than developer machines.
+        # This remains a lossless completion gate, not a latency SLO; Phase 4 deliberately did
+        # not establish an exact end-to-end time objective.
+        deadline = time.monotonic() + 300
         persisted = 0
         while time.monotonic() < deadline:
             session = (
