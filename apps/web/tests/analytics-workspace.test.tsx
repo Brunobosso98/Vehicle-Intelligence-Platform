@@ -46,6 +46,7 @@ test("compares selected pulls and exposes evidence provenance", async () => {
           status: "completed",
           result: {
             sufficiency: "sufficient",
+            limitations: ["limited coverage"],
             sequence: [
               {
                 index: 1,
@@ -54,6 +55,15 @@ test("compares selected pulls and exposes evidence provenance", async () => {
                 median_boost: 100000,
                 minimum_fuel_pressure: 19000000,
                 median_speed: 20,
+                event_count: 0,
+              },
+              {
+                index: 2,
+                pull_id: "pull-b",
+                start_iat: null,
+                median_boost: null,
+                minimum_fuel_pressure: null,
+                median_speed: null,
                 event_count: 0,
               },
             ],
