@@ -6,6 +6,7 @@ afterEach(() => vi.restoreAllMocks());
 
 const pull = (id: string, configuration_id = "config-a") => ({
   id,
+  session_id: `session-${id}`,
   configuration_id,
   min_rpm: 3000,
   max_rpm: 5000,
@@ -107,7 +108,11 @@ test("compares selected pulls and exposes evidence provenance", async () => {
   expect(
     await screen.findByText("Repeated-pull progression"),
   ).toBeInTheDocument();
-  expect(screen.getByRole("table")).toHaveTextContent("100000");
+  expect(
+    screen.getByRole("table", {
+      name: "Thermal, boost, fuel and performance progression",
+    }),
+  ).toHaveTextContent("100000");
 });
 
 test("shows insufficient history and sanitized request failure", async () => {
@@ -180,6 +185,19 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
         session_count: 3,
         pull_count: 6,
         excluded_pull_count: 1,
+        date_range: ["2026-01-01T00:00:00Z", "2026-03-01T00:00:00Z"],
+        current_pull_comparison: {
+          boost_bins: [
+            {
+              rpm_start: 3000,
+              rpm_end: 3250,
+              observed: 101000,
+              historical_median: 100000,
+              absolute_delta: 1000,
+            },
+            { rpm_start: 3250, rpm_end: 3500 },
+          ],
+        },
         envelopes: {
           boost: [
             {
@@ -226,6 +244,10 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
         sufficiency: "sufficient",
         language:
           "Observed before/after difference; association is not root-cause diagnosis.",
+        metric_deltas: {
+          boost: { absolute: 2000, relative: 0.02, unit: "Pa" },
+          fuel: { absolute: null, unit: "Pa" },
+        },
         sample_sizes: { before: 3, after: 4 },
         before: { sufficiency: "sufficient" },
         after: { sufficiency: "sufficient" },
@@ -357,3 +379,185 @@ test.each([
     ).toBeDisabled();
   },
 );
+
+test("session analytics preserve selected session IDs and expose canonical counts", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
+    .mockResolvedValueOnce(new Response(JSON.stringify([pull("a"), pull("b")])))
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "session-run",
+          configuration_hash: "a".repeat(64),
+          algorithm_version: "1.1.0",
+          source_fingerprint: "session-source",
+          status: "completed",
+          generated_at: "2026-01-01T00:00:00Z",
+          result: {
+            session_summary: {
+              duration_seconds: 18,
+              telemetry_observation_count: 546,
+              event_count: 2,
+              segment_counts: { pull: 3 },
+            },
+          },
+        }),
+      ),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "cross-run",
+          configuration_hash: "a".repeat(64),
+          algorithm_version: "1.1.0",
+          source_fingerprint: "cross-source",
+          status: "completed",
+          generated_at: "2026-01-01T00:00:00Z",
+          result: { sufficiency: "sufficient" },
+        }),
+      ),
+    )
+    .mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
+  render(<AnalyticsWorkspace />);
+  const choices = await screen.findAllByRole("checkbox");
+  expect(
+    screen.getByRole("button", { name: "Summarize selected session" }),
+  ).toBeDisabled();
+  fireEvent.click(choices[0]);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Summarize selected session" }),
+  );
+  expect(
+    await screen.findByLabelText("Session analytics summary"),
+  ).toHaveTextContent("546");
+  expect(fetch.mock.calls[3][0]).toBe(
+    "/api/domain/sessions/session-a/analytics",
+  );
+  expect(
+    screen.getByRole("button", { name: "Compare selected sessions" }),
+  ).toBeDisabled();
+  fireEvent.click(choices[1]);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Compare selected sessions" }),
+  );
+  await waitFor(() =>
+    expect(fetch.mock.calls[4][0]).toBe(
+      "/api/domain/analytics/sessions/compare?session_ids=session-a&session_ids=session-b",
+    ),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Summarize selected session" }),
+    ).not.toBeDisabled(),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Summarize selected session" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Session analytics are temporarily unavailable.",
+  );
+});
+
+test("normalized comparison preserves shared scales, data gaps and factual event markers", async () => {
+  const bins = [
+    { rpm_start: 3000, rpm_end: 3250, median: 100000, sample_count: 4 },
+    { rpm_start: 3250, rpm_end: 3500, median: null, sample_count: 1 },
+    { rpm_start: 3500, rpm_end: 3750, median: 110000, sample_count: 5 },
+  ];
+  vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify([pull("one"), pull("two")])),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: "run",
+          configuration_hash: "test-hash",
+          status: "completed",
+          generated_at: "2026-01-01T00:00:00Z",
+          result: {
+            profiles: [
+              {
+                curves: {
+                  boost: bins,
+                  iat: [
+                    {
+                      rpm_start: 3000,
+                      rpm_end: 3250,
+                      median: 305,
+                      sample_count: 3,
+                    },
+                  ],
+                },
+                event_markers: [
+                  { id: "event", event_type: "boost_drop", rpm: 3500 },
+                ],
+              },
+              {
+                curves: {
+                  boost: [
+                    {
+                      rpm_start: 3000,
+                      rpm_end: 3250,
+                      median: 80000,
+                      sample_count: 3,
+                    },
+                    {
+                      rpm_start: 3500,
+                      rpm_end: 3750,
+                      median: 80000,
+                      sample_count: 3,
+                    },
+                  ],
+                },
+              },
+            ],
+            metric_deltas: {
+              boost: [
+                { absolute: 0, relative: 0 },
+                { absolute: -20000, relative: -0.2 },
+              ],
+              unavailable: [{ absolute: null, relative: null }],
+            },
+          },
+        }),
+      ),
+    );
+  render(<AnalyticsWorkspace />);
+  const choices = await screen.findAllByRole("checkbox");
+  choices.forEach((choice) => fireEvent.click(choice));
+  fireEvent.click(screen.getByRole("button", { name: "Compare pulls" }));
+  const chart = await screen.findByRole("img", {
+    name: /Boost pressure by RPM/,
+  });
+  const paths = chart.querySelectorAll("polyline");
+  expect(paths).toHaveLength(4); // missing bin and absent RPM interval both remain disconnected
+  expect(paths[0].getAttribute("points")).not.toEqual(
+    paths[2].getAttribute("points"),
+  );
+  expect(chart).toHaveTextContent("Canonical boost_drop");
+  expect(
+    screen.getByRole("table", {
+      name: "Measured differences from the first selected pull",
+    }),
+  ).toHaveTextContent("-20000.00");
+  expect(
+    screen.getByRole("table", {
+      name: "Normalized values, coverage and canonical events",
+    }),
+  ).toHaveTextContent("Insufficient data");
+  fireEvent.change(screen.getByLabelText("Normalized curve metric"), {
+    target: { value: "iat" },
+  });
+  expect(
+    screen.getByRole("img", { name: /Intake air temperature by RPM/ }),
+  ).toHaveTextContent("305");
+  fireEvent.change(screen.getByLabelText("Normalized curve metric"), {
+    target: { value: "fuel" },
+  });
+  expect(screen.getByText(/No normalized fuel curve/)).toBeInTheDocument();
+});

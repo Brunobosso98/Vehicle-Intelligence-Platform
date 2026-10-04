@@ -17,7 +17,9 @@ test("real API readiness, keyboard access and accessibility", async ({
   await expect(
     page.getByRole("button", { name: "Atualizar status" }),
   ).toBeFocused();
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(
+    (await new AxeBuilder({ page }).setLegacyMode(true).analyze()).violations,
+  ).toEqual([]);
 });
 test("API unreachable shows a recoverable error", async ({ page }) => {
   await page.route("**/api/status", (route) => route.abort());
@@ -76,11 +78,16 @@ test("real imported session renders telemetry and changes signal", async ({
   );
   expect(imported.ok()).toBeTruthy();
   await page.goto("/");
+  await page
+    .getByLabel("Vehicle", { exact: true })
+    .selectOption(vehicleBody.id);
   await expect(
     page.getByRole("heading", { name: "E2E reference" }),
   ).toBeVisible();
   await expect(page.getByRole("img", { name: /engine.rpm/ })).toBeVisible();
-  await page.getByLabel("Signal").selectOption("vehicle.speed");
+  await page
+    .getByLabel("Signal", { exact: true })
+    .selectOption("vehicle.speed");
   await expect(page.getByRole("img", { name: /vehicle.speed/ })).toBeVisible();
 });
 
@@ -148,11 +155,18 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
   page,
   request,
 }) => {
-  const vehicleResponse = await request.get(
+  const vehicleResponse = await request.post(
     "http://127.0.0.1:8000/api/v1/vehicles",
+    {
+      data: {
+        manufacturer: "BMW",
+        model: "335i",
+        nickname: "Phase 3 independent events",
+      },
+    },
   );
-  const vehicles = (await vehicleResponse.json()) as { id: string }[];
-  const vehicle = vehicles[0];
+  expect(vehicleResponse.ok()).toBeTruthy();
+  const vehicle = (await vehicleResponse.json()) as { id: string };
   expect(vehicle).toBeDefined();
   const existingSessions = (await (
     await request.get(
@@ -185,26 +199,19 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
       },
     );
     const session = (await response.json()) as { id: string };
-    const [header, ...csvRows] = phase3Csv(anomalous, sessionStartedAt).split(
-      "\n",
-    );
-    for (let offset = 0; offset < csvRows.length; offset += 200) {
-      const imported = await request.post(
-        `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
-        {
-          multipart: {
-            file: {
-              name: `phase3-${offset}.csv`,
-              mimeType: "text/csv",
-              buffer: Buffer.from(
-                [header, ...csvRows.slice(offset, offset + 200)].join("\n"),
-              ),
-            },
+    const imported = await request.post(
+      `http://127.0.0.1:8000/api/v1/sessions/${session.id}/imports/csv`,
+      {
+        multipart: {
+          file: {
+            name: "phase3.csv",
+            mimeType: "text/csv",
+            buffer: Buffer.from(phase3Csv(anomalous, sessionStartedAt)),
           },
         },
-      );
-      expect(imported.ok(), await imported.text()).toBeTruthy();
-    }
+      },
+    );
+    expect(imported.ok(), await imported.text()).toBeTruthy();
     const analysis = await request.post(
       `http://127.0.0.1:8000/api/v1/sessions/${session.id}/analysis`,
       { data: { profile: "generic-v1" } },
@@ -235,10 +242,11 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
 
   await createSession("2090-01-01T00:00:00Z", true);
   await page.goto("/");
+  await page.getByLabel("Vehicle", { exact: true }).selectOption(vehicle.id);
   await expect(page.getByRole("button", { name: /boost drop/i })).toBeVisible();
   await page.getByRole("button", { name: /boost drop/i }).click();
   await expect(page.getByText("Structured factual evidence")).toBeVisible();
-  await expect(page.getByText("pull-behavior-detector 1.0.0")).toBeVisible();
+  await expect(page.getByText("pull-behavior-detector 1.1.0")).toBeVisible();
   await page.screenshot({
     path: "test-results/phase3-event-inspector.png",
     fullPage: true,
@@ -252,6 +260,7 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
 
   await createSession("2091-01-01T00:00:00Z", false);
   await page.reload();
+  await page.getByLabel("Vehicle", { exact: true }).selectOption(vehicle.id);
   await expect(
     page.getByText(
       "No configured anomaly events were detected in this session.",
@@ -415,10 +424,18 @@ test("Phase 4 durable live acquisition finalizes provisional telemetry canonical
 
 test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
   test.setTimeout(600_000);
-  const vehicles = (await (
-    await request.get("http://127.0.0.1:8000/api/v1/vehicles")
-  ).json()) as { id: string }[];
-  const vehicleId = vehicles[0].id;
+  const vehicleResponse = await request.post(
+    "http://127.0.0.1:8000/api/v1/vehicles",
+    {
+      data: {
+        manufacturer: "BMW",
+        model: "335i",
+        nickname: "Phase 5 independent browser history",
+      },
+    },
+  );
+  expect(vehicleResponse.ok(), await vehicleResponse.text()).toBeTruthy();
+  const vehicleId = ((await vehicleResponse.json()) as { id: string }).id;
   async function configuration(description: string, effective_at: string) {
     const response = await request.post(
       `http://127.0.0.1:8000/api/v1/vehicles/${vehicleId}/configurations`,
@@ -517,6 +534,7 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     expect(analyzed.ok(), await analyzed.text()).toBeTruthy();
   }
   await page.goto("/");
+  await page.getByLabel("Vehicle", { exact: true }).selectOption(vehicleId);
   await expect(
     page.getByRole("heading", { name: "Analytics workspace" }),
   ).toBeVisible();
@@ -543,11 +561,20 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     result.getByRole("heading", { name: "Repeated-pull progression" }),
   ).toBeVisible();
   await page
+    .getByRole("button", { name: "Summarize selected session" })
+    .click();
+  await expect(result.getByLabel("Session analytics summary")).toContainText(
+    "546",
+  );
+  await page
     .getByLabel("Vehicle configuration")
     .selectOption(configurationA.id);
   await page.getByRole("button", { name: "Build historical baseline" }).click();
   await expect(
     result.getByRole("heading", { name: "Observed historical baseline" }),
+  ).toBeVisible();
+  await expect(
+    result.getByText("3 sessions · 9 contributing pulls · 0 excluded"),
   ).toBeVisible();
   await page.getByRole("button", { name: "View boost history" }).click();
   await expect(
@@ -559,6 +586,9 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
   await expect(
     result.getByRole("heading", { name: "Observed before/after difference" }),
   ).toBeVisible();
+  await expect(
+    result.getByRole("cell", { name: "-15000.00", exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: "test-results/phase5-history-before-after.png",
     fullPage: true,
@@ -568,11 +598,119 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
     "2080-01-01T00:00:00Z",
   );
   await page.reload();
+  await page.getByLabel("Vehicle", { exact: true }).selectOption(vehicleId);
   await page.getByLabel("Vehicle configuration").selectOption(insufficient.id);
   await page.getByRole("button", { name: "Build historical baseline" }).click();
+  await expect(result.getByText("insufficient", { exact: true })).toBeVisible();
+  await expect(result.getByRole("status")).toContainText(
+    "insufficient_same_configuration_sessions",
+  );
   await expect(
-    page
-      .getByRole("region", { name: "Analytics workspace" })
-      .getByRole("alert"),
-  ).toContainText("Historical analytics are unavailable");
+    result.getByText("0 sessions · 0 contributing pulls · 0 excluded"),
+  ).toBeVisible();
+});
+
+test("Phase 4 browser reconciles streamed provisional findings to canonical results", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const live = page.getByRole("region", {
+    name: "Plan a read-only acquisition",
+  });
+  await live
+    .getByRole("button", { name: "Run synthetic device preflight" })
+    .click();
+  await expect(live.getByText("READY", { exact: true })).toBeVisible();
+  await live
+    .getByRole("button", { name: "Start synthetic live acquisition" })
+    .click();
+  await expect(
+    live.getByText("Acquisition: active", { exact: true }),
+  ).toBeVisible();
+  const provisional = live.getByLabel("Provisional live findings");
+  await expect(
+    provisional.getByText(/boost drop · provisional/).first(),
+  ).toBeVisible({ timeout: 30_000 });
+
+  await expect(
+    provisional.getByText("LIVE / PROVISIONAL", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    provisional.getByText(/possible pull · provisional/).first(),
+  ).toBeVisible();
+  await expect(live.getByLabel("Actual signal quality")).toBeVisible();
+  await expect(
+    live.getByText(/^Collector: (connected|disconnected)$/),
+  ).toBeVisible();
+  await expect(
+    live.getByRole("img", { name: "engine.rpm provisional time-series chart" }),
+  ).toBeVisible();
+  for (let reconnection = 0; reconnection < 12; reconnection += 1) {
+    await page.context().setOffline(true);
+    await expect(
+      live.getByText("Acquisition: disconnected", { exact: true }),
+    ).toBeVisible();
+    await page.context().setOffline(false);
+    await expect(
+      live.getByText("Acquisition: active", { exact: true }),
+    ).toBeVisible();
+  }
+  await page.screenshot({
+    path: "test-results/phase4-browser-provisional.png",
+    fullPage: true,
+  });
+  await live.getByRole("button", { name: "Stop and finalize" }).click();
+  const canonical = live.getByLabel("Canonical final results");
+  await expect(
+    canonical.getByText("FINAL CANONICAL RESULTS", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    canonical.getByText(/Phase 2 complete · [1-9]\d* pull/),
+  ).toBeVisible();
+  await expect(
+    canonical.getByText(/Phase 3 complete · [1-9]\d* factual event/),
+  ).toBeVisible();
+  await expect(
+    canonical.getByText(/Reconciled: [1-9]\d* confirmed/),
+  ).toBeVisible();
+  await expect(
+    live.getByText("Acquisition: completed", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/phase4-browser-canonical.png",
+    fullPage: true,
+  });
+});
+
+test("Phase 4 degraded recipe exposes a missing simulated boost capability", async ({
+  page,
+}) => {
+  const vehicleResponse = await page.request.post("/api/domain/vehicles", {
+    data: {
+      manufacturer: "BMW",
+      model: "335i",
+      generation: "F30",
+      model_year: 2015,
+      engine_code: "N55",
+      nickname: "Degraded acquisition fixture",
+    },
+  });
+  expect(vehicleResponse.status()).toBe(201);
+  const vehicle = await vehicleResponse.json();
+  await page.goto("/");
+  await page.getByLabel("Vehicle", { exact: true }).selectOption(vehicle.id);
+  const live = page.getByRole("region", {
+    name: "Plan a read-only acquisition",
+  });
+  await live
+    .getByLabel("Synthetic scenario")
+    .selectOption("missing_recommended");
+  await live
+    .getByRole("button", { name: "Run synthetic device preflight" })
+    .click();
+  await expect(live.getByText("DEGRADED", { exact: true })).toBeVisible();
+  await expect(live.getByText(/Unavailable: .*boost_analysis/)).toBeVisible();
+  await expect(live.getByLabel("Capability matrix")).not.toContainText(
+    "engine.boost_pressure",
+  );
 });

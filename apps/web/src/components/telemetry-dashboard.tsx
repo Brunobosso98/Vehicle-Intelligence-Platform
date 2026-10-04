@@ -17,7 +17,7 @@ async function json<T>(url: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function TelemetryDashboard() {
+export function TelemetryDashboard({ vehicleId }: { vehicleId?: string }) {
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [catalog, setCatalog] = useState<Signal[]>([]);
@@ -36,26 +36,32 @@ export function TelemetryDashboard() {
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  const load = useCallback(async (signal: AbortSignal) => {
-    setError(false);
-    try {
-      const [vehicleData, signalData] = await Promise.all([
-        json<Vehicle[]>("/api/domain/vehicles", signal),
-        json<Signal[]>("/api/domain/signals", signal),
-      ]);
-      setVehicles(vehicleData);
-      setCatalog(signalData);
-      if (vehicleData[0]) {
-        const sessionData = await json<Session[]>(
-          `/api/domain/sessions?vehicle_id=${vehicleData[0].id}`,
-          signal,
-        );
-        setSessions(sessionData);
+  const load = useCallback(
+    async (signal: AbortSignal) => {
+      setError(false);
+      try {
+        const [vehicleData, signalData] = await Promise.all([
+          json<Vehicle[]>("/api/domain/vehicles", signal),
+          json<Signal[]>("/api/domain/signals", signal),
+        ]);
+        const chosen = vehicleId
+          ? vehicleData.find((item) => item.id === vehicleId)
+          : vehicleData[0];
+        setVehicles(chosen ? [chosen] : []);
+        setCatalog(signalData);
+        if (chosen) {
+          const sessionData = await json<Session[]>(
+            `/api/domain/sessions?vehicle_id=${chosen.id}`,
+            signal,
+          );
+          setSessions(sessionData);
+        }
+      } catch {
+        if (!signal.aborted) setError(true);
       }
-    } catch {
-      if (!signal.aborted) setError(true);
-    }
-  }, []);
+    },
+    [vehicleId],
+  );
 
   useEffect(() => {
     const controller = new AbortController();

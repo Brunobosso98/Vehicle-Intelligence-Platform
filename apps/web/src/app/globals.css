@@ -363,3 +363,20 @@ footer span {
     padding-top: 48px;
   }
 }
+
+.live-acquisition figure {
+  margin: 1rem 0;
+}
+.live-acquisition svg {
+  width: 100%;
+  height: auto;
+  color: var(--accent);
+  background: var(--bg);
+}
+.live-acquisition figcaption {
+  color: var(--muted);
+  margin: 0.5rem 0;
+}
+.live-acquisition details {
+  margin: 1rem 0;
+}
