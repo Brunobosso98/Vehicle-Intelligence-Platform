@@ -2,10 +2,17 @@ import hashlib
 import math
 import random
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Protocol
+
+MAX_SEQUENCE = 2**63 - 1
+
+
+def validate_sequence(sequence: int | None) -> None:
+    if sequence is not None and (type(sequence) is not int or not 0 <= sequence <= MAX_SEQUENCE):
+        raise ValueError("sequence must fit a nonnegative signed 64-bit integer")
 
 
 class DataQuality(StrEnum):
@@ -122,6 +129,8 @@ class NormalizationError(ValueError):
 
 
 def normalize_value(value: float, unit: str, signal: SignalDefinition) -> tuple[float, DataQuality]:
+    if not math.isfinite(value):
+        raise NormalizationError("telemetry value must be finite")
     normalized_unit = unit.strip().lower()
     target = signal.unit
     conversions = {
@@ -139,6 +148,8 @@ def normalize_value(value: float, unit: str, signal: SignalDefinition) -> tuple[
         result = conversions[(normalized_unit, target)](value)
     else:
         raise NormalizationError(f"unit {unit!r} cannot represent {signal.key}")
+    if not math.isfinite(result):
+        raise NormalizationError("normalized telemetry value must be finite")
     quality = (
         DataQuality.VALID
         if signal.minimum <= result <= signal.maximum
@@ -186,6 +197,11 @@ class RawTelemetryRecord:
     unit: str
     source_record_id: str
     sequence: int | None = None
+    raw_signal: str | None = None
+    source_metadata: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        validate_sequence(self.sequence)
 
 
 class TelemetrySource(Protocol):

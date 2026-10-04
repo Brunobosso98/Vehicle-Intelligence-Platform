@@ -79,6 +79,10 @@ async def test_validation_handler(settings: Settings) -> None:
         response = await client.get("/test/not-an-int")
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+        validation_schema = app.openapi()["paths"]["/test/{value}"]["get"]["responses"]["422"][
+            "content"
+        ]["application/json"]["schema"]
+        assert validation_schema["$ref"] == "#/components/schemas/ErrorResponse"
 
 
 async def test_logging_recipe_and_preflight_contracts(settings: Settings) -> None:
@@ -284,3 +288,75 @@ def test_phase4_metrics_use_only_bounded_labels(settings: Settings) -> None:
     assert "acquisition_consumer_lag" in metrics
     assert "session_id" not in metrics and "vehicle_id" not in metrics and "vin" not in metrics
     signals.shutdown()
+
+
+def test_database_trace_export_redacts_driver_inputs() -> None:
+    from opentelemetry.sdk.trace import ReadableSpan
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    from opentelemetry.trace import Status, StatusCode
+
+    from vehicle_platform.observability.exporter import SanitizingExporter
+
+    delegate = InMemorySpanExporter()
+    exporter = SanitizingExporter(delegate)
+    sql = ReadableSpan(
+        "INSERT vehicle",
+        attributes={
+            "db.system": "postgresql",
+            "db.statement": "INSERT secret-vin",
+            "db.query.text": "secret-token",
+        },
+        status=Status(StatusCode.ERROR, "conflicting secret-vin"),
+    )
+    ordinary = ReadableSpan("health.ready")
+    exporter.export([sql, ordinary])
+    exported = delegate.get_finished_spans()
+    assert exported[0].status.status_code is StatusCode.ERROR
+    assert exported[0].status.description == "database_error"
+    assert "secret" not in str(exported[0].attributes)
+    assert exported[1] is ordinary
+    assert exporter.force_flush()
+    exporter.shutdown()
+
+
+def test_database_error_propagation_cannot_leak_through_parent_spans() -> None:
+    from opentelemetry.sdk.trace import Event, ReadableSpan
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    from opentelemetry.trace import Status, StatusCode
+
+    from vehicle_platform.observability.exporter import SanitizingExporter
+
+    delegate = InMemorySpanExporter()
+    parent = ReadableSpan(
+        "telemetry.import",
+        attributes={"exception.message": "secret-vin"},
+        events=(Event("exception", {"exception.stacktrace": "secret-token"}),),
+        status=Status(StatusCode.ERROR, "SQL secret-vin"),
+    )
+    SanitizingExporter(delegate).export([parent])
+    exported = delegate.get_finished_spans()[0]
+    assert exported.status.status_code is StatusCode.ERROR
+    assert exported.status.description == "operation_error"
+    assert not exported.events
+    assert "secret" not in str(exported.attributes)
+
+
+def test_sql_text_is_removed_from_non_database_successful_spans() -> None:
+    from opentelemetry.sdk.trace import ReadableSpan
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    from vehicle_platform.observability.exporter import SanitizingExporter
+
+    delegate = InMemorySpanExporter()
+    span = ReadableSpan(
+        "analytics.source_selection",
+        attributes={
+            "db.query.text": "SELECT secret-vin",
+            "db.statement": "secret-token",
+            "request.id": "safe-correlation",
+        },
+    )
+    SanitizingExporter(delegate).export([span])
+    exported = delegate.get_finished_spans()[0]
+    assert exported.attributes == {"request.id": "safe-correlation"}
+    assert exported.status == span.status

@@ -71,7 +71,7 @@ class EventDetector(Protocol):
 
 class BaseDetector:
     name = "base"
-    version = "1.0.0"
+    version = "1.1.0"
 
     def __init__(self, profile: EventProfile) -> None:
         self.profile = profile
@@ -152,7 +152,17 @@ class PullBehaviorDetector(BaseDetector):
             comparable_count = len(comparable)
             if boost:
                 observed = median(boost)
-                reference = median(prior_boost) if comparable_count and prior_boost else None
+                reference_boost = [
+                    median(values)
+                    for p in comparable
+                    if (
+                        values := _series(
+                            [f for f in p.frames if isinstance(f, AlignedFrame)],
+                            "engine.boost_pressure",
+                        )
+                    )
+                ]
+                reference = median(reference_boost) if reference_boost else None
                 if reference and observed <= reference * (1 - self.profile.boost_drop_relative):
                     ratio = (reference - observed) / reference
                     events.append(
@@ -181,41 +191,44 @@ class PullBehaviorDetector(BaseDetector):
                             pull_index=index,
                         )
                     )
-                sustained = [
-                    f
-                    for f in pf
-                    if (f.values.get("engine.boost_pressure") or 0)
-                    > self.profile.boost_overshoot_pa
-                    and (f.values.get("engine.throttle_position") or 0)
-                    >= self.profile.high_load_throttle_pct
-                ]
-                if (
-                    len(sustained) >= 2
-                    and (sustained[-1].observed_at - sustained[0].observed_at).total_seconds()
-                    >= self.profile.min_duration_seconds
-                ):
-                    magnitude = (
-                        max(boost) - self.profile.boost_overshoot_pa
-                    ) / self.profile.boost_overshoot_pa
-                    events.append(
-                        self.candidate(
-                            "boost_overshoot",
-                            EventCategory.PERFORMANCE,
-                            sustained,
-                            severity=score_severity(magnitude, duration),
-                            confidence=score_confidence(1, 0.6, min(1, magnitude * 4)),
-                            baseline=BaselineType.PROFILE_THRESHOLD,
-                            reference={"threshold_pa": self.profile.boost_overshoot_pa},
-                            evidence={
-                                "signal": "engine.boost_pressure",
-                                "peak_pa": max(boost),
-                                "duration_seconds": (
-                                    sustained[-1].observed_at - sustained[0].observed_at
-                                ).total_seconds(),
-                            },
-                            pull_index=index,
+                runs = _contiguous_runs(
+                    pf,
+                    lambda f: (
+                        (f.values.get("engine.boost_pressure") or 0)
+                        > self.profile.boost_overshoot_pa
+                        and (f.values.get("engine.throttle_position") or 0)
+                        >= self.profile.high_load_throttle_pct
+                    ),
+                    self.profile.telemetry_gap_seconds,
+                )
+                for sustained in runs:
+                    if (
+                        len(sustained) >= 2
+                        and (sustained[-1].observed_at - sustained[0].observed_at).total_seconds()
+                        >= self.profile.min_duration_seconds
+                    ):
+                        magnitude = (
+                            max(boost) - self.profile.boost_overshoot_pa
+                        ) / self.profile.boost_overshoot_pa
+                        events.append(
+                            self.candidate(
+                                "boost_overshoot",
+                                EventCategory.PERFORMANCE,
+                                sustained,
+                                severity=score_severity(magnitude, duration),
+                                confidence=score_confidence(1, 0.6, min(1, magnitude * 4)),
+                                baseline=BaselineType.PROFILE_THRESHOLD,
+                                reference={"threshold_pa": self.profile.boost_overshoot_pa},
+                                evidence={
+                                    "signal": "engine.boost_pressure",
+                                    "peak_pa": max(boost),
+                                    "duration_seconds": (
+                                        sustained[-1].observed_at - sustained[0].observed_at
+                                    ).total_seconds(),
+                                },
+                                pull_index=index,
+                            )
                         )
-                    )
                 prior_boost.append(observed)
             if len(iat) >= 2:
                 delta = iat[-1] - iat[0]
@@ -258,7 +271,19 @@ class PullBehaviorDetector(BaseDetector):
                 start = median(fuel[: max(2, len(fuel) // 4)])
                 minimum = min(fuel[len(fuel) // 3 :])
                 ratio = (start - minimum) / start if start else 0
-                if ratio >= self.profile.fuel_drop_relative:
+                low_runs = _contiguous_runs(
+                    pf,
+                    _below_threshold(
+                        "fuel.high_pressure", start * (1 - self.profile.fuel_drop_relative)
+                    ),
+                    self.profile.telemetry_gap_seconds,
+                )
+                fuel_sustained = any(
+                    (run[-1].observed_at - run[0].observed_at).total_seconds()
+                    >= self.profile.min_duration_seconds
+                    for run in low_runs
+                )
+                if ratio >= self.profile.fuel_drop_relative and fuel_sustained:
                     events.append(
                         self.candidate(
                             "fuel_pressure_drop",
@@ -318,6 +343,16 @@ class PullBehaviorDetector(BaseDetector):
         return DetectorResult(self.name, state, tuple(events))
 
 
+def _below_threshold(signal: str, threshold: float) -> Callable[[AlignedFrame], bool]:
+    return lambda frame: (
+        frame.values.get(signal) is not None and float(frame.values[signal] or 0) <= threshold
+    )
+
+
+def _above_threshold(signal: str, threshold: float) -> Callable[[AlignedFrame], bool]:
+    return lambda frame: (frame.values.get(signal) or float("-inf")) >= threshold
+
+
 class TemperatureDetector(BaseDetector):
     name = "temperature-threshold-detector"
 
@@ -337,28 +372,37 @@ class TemperatureDetector(BaseDetector):
             ),
         )
         for signal, event_type, threshold in definitions:
-            active = [f for f in frames if (f.values.get(signal) or float("-inf")) >= threshold]
-            if (
-                len(active) >= 2
-                and (active[-1].observed_at - active[0].observed_at).total_seconds()
-                >= self.profile.min_duration_seconds
-            ):
-                peak = max(_series(active, signal))
-                events.append(
-                    self.candidate(
-                        event_type,
-                        EventCategory.THERMAL,
-                        active,
-                        severity=score_severity(
-                            (peak - threshold) / 20,
-                            (active[-1].observed_at - active[0].observed_at).total_seconds(),
-                        ),
-                        confidence=score_confidence(1, 0.7, 0.8),
-                        baseline=BaselineType.PROFILE_THRESHOLD,
-                        reference={"threshold_k": threshold, "profile": self.profile.name},
-                        evidence={"signal": signal, "peak_k": peak, "heuristic_threshold": True},
+            runs = _contiguous_runs(
+                frames,
+                _above_threshold(signal, threshold),
+                self.profile.telemetry_gap_seconds,
+            )
+            for active in runs:
+                if (
+                    len(active) >= 2
+                    and (active[-1].observed_at - active[0].observed_at).total_seconds()
+                    >= self.profile.min_duration_seconds
+                ):
+                    peak = max(_series(active, signal))
+                    events.append(
+                        self.candidate(
+                            event_type,
+                            EventCategory.THERMAL,
+                            active,
+                            severity=score_severity(
+                                (peak - threshold) / 20,
+                                (active[-1].observed_at - active[0].observed_at).total_seconds(),
+                            ),
+                            confidence=score_confidence(1, 0.7, 0.8),
+                            baseline=BaselineType.PROFILE_THRESHOLD,
+                            reference={"threshold_k": threshold, "profile": self.profile.name},
+                            evidence={
+                                "signal": signal,
+                                "peak_k": peak,
+                                "heuristic_threshold": True,
+                            },
+                        )
                     )
-                )
         return DetectorResult(
             self.name,
             DetectorState.EVENT_DETECTED if events else DetectorState.NO_EVENT,
@@ -398,6 +442,9 @@ class QualityDetector(BaseDetector):
                     )
                 )
         for signal in self.watched:
+            if not any(frame.values.get(signal) is not None for frame in frames):
+                # An unavailable channel cannot establish a temporal dropout.
+                continue
 
             def signal_missing(frame: AlignedFrame, watched_signal: str = signal) -> bool:
                 return (

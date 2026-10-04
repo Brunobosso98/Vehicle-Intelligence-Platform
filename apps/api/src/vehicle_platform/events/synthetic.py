@@ -150,10 +150,19 @@ def anomaly_scenario(
             for offset, frame in enumerate(frames):
                 frame.values["engine.throttle_position"] = 90 if offset < 3 else 45
             signal, band = "engine.throttle_position", (40, 50)
-        elif injection.event_type == "intake_temperature_high":
+        elif injection.event_type in {
+            "intake_temperature_high",
+            "oil_temperature_high",
+            "coolant_temperature_high",
+        }:
+            signal, temperature = {
+                "intake_temperature_high": ("engine.intake_air_temperature", 340),
+                "oil_temperature_high": ("engine.oil_temperature", 410),
+                "coolant_temperature_high": ("engine.coolant_temperature", 400),
+            }[injection.event_type]
             for frame in frames:
-                frame.values["engine.intake_air_temperature"] = 340
-            signal, band = "engine.intake_air_temperature", (338, 342)
+                frame.values[signal] = temperature
+            band = (temperature - 2, temperature + 2)
         else:
             raise ValueError(f"unsupported injection: {injection.event_type}")
         truth.append(
@@ -161,7 +170,7 @@ def anomaly_scenario(
                 injection.event_type,
                 frames[0].observed_at,
                 frames[-1].observed_at,
-                injection.pull_index,
+                None if injection.event_type.endswith("temperature_high") else injection.pull_index,
                 signal,
                 band,
             )
@@ -175,6 +184,66 @@ def anomaly_scenario(
         PullWindow(group[0].observed_at, group[-1].observed_at, tuple(group), str(index))
         for index, group in enumerate(pull_frames)
     )
+    # Declare all scripted consequences independently; evaluators must not filter
+    # detections to the requested injection class. Constant boost with changing
+    # RPM is also stuck-signal evidence, and the appended quality window has a
+    # six-second acquisition gap. An overshoot raises the prior-pull reference,
+    # so the following normal pull is a factual relative drop (not a diagnosis).
+    for injection in injections:
+        if injection.event_type in {"boost_drop", "boost_overshoot"}:
+            assert injection.pull_index is not None  # noqa: S101
+            group = pull_frames[injection.pull_index]
+            truth.append(
+                ExpectedEvent(
+                    "signal_stuck",
+                    group[0].observed_at,
+                    group[-1].observed_at,
+                    None,
+                    "engine.boost_pressure",
+                )
+            )
+        if injection.event_type == "boost_overshoot" and injection.pull_index == 1:
+            truth.append(
+                ExpectedEvent(
+                    "boost_drop",
+                    START + timedelta(seconds=30),
+                    START + timedelta(seconds=35),
+                    2,
+                    "engine.boost_pressure",
+                )
+            )
+        if injection.event_type == "intake_temperature_high":
+            group = pull_frames[injection.pull_index or 0]
+            truth.append(
+                ExpectedEvent(
+                    "iat_rise",
+                    group[0].observed_at,
+                    group[-1].observed_at,
+                    injection.pull_index,
+                    "engine.intake_air_temperature",
+                )
+            )
+        if injection.event_type in {"sensor_dropout", "signal_stuck"}:
+            truth.append(
+                ExpectedEvent(
+                    "telemetry_gap",
+                    START + timedelta(seconds=44),
+                    START + timedelta(seconds=50),
+                    None,
+                    "all",
+                    (6, 6),
+                )
+            )
+            if injection.event_type == "sensor_dropout":
+                truth.append(
+                    ExpectedEvent(
+                        "signal_stuck",
+                        START + timedelta(seconds=50),
+                        START + timedelta(seconds=55),
+                        None,
+                        "engine.boost_pressure",
+                    )
+                )
     return EventScenario(name, tuple(all_frames), pulls, tuple(truth), injections, seed)
 
 
@@ -188,6 +257,9 @@ def golden_scenarios() -> tuple[EventScenario, ...]:
         ("signal-stuck", AnomalyInjection("signal_stuck")),
         ("telemetry-gap", AnomalyInjection("telemetry_gap")),
         ("throttle-closure", AnomalyInjection("unexpected_throttle_closure", 1)),
+        ("intake-temperature-high", AnomalyInjection("intake_temperature_high", 2)),
+        ("oil-temperature-high", AnomalyInjection("oil_temperature_high", 2)),
+        ("coolant-temperature-high", AnomalyInjection("coolant_temperature_high", 2)),
     )
     scenarios = [
         anomaly_scenario("normal-repeated-pulls"),

@@ -128,7 +128,7 @@ def test_quality_events_and_consolidation() -> None:
                 "vehicle.speed": 20,
                 "engine.throttle_position": 80,
                 "engine.boost_pressure": 50_000,
-                "fuel.high_pressure": None,
+                "fuel.high_pressure": 18_000_000 if i == 0 else None,
             }
             for i in range(7)
         ],
@@ -165,3 +165,53 @@ def test_low_load_variation_is_not_fuel_or_throttle_event() -> None:
     found = types(EventEngine().analyze(data, []))
     assert "fuel_pressure_drop" not in found
     assert "unexpected_throttle_closure" not in found
+
+
+def test_threshold_events_do_not_bridge_isolated_spikes_or_gaps() -> None:
+    from vehicle_platform.events.engine import PullBehaviorDetector, TemperatureDetector
+
+    isolated = frames(
+        [
+            {
+                **base(),
+                "engine.boost_pressure": 170_000 if i in (0, 4) else 100_000,
+                "engine.oil_temperature": 410 if i in (0, 4) else 360,
+            }
+            for i in range(6)
+        ]
+    )
+    assert not TemperatureDetector(EventProfile()).detect(isolated, []).events
+    assert not PullBehaviorDetector(EventProfile()).detect(isolated, [pull(isolated)]).events
+    discontinuous = [
+        isolated[0],
+        AlignedFrame(START + timedelta(seconds=10), isolated[0].values, gap_before=True),
+    ]
+    assert not TemperatureDetector(EventProfile()).detect(discontinuous, []).events
+    sustained = frames([{**base(), "engine.oil_temperature": 410} for _ in range(3)])
+    assert len(TemperatureDetector(EventProfile()).detect(sustained, []).events) == 1
+    assert (
+        EventProfile(algorithm_version="1.0.0").configuration_hash
+        != EventProfile().configuration_hash
+    )
+
+
+def test_fuel_drop_requires_sustained_observation_not_single_low_spike() -> None:
+    from vehicle_platform.events.engine import PullBehaviorDetector
+
+    data = frames(
+        [{**base(), "fuel.high_pressure": 14_000_000 if i == 4 else 19_000_000} for i in range(7)]
+    )
+    assert not PullBehaviorDetector(EventProfile()).detect(data, [pull(data)]).events
+    data = frames(
+        [{**base(), "fuel.high_pressure": 14_000_000 if i >= 4 else 19_000_000} for i in range(7)]
+    )
+    assert "fuel_pressure_drop" in {
+        event.event_type
+        for event in PullBehaviorDetector(EventProfile()).detect(data, [pull(data)]).events
+    }
+
+
+def test_never_available_channels_do_not_claim_sensor_dropout() -> None:
+    data = frames([{"engine.rpm": 900} for _ in range(6)])
+    events, _ = EventEngine().analyze(data, [])
+    assert "sensor_dropout" not in {event.event_type for event in events}

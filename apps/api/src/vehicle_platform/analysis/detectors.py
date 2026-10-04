@@ -29,7 +29,7 @@ class PullDetector(Protocol):
 
 
 class HeuristicSegmentDetector:
-    algorithm_version = "segmenter-v1"
+    algorithm_version = "segmenter-v1.1"
 
     def __init__(self, profile: DetectorProfile) -> None:
         self.profile = profile
@@ -180,7 +180,7 @@ def compute_pull_metrics(frames: Sequence[AlignedFrame]) -> PullMetrics:
 
 
 class HeuristicPullDetector:
-    algorithm_version = "pull-detector-v1"
+    algorithm_version = "pull-detector-v1.1"
 
     def __init__(self, profile: DetectorProfile) -> None:
         self.profile = profile
@@ -209,8 +209,8 @@ class HeuristicPullDetector:
                 if (
                     rpm_slope is not None
                     and speed_slope is not None
-                    and rpm_slope > 0
-                    and speed_slope > 0
+                    and rpm_slope >= 0
+                    and speed_slope >= 0
                 ):
                     current.append(frame)
                     continue

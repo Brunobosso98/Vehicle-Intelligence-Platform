@@ -118,6 +118,32 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
     head_revision = script.get_revision(expected_head)
     assert head_revision is not None and head_revision.down_revision is not None
     phase5_parent = str(head_revision.down_revision)
+    # Seed earlier-phase data before crossing the Phase 5 boundary. Table names
+    # alone cannot establish that a downgrade preserves actual canonical history.
+    async with engine.begin() as connection:
+        retained_vehicle = await connection.scalar(
+            text(
+                "INSERT INTO vehicles(manufacturer,model) "
+                "VALUES('fixture','migration-boundary') RETURNING id"
+            )
+        )
+        retained_session = await connection.scalar(
+            text(
+                "INSERT INTO driving_sessions(vehicle_id,source_type,started_at) "
+                "VALUES(:vehicle,'synthetic','2026-01-01T00:00:00Z') RETURNING id"
+            ),
+            {"vehicle": retained_vehicle},
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO telemetry_samples(sample_id,vehicle_id,session_id,observed_at,"
+                "signal_key,numeric_value,normalized_unit,raw_signal,source,source_record_id,"
+                "quality,schema_version,content_hash) VALUES(:sample,:vehicle,:session,"
+                "'2026-01-01T00:00:00Z','engine.rpm',900,'rpm','rpm','synthetic',"
+                "'boundary','valid',1,:sample)"
+            ),
+            {"sample": "f" * 64, "vehicle": retained_vehicle, "session": retained_session},
+        )
     phase5_downgrade = await asyncio.create_subprocess_exec(
         str(api / ".venv/bin/alembic"), "downgrade", phase5_parent, cwd=api, env=env
     )
@@ -128,6 +154,20 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             == phase5_parent
         )
         assert await connection.scalar(text("SELECT to_regclass('analytics_runs')")) is None
+        assert (
+            await connection.scalar(
+                text("SELECT numeric_value FROM telemetry_samples WHERE sample_id=:sample"),
+                {"sample": "f" * 64},
+            )
+            == 900
+        )
+        assert (
+            await connection.scalar(
+                text("SELECT vehicle_id FROM driving_sessions WHERE id=:id"),
+                {"id": retained_session},
+            )
+            == retained_vehicle
+        )
         for retained in (
             "acquisition_sessions",
             "stream_receipts",
@@ -327,9 +367,19 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         )
         assert analytics.status_code == 200
         payload = analytics.json()
-        assert payload["algorithm_version"] == "1.0.0"
+        assert payload["algorithm_version"] == "1.1.0"
         assert len(payload["configuration_hash"]) == 64
         assert payload["result"]["sequence"]
+        markers = [
+            marker
+            for profile in payload["result"]["comparison"]["profiles"]
+            for marker in profile["event_markers"]
+        ]
+        assert any(
+            marker["event_type"] == "boost_drop"
+            and marker["id"] in {event["id"] for event in after}
+            for marker in markers
+        )
         reused = await client.post("/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids})
         assert reused.json()["id"] == payload["id"] and reused.json()["reused"] is True
         recomputed = await client.post(
@@ -356,7 +406,7 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             await client.post(
                 f"/api/v1/vehicles/{vehicle['id']}/configurations",
                 json={
-                    "effective_at": "2030-01-01T00:00:00Z",
+                    "effective_at": "2025-01-01T00:00:00Z",
                     "description": "B",
                     "provenance": "phase5-integration",
                 },
@@ -382,13 +432,24 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             configuration_a["id"]: pull_ids,
             configuration_b["id"]: [],
         }
-        for configuration in (
-            configuration_a,
-            configuration_a,
-            configuration_b,
-            configuration_b,
-            configuration_b,
+        for history_index, configuration in enumerate(
+            (
+                configuration_a,
+                configuration_a,
+                configuration_b,
+                configuration_b,
+                configuration_b,
+            )
         ):
+            from datetime import datetime, timedelta
+
+            shift = timedelta(days=(1, 2, 30, 31, 32)[history_index])
+            history_lines = [lines[0]]
+            for line in lines[1:]:
+                stamp, rest = line.split(",", 1)
+                history_lines.append(
+                    f"{(datetime.fromisoformat(stamp) + shift).isoformat()},{rest}"
+                )
             created = (
                 await client.post(
                     "/api/v1/sessions",
@@ -396,14 +457,14 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
                         "vehicle_id": vehicle["id"],
                         "configuration_id": configuration["id"],
                         "source_type": "csv",
-                        "started_at": scenario.frames[0].observed_at.isoformat(),
+                        "started_at": (scenario.frames[0].observed_at + shift).isoformat(),
                     },
                 )
             ).json()
             assert (
                 await client.post(
                     f"/api/v1/sessions/{created['id']}/imports/csv",
-                    files={"file": ("history.csv", "\n".join(lines), "text/csv")},
+                    files={"file": ("history.csv", "\n".join(history_lines), "text/csv")},
                 )
             ).status_code == 200
             assert (
@@ -463,16 +524,18 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             configuration_b["id"],
         }
         query = [
-            ("after_pull_ids", item) for item in pulls_by_configuration[configuration_b["id"]][:3]
+            ("after_pull_ids", item) for item in pulls_by_configuration[configuration_b["id"]][::3]
         ]
         before_after = await client.post(
             "/api/v1/analytics/configurations/compare",
             params=query,
-            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:3]},
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][::3]},
         )
         assert before_after.status_code == 200 and before_after.json()["result"][
             "sample_sizes"
         ] == {"before": 3, "after": 3}
+        assert before_after.json()["result"]["sufficiency"] == "sufficient"
+        assert before_after.json()["result"]["metric_deltas"]["boost"]["absolute"] == 0
         isolated = await client.post(
             "/api/v1/analytics/pulls/compare",
             json={
@@ -496,6 +559,7 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
 
     from sqlalchemy.exc import IntegrityError
 
+    from vehicle_platform.acquisition.service import AcquisitionService
     from vehicle_platform.acquisition.worker import StreamConsumer
     from vehicle_platform.infrastructure.database import Database
 
@@ -515,6 +579,7 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
                 transport=httpx.ASGITransport(app=app), base_url="http://test"
             ) as client,
         ):
+            worker.telemetry = app.state.telemetry
             vehicle = await client.post(
                 "/api/v1/vehicles",
                 json={
@@ -527,6 +592,15 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
                 },
             )
             assert vehicle.status_code == 201
+            configuration = await client.post(
+                f"/api/v1/vehicles/{vehicle.json()['id']}/configurations",
+                json={
+                    "effective_at": "2020-01-01T00:00:00Z",
+                    "description": "active stream context",
+                    "provenance": "integration-fixture",
+                },
+            )
+            assert configuration.status_code == 201
             response = await client.post(
                 "/api/v1/acquisitions",
                 json={
@@ -538,6 +612,40 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
             )
             assert response.status_code == 201
             acquisition = response.json()
+            driving_session = await client.get(
+                f"/api/v1/sessions/{acquisition['driving_session_id']}"
+            )
+            assert driving_session.json()["configuration_id"] == configuration.json()["id"]
+            heartbeat_payload = {
+                "adapter_state": "connected",
+                "collection_started_at": datetime.now(UTC).isoformat(),
+                "capability_snapshot": {
+                    "adapter": "test-read-only",
+                    "signals": {"engine.rpm": "supported"},
+                    "maximum_requests_per_second": 70,
+                },
+                "sampling_plan": [
+                    {
+                        "signal": "engine.rpm",
+                        "priority": "critical_for_recipe",
+                        "target_hz": 5,
+                        "estimated_hz": 5,
+                    }
+                ],
+                "queue_observations": 0,
+                "spool_bytes": 0,
+                "dropped_observations": 0,
+            }
+            heartbeat_path = f"/api/v1/acquisitions/{acquisition['id']}/heartbeat"
+            invalid_heartbeat = await client.post(heartbeat_path, json=heartbeat_payload)
+            assert invalid_heartbeat.status_code == 401
+            reported_heartbeat = await client.post(
+                heartbeat_path,
+                json=heartbeat_payload,
+                headers={"Authorization": f"Bearer {acquisition['ingestion_token']}"},
+            )
+            assert reported_heartbeat.status_code == 200
+            assert reported_heartbeat.json()["quality"]["collector_health"]["state"] == "connected"
             acquisition_id = UUID(acquisition["id"])
             session_id = UUID(acquisition["driving_session_id"])
             started = datetime(2026, 1, 1, tzinfo=UTC)
@@ -546,6 +654,7 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
                 speed = with_speed and index % 2 == 1
                 envelopes.append(
                     {
+                        "schema_version": "1.0",
                         "message_id": str(uuid4()),
                         "acquisition_session_id": str(acquisition_id),
                         "driving_session_id": str(session_id),
@@ -571,6 +680,33 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
             # but must not increment the durable canonical sample count.
             duplicate_sample = envelopes[0] | {"message_id": str(uuid4())}
             assert await worker.persist(duplicate_sample)
+            measured = (await client.get("/metrics")).text
+            from prometheus_client.parser import text_string_to_metric_families
+
+            samples = [
+                sample
+                for family in text_string_to_metric_families(measured)
+                for sample in family.samples
+            ]
+            assert (
+                sum(
+                    sample.value
+                    for sample in samples
+                    if sample.name == "acquisition_observations_persisted_total"
+                )
+                == 500
+            )
+            assert (
+                sum(
+                    sample.value
+                    for sample in samples
+                    if sample.name == "acquisition_observations_duplicate_total"
+                )
+                == 503
+            )
+            assert all(
+                not {"vehicle_id", "session_id", "vin"} & sample.labels.keys() for sample in samples
+            )
             async with database.session() as db:
                 assert (
                     await db.scalar(
@@ -656,16 +792,499 @@ async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findin
                 headers={"Authorization": f"Bearer {acquisition['ingestion_token']}"},
             )
             assert stopped.status_code == 200
+            assert stopped.json()["quality"]["collector"]["adapter_state"] == "connected"
+            assert stopped.json()["quality"]["collector"]["capability_snapshot"]["signals"] == {
+                "engine.rpm": "supported"
+            }
+            assert stopped.json()["quality"]["collector"]["sampling_plan"][0]["target_hz"] == 5
+            closed_heartbeat = await client.post(
+                heartbeat_path,
+                json=heartbeat_payload,
+                headers={"Authorization": f"Bearer {acquisition['ingestion_token']}"},
+            )
+            assert closed_heartbeat.status_code == 401
+            await AcquisitionService(database, settings, app.state.telemetry)._await_persistence()
             finalized = await client.post(f"/api/v1/acquisitions/{acquisition_id}/finalize")
-            assert finalized.status_code == 200
+            assert finalized.status_code == 200, finalized.text
             assert finalized.json()["state"] == "completed"
+            async with database.session() as db:
+                stored_report = await db.scalar(
+                    text(
+                        "SELECT report FROM dataset_capability_reports "
+                        "WHERE driving_session_id=:session"
+                    ),
+                    {"session": acquisition["driving_session_id"]},
+                )
+                assert stored_report == finalized.json()["capability_report"]
             reconciled = await client.get(f"/api/v1/acquisitions/{acquisition_id}/findings")
             assert reconciled.status_code == 200
             assert len(reconciled.json()) == len(findings) + 2
-            assert all(item["reconciliation_status"] == "absent" for item in reconciled.json())
+            by_type = {item["finding_type"]: item for item in reconciled.json()}
+            assert by_type["possible_pull"]["reconciliation_status"] == "absent"
+            assert by_type["boost_drop"]["reconciliation_status"] == "absent"
+            if with_speed:
+                assert by_type["possible_idle"]["reconciliation_status"] == "confirmed"
+                assert by_type["possible_idle"]["canonical_reference"] is not None
+                assert finalized.json()["reconciliation"]["confirmed"] >= 1
+            else:
+                assert finalized.json()["reconciliation"]["confirmed"] == 0
             # Completed acquisition streams terminate after their real snapshot.
             live = await client.get(f"/api/v1/acquisitions/{acquisition_id}/live")
             assert live.status_code == 200
+            assert live.headers["content-type"].startswith("text/event-stream")
+            assert '"schema_version":"1.0"' in live.text
+            assert '"publisher_to_persistence_seconds":' in live.text
+            assert '"persistence_state":"observations_committed"' in live.text
             assert '"reconciliation_status":"absent"' in live.text
+            streams = await asyncio.gather(
+                *(client.get(f"/api/v1/acquisitions/{acquisition_id}/live") for _ in range(11))
+            )
+            assert sum(item.status_code == 200 for item in streams) == 10
+            assert sum(item.status_code == 429 for item in streams) == 1
+            limited = next(item for item in streams if item.status_code == 429)
+            assert limited.headers["retry-after"] == "1"
+            assert limited.json()["error"]["code"] == "RESOURCE_BUDGET_EXCEEDED"
+            recovered_stream = await client.get(f"/api/v1/acquisitions/{acquisition_id}/live")
+            assert recovered_stream.status_code == 200
+
     finally:
+        await database.close()
+
+
+async def test_sequence_overflow_is_dead_lettered_and_valid_edge_persists(url: str) -> None:
+    import hashlib
+    import json
+    from datetime import UTC, datetime
+    from uuid import UUID, uuid4
+
+    from aiokafka import AIOKafkaProducer
+
+    from vehicle_platform.acquisition.worker import StreamConsumer
+    from vehicle_platform.infrastructure.database import Database
+    from vehicle_platform.telemetry.domain import MAX_SEQUENCE
+
+    settings = Settings(database_url=url, environment="test")
+    app = create_app(settings)
+    database = Database(settings)
+    worker = StreamConsumer(database, settings, app.state.telemetry)
+    task = None
+    vehicle_id = None
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            vehicle_response = await client.post(
+                "/api/v1/vehicles", json={"manufacturer": "fixture", "model": "sequence"}
+            )
+            assert vehicle_response.status_code == 201
+            vehicle_id = UUID(vehicle_response.json()["id"])
+            created = await client.post(
+                "/api/v1/acquisitions",
+                json={
+                    "vehicle_id": str(vehicle_id),
+                    "recipe_key": "general-health",
+                    "adapter": "synthetic",
+                    "source_id": "disposable-sequence-fixture",
+                },
+            )
+            assert created.status_code == 201
+            acquisition = created.json()
+            observed = datetime.now(UTC).isoformat()
+            batch = {
+                "schema_version": "1.0",
+                "batch_id": str(uuid4()),
+                "observations": [
+                    {
+                        "message_id": str(uuid4()),
+                        "observed_at": observed,
+                        "sequence": MAX_SEQUENCE + 1,
+                        "signal": "vehicle.speed",
+                        "value": 36,
+                        "unit": "km/h",
+                        "source_record_id": "edge",
+                    }
+                ],
+            }
+            headers = {"authorization": f"Bearer {acquisition['ingestion_token']}"}
+            rejected = await client.post(
+                f"/api/v1/acquisitions/{acquisition['id']}/batches", json=batch, headers=headers
+            )
+            assert rejected.status_code == 422
+            task = asyncio.create_task(worker.run())
+            poisoned = json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "batch_id": str(uuid4()),
+                    "message_id": str(uuid4()),
+                    "observed_at": observed,
+                    "produced_at": observed,
+                    "acquisition_session_id": acquisition["id"],
+                    "driving_session_id": acquisition["driving_session_id"],
+                    "source_id": "fixture",
+                    "sequence": MAX_SEQUENCE + 1,
+                    "payload": {
+                        "signal": "engine.rpm",
+                        "value": 900,
+                        "unit": "rpm",
+                        "source_record_id": "poisoned-edge",
+                    },
+                }
+            ).encode()
+            producer = AIOKafkaProducer(bootstrap_servers=settings.kafka_bootstrap_servers)
+            await producer.start()
+            try:
+                await producer.send_and_wait("telemetry.raw.v1", poisoned)
+            finally:
+                await producer.stop()
+            batch["observations"][0]["sequence"] = MAX_SEQUENCE
+            accepted = await client.post(
+                f"/api/v1/acquisitions/{acquisition['id']}/batches", json=batch, headers=headers
+            )
+            assert accepted.status_code == 202
+            async with asyncio.timeout(20):
+                while True:
+                    if task.done():
+                        await task
+                        pytest.fail("consumer exited before valid-edge persistence")
+                    async with database.session() as db:
+                        sample = (
+                            (
+                                await db.execute(
+                                    text(
+                                        "SELECT sequence_number,numeric_value,normalized_unit,"
+                                        "raw_value,source_metadata FROM telemetry_samples "
+                                        "WHERE session_id=:id"
+                                    ),
+                                    {"id": UUID(acquisition["driving_session_id"])},
+                                )
+                            )
+                            .mappings()
+                            .one_or_none()
+                        )
+                        category = await db.scalar(
+                            text(
+                                "SELECT error_category FROM stream_dead_letters "
+                                "WHERE message_id=:id"
+                            ),
+                            {"id": hashlib.sha256(poisoned).hexdigest()},
+                        )
+                    if sample is not None and category is not None:
+                        assert sample["sequence_number"] == MAX_SEQUENCE
+                        assert sample["numeric_value"] == 10
+                        assert sample["normalized_unit"] == "m/s"
+                        assert float(sample["raw_value"]) == 36
+                        assert sample["source_metadata"]["source_unit"] == "km/h"
+                        assert category == "invalid_stream_contract"
+                        break
+                    await asyncio.sleep(0.02)
+    finally:
+        worker.running = False
+        if task is not None:
+            async with asyncio.timeout(10):
+                await task
+        async with database.session() as db:
+            if vehicle_id is not None:
+                await db.execute(
+                    text(
+                        "UPDATE acquisition_sessions SET state='failed' WHERE driving_session_id "
+                        "IN (SELECT id FROM driving_sessions WHERE vehicle_id=:id)"
+                    ),
+                    {"id": vehicle_id},
+                )
+                await db.commit()
+        await database.close()
+
+
+async def test_retrospective_signed_csv_duplicates_and_analytics_identity(url: str) -> None:
+    app = create_app(Settings(database_url=url, environment="test"))
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client,
+    ):
+        created = await client.post(
+            "/api/v1/vehicles",
+            json={
+                "manufacturer": "BMW",
+                "model": "335i",
+                "generation": "F30",
+                "model_year": 2015,
+                "engine_code": "N55",
+                "nickname": "hardening",
+            },
+        )
+        assert created.status_code == 201
+        vehicle = created.json()
+        session_response = await client.post(
+            "/api/v1/sessions",
+            json={
+                "vehicle_id": vehicle["id"],
+                "source_type": "csv",
+                "source_reference": "signed-duplicate",
+                "started_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        assert session_response.status_code == 201
+        session = session_response.json()
+        header = b"timestamp,signal,value,unit,record_id,sequence\n"
+        row = b"2026-01-01T00:00:00Z,boost,-0.3,bar,negative,1\n"
+        imported = await client.post(
+            f"/api/v1/sessions/{session['id']}/imports/csv",
+            files={"file": ("signed.csv", header + row + row, "text/csv")},
+        )
+        assert imported.status_code == 200, imported.text
+        assert imported.json()["accepted"] == 1
+        assert imported.json()["duplicates"] == 1
+        window = await client.get(
+            f"/api/v1/sessions/{session['id']}/telemetry",
+            params={"signal": "engine.boost_pressure"},
+        )
+        assert window.status_code == 200
+        assert window.json()["points"][0]["value"] == -30000
+        for endpoint in ("telemetry", "events"):
+            params = {"start": "2026-01-01T00:00:00"}
+            if endpoint == "telemetry":
+                params["signal"] = "engine.boost_pressure"
+            invalid_time = await client.get(
+                f"/api/v1/sessions/{session['id']}/{endpoint}", params=params
+            )
+            assert invalid_time.status_code == 422
+        missing_capability = await client.get(
+            f"/api/v1/sessions/{__import__('uuid').uuid4()}/capabilities"
+        )
+        assert missing_capability.status_code == 404
+        missing_window = await client.get(
+            f"/api/v1/sessions/{__import__('uuid').uuid4()}/telemetry",
+            params={"signal": "engine.rpm"},
+        )
+        assert missing_window.status_code == 404
+        conflict = await client.post(
+            f"/api/v1/sessions/{session['id']}/imports/csv",
+            files={"file": ("conflict.csv", header + row.replace(b"-0.3", b"-0.2"), "text/csv")},
+        )
+        assert conflict.json()["conflicts"] == 1
+        assert conflict.json()["accepted"] == 0
+        session_analytics = await client.post(
+            f"/api/v1/sessions/{session['id']}/analytics", json={}
+        )
+        assert session_analytics.status_code == 200
+        assert session_analytics.json()["status"] == "insufficient"
+        assert (
+            session_analytics.json()["result"]["session_summary"]["telemetry_observation_count"]
+            == 1
+        )
+        mapped_session_response = await client.post(
+            "/api/v1/sessions",
+            json={
+                "vehicle_id": vehicle["id"],
+                "source_type": "csv",
+                "source_reference": "explicit-wide-csv",
+                "started_at": "2026-01-01T00:00:00Z",
+            },
+        )
+        assert mapped_session_response.status_code == 201
+        mapped_id = mapped_session_response.json()["id"]
+        mapping_json = __import__("json").dumps(
+            {
+                "timestamp_column": "Time",
+                "record_id_column": "ID",
+                "sequence_column": "Sequence",
+                "signals": [
+                    {"column": "Pressure", "signal": "engine.boost_pressure", "unit": "bar"}
+                ],
+            }
+        )
+        wide_csv = b"Time,Pressure,ID,Sequence,Notes\n2026-01-01T00:00:00Z,-0.3,p1,7,ignored\n"
+        wide_file = {"file": ("wide.csv", wide_csv, "text/csv")}
+        mapping_required = await client.post(
+            f"/api/v1/sessions/{mapped_id}/imports/csv/preview",
+            files=wide_file,
+        )
+        assert mapping_required.status_code == 200
+        assert mapping_required.json()["requires_mapping"] is True
+        mapped_preview = await client.post(
+            f"/api/v1/sessions/{mapped_id}/imports/csv/preview",
+            files=wide_file,
+            data={"mapping": mapping_json},
+        )
+        assert mapped_preview.status_code == 200, mapped_preview.text
+        assert mapped_preview.json()["unmapped_columns"] == ["Notes"]
+        assert mapped_preview.json()["preview_points"][0]["value"] == -30000
+        before_import = await client.get(
+            f"/api/v1/sessions/{mapped_id}/telemetry",
+            params={"signal": "engine.boost_pressure"},
+        )
+        assert before_import.json()["points"] == []
+        for expected_accepted, expected_duplicates in [(1, 0), (0, 1)]:
+            mapped_import = await client.post(
+                f"/api/v1/sessions/{mapped_id}/imports/csv",
+                files=wide_file,
+                data={"mapping": mapping_json},
+            )
+            assert mapped_import.status_code == 200, mapped_import.text
+            assert mapped_import.json()["accepted"] == expected_accepted
+            assert mapped_import.json()["duplicates"] == expected_duplicates
+        mapped_engine = create_async_engine(url)
+        async with mapped_engine.connect() as connection:
+            mapped_row = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT raw_signal,raw_value,source_record_id,"
+                            "sequence_number,source_metadata "
+                            "FROM telemetry_samples WHERE session_id=:id"
+                        ),
+                        {"id": mapped_id},
+                    )
+                )
+                .mappings()
+                .one()
+            )
+        await mapped_engine.dispose()
+        assert mapped_row["raw_signal"] == "Pressure"
+        assert mapped_row["raw_value"] == "-0.3"
+        assert mapped_row["source_record_id"] == "p1:Pressure"
+        assert mapped_row["sequence_number"] == 7
+        assert (
+            mapped_row["source_metadata"]["csv_mapping_hash"]
+            == mapped_preview.json()["mapping_hash"]
+        )
+        assert mapped_row["source_metadata"]["csv_mapping_version"] == "1.0"
+        assert mapped_row["source_metadata"]["source_unit"] == "bar"
+        trend_a = await client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/boost", json={})
+        trend_b = await client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/iat", json={})
+        assert trend_a.status_code == trend_b.status_code == 200
+        assert trend_a.json()["id"] != trend_b.json()["id"]
+        assert trend_a.json()["result"]["metric"] == "boost"
+        assert trend_b.json()["result"]["metric"] == "iat"
+        concurrent = await asyncio.gather(
+            *(
+                client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/fuel", json={})
+                for _ in range(3)
+            )
+        )
+        assert all(r.status_code == 200 for r in concurrent)
+        assert len({r.json()["id"] for r in concurrent}) == 1
+        assert "analytics_runs_total" in (await client.get("/metrics")).text
+        from uuid import UUID
+
+        from vehicle_platform.acquisition.service import AcquisitionService
+        from vehicle_platform.infrastructure.database import Database
+
+        assessment_settings = Settings(database_url=url, environment="test")
+        assessment_database = Database(assessment_settings)
+        try:
+            assessment = await AcquisitionService(
+                assessment_database, assessment_settings, app.state.telemetry
+            ).capability_report(UUID(session["id"]), "performance-pull")
+        finally:
+            await assessment_database.close()
+        assert assessment["assessment_version"] == "1.1.0"
+        assert assessment["recipe_adherence"] is False
+        assert assessment["duration_seconds"] == 0
+        assert assessment["observation_count"] == 1
+        assert assessment["available_signals"] == ["engine.boost_pressure"]
+        assert not any(item["supported"] for item in assessment["capabilities"])
+        from uuid import uuid4
+
+        for endpoint in ("/api/v1/analytics/pulls/repeated", "/api/v1/analytics/pulls/compare"):
+            response = await client.post(endpoint, json={"pull_ids": [str(uuid4()), str(uuid4())]})
+            assert response.status_code == 404
+            assert response.json()["error"]["request_id"]
+
+
+async def test_expired_acquisition_releases_capacity_without_accepting_its_token(url: str) -> None:
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from vehicle_platform.acquisition.service import AcquisitionError, AcquisitionService
+    from vehicle_platform.api.domain_contracts import AcquisitionCreate
+    from vehicle_platform.infrastructure.database import Database
+
+    settings = Settings(database_url=url, environment="test")
+    app = create_app(settings)
+    database = Database(settings)
+    vehicle_id = uuid4()
+    try:
+        async with database.session() as db:
+            await db.execute(
+                text(
+                    "INSERT INTO vehicles(id,manufacturer,model) VALUES(:id,'fixture','capacity')"
+                ),
+                {"id": vehicle_id},
+            )
+            await db.commit()
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            service = AcquisitionService(database, settings, app.state.telemetry)
+            payload = AcquisitionCreate(
+                vehicle_id=vehicle_id,
+                recipe_key="general-health",
+                adapter="synthetic",
+                source_id="disposable-capacity-fixture",
+            )
+            acquisitions = [await service.create(payload) for _ in range(10)]
+            with pytest.raises(AcquisitionError, match="concurrent acquisition session limit"):
+                await service.create(payload)
+            async with database.session() as db:
+                await db.execute(
+                    text(
+                        "UPDATE acquisition_sessions "
+                        "SET token_expires_at=now()-interval '1 second' "
+                        "WHERE id=:id"
+                    ),
+                    {"id": acquisitions[0].id},
+                )
+                await db.commit()
+            replacement = await service.create(payload)
+            assert replacement.id not in {item.id for item in acquisitions}
+            with pytest.raises(AcquisitionError, match="concurrent acquisition session limit"):
+                await service.create(payload)
+            rejected = await client.post(
+                f"/api/v1/acquisitions/{acquisitions[0].id}/batches",
+                headers={"authorization": f"Bearer {acquisitions[0].ingestion_token}"},
+                json={
+                    "schema_version": "1.0",
+                    "batch_id": str(uuid4()),
+                    "observations": [
+                        {
+                            "message_id": str(uuid4()),
+                            "observed_at": datetime.now(UTC).isoformat(),
+                            "signal": "engine.rpm",
+                            "value": 900,
+                            "unit": "rpm",
+                            "source_record_id": "expired-record",
+                        }
+                    ],
+                },
+            )
+            assert rejected.status_code == 401
+            missing = await client.get(f"/api/v1/acquisitions/{uuid4()}/live")
+            assert missing.status_code == 404
+            assert missing.json()["error"]["request_id"]
+            async with database.session() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT sample_count FROM driving_sessions WHERE id=:id"),
+                        {"id": acquisitions[0].driving_session_id},
+                    )
+                    == 0
+                )
+    finally:
+        async with database.session() as db:
+            await db.execute(
+                text(
+                    "UPDATE acquisition_sessions SET state='failed' "
+                    "WHERE driving_session_id IN "
+                    "(SELECT id FROM driving_sessions WHERE vehicle_id=:id)"
+                ),
+                {"id": vehicle_id},
+            )
+            await db.commit()
         await database.close()

@@ -1,5 +1,7 @@
 import json
+from contextlib import nullcontext
 from dataclasses import asdict
+from time import perf_counter
 from uuid import UUID
 
 from sqlalchemy import text
@@ -9,6 +11,7 @@ from vehicle_platform.analysis.detectors import HeuristicPullDetector, Heuristic
 from vehicle_platform.analysis.domain import N55_REFERENCE_PROFILE, DetectorProfile, Observation
 from vehicle_platform.api.domain_contracts import AnalysisResult, Pull, SessionSegment
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.observability.telemetry import Telemetry
 
 MAX_ANALYSIS_POINTS = 500_000
 PROFILES = {"generic-v1": DetectorProfile(), N55_REFERENCE_PROFILE.name: N55_REFERENCE_PROFILE}
@@ -19,10 +22,42 @@ class AnalysisLimitError(ValueError):
 
 
 class SessionAnalysisService:
-    def __init__(self, database: Database) -> None:
-        self.database = database
+    def __init__(self, database: Database, telemetry: Telemetry | None = None) -> None:
+        self.database, self.telemetry = database, telemetry
 
     async def run(self, session_id: UUID, profile_name: str, replace: bool) -> AnalysisResult:
+        started = perf_counter()
+        labels = {
+            "profile": profile_name if profile_name in PROFILES else "unknown",
+            "outcome": "failed",
+        }
+        try:
+            with (
+                self.telemetry.tracer.start_as_current_span("analysis.run")
+                if self.telemetry
+                else nullcontext()
+            ):
+                result = await self._run(session_id, profile_name, replace)
+            labels["outcome"] = "reused" if result.reused else "completed"
+            if self.telemetry:
+                self.telemetry.detection_runs.add(1, labels)
+                if not result.reused:
+                    self.telemetry.segments_produced.add(result.segment_count)
+                    self.telemetry.pulls_detected.add(result.pull_count)
+                    self.telemetry.telemetry_windows_analyzed.add(1)
+                self.telemetry.log("analysis.completed", "internal")
+            return result
+        except Exception:
+            if self.telemetry:
+                self.telemetry.detector_failures.add(
+                    1, {"profile": labels["profile"], "classification": "analysis_error"}
+                )
+            raise
+        finally:
+            if self.telemetry:
+                self.telemetry.detection_duration.record(perf_counter() - started, labels)
+
+    async def _run(self, session_id: UUID, profile_name: str, replace: bool) -> AnalysisResult:
         profile = PROFILES[profile_name]
         segmenter, pull_detector = HeuristicSegmentDetector(profile), HeuristicPullDetector(profile)
         async with self.database.session() as db:
@@ -57,11 +92,12 @@ class SessionAnalysisService:
                 existing_pulls: int = (
                     await db.execute(
                         text(
-                            "SELECT count(*) FROM pulls WHERE session_id=:id AND detector_name=:name AND configuration_hash=:hash"
+                            "SELECT count(*) FROM pulls WHERE session_id=:id AND detector_name=:name AND algorithm_version=:version AND configuration_hash=:hash"
                         ),
                         {
                             "id": session_id,
                             "name": profile.name,
+                            "version": pull_detector.algorithm_version,
                             "hash": profile.configuration_hash,
                         },
                     )
@@ -75,94 +111,118 @@ class SessionAnalysisService:
                     pull_count=existing_pulls,
                     reused=True,
                 )
-            rows = (
-                await db.execute(
-                    text(
-                        "SELECT observed_at,signal_key,numeric_value,sample_id FROM telemetry_samples WHERE session_id=:id AND quality IN ('valid','out_of_range') ORDER BY observed_at,signal_key,sample_id LIMIT :limit"
-                    ),
-                    {"id": session_id, "limit": MAX_ANALYSIS_POINTS + 1},
-                )
-            ).all()
+            with (
+                self.telemetry.tracer.start_as_current_span("analysis.telemetry_load")
+                if self.telemetry
+                else nullcontext()
+            ):
+                rows = (
+                    await db.execute(
+                        text(
+                            "SELECT observed_at,signal_key,numeric_value,sample_id FROM telemetry_samples WHERE session_id=:id AND quality IN ('valid','out_of_range') ORDER BY observed_at,signal_key,sample_id LIMIT :limit"
+                        ),
+                        {"id": session_id, "limit": MAX_ANALYSIS_POINTS + 1},
+                    )
+                ).all()
             if len(rows) > MAX_ANALYSIS_POINTS:
                 raise AnalysisLimitError("session exceeds 500000 observation analysis limit")
             observations = [
                 Observation(row.observed_at, row.signal_key, row.numeric_value, row.sample_id)
                 for row in rows
             ]
-            frames = align_observations(observations, profile)
-            segments, pulls = segmenter.detect(frames), pull_detector.detect(frames)
-            if replace:
-                await db.execute(
-                    text(
-                        "DELETE FROM pulls WHERE session_id=:id AND detector_name=:name AND algorithm_version=:version AND configuration_hash=:hash"
-                    ),
-                    {
-                        "id": session_id,
-                        "name": profile.name,
-                        "version": pull_detector.algorithm_version,
-                        "hash": profile.configuration_hash,
-                    },
+            with (
+                self.telemetry.tracer.start_as_current_span("analysis.alignment")
+                if self.telemetry
+                else nullcontext()
+            ):
+                frames = align_observations(observations, profile)
+            with (
+                self.telemetry.tracer.start_as_current_span("analysis.detectors")
+                if self.telemetry
+                else nullcontext()
+            ):
+                segments, pulls = segmenter.detect(frames), pull_detector.detect(frames)
+            if self.telemetry:
+                self.telemetry.low_confidence_pulls.add(
+                    sum(pull.confidence < 0.7 for pull in pulls)
                 )
-                await db.execute(
-                    text(
-                        "DELETE FROM session_segments WHERE session_id=:id AND detector_name=:name AND algorithm_version=:version AND configuration_hash=:hash"
-                    ),
-                    {
-                        "id": session_id,
-                        "name": profile.name,
-                        "version": segmenter.algorithm_version,
-                        "hash": profile.configuration_hash,
-                    },
-                )
-            for segment in segments:
-                await db.execute(
-                    text(
-                        """INSERT INTO session_segments(session_id,segment_type,started_at,ended_at,duration_ms,confidence,detector_name,algorithm_version,configuration_hash,quality_flags,metadata) VALUES(:session_id,:segment_type,:started_at,:ended_at,:duration_ms,:confidence,:detector_name,:algorithm_version,:configuration_hash,:quality_flags,CAST(:metadata AS jsonb)) ON CONFLICT ON CONSTRAINT uq_segment_analysis_identity DO NOTHING"""
-                    ),
-                    {
-                        "session_id": session_id,
-                        "segment_type": segment.segment_type.value,
-                        "started_at": segment.started_at,
-                        "ended_at": segment.ended_at,
-                        "duration_ms": int(
-                            (segment.ended_at - segment.started_at).total_seconds() * 1000
+            with (
+                self.telemetry.tracer.start_as_current_span("analysis.persistence")
+                if self.telemetry
+                else nullcontext()
+            ):
+                if replace:
+                    await db.execute(
+                        text(
+                            "DELETE FROM pulls WHERE session_id=:id AND detector_name=:name AND algorithm_version=:version AND configuration_hash=:hash"
                         ),
-                        "confidence": segment.confidence,
-                        "detector_name": profile.name,
-                        "algorithm_version": segmenter.algorithm_version,
-                        "configuration_hash": profile.configuration_hash,
-                        "quality_flags": list(segment.quality_flags),
-                        "metadata": json.dumps(segment.evidence),
-                    },
-                )
-            for pull in pulls:
-                metrics = asdict(pull.metrics)
-                metrics.pop("available_signals")
-                metadata = {
-                    "evidence": pull.evidence,
-                    "available_signals": list(pull.metrics.available_signals),
-                    "boundary_semantics": "[started_at, ended_at)",
-                }
-                await db.execute(
-                    text(
-                        """INSERT INTO pulls(session_id,vehicle_id,configuration_id,started_at,ended_at,duration_ms,confidence,detector_name,algorithm_version,configuration_hash,quality_flags,metadata,start_rpm,end_rpm,min_rpm,max_rpm,start_speed,end_speed,max_speed,max_boost,average_boost,start_iat,end_iat,iat_delta,max_oil_temperature,max_coolant_temperature,average_throttle,max_throttle,sample_count,data_completeness) VALUES(:session_id,:vehicle_id,:configuration_id,:started_at,:ended_at,:duration_ms,:confidence,:detector_name,:algorithm_version,:configuration_hash,:quality_flags,CAST(:metadata AS jsonb),:start_rpm,:end_rpm,:min_rpm,:max_rpm,:start_speed,:end_speed,:max_speed,:max_boost,:average_boost,:start_iat,:end_iat,:iat_delta,:max_oil_temperature,:max_coolant_temperature,:average_throttle,:max_throttle,:sample_count,:data_completeness) ON CONFLICT ON CONSTRAINT uq_pull_analysis_identity DO NOTHING"""
-                    ),
-                    {
-                        "session_id": session_id,
-                        "vehicle_id": session["vehicle_id"],
-                        "configuration_id": session["configuration_id"],
-                        "started_at": pull.started_at,
-                        "ended_at": pull.ended_at,
-                        "confidence": pull.confidence,
-                        "detector_name": profile.name,
-                        "algorithm_version": pull_detector.algorithm_version,
-                        "configuration_hash": profile.configuration_hash,
-                        "quality_flags": list(pull.quality_flags),
-                        "metadata": json.dumps(metadata),
-                        **metrics,
-                    },
-                )
-            await db.commit()
+                        {
+                            "id": session_id,
+                            "name": profile.name,
+                            "version": pull_detector.algorithm_version,
+                            "hash": profile.configuration_hash,
+                        },
+                    )
+                    await db.execute(
+                        text(
+                            "DELETE FROM session_segments WHERE session_id=:id AND detector_name=:name AND algorithm_version=:version AND configuration_hash=:hash"
+                        ),
+                        {
+                            "id": session_id,
+                            "name": profile.name,
+                            "version": segmenter.algorithm_version,
+                            "hash": profile.configuration_hash,
+                        },
+                    )
+                for segment in segments:
+                    await db.execute(
+                        text(
+                            """INSERT INTO session_segments(session_id,segment_type,started_at,ended_at,duration_ms,confidence,detector_name,algorithm_version,configuration_hash,quality_flags,metadata) VALUES(:session_id,:segment_type,:started_at,:ended_at,:duration_ms,:confidence,:detector_name,:algorithm_version,:configuration_hash,:quality_flags,CAST(:metadata AS jsonb)) ON CONFLICT ON CONSTRAINT uq_segment_analysis_identity DO NOTHING"""
+                        ),
+                        {
+                            "session_id": session_id,
+                            "segment_type": segment.segment_type.value,
+                            "started_at": segment.started_at,
+                            "ended_at": segment.ended_at,
+                            "duration_ms": int(
+                                (segment.ended_at - segment.started_at).total_seconds() * 1000
+                            ),
+                            "confidence": segment.confidence,
+                            "detector_name": profile.name,
+                            "algorithm_version": segmenter.algorithm_version,
+                            "configuration_hash": profile.configuration_hash,
+                            "quality_flags": list(segment.quality_flags),
+                            "metadata": json.dumps(segment.evidence),
+                        },
+                    )
+                for pull in pulls:
+                    metrics = asdict(pull.metrics)
+                    metrics.pop("available_signals")
+                    metadata = {
+                        "evidence": pull.evidence,
+                        "available_signals": list(pull.metrics.available_signals),
+                        "boundary_semantics": "[started_at, ended_at)",
+                    }
+                    await db.execute(
+                        text(
+                            """INSERT INTO pulls(session_id,vehicle_id,configuration_id,started_at,ended_at,duration_ms,confidence,detector_name,algorithm_version,configuration_hash,quality_flags,metadata,start_rpm,end_rpm,min_rpm,max_rpm,start_speed,end_speed,max_speed,max_boost,average_boost,start_iat,end_iat,iat_delta,max_oil_temperature,max_coolant_temperature,average_throttle,max_throttle,sample_count,data_completeness) VALUES(:session_id,:vehicle_id,:configuration_id,:started_at,:ended_at,:duration_ms,:confidence,:detector_name,:algorithm_version,:configuration_hash,:quality_flags,CAST(:metadata AS jsonb),:start_rpm,:end_rpm,:min_rpm,:max_rpm,:start_speed,:end_speed,:max_speed,:max_boost,:average_boost,:start_iat,:end_iat,:iat_delta,:max_oil_temperature,:max_coolant_temperature,:average_throttle,:max_throttle,:sample_count,:data_completeness) ON CONFLICT ON CONSTRAINT uq_pull_analysis_identity DO NOTHING"""
+                        ),
+                        {
+                            "session_id": session_id,
+                            "vehicle_id": session["vehicle_id"],
+                            "configuration_id": session["configuration_id"],
+                            "started_at": pull.started_at,
+                            "ended_at": pull.ended_at,
+                            "confidence": pull.confidence,
+                            "detector_name": profile.name,
+                            "algorithm_version": pull_detector.algorithm_version,
+                            "configuration_hash": profile.configuration_hash,
+                            "quality_flags": list(pull.quality_flags),
+                            "metadata": json.dumps(metadata),
+                            **metrics,
+                        },
+                    )
+                await db.commit()
         return AnalysisResult(
             session_id=session_id,
             profile=profile.name,

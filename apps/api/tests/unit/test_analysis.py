@@ -37,6 +37,32 @@ def test_alignment_orders_deduplicates_expires_and_smooths() -> None:
     assert rolling_median([1, 100, 2], 3) == [50.5, 2.0, 51.0]
 
 
+@pytest.mark.parametrize("gap", [timedelta(seconds=10), timedelta(days=365)])
+def test_expired_alignment_gap_preserves_grid_and_does_not_expand_empty_time(gap) -> None:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    observed = start + gap + timedelta(milliseconds=50)
+    frames = align_observations(
+        [Observation(observed, "engine.rpm", 3000), Observation(start, "engine.rpm", 900)],
+        DetectorProfile(interval_ms=100, max_gap_seconds=2, smoothing_window=1),
+    )
+    assert len(frames) == 21
+    assert frames[0].observed_at == start
+    assert frames[-1].observed_at == start + timedelta(seconds=2)
+    # Add another observation to extend the final grid through the late sample.
+    frames = align_observations(
+        [
+            Observation(observed, "engine.rpm", 3000),
+            Observation(start, "engine.rpm", 900),
+            Observation(observed + timedelta(milliseconds=100), "engine.rpm", 3100),
+        ],
+        DetectorProfile(interval_ms=100, max_gap_seconds=2, smoothing_window=1),
+    )
+    assert len(frames) == 22
+    assert frames[-1].observed_at == start + gap + timedelta(milliseconds=100)
+    assert frames[-1].values["engine.rpm"] == 3000
+    assert frames[-1].gap_before
+
+
 @pytest.mark.parametrize("rate", [5, 10, 20])
 def test_golden_mixed_drive_detects_all_pulls(rate: int) -> None:
     scenario = mixed_drive(rate_hz=rate)
@@ -62,6 +88,9 @@ def test_missing_boost_preserves_pull_with_quality_flag() -> None:
         align_observations(list(scenario.observations), DetectorProfile())
     )
     assert len(pulls) == 3
+    result = evaluate_pulls(scenario.ground_truth, pulls)
+    assert result.false_positives == result.false_negatives == 0
+    assert result.f1 >= 0.95
     assert all("missing_boost" in pull.quality_flags for pull in pulls)
     assert all(pull.metrics.max_boost is None for pull in pulls)
 
