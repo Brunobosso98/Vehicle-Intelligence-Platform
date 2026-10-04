@@ -2,12 +2,18 @@
 
 ## CURRENT
 
-Next.js serves the shell and same-origin status proxy. FastAPI contains HTTP contracts,
-configuration, database probe and observability modules. PostgreSQL stores Phase 1 vehicle/session data and canonical samples in a Timescale hypertable. Pydantic exports OpenAPI and
-openapi-typescript generates shared frontend types. Optional Collector/Tempo/Prometheus/Grafana
-receive traces and scrape metrics. JSON application logs remain on stdout.
+Next.js serves telemetry, session/pull/event inspection, live acquisition and analytics workspaces.
+Same-origin proxies forward typed requests to FastAPI. The API owns vehicle/configuration/session
+records, CSV ingestion, deterministic analysis and immutable analytics results. A hardware-near
+read-only collector publishes authenticated batches; Kafka transports them to a separate canonical
+consumer. PostgreSQL/TimescaleDB persists all canonical telemetry and analytical provenance.
+
+Pydantic exports OpenAPI; openapi-typescript generates shared frontend types. The optional OTel
+Collector/Tempo/Prometheus/Grafana stack receives traces and scrapes metrics. Sanitized JSON logs
+remain on stdout. Database trace export preserves operations and error categories without query
+text or driver exception messages.
 
 ## FUTURE
 
-Event detection, analytics, MCP, agent orchestration, RAG and ML are future capabilities with no fake endpoints.
-No streaming broker, Redis, data lake or vector database is installed.
+MCP, agents, RAG, ML, causal diagnosis, production authentication and managed infrastructure are
+outside Phases 0–5. No Redis, vector database, data lake or learned analytical model is installed.

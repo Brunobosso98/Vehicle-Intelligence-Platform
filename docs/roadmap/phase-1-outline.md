@@ -1,4 +1,7 @@
-# Phase 1 outline — Vehicle & Telemetry Core (not implemented)
+# Phase 1 outline — Vehicle & Telemetry Core
+
+Historical implementation plan. Phase 1 is implemented; retrospective verification is tracked
+in the validation ledger. The original promises below remain the Phase 1 requirement source.
 
 First task: implement Vehicle/VehicleConfiguration with explicit identifiers, migrations, typed contracts
 and integration tests; design provenance and UTC/unit conventions before importing logs.

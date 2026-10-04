@@ -6,13 +6,12 @@ telemetria e documentação em análises explicáveis e auditáveis.
 
 ## Estado atual
 
-Fases 0–3 foram concluídas pelo gate canônico. A Fase 4 atual implementa aquisição ao vivo somente leitura,
-receitas versionadas, planejamento de amostragem e streaming durável. A Fase 3 implementa eventos factuais,
-anomalias determinísticas, evidência estruturada e proveniência de baseline sobre as sessões e pulls. A Fase 2 implementa sessões derivadas,
-alinhamento temporal determinístico, segmentação e detecção reprodutível de pulls. A Fase 1 mantém veículos,
-configurações e modificações históricas, sessões importadas, catálogo/unidades canônicas,
-ingestão CSV idempotente, fonte sintética, hypertable Timescale, consultas limitadas e timeline web.
-Diagnóstico/root cause, analytics da Fase 5, MCP, agentes, RAG e ML permanecem planejados.
+Fases 0–5 estão implementadas. A auditoria retrospectiva antes da Fase 6 está em andamento;
+implementação e testes verdes, isoladamente, não comprovam todos os critérios de aceitação.
+A Fase 5 fornece analytics determinísticos e versionados sobre telemetria, sessões, pulls,
+eventos factuais e configurações históricas. A Fase 4 fornece aquisição somente leitura,
+receitas, preflight e streaming durável. Diagnóstico/root cause, MCP, agentes, RAG e ML
+permanecem planejados. Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
 Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
 [desenho de análise da Fase 2](docs/architecture/phase-2-session-analysis.md) e o
 [desenho de eventos da Fase 3](docs/architecture/phase-3-event-anomaly-engine.md), o

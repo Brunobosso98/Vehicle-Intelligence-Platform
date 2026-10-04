@@ -41,3 +41,29 @@ event-type class or failure class—never vehicle/session/pull/event IDs, VIN, o
 spans separate telemetry load, baseline construction, detector execution, consolidation and
 persistence. Integration through the canonical observability stack validates export alongside the
 existing HTTP/SQL path; unit validation asserts the metric surface and prohibited-label absence.
+
+## Retrospective instrumentation checks
+
+Analytics uses the application request provider. Actual source selection, telemetry load,
+comparability, RPM normalization, pull metrics, aggregation, historical build and persistence
+produce bounded spans; identifiers, measurements and arrays are not span attributes. Persisted
+execution emits runs/duration/insufficiency, comparison rejection, baseline contributors and
+trend counters. Database exporter removes SQL text, exception events and driver status messages,
+retaining operation spans and `database_error` status. No connection credentials are exported.
+
+Unknown consumer lag, spool occupancy and duplicate counts are null in quality snapshots.
+Recovery and throughput evaluators explicitly distinguish measured counts from unavailable
+measurements. Configuration files alone are not acceptance evidence: run `make observability-full`
+and inspect the backend-queryable traces/metrics plus failure and collector-recovery artifacts.
+
+Retrospective runtime acceptance also performs actual CSV ingestion/query and Phase 2 analysis.
+Declared instruments are insufficient evidence: import outcomes/rows, batch/query duration/points,
+analysis runs/windows/segments/pulls and low-confidence output counters now follow executed services.
+Delivered stage spans cover load/alignment/detection/persistence as well as analytics. Exception
+redaction applies to application parent spans because database driver text can propagate there.
+
+Retrospective runtime instrumentation records actual import/query and deterministic analysis spans,
+completed/failed execution counters, accepted/rejected/duplicate input counts and batch durations.
+`acquisition.broker.publish.duration` measures acknowledgement of the Kafka batch separately from
+HTTP handling; the worker exposes `acquisition_consumer_buffered_points` for actual retained windows
+(maximum 10 × 2,000). Labels use bounded source/outcome/profile categories, never vehicle/session IDs.

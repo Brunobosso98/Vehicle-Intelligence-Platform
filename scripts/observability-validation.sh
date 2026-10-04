@@ -107,3 +107,5 @@ printf 'request_id: %s\ntrace_id: %s\ncollector_recovery_request_id: %s\ncollect
   "$request_id" "$trace_id" "$recovery_request" "$recovery_trace_id" \
   > .validation/observability/evidence.yaml
 echo "Full observability path verified for trace ${trace_id} and request ${request_id}."
+
+apps/api/.venv/bin/python scripts/observability-phases.py

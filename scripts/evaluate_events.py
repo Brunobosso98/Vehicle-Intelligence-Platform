@@ -2,7 +2,8 @@
 
 import json
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
+from datetime import timedelta
 
 from vehicle_platform.events.engine import EventEngine
 from vehicle_platform.events.evaluation import evaluate_events
@@ -14,23 +15,28 @@ def main() -> None:
     detected = []
     healthy: dict[str, int] = {}
     scenario_reports = []
-    for scenario in golden_scenarios():
+    for scenario_index, scenario in enumerate(golden_scenarios()):
         events, _ = EventEngine().analyze(scenario.frames, scenario.pulls)
-        expected_types = {truth.event_type for truth in scenario.ground_truth}
-        relevant = [
-            event
-            for event in events
-            if event.event_type in expected_types or not expected_types
-        ]
-        if not expected_types:
-            healthy[scenario.name] = len(relevant)
-        expected.extend(scenario.ground_truth)
-        detected.extend(relevant)
+        if not scenario.ground_truth:
+            healthy[scenario.name] = len(events)
+        scenario_result = evaluate_events(scenario.ground_truth, events)
+        shift = timedelta(days=scenario_index)
+        expected.extend(
+            replace(e, started_at=e.started_at + shift, ended_at=e.ended_at + shift)
+            for e in scenario.ground_truth
+        )
+        # Each fixture uses its own event-time origin. Match per scenario to avoid
+        # allowing one scenario's detection to satisfy another's missing event.
+        detected.extend(
+            replace(e, started_at=e.started_at + shift, ended_at=e.ended_at + shift)
+            for e in events
+        )
         scenario_reports.append(
             {
                 "scenario": scenario.name,
                 "expected": len(scenario.ground_truth),
-                "detected": len(relevant),
+                "detected": len(events),
+                "metrics": asdict(scenario_result),
             }
         )
     result = evaluate_events(tuple(expected), detected)
@@ -46,6 +52,17 @@ def main() -> None:
         "by_type": {key: asdict(value) for key, value in result.by_type.items()},
     }
     print(json.dumps(payload, indent=2, sort_keys=True))
+    for report in scenario_reports:
+        metrics = report["metrics"]
+        if any(metrics[key] < 0.95 for key in ("precision", "recall", "f1")):
+            raise SystemExit("Phase 3 scenario acceptance failed")
+        if any(
+            metrics[key] is not None and metrics[key] > 0.25
+            for key in ("mean_start_error_seconds", "mean_end_error_seconds")
+        ):
+            raise SystemExit("Phase 3 boundary acceptance failed")
+    if any(healthy.values()):
+        raise SystemExit("Phase 3 healthy false positives")
 
 
 if __name__ == "__main__":

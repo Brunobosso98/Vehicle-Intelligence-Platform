@@ -8,6 +8,7 @@ from vehicle_platform.analytics.domain import (
     AnalyticsConfig,
     PullInput,
     Sample,
+    acceleration_interval,
     baseline,
     compare_context,
     configuration_comparison,
@@ -34,9 +35,14 @@ def pull(
     rpm0: float = 3000,
     reverse: bool = False,
 ) -> PullInput:
+    origin = (
+        START + timedelta(days=30)
+        if config.lower() in {"b", "configuration-b", "config-b"}
+        else START
+    )
     points = [
         Sample(
-            START + timedelta(seconds=i / rate),
+            origin + timedelta(seconds=i / rate),
             rpm0 + i * (2000 / (8 * rate)),
             {
                 "engine.rpm": rpm0 + i * (2000 / (8 * rate)),
@@ -56,8 +62,8 @@ def pull(
         session,
         "vehicle",
         config,
-        START,
-        START + timedelta(seconds=8),
+        origin,
+        origin + timedelta(seconds=8),
         quality,
         tuple(points),
     )
@@ -115,31 +121,28 @@ def main() -> None:
             tolerance=0.01,
         ),
         check(
-            "progressive boost direction",
-            "decreasing",
-            "decreasing"
-            if [pull_profile(p, CFG)["metrics"]["boost"]["median"] for p in thermal]
-            == sorted(
-                [pull_profile(p, CFG)["metrics"]["boost"]["median"] for p in thermal],
-                reverse=True,
-            )
-            else "other",
+            "progressive boost final median Pa",
+            100_000,
+            pull_profile(thermal[-1], CFG)["metrics"]["boost"]["median"],
         ),
         check(
-            "fuel degradation direction",
-            "decreasing",
-            "decreasing"
-            if thermal[-1].samples[0].values["fuel.high_pressure"]
-            < thermal[0].samples[0].values["fuel.high_pressure"]
-            else "other",
+            "fuel degradation final minimum Pa",
+            17_750_000,
+            pull_profile(thermal[-1], CFG)["metrics"]["fuel"]["minimum"],
         ),
         check(
-            "slower acceleration direction",
-            "decreasing",
-            "decreasing"
-            if thermal[-1].samples[-1].values["vehicle.speed"]
-            < thermal[0].samples[-1].values["vehicle.speed"]
-            else "other",
+            "normalized acceleration initial seconds",
+            3,
+            acceleration_interval(thermal[0].samples, 15.5, 17, CFG)["elapsed_seconds"],
+            tolerance=1e-6,
+        ),
+        check(
+            "normalized acceleration final seconds",
+            5,
+            acceleration_interval(thermal[-1].samples, 15.5, 17, CFG)[
+                "elapsed_seconds"
+            ],
+            tolerance=1e-6,
         ),
         check("noisy unchanged accepted", True, compare_context(*noisy, CFG).accepted),
         check(
@@ -169,10 +172,13 @@ def main() -> None:
         ),
         check(
             "duplicate/out-of-order deterministic",
-            pull_profile(identical[0], CFG)["metrics"]["boost"]["median"],
-            pull_profile(pull("ordered", "s", "A", reverse=True), CFG)["metrics"][
-                "boost"
-            ]["median"],
+            {"start": 300, "end": 300.8, "median": 300.4},
+            {
+                key: pull_profile(pull("ordered", "s", "A", reverse=True), CFG)[
+                    "metrics"
+                ]["iat"][key]
+                for key in ("start", "end", "median")
+            },
         ),
         check(
             "configuration trend membership",

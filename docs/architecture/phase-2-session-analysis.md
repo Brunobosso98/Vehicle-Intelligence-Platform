@@ -7,6 +7,12 @@ or issues an actuator command.
 
 ## Semantics
 
+Alignment skips empty positions only after all carried values have expired. It advances on the
+original time grid toward the next measured observation, retaining source order, carry-forward
+expiry and the discontinuity marker. A sparse year-long gap therefore does not require a year of
+empty alignment ticks. This preserves detector/profile semantics and version identities; short
+and year-long gap cases plus the independent pull/event evaluator verify the optimization.
+
 - Windows are half-open `[started_at, ended_at)`.
 - The generic profile uses a 200 ms grid. A value is carried forward for no more than two seconds;
   unavailable values remain null and gaps terminate candidates.
