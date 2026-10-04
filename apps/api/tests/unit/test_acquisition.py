@@ -262,3 +262,30 @@ async def test_gateway_publisher_classifies_responses(
             await publisher((record,))
     else:
         await publisher((record,))
+
+
+def test_consumer_database_failure_exits_without_sql_inputs(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import asyncio
+    import json
+    import runpy
+    from collections.abc import Coroutine
+
+    from sqlalchemy.exc import SQLAlchemyError
+
+    from vehicle_platform.acquisition import worker
+
+    def fail(coroutine: Coroutine[None, None, None]) -> None:
+        coroutine.close()
+        raise SQLAlchemyError("private database URL and telemetry inputs")
+
+    monkeypatch.setattr(asyncio, "run", fail)
+    with pytest.raises(SystemExit) as result:
+        runpy.run_path(str(Path(worker.__file__)), run_name="__main__")
+    assert result.value.code == 1
+    output = capsys.readouterr()
+    event = json.loads(output.err)
+    assert event["event"] == "stream.persistence_failed"
+    assert event["error_category"] == "database_error"
+    assert "private" not in output.err and not output.out

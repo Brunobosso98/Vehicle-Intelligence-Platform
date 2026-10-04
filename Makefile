@@ -11,7 +11,7 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check
+.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check
 help:
 	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
@@ -21,8 +21,8 @@ dev-api:
 	cd apps/api && DATABASE_URL="$${DATABASE_URL:-postgresql+asyncpg://vehicle:local-development-only@127.0.0.1:5432/vehicle}" .venv/bin/uvicorn vehicle_platform.main:create_app --factory --reload --no-access-log
 dev-web:
 	pnpm --filter @vehicle-platform/web dev
-up:
-	docker compose up -d --build --wait
+up: containers
+	docker compose up -d --no-build --wait
 down:
 	docker compose down
 db-up:
@@ -65,13 +65,13 @@ contracts-check:
 build:
 	pnpm --filter @vehicle-platform/web build
 containers:
-	docker compose build
+	@set -e; for service in db broker migrate web; do docker compose build "$$service"; done
 security-cloud:
 	bash scripts/security-cloud.sh
 security:
 	bash scripts/security.sh
-observability-up:
-	docker compose -f compose.yaml -f infra/docker/observability/compose.yaml --profile observability up -d --build --wait
+observability-up: containers
+	docker compose -f compose.yaml -f infra/docker/observability/compose.yaml --profile observability up -d --no-build --wait
 observability-check:
 	$(API)/python scripts/observability-smoke.py
 observability-full:
@@ -93,7 +93,12 @@ stream-test:
 live-stream-benchmark:
 	$(API)/python scripts/benchmark_stream_live.py
 phase4-acceptance: stream-test contracts-check
-verify-cloud: verify-local phase3-acceptance phase4-acceptance security-cloud
+analytics-benchmark:
+	$(API)/python scripts/benchmark_analytics.py
+phase5-acceptance:
+	$(API)/python scripts/evaluate_analytics.py
+	$(MAKE) analytics-benchmark
+verify-cloud: verify-local phase3-acceptance phase4-acceptance phase5-acceptance security-cloud
 verify: verify-cloud containers test-integration
 	$(MAKE) up
 	$(MAKE) stack-check

@@ -189,7 +189,11 @@ class SessionAnalysisService:
             return [SessionSegment.model_validate(row) for row in rows]
 
     async def pulls(
-        self, session_id: UUID | None, vehicle_id: UUID | None, limit: int
+        self,
+        session_id: UUID | None,
+        vehicle_id: UUID | None,
+        limit: int,
+        configuration_id: UUID | None = None,
     ) -> list[Pull]:
         conditions: list[str] = []
         values: dict[str, object] = {"limit": limit}
@@ -199,6 +203,9 @@ class SessionAnalysisService:
         if vehicle_id:
             conditions.append("vehicle_id=:vehicle_id")
             values["vehicle_id"] = vehicle_id
+        if configuration_id:
+            conditions.append("configuration_id=:configuration_id")
+            values["configuration_id"] = configuration_id
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
         async with self.database.session() as db:
             rows = (

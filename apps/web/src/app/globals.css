@@ -7,6 +7,51 @@
   --accent: #a9e7cc;
 }
 
+.analytics-card {
+  margin-top: 3rem;
+  border: 1px solid #384253;
+  padding: 1.5rem;
+  background: #111720;
+}
+.analytics-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 1rem 0;
+}
+.analytics-tabs span {
+  border-bottom: 2px solid #61dafb;
+  padding: 0.35rem 0;
+}
+.analytics-choice {
+  display: block;
+  margin: 0.5rem 0;
+}
+.analytics-choice input {
+  margin-right: 0.5rem;
+}
+.analytics-result {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-left: 4px solid #61dafb;
+}
+.analytics-result svg {
+  width: 100%;
+  min-height: 220px;
+  background: #0a0f16;
+  color: #61dafb;
+}
+.analytics-empty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.analytics-empty-grid article {
+  border: 1px solid #384253;
+  padding: 1rem;
+}
+
 .live-acquisition select {
   display: block;
   width: 100%;
@@ -209,6 +254,8 @@ button:hover {
   background: #2b3934;
 }
 .segment-timeline {
+  list-style: none;
+  padding: 0;
   display: flex;
   overflow-x: auto;
   gap: 4px;

@@ -104,12 +104,70 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "provisional_findings",
             "dataset_capability_reports",
             "stream_dead_letters",
+            "analytics_runs",
         }
         assert await connection.scalar(
             text(
                 "SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables "
                 "WHERE hypertable_name='telemetry_samples')"
             )
+        )
+
+    # Phase 5 semantic boundary: discover the current head and direct parent rather than
+    # duplicating a stale revision literal in migration guards.
+    head_revision = script.get_revision(expected_head)
+    assert head_revision is not None and head_revision.down_revision is not None
+    phase5_parent = str(head_revision.down_revision)
+    phase5_downgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "downgrade", phase5_parent, cwd=api, env=env
+    )
+    assert await phase5_downgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == phase5_parent
+        )
+        assert await connection.scalar(text("SELECT to_regclass('analytics_runs')")) is None
+        for retained in (
+            "acquisition_sessions",
+            "stream_receipts",
+            "provisional_findings",
+            "dataset_capability_reports",
+            "stream_dead_letters",
+            "detected_events",
+            "event_analysis_runs",
+            "pulls",
+            "telemetry_samples",
+        ):
+            assert (
+                await connection.scalar(text("SELECT to_regclass(:table)"), {"table": retained})
+                == retained
+            )
+        assert await connection.scalar(
+            text("SELECT extversion FROM pg_extension WHERE extname='timescaledb'")
+        )
+        assert await connection.scalar(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM timescaledb_information.hypertables "
+                "WHERE hypertable_name='telemetry_samples')"
+            )
+        )
+    phase5_reupgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", expected_head, cwd=api, env=env
+    )
+    assert await phase5_reupgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert (
+            await connection.scalar(text("SELECT version_num FROM alembic_version"))
+            == expected_head
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('analytics_runs')"))
+            == "analytics_runs"
+        )
+        assert (
+            await connection.scalar(text("SELECT to_regclass('acquisition_sessions')"))
+            == "acquisition_sessions"
         )
     app = create_app(Settings(database_url=url, environment="test"))
     async with (
@@ -262,4 +320,352 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             for event in after
         }
         assert len(identities) == len(after)
+        phase5_pulls = (await client.get(f"/api/v1/sessions/{multi_session['id']}/pulls")).json()
+        pull_ids = [pull["id"] for pull in phase5_pulls]
+        analytics = await client.post(
+            "/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids}
+        )
+        assert analytics.status_code == 200
+        payload = analytics.json()
+        assert payload["algorithm_version"] == "1.0.0"
+        assert len(payload["configuration_hash"]) == 64
+        assert payload["result"]["sequence"]
+        reused = await client.post("/api/v1/analytics/pulls/repeated", json={"pull_ids": pull_ids})
+        assert reused.json()["id"] == payload["id"] and reused.json()["reused"] is True
+        recomputed = await client.post(
+            "/api/v1/analytics/pulls/repeated",
+            json={"pull_ids": pull_ids, "recompute": True},
+        )
+        assert recomputed.status_code == 200 and recomputed.json()["id"] != payload["id"]
+        async with engine.connect() as connection:
+            persisted = await connection.scalar(
+                text("SELECT count(*) FROM analytics_runs WHERE analytics_type='repeated_pulls'")
+            )
+            assert persisted == 2
+        configuration_a = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2020-01-01T00:00:00Z",
+                    "description": "A",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        configuration_b = (
+            await client.post(
+                f"/api/v1/vehicles/{vehicle['id']}/configurations",
+                json={
+                    "effective_at": "2030-01-01T00:00:00Z",
+                    "description": "B",
+                    "provenance": "phase5-integration",
+                },
+            )
+        ).json()
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "UPDATE driving_sessions SET configuration_id=:configuration WHERE id=:session"
+                ),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+            await connection.execute(
+                text("UPDATE pulls SET configuration_id=:configuration WHERE session_id=:session"),
+                {"configuration": configuration_a["id"], "session": multi_session["id"]},
+            )
+
+        sessions_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: [multi_session["id"]],
+            configuration_b["id"]: [],
+        }
+        pulls_by_configuration: dict[str, list[str]] = {
+            configuration_a["id"]: pull_ids,
+            configuration_b["id"]: [],
+        }
+        for configuration in (
+            configuration_a,
+            configuration_a,
+            configuration_b,
+            configuration_b,
+            configuration_b,
+        ):
+            created = (
+                await client.post(
+                    "/api/v1/sessions",
+                    json={
+                        "vehicle_id": vehicle["id"],
+                        "configuration_id": configuration["id"],
+                        "source_type": "csv",
+                        "started_at": scenario.frames[0].observed_at.isoformat(),
+                    },
+                )
+            ).json()
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/imports/csv",
+                    files={"file": ("history.csv", "\n".join(lines), "text/csv")},
+                )
+            ).status_code == 200
+            assert (
+                await client.post(
+                    f"/api/v1/sessions/{created['id']}/analysis", json={"profile": "generic-v1"}
+                )
+            ).status_code == 200
+            sessions_by_configuration[configuration["id"]].append(created["id"])
+            history_pulls = (await client.get(f"/api/v1/sessions/{created['id']}/pulls")).json()
+            pulls_by_configuration[configuration["id"]].extend(pull["id"] for pull in history_pulls)
+
+        scoped = await client.get(
+            "/api/v1/pulls",
+            params={
+                "vehicle_id": vehicle["id"],
+                "configuration_id": configuration_a["id"],
+                "limit": 20,
+            },
+        )
+        assert scoped.status_code == 200
+        assert {pull["id"] for pull in scoped.json()} == set(
+            pulls_by_configuration[configuration_a["id"]]
+        )
+        assert all(pull["configuration_id"] == configuration_a["id"] for pull in scoped.json())
+        comparison = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:2]},
+        )
+        assert comparison.status_code == 200 and comparison.json()["result"]["common_rpm_range"]
+        session_result = await client.post(
+            f"/api/v1/sessions/{sessions_by_configuration[configuration_a['id']][1]}/analytics",
+            json={},
+        )
+        assert session_result.status_code == 200
+        cross = await client.post(
+            "/api/v1/analytics/sessions/compare",
+            params=[
+                ("session_ids", item)
+                for item in sessions_by_configuration[configuration_a["id"]][:2]
+            ],
+            json={},
+        )
+        assert cross.status_code == 200
+        baseline_a = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={},
+        )
+        assert baseline_a.status_code == 200 and baseline_a.json()["result"]["session_count"] >= 3
+        rebuilt = await client.post(
+            f"/api/v1/vehicles/{vehicle['id']}/configurations/{configuration_a['id']}/baseline",
+            json={"recompute": True},
+        )
+        assert rebuilt.json()["id"] != baseline_a.json()["id"]
+        trend_result = await client.post(f"/api/v1/vehicles/{vehicle['id']}/trends/boost", json={})
+        assert set(trend_result.json()["result"]["segments_by_configuration"]) == {
+            configuration_a["id"],
+            configuration_b["id"],
+        }
+        query = [
+            ("after_pull_ids", item) for item in pulls_by_configuration[configuration_b["id"]][:3]
+        ]
+        before_after = await client.post(
+            "/api/v1/analytics/configurations/compare",
+            params=query,
+            json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:3]},
+        )
+        assert before_after.status_code == 200 and before_after.json()["result"][
+            "sample_sizes"
+        ] == {"before": 3, "after": 3}
+        isolated = await client.post(
+            "/api/v1/analytics/pulls/compare",
+            json={
+                "pull_ids": [
+                    pulls_by_configuration[configuration_a["id"]][0],
+                    pulls_by_configuration[configuration_b["id"]][0],
+                ]
+            },
+        )
+        assert isolated.json()["result"]["sufficiency"] == "insufficient"
     await engine.dispose()
+
+
+@pytest.mark.parametrize("with_speed", [True, False])
+async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findings(
+    url: str,
+    with_speed: bool,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+    from uuid import UUID, uuid4
+
+    from sqlalchemy.exc import IntegrityError
+
+    from vehicle_platform.acquisition.worker import StreamConsumer
+    from vehicle_platform.infrastructure.database import Database
+
+    env = os.environ | {"DATABASE_URL": url, "ENVIRONMENT": "test"}
+    process = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", "head", cwd=api, env=env
+    )
+    assert await process.wait() == 0
+    settings = Settings(database_url=url, environment="test")
+    app = create_app(settings)
+    database = Database(settings)
+    worker = StreamConsumer(database, settings)
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            vehicle = await client.post(
+                "/api/v1/vehicles",
+                json={
+                    "manufacturer": "BMW",
+                    "model": "335i",
+                    "generation": "F30",
+                    "model_year": 2015,
+                    "engine_code": "N55",
+                    "nickname": "Stream regression",
+                },
+            )
+            assert vehicle.status_code == 201
+            response = await client.post(
+                "/api/v1/acquisitions",
+                json={
+                    "vehicle_id": vehicle.json()["id"],
+                    "recipe_key": "general-health",
+                    "adapter": "synthetic",
+                    "source_id": "disposable-stream-regression",
+                },
+            )
+            assert response.status_code == 201
+            acquisition = response.json()
+            acquisition_id = UUID(acquisition["id"])
+            session_id = UUID(acquisition["driving_session_id"])
+            started = datetime(2026, 1, 1, tzinfo=UTC)
+            envelopes: list[dict[str, object]] = []
+            for index in range(500):
+                speed = with_speed and index % 2 == 1
+                envelopes.append(
+                    {
+                        "message_id": str(uuid4()),
+                        "acquisition_session_id": str(acquisition_id),
+                        "driving_session_id": str(session_id),
+                        "source_id": "synthetic",
+                        "observed_at": (
+                            started + timedelta(milliseconds=(index // 2) * 100)
+                        ).isoformat(),
+                        "produced_at": started.isoformat(),
+                        "batch_id": str(uuid4()),
+                        "sequence": index,
+                        "payload": {
+                            "signal": "vehicle.speed" if speed else "engine.rpm",
+                            "value": 0 if speed else 900,
+                            "unit": "m/s" if speed else "rpm",
+                            "source_record_id": str(index),
+                        },
+                    }
+                )
+            assert await worker.persist_batch(envelopes) == 500
+            assert await worker.persist_batch(envelopes) == 0
+            assert await worker.persist_batch([envelopes[0], envelopes[0]]) == 0
+            # A new message ID with the same canonical sample is receipted once,
+            # but must not increment the durable canonical sample count.
+            duplicate_sample = envelopes[0] | {"message_id": str(uuid4())}
+            assert await worker.persist(duplicate_sample)
+            async with database.session() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT sample_count FROM driving_sessions WHERE id=:id"),
+                        {"id": session_id},
+                    )
+                    == 500
+                )
+                assert (
+                    await db.scalar(
+                        text(
+                            "SELECT count(*) FROM stream_receipts WHERE acquisition_session_id=:id"
+                        ),
+                        {"id": acquisition_id},
+                    )
+                    == 501
+                )
+                findings = (
+                    await db.execute(
+                        text(
+                            "SELECT finding_type,category,evidence FROM provisional_findings "
+                            "WHERE acquisition_session_id=:id"
+                        ),
+                        {"id": acquisition_id},
+                    )
+                ).all()
+                if with_speed:
+                    assert any(row.finding_type == "possible_idle" for row in findings)
+                else:
+                    # Missing speed cannot support a factual idle classification.
+                    assert findings == []
+                assert all(
+                    row.category == "performance" and row.evidence["provisional"]
+                    for row in findings
+                )
+            # A foreign-key failure rolls back the entire poll, including receipts.
+            valid = envelopes[0] | {
+                "message_id": str(uuid4()),
+                "sequence": 501,
+                "payload": {
+                    "signal": "engine.rpm",
+                    "value": 900,
+                    "unit": "rpm",
+                    "source_record_id": "rollback-valid",
+                },
+            }
+            invalid = valid | {"message_id": str(uuid4()), "acquisition_session_id": str(uuid4())}
+            with pytest.raises(IntegrityError):
+                await worker.persist_batch([valid, invalid])
+            assert await worker.persist(valid)
+            assert not await worker.persist(valid)
+            async with database.session() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT sample_count FROM driving_sessions WHERE id=:id"),
+                        {"id": session_id},
+                    )
+                    == 501
+                )
+            # Repeated provisional evaluation must not create duplicate findings.
+            await worker._provisional(acquisition_id)
+            async with database.session() as db:
+                assert await db.scalar(
+                    text(
+                        "SELECT count(*) FROM provisional_findings WHERE acquisition_session_id=:id"
+                    ),
+                    {"id": acquisition_id},
+                ) == len(findings)
+                # Nullable provisional boundaries must reconcile against canonical
+                # timestamps with typed binds, even when no pull/event confirms them.
+                for finding_type in ("possible_pull", "boost_drop"):
+                    await db.execute(
+                        text(
+                            "INSERT INTO provisional_findings(acquisition_session_id,"
+                            "finding_type,category,started_at,ended_at,evidence) "
+                            "VALUES(:id,:type,'performance',:started,NULL,'{}'::jsonb)"
+                        ),
+                        {"id": acquisition_id, "type": finding_type, "started": started},
+                    )
+                await db.commit()
+            stopped = await client.post(
+                f"/api/v1/acquisitions/{acquisition_id}/stop",
+                headers={"Authorization": f"Bearer {acquisition['ingestion_token']}"},
+            )
+            assert stopped.status_code == 200
+            finalized = await client.post(f"/api/v1/acquisitions/{acquisition_id}/finalize")
+            assert finalized.status_code == 200
+            assert finalized.json()["state"] == "completed"
+            reconciled = await client.get(f"/api/v1/acquisitions/{acquisition_id}/findings")
+            assert reconciled.status_code == 200
+            assert len(reconciled.json()) == len(findings) + 2
+            assert all(item["reconciliation_status"] == "absent" for item in reconciled.json())
+            # Completed acquisition streams terminate after their real snapshot.
+            live = await client.get(f"/api/v1/acquisitions/{acquisition_id}/live")
+            assert live.status_code == 200
+            assert '"reconciliation_status":"absent"' in live.text
+    finally:
+        await database.close()

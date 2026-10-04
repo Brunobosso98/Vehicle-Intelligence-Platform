@@ -60,6 +60,7 @@ omit = [
  "*/vehicle_platform/telemetry/service.py", # bulk SQL/idempotency requires real transaction semantics
  "*/vehicle_platform/analysis/service.py", # derived persistence/idempotency requires real transaction semantics
  "*/vehicle_platform/events/service.py", # event persistence/idempotency requires real transaction semantics
+ "*/vehicle_platform/analytics/service.py", # analytics SQL/idempotency requires real integration
 ]
 [tool.coverage.report]
 fail_under = 90

@@ -222,6 +222,113 @@
         "title": "AnalysisResult",
         "type": "object"
       },
+      "AnalyticsRequest": {
+        "properties": {
+          "maximum_gap_seconds": {
+            "default": 1,
+            "exclusiveMinimum": 0,
+            "maximum": 5,
+            "title": "Maximum Gap Seconds",
+            "type": "number"
+          },
+          "minimum_bin_samples": {
+            "default": 3,
+            "maximum": 100,
+            "minimum": 2,
+            "title": "Minimum Bin Samples",
+            "type": "integer"
+          },
+          "pull_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 20,
+            "minItems": 0,
+            "title": "Pull Ids",
+            "type": "array"
+          },
+          "recompute": {
+            "default": false,
+            "title": "Recompute",
+            "type": "boolean"
+          },
+          "rpm_bin_size": {
+            "default": 250,
+            "maximum": 1000,
+            "minimum": 100,
+            "title": "Rpm Bin Size",
+            "type": "integer"
+          }
+        },
+        "title": "AnalyticsRequest",
+        "type": "object"
+      },
+      "AnalyticsResultResponse": {
+        "properties": {
+          "algorithm_name": { "title": "Algorithm Name", "type": "string" },
+          "algorithm_version": {
+            "title": "Algorithm Version",
+            "type": "string"
+          },
+          "analytics_type": { "title": "Analytics Type", "type": "string" },
+          "configuration_hash": {
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          },
+          "reused": { "default": false, "title": "Reused", "type": "boolean" },
+          "source_fingerprint": {
+            "title": "Source Fingerprint",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["completed", "limited", "insufficient", "failed"],
+            "title": "Status",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": { "type": "string" },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "analytics_type",
+          "algorithm_name",
+          "algorithm_version",
+          "configuration_hash",
+          "source_fingerprint",
+          "vehicle_id",
+          "configuration_id",
+          "status",
+          "warnings",
+          "result",
+          "generated_at"
+        ],
+        "title": "AnalyticsResultResponse",
+        "type": "object"
+      },
       "Body_import_csv": {
         "properties": {
           "file": {
@@ -2117,6 +2224,200 @@
         "summary": "Start Synthetic Acquisition"
       }
     },
+    "/api/v1/analytics/configurations/compare": {
+      "post": {
+        "operationId": "compare_configurations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after_pull_ids",
+            "required": true,
+            "schema": {
+              "items": { "format": "uuid", "type": "string" },
+              "maxItems": 20,
+              "title": "After Pull Ids",
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Compare Configurations"
+      }
+    },
+    "/api/v1/analytics/pulls/compare": {
+      "post": {
+        "operationId": "compare_pull_analytics",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Compare Pull Analytics"
+      }
+    },
+    "/api/v1/analytics/pulls/repeated": {
+      "post": {
+        "operationId": "analyze_repeated_pulls",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Analyze Repeated Pulls"
+      }
+    },
+    "/api/v1/analytics/sessions/compare": {
+      "post": {
+        "operationId": "compare_sessions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "session_ids",
+            "required": true,
+            "schema": {
+              "items": { "format": "uuid", "type": "string" },
+              "maxItems": 10,
+              "title": "Session Ids",
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Compare Sessions"
+      }
+    },
     "/api/v1/events": {
       "get": {
         "operationId": "list_vehicle_events",
@@ -2406,6 +2707,18 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "configuration_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Configuration Id"
+            }
           }
         ],
         "responses": {
@@ -2479,6 +2792,56 @@
           }
         },
         "summary": "Get Pull"
+      }
+    },
+    "/api/v1/pulls/{pull_id}/analytics": {
+      "post": {
+        "operationId": "get_pull_analytics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pull_id",
+            "required": true,
+            "schema": { "format": "uuid", "title": "Pull Id", "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Pull Analytics"
       }
     },
     "/api/v1/sessions": {
@@ -2663,6 +3026,60 @@
           }
         },
         "summary": "Analyze Session"
+      }
+    },
+    "/api/v1/sessions/{session_id}/analytics": {
+      "post": {
+        "operationId": "get_session_analytics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Session Analytics"
       }
     },
     "/api/v1/sessions/{session_id}/capabilities": {
@@ -3534,6 +3951,70 @@
         "summary": "Create Configuration"
       }
     },
+    "/api/v1/vehicles/{vehicle_id}/configurations/{configuration_id}/baseline": {
+      "post": {
+        "operationId": "build_vehicle_baseline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "configuration_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Configuration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Build Vehicle Baseline"
+      }
+    },
     "/api/v1/vehicles/{vehicle_id}/modifications": {
       "get": {
         "operationId": "list_modifications",
@@ -3630,6 +4111,66 @@
           }
         },
         "summary": "Create Modification"
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/trends/{metric}": {
+      "post": {
+        "operationId": "get_vehicle_trends",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "metric",
+            "required": true,
+            "schema": { "title": "Metric", "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnalyticsRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get Vehicle Trends"
       }
     },
     "/health/live": {

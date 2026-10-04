@@ -8,7 +8,7 @@ from time import perf_counter
 from uuid import UUID
 
 from aiokafka import AIOKafkaProducer  # type: ignore[import-untyped]
-from sqlalchemy import text
+from sqlalchemy import DateTime, bindparam, text
 
 from vehicle_platform.acquisition.adapters import SyntheticLiveAdapter
 from vehicle_platform.acquisition.domain import preflight
@@ -312,6 +312,9 @@ class AcquisitionService:
                         await db.execute(
                             text(
                                 "SELECT id FROM detected_events WHERE session_id=:sid AND event_type='boost_drop' AND started_at<=COALESCE(:ended,:started) AND ended_at>=:started LIMIT 1"
+                            ).bindparams(
+                                bindparam("started", type_=DateTime(timezone=True)),
+                                bindparam("ended", type_=DateTime(timezone=True)),
                             ),
                             {
                                 "sid": driving_id,
@@ -325,6 +328,9 @@ class AcquisitionService:
                         await db.execute(
                             text(
                                 "SELECT id FROM pulls WHERE session_id=:sid AND started_at<=COALESCE(:ended,:started) AND ended_at>=:started LIMIT 1"
+                            ).bindparams(
+                                bindparam("started", type_=DateTime(timezone=True)),
+                                bindparam("ended", type_=DateTime(timezone=True)),
                             ),
                             {
                                 "sid": driving_id,

@@ -258,6 +258,30 @@ class EventSummary(BaseModel):
     highest_severity: Literal["info", "low", "moderate", "high"] | None
 
 
+class AnalyticsRequest(BaseModel):
+    rpm_bin_size: int = Field(default=250, ge=100, le=1000)
+    minimum_bin_samples: int = Field(default=3, ge=2, le=100)
+    maximum_gap_seconds: float = Field(default=1.0, gt=0, le=5)
+    pull_ids: list[UUID] = Field(default_factory=list, min_length=0, max_length=20)
+    recompute: bool = False
+
+
+class AnalyticsResultResponse(BaseModel):
+    id: UUID
+    analytics_type: str
+    algorithm_name: str
+    algorithm_version: str
+    configuration_hash: str
+    source_fingerprint: str
+    vehicle_id: UUID
+    configuration_id: UUID | None
+    status: Literal["completed", "limited", "insufficient", "failed"]
+    warnings: list[str]
+    result: dict[str, Any]
+    generated_at: datetime
+    reused: bool = False
+
+
 class RecipeSignal(BaseModel):
     signal: str
     importance: Literal["required", "recommended", "optional"]

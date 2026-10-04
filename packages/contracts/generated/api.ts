@@ -135,6 +135,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/analytics/configurations/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compare Configurations */
+    post: operations["compare_configurations"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/analytics/pulls/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compare Pull Analytics */
+    post: operations["compare_pull_analytics"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/analytics/pulls/repeated": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Analyze Repeated Pulls */
+    post: operations["analyze_repeated_pulls"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/analytics/sessions/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Compare Sessions */
+    post: operations["compare_sessions"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/events": {
     parameters: {
       query?: never;
@@ -271,6 +339,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/pulls/{pull_id}/analytics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Get Pull Analytics */
+    post: operations["get_pull_analytics"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/sessions": {
     parameters: {
       query?: never;
@@ -317,6 +402,23 @@ export interface paths {
     put?: never;
     /** Analyze Session */
     post: operations["analyze_session"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/sessions/{session_id}/analytics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Get Session Analytics */
+    post: operations["get_session_analytics"];
     delete?: never;
     options?: never;
     head?: never;
@@ -530,6 +632,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/vehicles/{vehicle_id}/configurations/{configuration_id}/baseline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Build Vehicle Baseline */
+    post: operations["build_vehicle_baseline"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/vehicles/{vehicle_id}/modifications": {
     parameters: {
       query?: never;
@@ -542,6 +661,23 @@ export interface paths {
     put?: never;
     /** Create Modification */
     post: operations["create_modification"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/trends/{metric}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Get Vehicle Trends */
+    post: operations["get_vehicle_trends"];
     delete?: never;
     options?: never;
     head?: never;
@@ -762,6 +898,77 @@ export interface components {
        * Format: uuid
        */
       session_id: string;
+    };
+    /** AnalyticsRequest */
+    AnalyticsRequest: {
+      /**
+       * Maximum Gap Seconds
+       * @default 1
+       */
+      maximum_gap_seconds: number;
+      /**
+       * Minimum Bin Samples
+       * @default 3
+       */
+      minimum_bin_samples: number;
+      /** Pull Ids */
+      pull_ids?: string[];
+      /**
+       * Recompute
+       * @default false
+       */
+      recompute: boolean;
+      /**
+       * Rpm Bin Size
+       * @default 250
+       */
+      rpm_bin_size: number;
+    };
+    /** AnalyticsResultResponse */
+    AnalyticsResultResponse: {
+      /** Algorithm Name */
+      algorithm_name: string;
+      /** Algorithm Version */
+      algorithm_version: string;
+      /** Analytics Type */
+      analytics_type: string;
+      /** Configuration Hash */
+      configuration_hash: string;
+      /** Configuration Id */
+      configuration_id: string | null;
+      /**
+       * Generated At
+       * Format: date-time
+       */
+      generated_at: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Result */
+      result: {
+        [key: string]: unknown;
+      };
+      /**
+       * Reused
+       * @default false
+       */
+      reused: boolean;
+      /** Source Fingerprint */
+      source_fingerprint: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "completed" | "limited" | "insufficient" | "failed";
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+      /** Warnings */
+      warnings: string[];
     };
     /** Body_import_csv */
     Body_import_csv: {
@@ -1953,6 +2160,178 @@ export interface operations {
       };
     };
   };
+  compare_configurations: {
+    parameters: {
+      query: {
+        after_pull_ids: string[];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  compare_pull_analytics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  analyze_repeated_pulls: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  compare_sessions: {
+    parameters: {
+      query: {
+        session_ids: string[];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_vehicle_events: {
     parameters: {
       query: {
@@ -2182,6 +2561,7 @@ export interface operations {
       query: {
         vehicle_id: string;
         limit?: number;
+        configuration_id?: string | null;
       };
       header?: never;
       path?: never;
@@ -2236,6 +2616,50 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Pull"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_pull_analytics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        pull_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
         };
       };
       /** @description Validation Error */
@@ -2402,6 +2826,50 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AnalysisResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_session_analytics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
         };
       };
       /** @description Validation Error */
@@ -3044,6 +3512,51 @@ export interface operations {
       };
     };
   };
+  build_vehicle_baseline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        configuration_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   list_modifications: {
     parameters: {
       query?: never;
@@ -3106,6 +3619,51 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Modification"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_vehicle_trends: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        metric: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnalyticsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnalyticsResultResponse"];
         };
       };
       /** @description Validation Error */

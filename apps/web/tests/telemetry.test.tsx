@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { TelemetryDashboard } from "../src/components/telemetry-dashboard";
@@ -174,6 +174,13 @@ describe("telemetry dashboard", () => {
       await screen.findByRole("img", { name: /engine.rpm/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("Derived session timeline")).toBeInTheDocument();
+    const timeline = screen.getByRole("list", {
+      name: "Driving session segments",
+    });
+    const segmentItem = within(timeline).getByRole("listitem");
+    expect(
+      within(segmentItem).getByRole("button", { name: /pull/ }),
+    ).toBeInTheDocument();
     expect(
       await screen.findByText("Structured factual evidence"),
     ).toBeInTheDocument();

@@ -133,11 +133,16 @@ jobs:
           OBSERVABILITY: ${{ steps.observability.outcome }}
           SECURITY: ${{ steps.security.outcome }}
         run: |
-          test "$CLOUD" = success
-          test "$CONTAINERS" = success
-          test "$DATABASE" = success
-          test "$STACK" = success
-          test "$E2E" = success
-          test "$STREAMING" = success
-          test "$OBSERVABILITY" = success
-          test "$SECURITY" = success
+          failed=0
+          for entry in \
+            "cloud:$CLOUD" "containers:$CONTAINERS" "database:$DATABASE" \
+            "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
+            "observability:$OBSERVABILITY" "security:$SECURITY"; do
+            name=${entry%%:*}
+            outcome=${entry#*:}
+            if [ "$outcome" != success ]; then
+              echo "::error title=Canonical gate failure::$name outcome was $outcome"
+              failed=1
+            fi
+          done
+          exit "$failed"

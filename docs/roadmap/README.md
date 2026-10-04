@@ -4,8 +4,8 @@
 - Phase 1 — Vehicle & Telemetry Core (complete)
 - Phase 2 — Sessions & Pull Detection (complete)
 - Phase 3 — Event / Anomaly Engine (complete)
-- Phase 4 — Streaming & Live Vehicle Acquisition (current)
-- Phase 5 — Automotive Analytics (planned)
+- Phase 4 — Streaming & Live Vehicle Acquisition (complete)
+- Phase 5 — Automotive Analytics (current)
 - Phase 6 — MCP Tool Platform (planned)
 - Phase 7 — Agent Orchestration (planned)
 - Phase 8 — Technical RAG (planned)
@@ -15,9 +15,9 @@
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
 
-Only Phase 4 is in scope. No Phase 5+ capabilities are claimed as implemented.
+Only Phase 5 is in scope. No Phase 6+ capabilities are claimed as implemented.
 
 # Current phase
 
-Phases 0–3 are complete. Phase 4 read-only live acquisition and durable streaming is current.
-Diagnosis, root-cause interpretation, advanced analytics and Phase 5+ remain deferred.
+Phases 0–4 are complete. Phase 5 deterministic, evidence-first automotive analytics is current.
+Diagnosis, root-cause interpretation, MCP/agents/RAG, ML and Phase 6+ remain deferred.
