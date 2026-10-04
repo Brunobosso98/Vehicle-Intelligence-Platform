@@ -2561,6 +2561,7 @@ export interface operations {
       query: {
         vehicle_id: string;
         limit?: number;
+        configuration_id?: string | null;
       };
       header?: never;
       path?: never;

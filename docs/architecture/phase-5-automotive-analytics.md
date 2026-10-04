@@ -35,6 +35,12 @@ least two comparable pulls. Baselines require three eligible sessions under one 
 Correlations require five comparable observations and are labelled observed, non-causal associations.
 Trends preserve configuration segments. Before/after views state observed differences only.
 
+Before/after selection exposes separate before and after configuration controls. Each side queries
+up to 20 persisted pulls under its selected configuration instead of filtering the general preview
+catalog. The pull-list API accepts an optional `configuration_id` filter; omitting it preserves the
+existing bounded ordering and response contract. This is a backward-compatible query addition,
+with no database schema, analytics algorithm version or configuration-hash change.
+
 ## Robust statistics and provenance
 
 Median is the midpoint; MAD is median absolute deviation; IQR is p75 minus p25; sample CV is sample

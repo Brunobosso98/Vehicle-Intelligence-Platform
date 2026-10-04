@@ -503,7 +503,7 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
                         (
                             await db.execute(
                                 text(
-                                    """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at DESC LIMIT 20"""
+                                    """SELECT id,finding_type,category,started_at,ended_at,evidence,status AS reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at DESC LIMIT 20"""
                                 ),
                                 {"id": acquisition_id},
                             )
@@ -565,7 +565,7 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
                 (
                     await db.execute(
                         text(
-                            """SELECT id,finding_type,category,started_at,ended_at,evidence,reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at,id"""
+                            """SELECT id,finding_type,category,started_at,ended_at,evidence,status AS reconciliation_status FROM provisional_findings WHERE acquisition_session_id=:id ORDER BY started_at,id"""
                         ),
                         {"id": acquisition_id},
                     )
@@ -678,8 +678,14 @@ def router(settings: Settings, database: DatabaseProbe) -> APIRouter:
         return await SessionAnalysisService(store()).pulls(session_id, None, limit)
 
     @routes.get("/api/v1/pulls", response_model=list[Pull], operation_id="list_pulls")
-    async def list_pulls(vehicle_id: UUID, limit: int = Query(100, ge=1, le=200)) -> list[Pull]:
-        return await SessionAnalysisService(store()).pulls(None, vehicle_id, limit)
+    async def list_pulls(
+        vehicle_id: UUID,
+        limit: int = Query(100, ge=1, le=200),
+        configuration_id: UUID | None = None,
+    ) -> list[Pull]:
+        return await SessionAnalysisService(store()).pulls(
+            None, vehicle_id, limit, configuration_id
+        )
 
     @routes.get("/api/v1/pulls/{pull_id}", response_model=Pull, operation_id="get_pull")
     async def get_pull(pull_id: UUID) -> Pull:

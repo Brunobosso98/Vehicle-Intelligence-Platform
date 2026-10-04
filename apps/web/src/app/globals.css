@@ -254,6 +254,8 @@ button:hover {
   background: #2b3934;
 }
 .segment-timeline {
+  list-style: none;
+  padding: 0;
   display: flex;
   overflow-x: auto;
   gap: 4px;

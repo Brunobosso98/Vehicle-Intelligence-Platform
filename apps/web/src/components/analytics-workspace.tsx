@@ -24,6 +24,8 @@ export function AnalyticsWorkspace() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [configurationId, setConfigurationId] = useState("");
+  const [beforeConfigurationId, setBeforeConfigurationId] = useState("");
+  const [afterConfigurationId, setAfterConfigurationId] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,6 +42,8 @@ export function AnalyticsWorkspace() {
           );
           setConfigurations(configs);
           setConfigurationId(configs[0]?.id ?? "");
+          setBeforeConfigurationId(configs[1]?.id ?? "");
+          setAfterConfigurationId(configs[0]?.id ?? "");
           return request<Pull[]>(
             `/api/domain/pulls?vehicle_id=${current.id}&limit=20`,
             {
@@ -90,13 +94,19 @@ export function AnalyticsWorkspace() {
       if (kind === "baseline") {
         url = `/api/domain/vehicles/${vehicle.id}/configurations/${configurationId}/baseline`;
       } else if (kind === "before-after") {
-        const [before, after] = configurations.slice(0, 2);
-        const beforeIds = pulls
-          .filter((pull) => pull.configuration_id === before?.id)
-          .map((pull) => pull.id);
-        const afterIds = pulls
-          .filter((pull) => pull.configuration_id === after?.id)
-          .map((pull) => pull.id);
+        const [beforePulls, afterPulls] = await Promise.all(
+          [beforeConfigurationId, afterConfigurationId].map((configuration) =>
+            request<Pull[]>(
+              `/api/domain/pulls?${new URLSearchParams({
+                vehicle_id: vehicle.id,
+                configuration_id: configuration,
+                limit: "20",
+              })}`,
+            ),
+          ),
+        );
+        const beforeIds = beforePulls.map((pull) => pull.id);
+        const afterIds = afterPulls.map((pull) => pull.id);
         const query = new URLSearchParams();
         afterIds.forEach((id) => query.append("after_pull_ids", id));
         url = `/api/domain/analytics/configurations/compare?${query}`;
@@ -484,8 +494,41 @@ export function AnalyticsWorkspace() {
             Before/after views report configuration sample counts and factual
             deltas only. They never claim that a modification caused a change.
           </p>
+          <label htmlFor="before-configuration">Before configuration</label>
+          <select
+            id="before-configuration"
+            value={beforeConfigurationId}
+            disabled={busy}
+            onChange={(event) => setBeforeConfigurationId(event.target.value)}
+          >
+            <option value="">Select configuration</option>
+            {configurations.map((configuration) => (
+              <option key={configuration.id} value={configuration.id}>
+                {configuration.description}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="after-configuration">After configuration</label>
+          <select
+            id="after-configuration"
+            value={afterConfigurationId}
+            disabled={busy}
+            onChange={(event) => setAfterConfigurationId(event.target.value)}
+          >
+            <option value="">Select configuration</option>
+            {configurations.map((configuration) => (
+              <option key={configuration.id} value={configuration.id}>
+                {configuration.description}
+              </option>
+            ))}
+          </select>
           <button
-            disabled={configurations.length < 2 || busy}
+            disabled={
+              !beforeConfigurationId ||
+              !afterConfigurationId ||
+              beforeConfigurationId === afterConfigurationId ||
+              busy
+            }
             onClick={() => void history("before-after")}
           >
             Compare configurations

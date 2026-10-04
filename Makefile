@@ -21,8 +21,8 @@ dev-api:
 	cd apps/api && DATABASE_URL="$${DATABASE_URL:-postgresql+asyncpg://vehicle:local-development-only@127.0.0.1:5432/vehicle}" .venv/bin/uvicorn vehicle_platform.main:create_app --factory --reload --no-access-log
 dev-web:
 	pnpm --filter @vehicle-platform/web dev
-up:
-	docker compose up -d --build --wait
+up: containers
+	docker compose up -d --no-build --wait
 down:
 	docker compose down
 db-up:
@@ -65,13 +65,13 @@ contracts-check:
 build:
 	pnpm --filter @vehicle-platform/web build
 containers:
-	docker compose build
+	@set -e; for service in db broker migrate web; do docker compose build "$$service"; done
 security-cloud:
 	bash scripts/security-cloud.sh
 security:
 	bash scripts/security.sh
-observability-up:
-	docker compose -f compose.yaml -f infra/docker/observability/compose.yaml --profile observability up -d --build --wait
+observability-up: containers
+	docker compose -f compose.yaml -f infra/docker/observability/compose.yaml --profile observability up -d --no-build --wait
 observability-check:
 	$(API)/python scripts/observability-smoke.py
 observability-full:

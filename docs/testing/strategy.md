@@ -43,3 +43,15 @@ runs informational normal, multi-anomaly, and 100k+ observation benchmarks. The 
 least 0.95 precision/recall/F1 and zero false positives in both healthy scenarios; latency is recorded
 but deliberately not gated. Disposable Timescale integration validates revision 0004 downgrade to
 the intact Phase 2 schema, re-upgrade, real persistence, filters, details, replacement and idempotency.
+
+Disposable database regression coverage also runs the canonical stream consumer persistence path:
+bounded poll transactions, receipt replay, duplicate canonical identities, whole-poll rollback,
+provisional finding SQL typing, nullable-boundary finalization, findings/SSE responses and
+repeated-evaluation idempotency. Phase 5 browser selection and error assertions are scoped to the
+analytics region so Phase 3 controls and Next.js route announcements cannot satisfy its locators.
+Timeline segments use list items containing native buttons; accessibility checks cover populated
+sessions as well as the initial workspace.
+Phase 3 fixtures use timestamps later than retained sessions so repeated runs validate their own
+anomalous and healthy evidence without resetting application volumes.
+Web unit tests use one worker to bound simultaneous jsdom startup on WSL; assertions, worker
+startup timeout and coverage thresholds remain unchanged.

@@ -6,6 +6,18 @@ The collector sends authenticated batches to the gateway; Kafka retains acknowle
 
 If Kafka is unavailable, the collector retries with bounded exponential delay and writes mode-0600 records to its bounded spool. It replays the spool before new adapter readings after reconnect. Full spool rejects new records visibly and increments the dropped count. If the database is unavailable, the consumer does not commit the affected offset. Restarting either broker or consumer is safe because stream receipts and canonical sample identity reject duplicates. Out-of-order observations retain collector event time; final analysis sorts by event time.
 
+The canonical consumer persists at most 500 observations from one Kafka poll in a single database
+transaction. Receipts, canonical samples, sequence progress and sample counts commit atomically;
+replayed messages and duplicate sample identities do not inflate the durable sample count. A failed
+poll rolls back and leaves its offsets uncommitted. Database failures emit the sanitized
+`stream.persistence_failed` event and restart the consumer without logging SQL inputs.
+Provisional windows remain bounded to 2,000 observations and retain the existing evaluation points
+at each 500 observations and the early-session 900-observation point. No stream schema, recipe
+version/configuration hash or detector algorithm changes are introduced by batching.
+Findings and live snapshots expose the documented `reconciliation_status` field from the database's
+internal `status` column. Finalization types nullable finding boundaries as timezone-aware timestamps
+before matching canonical pulls/events; unsupported provisional findings reconcile to `absent`.
+
 ## Safe physical Vgate validation procedure
 
 Physical Vgate vLinker validation is **PENDING**. Do not claim compatibility until this procedure is recorded with real hardware:

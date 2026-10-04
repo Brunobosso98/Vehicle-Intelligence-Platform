@@ -2707,6 +2707,18 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "configuration_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Configuration Id"
+            }
           }
         ],
         "responses": {

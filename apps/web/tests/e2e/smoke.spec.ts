@@ -154,10 +154,24 @@ test("Phase 3 real-stack events remain factual, filterable and pull-associated",
   const vehicles = (await vehicleResponse.json()) as { id: string }[];
   const vehicle = vehicles[0];
   expect(vehicle).toBeDefined();
+  const existingSessions = (await (
+    await request.get(
+      `http://127.0.0.1:8000/api/v1/sessions?vehicle_id=${vehicle.id}`,
+    )
+  ).json()) as { started_at: string | null }[];
+  let newestStartedAt = Math.max(
+    Date.parse("2090-01-01T00:00:00Z"),
+    ...existingSessions.map((session) =>
+      session.started_at ? Date.parse(session.started_at) : 0,
+    ),
+  );
   const createSession = async (startedAt: string, anomalous: boolean) => {
-    const sessionStartedAt = new Date(
-      Date.parse(startedAt) + (Date.now() % 86_400_000),
-    ).toISOString();
+    // The UI opens the latest session. Repeated local runs retain their fixtures.
+    newestStartedAt = Math.max(
+      Date.parse(startedAt),
+      newestStartedAt + 86_400_000,
+    );
+    const sessionStartedAt = new Date(newestStartedAt).toISOString();
     const response = await request.post(
       "http://127.0.0.1:8000/api/v1/sessions",
       {
@@ -509,7 +523,9 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
   await expect(
     page.getByText(/Observed association is not root-cause/),
   ).toBeVisible();
-  const choices = page.getByRole("checkbox");
+  const choices = page
+    .getByRole("group", { name: "Select 2–3 pulls" })
+    .getByRole("checkbox");
   await choices.nth(0).check();
   await choices.nth(1).check();
   await page.getByRole("button", { name: "Compare pulls" }).click();
@@ -537,6 +553,8 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
   await expect(
     result.getByRole("heading", { name: "Configuration-segmented history" }),
   ).toBeVisible();
+  await page.getByLabel("Before configuration").selectOption(configurationA.id);
+  await page.getByLabel("After configuration").selectOption(configurationB.id);
   await page.getByRole("button", { name: "Compare configurations" }).click();
   await expect(
     result.getByRole("heading", { name: "Observed before/after difference" }),
@@ -552,7 +570,9 @@ test("Phase 5 real-stack analytics workspace", async ({ page, request }) => {
   await page.reload();
   await page.getByLabel("Vehicle configuration").selectOption(insufficient.id);
   await page.getByRole("button", { name: "Build historical baseline" }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Historical analytics are unavailable",
-  );
+  await expect(
+    page
+      .getByRole("region", { name: "Analytics workspace" })
+      .getByRole("alert"),
+  ).toContainText("Historical analytics are unavailable");
 });

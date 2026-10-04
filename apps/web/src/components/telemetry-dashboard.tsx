@@ -189,23 +189,25 @@ export function TelemetryDashboard() {
                   No derived segments yet. Run session analysis through the API.
                 </p>
               ) : (
-                <div
+                <ul
                   className="segment-timeline"
                   role="list"
                   aria-label="Driving session segments"
                 >
                   {segments.map((segment) => (
-                    <button
-                      key={segment.id}
-                      role="listitem"
-                      className={`segment segment-${segment.segment_type}`}
-                      title={`${segment.segment_type}, ${segment.duration_ms / 1000} seconds`}
-                    >
-                      <strong>{segment.segment_type.replace("_", " ")}</strong>
-                      <span>{(segment.duration_ms / 1000).toFixed(1)}s</span>
-                    </button>
+                    <li key={segment.id}>
+                      <button
+                        className={`segment segment-${segment.segment_type}`}
+                        title={`${segment.segment_type}, ${segment.duration_ms / 1000} seconds`}
+                      >
+                        <strong>
+                          {segment.segment_type.replace("_", " ")}
+                        </strong>
+                        <span>{(segment.duration_ms / 1000).toFixed(1)}s</span>
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
               <h3>Event timeline</h3>
               <label htmlFor="event-filter">Filter by event type</label>

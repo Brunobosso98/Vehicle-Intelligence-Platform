@@ -415,6 +415,19 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             history_pulls = (await client.get(f"/api/v1/sessions/{created['id']}/pulls")).json()
             pulls_by_configuration[configuration["id"]].extend(pull["id"] for pull in history_pulls)
 
+        scoped = await client.get(
+            "/api/v1/pulls",
+            params={
+                "vehicle_id": vehicle["id"],
+                "configuration_id": configuration_a["id"],
+                "limit": 20,
+            },
+        )
+        assert scoped.status_code == 200
+        assert {pull["id"] for pull in scoped.json()} == set(
+            pulls_by_configuration[configuration_a["id"]]
+        )
+        assert all(pull["configuration_id"] == configuration_a["id"] for pull in scoped.json())
         comparison = await client.post(
             "/api/v1/analytics/pulls/compare",
             json={"pull_ids": pulls_by_configuration[configuration_a["id"]][:2]},
@@ -471,3 +484,188 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
         )
         assert isolated.json()["result"]["sufficiency"] == "insufficient"
     await engine.dispose()
+
+
+@pytest.mark.parametrize("with_speed", [True, False])
+async def test_stream_poll_is_atomic_replay_safe_and_persists_provisional_findings(
+    url: str,
+    with_speed: bool,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+    from uuid import UUID, uuid4
+
+    from sqlalchemy.exc import IntegrityError
+
+    from vehicle_platform.acquisition.worker import StreamConsumer
+    from vehicle_platform.infrastructure.database import Database
+
+    env = os.environ | {"DATABASE_URL": url, "ENVIRONMENT": "test"}
+    process = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", "head", cwd=api, env=env
+    )
+    assert await process.wait() == 0
+    settings = Settings(database_url=url, environment="test")
+    app = create_app(settings)
+    database = Database(settings)
+    worker = StreamConsumer(database, settings)
+    try:
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client,
+        ):
+            vehicle = await client.post(
+                "/api/v1/vehicles",
+                json={
+                    "manufacturer": "BMW",
+                    "model": "335i",
+                    "generation": "F30",
+                    "model_year": 2015,
+                    "engine_code": "N55",
+                    "nickname": "Stream regression",
+                },
+            )
+            assert vehicle.status_code == 201
+            response = await client.post(
+                "/api/v1/acquisitions",
+                json={
+                    "vehicle_id": vehicle.json()["id"],
+                    "recipe_key": "general-health",
+                    "adapter": "synthetic",
+                    "source_id": "disposable-stream-regression",
+                },
+            )
+            assert response.status_code == 201
+            acquisition = response.json()
+            acquisition_id = UUID(acquisition["id"])
+            session_id = UUID(acquisition["driving_session_id"])
+            started = datetime(2026, 1, 1, tzinfo=UTC)
+            envelopes: list[dict[str, object]] = []
+            for index in range(500):
+                speed = with_speed and index % 2 == 1
+                envelopes.append(
+                    {
+                        "message_id": str(uuid4()),
+                        "acquisition_session_id": str(acquisition_id),
+                        "driving_session_id": str(session_id),
+                        "source_id": "synthetic",
+                        "observed_at": (
+                            started + timedelta(milliseconds=(index // 2) * 100)
+                        ).isoformat(),
+                        "produced_at": started.isoformat(),
+                        "batch_id": str(uuid4()),
+                        "sequence": index,
+                        "payload": {
+                            "signal": "vehicle.speed" if speed else "engine.rpm",
+                            "value": 0 if speed else 900,
+                            "unit": "m/s" if speed else "rpm",
+                            "source_record_id": str(index),
+                        },
+                    }
+                )
+            assert await worker.persist_batch(envelopes) == 500
+            assert await worker.persist_batch(envelopes) == 0
+            assert await worker.persist_batch([envelopes[0], envelopes[0]]) == 0
+            # A new message ID with the same canonical sample is receipted once,
+            # but must not increment the durable canonical sample count.
+            duplicate_sample = envelopes[0] | {"message_id": str(uuid4())}
+            assert await worker.persist(duplicate_sample)
+            async with database.session() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT sample_count FROM driving_sessions WHERE id=:id"),
+                        {"id": session_id},
+                    )
+                    == 500
+                )
+                assert (
+                    await db.scalar(
+                        text(
+                            "SELECT count(*) FROM stream_receipts WHERE acquisition_session_id=:id"
+                        ),
+                        {"id": acquisition_id},
+                    )
+                    == 501
+                )
+                findings = (
+                    await db.execute(
+                        text(
+                            "SELECT finding_type,category,evidence FROM provisional_findings "
+                            "WHERE acquisition_session_id=:id"
+                        ),
+                        {"id": acquisition_id},
+                    )
+                ).all()
+                if with_speed:
+                    assert any(row.finding_type == "possible_idle" for row in findings)
+                else:
+                    # Missing speed cannot support a factual idle classification.
+                    assert findings == []
+                assert all(
+                    row.category == "performance" and row.evidence["provisional"]
+                    for row in findings
+                )
+            # A foreign-key failure rolls back the entire poll, including receipts.
+            valid = envelopes[0] | {
+                "message_id": str(uuid4()),
+                "sequence": 501,
+                "payload": {
+                    "signal": "engine.rpm",
+                    "value": 900,
+                    "unit": "rpm",
+                    "source_record_id": "rollback-valid",
+                },
+            }
+            invalid = valid | {"message_id": str(uuid4()), "acquisition_session_id": str(uuid4())}
+            with pytest.raises(IntegrityError):
+                await worker.persist_batch([valid, invalid])
+            assert await worker.persist(valid)
+            assert not await worker.persist(valid)
+            async with database.session() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT sample_count FROM driving_sessions WHERE id=:id"),
+                        {"id": session_id},
+                    )
+                    == 501
+                )
+            # Repeated provisional evaluation must not create duplicate findings.
+            await worker._provisional(acquisition_id)
+            async with database.session() as db:
+                assert await db.scalar(
+                    text(
+                        "SELECT count(*) FROM provisional_findings WHERE acquisition_session_id=:id"
+                    ),
+                    {"id": acquisition_id},
+                ) == len(findings)
+                # Nullable provisional boundaries must reconcile against canonical
+                # timestamps with typed binds, even when no pull/event confirms them.
+                for finding_type in ("possible_pull", "boost_drop"):
+                    await db.execute(
+                        text(
+                            "INSERT INTO provisional_findings(acquisition_session_id,"
+                            "finding_type,category,started_at,ended_at,evidence) "
+                            "VALUES(:id,:type,'performance',:started,NULL,'{}'::jsonb)"
+                        ),
+                        {"id": acquisition_id, "type": finding_type, "started": started},
+                    )
+                await db.commit()
+            stopped = await client.post(
+                f"/api/v1/acquisitions/{acquisition_id}/stop",
+                headers={"Authorization": f"Bearer {acquisition['ingestion_token']}"},
+            )
+            assert stopped.status_code == 200
+            finalized = await client.post(f"/api/v1/acquisitions/{acquisition_id}/finalize")
+            assert finalized.status_code == 200
+            assert finalized.json()["state"] == "completed"
+            reconciled = await client.get(f"/api/v1/acquisitions/{acquisition_id}/findings")
+            assert reconciled.status_code == 200
+            assert len(reconciled.json()) == len(findings) + 2
+            assert all(item["reconciliation_status"] == "absent" for item in reconciled.json())
+            # Completed acquisition streams terminate after their real snapshot.
+            live = await client.get(f"/api/v1/acquisitions/{acquisition_id}/live")
+            assert live.status_code == 200
+            assert '"reconciliation_status":"absent"' in live.text
+    finally:
+        await database.close()

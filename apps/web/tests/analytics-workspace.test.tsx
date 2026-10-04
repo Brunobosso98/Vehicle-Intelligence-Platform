@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { AnalyticsWorkspace } from "../src/components/analytics-workspace";
 
@@ -165,7 +165,8 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
         result,
       }),
     );
-  vi.spyOn(globalThis, "fetch")
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
     .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
     .mockResolvedValueOnce(
@@ -206,6 +207,19 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
           ],
         },
       }),
+    )
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify([pull("a1"), pull("a2"), pull("a3")])),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          pull("b1", "config-b"),
+          pull("b2", "config-b"),
+          pull("b3", "config-b"),
+          pull("b4", "config-b"),
+        ]),
+      ),
     )
     .mockResolvedValueOnce(
       response({
@@ -249,6 +263,12 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
     await screen.findByText("Configuration-segmented history"),
   ).toBeInTheDocument();
   expect(screen.getByText("Configuration config-b")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Before configuration"), {
+    target: { value: "config-a" },
+  });
+  fireEvent.change(screen.getByLabelText("After configuration"), {
+    target: { value: "config-b" },
+  });
   fireEvent.click(
     screen.getByRole("button", { name: "Compare configurations" }),
   );
@@ -258,6 +278,18 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
     }),
   ).toBeInTheDocument();
   expect(screen.getAllByText(/3 pulls/).length).toBeGreaterThan(0);
+  const comparison = fetch.mock.calls.find(([url]) =>
+    String(url).startsWith("/api/domain/analytics/configurations/compare?"),
+  );
+  expect(comparison).toBeDefined();
+  expect(JSON.parse(String(comparison?.[1]?.body))).toEqual({
+    pull_ids: ["a1", "a2", "a3"],
+  });
+  expect(
+    new URL(String(comparison?.[0]), "http://localhost").searchParams.getAll(
+      "after_pull_ids",
+    ),
+  ).toEqual(["b1", "b2", "b3", "b4"]);
   fireEvent.click(screen.getByRole("button", { name: "View boost history" }));
   expect(
     await screen.findByText("Insufficient comparable history for this trend."),
@@ -272,3 +304,56 @@ test("renders baseline, segmented trends and factual before-after evidence", asy
     await screen.findByText(/0 sessions · 0 contributing pulls/),
   ).toBeInTheDocument();
 });
+
+test("requires two explicit distinct configurations before comparing", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify(configs)))
+    .mockResolvedValueOnce(
+      new Response(JSON.stringify([pull("a"), pull("b")])),
+    );
+  render(<AnalyticsWorkspace />);
+  await screen.findAllByRole("checkbox");
+  fireEvent.change(screen.getByLabelText("Before configuration"), {
+    target: { value: "config-a" },
+  });
+  fireEvent.change(screen.getByLabelText("After configuration"), {
+    target: { value: "config-a" },
+  });
+  expect(
+    screen.getByRole("button", { name: "Compare configurations" }),
+  ).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("After configuration"), {
+    target: { value: "" },
+  });
+  expect(
+    screen.getByRole("button", { name: "Compare configurations" }),
+  ).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Before configuration"), {
+    target: { value: "" },
+  });
+  expect(
+    screen.getByRole("button", { name: "Compare configurations" }),
+  ).toBeDisabled();
+  expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+test.each([
+  { label: "Empty", options: [] },
+  { label: "Single configuration", options: configs.slice(0, 1) },
+])(
+  "$label history cannot start a configuration comparison",
+  async ({ options }) => {
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "vehicle" }])))
+      .mockResolvedValueOnce(new Response(JSON.stringify(options)))
+      .mockResolvedValueOnce(new Response(JSON.stringify([])));
+    render(<AnalyticsWorkspace />);
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    expect(
+      screen.getByRole("button", { name: "Compare configurations" }),
+    ).toBeDisabled();
+  },
+);
