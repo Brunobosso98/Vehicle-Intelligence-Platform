@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 
@@ -68,6 +69,13 @@ class DeviceCapabilities:
     maximum_requests_per_second: float
     discovery_supported: bool = True
 
+    def __post_init__(self) -> None:
+        if (
+            not math.isfinite(self.maximum_requests_per_second)
+            or self.maximum_requests_per_second < 0
+        ):
+            raise ValueError("adapter throughput must be finite and nonnegative")
+
 
 @dataclass(frozen=True)
 class SamplingPlanItem:
@@ -88,6 +96,7 @@ class PreflightResult:
     expected_capabilities: tuple[str, ...]
     unavailable_capabilities: tuple[str, ...]
     warnings: tuple[str, ...]
+    sampling_algorithm_version: str = "1.1"
 
 
 def plan_sampling(
@@ -96,22 +105,21 @@ def plan_sampling(
     supported = [
         r for r in recipe.requirements if capabilities.signals.get(r.signal) is Support.SUPPORTED
     ]
-    desired = sum(r.preferred_hz for r in supported)
-    budget = max(capabilities.maximum_requests_per_second, 0.0)
-    remaining = budget
-    result: list[SamplingPlanItem] = []
-    for requirement in sorted(supported, key=lambda r: list(Priority).index(r.priority)):
-        fair = (
-            requirement.preferred_hz
-            if desired <= budget
-            else min(requirement.preferred_hz, remaining)
-        )
-        if requirement.importance is Importance.REQUIRED:
-            fair = min(requirement.preferred_hz, max(requirement.minimum_hz, fair))
-        estimated = max(0.0, min(fair, remaining))
-        remaining = max(0.0, remaining - estimated)
-        result.append(SamplingPlanItem(requirement.signal, requirement.priority, fair, estimated))
-    return tuple(result)
+    budget = capabilities.maximum_requests_per_second
+    required = [r for r in supported if r.importance is Importance.REQUIRED]
+    minimum_budget = sum(r.minimum_hz for r in required)
+    fraction = min(1.0, budget / minimum_budget) if minimum_budget else 1.0
+    rates = {r.signal: r.minimum_hz * fraction for r in required}
+    remaining = max(0.0, budget - sum(rates.values()))
+    ordered = sorted(supported, key=lambda r: list(Priority).index(r.priority))
+    for requirement in ordered:
+        allocated = rates.get(requirement.signal, 0.0)
+        extra = min(max(0.0, requirement.preferred_hz - allocated), remaining)
+        rates[requirement.signal] = allocated + extra
+        remaining = max(0.0, remaining - extra)
+    return tuple(
+        SamplingPlanItem(r.signal, r.priority, r.preferred_hz, rates[r.signal]) for r in ordered
+    )
 
 
 def preflight(recipe: LoggingRecipe, capabilities: DeviceCapabilities) -> PreflightResult:
@@ -120,24 +128,37 @@ def preflight(recipe: LoggingRecipe, capabilities: DeviceCapabilities) -> Prefli
     recommended = {r.signal for r in recipe.requirements if r.importance is Importance.RECOMMENDED}
     optional = {r.signal for r in recipe.requirements if r.importance is Importance.OPTIONAL}
     missing = required - available
+    plan = plan_sampling(recipe, capabilities)
+    rates = {p.signal: p.estimated_hz for p in plan}
     unavailable = tuple(
         sorted(
             {
                 effect
                 for r in recipe.requirements
-                if r.signal not in available
+                if r.signal not in available or rates.get(r.signal, 0) < r.minimum_hz
                 for effect in r.missing_effect
             }
         )
     )
-    plan = plan_sampling(recipe, capabilities)
     warnings = []
+    minimums = {
+        r.signal: r.minimum_hz for r in recipe.requirements if r.importance is Importance.REQUIRED
+    }
+    required_rate_missing = any(
+        p.estimated_hz < minimums[p.signal] for p in plan if p.signal in minimums
+    )
+    if required_rate_missing:
+        warnings.append("Required signal sampling rate cannot be met by adapter throughput")
     if unavailable:
-        warnings.append("Some analyses are unavailable because signals are absent")
+        warnings.append(
+            "Some analyses are unavailable because signals are absent or sampled below minimum rate"
+        )
     if sum(item.target_hz for item in plan) > capabilities.maximum_requests_per_second:
         warnings.append("Adapter throughput reduced lower-priority sampling")
     readiness = (
-        Readiness.BLOCKED if missing else (Readiness.DEGRADED if unavailable else Readiness.READY)
+        Readiness.BLOCKED
+        if missing or required_rate_missing
+        else (Readiness.DEGRADED if unavailable else Readiness.READY)
     )
     return PreflightResult(
         readiness,
@@ -148,8 +169,12 @@ def preflight(recipe: LoggingRecipe, capabilities: DeviceCapabilities) -> Prefli
         plan,
         tuple(
             sorted(
-                {"temporal_segmentation", "data_quality"}
-                | ({"boost_analysis"} if "engine.boost_pressure" in available else set())
+                ({"temporal_segmentation", "data_quality"} - set(unavailable))
+                | (
+                    {"boost_analysis"}
+                    if "engine.boost_pressure" in available and "boost_analysis" not in unavailable
+                    else set()
+                )
             )
         ),
         unavailable,

@@ -11,4 +11,5 @@ RUN apk upgrade --no-cache libexpat \
  && install -o appuser -g appuser -m 0444 /tmp/jackson-core.jar /opt/kafka/libs/jackson-core-2.21.7.jar \
  && install -o appuser -g appuser -m 0444 /tmp/jackson-databind.jar /opt/kafka/libs/jackson-databind-2.21.7.jar \
  && rm -f /tmp/jackson-*.jar
+RUN mkdir -p /tmp/kraft-combined-logs && chown appuser:appuser /tmp/kraft-combined-logs
 USER appuser

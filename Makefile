@@ -11,7 +11,7 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check
+.PHONY: phase4-stack-acceptance phase1-acceptance phase2-acceptance phases-0-5-acceptance help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check
 help:
 	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
@@ -38,12 +38,12 @@ format:
 	$(API)/ruff format apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	pnpm format
 typecheck:
-	$(API)/mypy apps/api/src
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py
 	pnpm --filter @vehicle-platform/web typecheck
 check-api:
 	$(API)/ruff check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/ruff format --check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
-	$(API)/mypy apps/api/src
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py
 	$(API)/pytest apps/api/tests/unit --cov=vehicle_platform --cov-config=apps/api/pyproject.toml --cov-branch --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
 	$(API)/python scripts/check_coverage.py
 check-web:
@@ -87,22 +87,31 @@ verify-local: check-api check-web contracts-check docs-check
 phase3-acceptance:
 	$(API)/python scripts/evaluate_events.py
 	$(API)/python scripts/benchmark_events.py
+phase1-acceptance:
+	$(API)/python scripts/evaluate_telemetry.py
+phase2-acceptance:
+	$(API)/python scripts/evaluate_pulls.py
+	$(API)/python scripts/benchmark_analysis.py
+phases-0-5-acceptance: verify-local phase1-acceptance phase2-acceptance phase3-acceptance phase4-acceptance phase5-acceptance
 stream-test:
 	$(API)/pytest apps/api/tests/unit/test_acquisition.py
 	$(API)/python scripts/benchmark_stream.py
 live-stream-benchmark:
 	$(API)/python scripts/benchmark_stream_live.py
 phase4-acceptance: stream-test contracts-check
+	$(API)/python scripts/evaluate_acquisition.py
+phase4-stack-acceptance:
+	$(API)/python scripts/evaluate_stream_recovery.py
 analytics-benchmark:
 	$(API)/python scripts/benchmark_analytics.py
 phase5-acceptance:
 	$(API)/python scripts/evaluate_analytics.py
 	$(MAKE) analytics-benchmark
-verify-cloud: verify-local phase3-acceptance phase4-acceptance phase5-acceptance security-cloud
-verify: verify-cloud containers test-integration
-	$(MAKE) up
+verify-cloud: phases-0-5-acceptance security-cloud
+verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) stack-check
+	$(MAKE) phase4-stack-acceptance
 	$(MAKE) test-e2e
+	$(MAKE) live-stream-benchmark
 	$(MAKE) security
-	$(MAKE) observability-up
 	$(MAKE) observability-full

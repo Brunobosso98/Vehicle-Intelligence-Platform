@@ -15,7 +15,7 @@ Python 3.12 is supported through 2028; no preview interpreter is required.
 | Playwright               | 1.63.0      | real browser E2E                                        |
 | FastAPI                  | 0.142.2     | typed async HTTP                                        |
 | Pydantic settings        | 2.15.0      | early validated configuration                           |
-| SQLAlchemy               | 2.1.1       | 2.x async and greenlet extra                            |
+| SQLAlchemy               | 2.0.54      | async; compatible with pinned OTel instrumentation      |
 | Alembic                  | 1.20.0      | versioned migration management                          |
 | asyncpg                  | 0.31.0      | async PostgreSQL driver                                 |
 | Mypy                     | 2.3.1       | strict mature Python type checker                       |
@@ -32,3 +32,8 @@ No benchmarks are inferred from version selection. Minimize production dependenc
 non-obvious new requirements in the PR; prefer maintained packages and frozen installs.
 
 Build backend: Hatchling 1.32.4 (exact pin, verified in installed build cache).
+
+Retrospective review on 2026-10-04 found that SQLAlchemy 2.1.1 was outside the pinned
+OpenTelemetry SQLAlchemy instrumentor dependency range. The exact requirement and uv lock
+now pin 2.0.54; runtime integration must verify database spans instead of accepting a
+startup dependency-conflict warning. No instrumentation or security gate is disabled.

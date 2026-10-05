@@ -62,4 +62,42 @@ def assess_dataset(
                 None if supported else "missing usable signals: " + ", ".join(sorted(missing)),
             )
         )
+    result.append(
+        DatasetCapability(
+            "ignition_correction_analysis",
+            False,
+            (),
+            "No verified ignition-correction channel; unavailable by original scope",
+        )
+    )
     return tuple(result)
+
+
+def collector_health(quality: dict[str, object], now: datetime) -> dict[str, object]:
+    """Infer transport/sampling freshness only from an authenticated report.
+
+    Event timestamps are deliberately excluded: delayed/replayed telemetry can
+    remain valid while the collector is currently connected.
+    """
+    reported = quality.get("collector")
+    if not isinstance(reported, dict):
+        return {"state": "not_reported", "heartbeat_age_seconds": None}
+    heartbeat_age = max(
+        0.0, (now - datetime.fromisoformat(reported["received_at"])).total_seconds()
+    )
+    last_sample = reported.get("last_sample_received_at") or reported["collection_started_at"]
+    sample_age = max(0.0, (now - datetime.fromisoformat(last_sample)).total_seconds())
+    state = (
+        "silent"
+        if heartbeat_age > 15
+        else "disconnected"
+        if reported["adapter_state"] == "disconnected"
+        else "stalled"
+        if sample_age > 15
+        else "connected"
+    )
+    return {
+        "state": state,
+        "heartbeat_age_seconds": heartbeat_age,
+        "sample_receipt_age_seconds": sample_age,
+    }

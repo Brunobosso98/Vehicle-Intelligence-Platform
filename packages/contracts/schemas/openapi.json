@@ -108,9 +108,7 @@
       "AcquisitionFinalized": {
         "properties": {
           "capability_report": {
-            "additionalProperties": true,
-            "title": "Capability Report",
-            "type": "object"
+            "$ref": "#/components/schemas/DatasetCapabilityReport"
           },
           "id": { "format": "uuid", "title": "Id", "type": "string" },
           "phase2": { "$ref": "#/components/schemas/AnalysisResult" },
@@ -131,6 +129,181 @@
           "reconciliation"
         ],
         "title": "AcquisitionFinalized",
+        "type": "object"
+      },
+      "AcquisitionHeartbeat": {
+        "properties": {
+          "adapter_state": {
+            "enum": ["connected", "disconnected"],
+            "title": "Adapter State",
+            "type": "string"
+          },
+          "capability_snapshot": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/PreflightRequest" },
+              { "type": "null" }
+            ]
+          },
+          "collection_started_at": {
+            "format": "date-time",
+            "title": "Collection Started At",
+            "type": "string"
+          },
+          "dropped_observations": {
+            "minimum": 0,
+            "title": "Dropped Observations",
+            "type": "integer"
+          },
+          "last_sample_received_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Last Sample Received At"
+          },
+          "queue_observations": {
+            "maximum": 100000,
+            "minimum": 0,
+            "title": "Queue Observations",
+            "type": "integer"
+          },
+          "sampling_plan": {
+            "items": { "$ref": "#/components/schemas/SamplingPlanResponse" },
+            "maxItems": 100,
+            "title": "Sampling Plan",
+            "type": "array"
+          },
+          "spool_bytes": {
+            "maximum": 1073741824,
+            "minimum": 0,
+            "title": "Spool Bytes",
+            "type": "integer"
+          },
+          "spool_capacity_bytes": {
+            "anyOf": [
+              { "maximum": 1073741824, "minimum": 1, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Spool Capacity Bytes"
+          },
+          "spool_capacity_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "normal",
+                  "warning",
+                  "near_capacity",
+                  "capacity_reached"
+                ],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Spool Capacity State"
+          }
+        },
+        "required": [
+          "adapter_state",
+          "collection_started_at",
+          "queue_observations",
+          "spool_bytes",
+          "dropped_observations"
+        ],
+        "title": "AcquisitionHeartbeat",
+        "type": "object"
+      },
+      "AcquisitionLiveQuality": {
+        "additionalProperties": true,
+        "properties": {
+          "collector": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/CollectorReportedState" },
+              { "type": "null" }
+            ]
+          },
+          "collector_health": {
+            "$ref": "#/components/schemas/CollectorHealthResponse"
+          },
+          "pipeline": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/AcquisitionPipelineMeasurement" },
+              { "type": "null" }
+            ]
+          },
+          "signals": {
+            "items": { "$ref": "#/components/schemas/LiveSignalQuality" },
+            "title": "Signals",
+            "type": "array"
+          }
+        },
+        "required": ["collector_health"],
+        "title": "AcquisitionLiveQuality",
+        "type": "object"
+      },
+      "AcquisitionLiveSnapshot": {
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ProvisionalFindingResponse"
+            },
+            "maxItems": 20,
+            "title": "Findings",
+            "type": "array"
+          },
+          "points": {
+            "items": { "$ref": "#/components/schemas/LiveTelemetryPoint" },
+            "maxItems": 2000,
+            "title": "Points",
+            "type": "array"
+          },
+          "provisional": {
+            "const": true,
+            "default": true,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "quality": { "$ref": "#/components/schemas/AcquisitionLiveQuality" },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "state": { "title": "State", "type": "string" },
+          "window_seconds": {
+            "const": 60,
+            "default": 60,
+            "title": "Window Seconds",
+            "type": "integer"
+          }
+        },
+        "required": ["state", "quality", "points", "findings"],
+        "title": "AcquisitionLiveSnapshot",
+        "type": "object"
+      },
+      "AcquisitionPipelineMeasurement": {
+        "properties": {
+          "broker_consumer_lag": {
+            "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+            "title": "Broker Consumer Lag"
+          },
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "persistence_state": {
+            "const": "observations_committed",
+            "title": "Persistence State",
+            "type": "string"
+          },
+          "publisher_to_persistence_seconds": {
+            "anyOf": [{ "minimum": 0, "type": "number" }, { "type": "null" }],
+            "title": "Publisher To Persistence Seconds"
+          }
+        },
+        "required": ["measured_at", "persistence_state"],
+        "title": "AcquisitionPipelineMeasurement",
         "type": "object"
       },
       "AcquisitionStatusResponse": {
@@ -256,6 +429,18 @@
             "minimum": 100,
             "title": "Rpm Bin Size",
             "type": "integer"
+          },
+          "speed_intervals_kmh": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [{ "type": "number" }, { "type": "number" }],
+              "type": "array"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Speed Intervals Kmh",
+            "type": "array"
           }
         },
         "title": "AnalyticsRequest",
@@ -335,10 +520,291 @@
             "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
+          },
+          "mapping": {
+            "anyOf": [
+              { "maxLength": 16384, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Mapping"
           }
         },
         "required": ["file"],
         "title": "Body_import_csv",
+        "type": "object"
+      },
+      "Body_preview_csv_import": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "mapping": {
+            "anyOf": [
+              { "maxLength": 16384, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Mapping"
+          }
+        },
+        "required": ["file"],
+        "title": "Body_preview_csv_import",
+        "type": "object"
+      },
+      "CSVColumnMapping": {
+        "properties": {
+          "record_id_column": {
+            "anyOf": [
+              { "maxLength": 100, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Record Id Column"
+          },
+          "sequence_column": {
+            "anyOf": [
+              { "maxLength": 100, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Sequence Column"
+          },
+          "signals": {
+            "items": { "$ref": "#/components/schemas/CSVSignalColumn" },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Signals",
+            "type": "array"
+          },
+          "timestamp_column": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Timestamp Column",
+            "type": "string"
+          }
+        },
+        "required": ["timestamp_column", "signals"],
+        "title": "CSVColumnMapping",
+        "type": "object"
+      },
+      "CSVImportPreview": {
+        "properties": {
+          "columns": {
+            "items": { "type": "string" },
+            "title": "Columns",
+            "type": "array"
+          },
+          "mapping": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/CSVColumnMapping" },
+              { "type": "null" }
+            ]
+          },
+          "mapping_hash": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Mapping Hash"
+          },
+          "preview_points": {
+            "items": { "$ref": "#/components/schemas/CSVPreviewPoint" },
+            "maxItems": 25,
+            "title": "Preview Points",
+            "type": "array"
+          },
+          "preview_truncated": {
+            "default": false,
+            "title": "Preview Truncated",
+            "type": "boolean"
+          },
+          "requires_mapping": {
+            "title": "Requires Mapping",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "unmapped_columns": {
+            "items": { "type": "string" },
+            "title": "Unmapped Columns",
+            "type": "array"
+          },
+          "validation_scope": {
+            "default": "preview only; full records and context validated during import",
+            "title": "Validation Scope",
+            "type": "string"
+          },
+          "warnings": {
+            "items": { "type": "string" },
+            "maxItems": 25,
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": ["columns", "unmapped_columns", "requires_mapping"],
+        "title": "CSVImportPreview",
+        "type": "object"
+      },
+      "CSVPreviewPoint": {
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "quality": { "title": "Quality", "type": "string" },
+          "raw_signal": { "title": "Raw Signal", "type": "string" },
+          "signal": { "title": "Signal", "type": "string" },
+          "unit": { "title": "Unit", "type": "string" },
+          "value": { "title": "Value", "type": "number" }
+        },
+        "required": [
+          "observed_at",
+          "raw_signal",
+          "signal",
+          "value",
+          "unit",
+          "quality"
+        ],
+        "title": "CSVPreviewPoint",
+        "type": "object"
+      },
+      "CSVSignalColumn": {
+        "properties": {
+          "column": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Column",
+            "type": "string"
+          },
+          "signal": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Signal",
+            "type": "string"
+          },
+          "unit": {
+            "maxLength": 24,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": ["column", "signal", "unit"],
+        "title": "CSVSignalColumn",
+        "type": "object"
+      },
+      "CollectorHealthResponse": {
+        "properties": {
+          "heartbeat_age_seconds": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Heartbeat Age Seconds"
+          },
+          "sample_receipt_age_seconds": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Sample Receipt Age Seconds"
+          },
+          "state": {
+            "enum": [
+              "not_reported",
+              "silent",
+              "disconnected",
+              "stalled",
+              "connected"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": ["state", "heartbeat_age_seconds"],
+        "title": "CollectorHealthResponse",
+        "type": "object"
+      },
+      "CollectorReportedState": {
+        "properties": {
+          "adapter_state": {
+            "enum": ["connected", "disconnected"],
+            "title": "Adapter State",
+            "type": "string"
+          },
+          "capability_snapshot": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/PreflightRequest" },
+              { "type": "null" }
+            ]
+          },
+          "collection_started_at": {
+            "format": "date-time",
+            "title": "Collection Started At",
+            "type": "string"
+          },
+          "dropped_observations": {
+            "minimum": 0,
+            "title": "Dropped Observations",
+            "type": "integer"
+          },
+          "last_sample_received_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Last Sample Received At"
+          },
+          "queue_observations": {
+            "maximum": 100000,
+            "minimum": 0,
+            "title": "Queue Observations",
+            "type": "integer"
+          },
+          "received_at": {
+            "format": "date-time",
+            "title": "Received At",
+            "type": "string"
+          },
+          "sampling_plan": {
+            "items": { "$ref": "#/components/schemas/SamplingPlanResponse" },
+            "maxItems": 100,
+            "title": "Sampling Plan",
+            "type": "array"
+          },
+          "spool_bytes": {
+            "maximum": 1073741824,
+            "minimum": 0,
+            "title": "Spool Bytes",
+            "type": "integer"
+          },
+          "spool_capacity_bytes": {
+            "anyOf": [
+              { "maximum": 1073741824, "minimum": 1, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Spool Capacity Bytes"
+          },
+          "spool_capacity_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "normal",
+                  "warning",
+                  "near_capacity",
+                  "capacity_reached"
+                ],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Spool Capacity State"
+          }
+        },
+        "required": [
+          "adapter_state",
+          "collection_started_at",
+          "queue_observations",
+          "spool_bytes",
+          "dropped_observations",
+          "received_at"
+        ],
+        "title": "CollectorReportedState",
         "type": "object"
       },
       "ConfigurationCreate": {
@@ -375,6 +841,103 @@
         },
         "required": ["effective_at", "description", "provenance"],
         "title": "ConfigurationCreate",
+        "type": "object"
+      },
+      "DatasetCapabilityReport": {
+        "properties": {
+          "assessment_version": {
+            "const": "1.1.0",
+            "title": "Assessment Version",
+            "type": "string"
+          },
+          "available_signals": {
+            "items": { "type": "string" },
+            "title": "Available Signals",
+            "type": "array"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetCapabilityResponse"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "duration_seconds": {
+            "minimum": 0,
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "gaps_by_signal": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DatasetSignalGap"
+            },
+            "title": "Gaps By Signal",
+            "type": "object"
+          },
+          "observation_count": {
+            "minimum": 0,
+            "title": "Observation Count",
+            "type": "integer"
+          },
+          "recipe_adherence": {
+            "title": "Recipe Adherence",
+            "type": "boolean"
+          },
+          "recipe_configuration_hash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Recipe Configuration Hash",
+            "type": "string"
+          },
+          "signal_quality": {
+            "items": { "$ref": "#/components/schemas/LiveSignalQuality" },
+            "title": "Signal Quality",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assessment_version",
+          "recipe_configuration_hash",
+          "duration_seconds",
+          "observation_count",
+          "available_signals",
+          "signal_quality",
+          "gaps_by_signal",
+          "capabilities",
+          "recipe_adherence"
+        ],
+        "title": "DatasetCapabilityReport",
+        "type": "object"
+      },
+      "DatasetCapabilityResponse": {
+        "properties": {
+          "evidence": {
+            "items": { "type": "string" },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "key": { "title": "Key", "type": "string" },
+          "supported": { "title": "Supported", "type": "boolean" },
+          "unavailable_reason": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": ["key", "supported", "evidence"],
+        "title": "DatasetCapabilityResponse",
+        "type": "object"
+      },
+      "DatasetSignalGap": {
+        "properties": {
+          "count": { "minimum": 0, "title": "Count", "type": "integer" },
+          "maximum_seconds": {
+            "minimum": 0,
+            "title": "Maximum Seconds",
+            "type": "number"
+          }
+        },
+        "required": ["count", "maximum_seconds"],
+        "title": "DatasetSignalGap",
         "type": "object"
       },
       "DetectedEvent": {
@@ -671,17 +1234,6 @@
         "title": "EventSummary",
         "type": "object"
       },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": { "$ref": "#/components/schemas/ValidationError" },
-            "title": "Detail",
-            "type": "array"
-          }
-        },
-        "title": "HTTPValidationError",
-        "type": "object"
-      },
       "Health": {
         "properties": {
           "status": {
@@ -741,6 +1293,43 @@
           "end_observed_at"
         ],
         "title": "ImportResult",
+        "type": "object"
+      },
+      "LiveSignalQuality": {
+        "properties": {
+          "actual_hz": { "title": "Actual Hz", "type": "number" },
+          "jitter_ms": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Jitter Ms"
+          },
+          "missing_ratio": { "title": "Missing Ratio", "type": "number" },
+          "signal": { "title": "Signal", "type": "string" },
+          "stale_ratio": { "title": "Stale Ratio", "type": "number" },
+          "target_hz": { "title": "Target Hz", "type": "number" }
+        },
+        "required": [
+          "signal",
+          "target_hz",
+          "actual_hz",
+          "stale_ratio",
+          "missing_ratio"
+        ],
+        "title": "LiveSignalQuality",
+        "type": "object"
+      },
+      "LiveTelemetryPoint": {
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "signal": { "title": "Signal", "type": "string" },
+          "unit": { "title": "Unit", "type": "string" },
+          "value": { "title": "Value", "type": "number" }
+        },
+        "required": ["signal", "value", "unit", "observed_at"],
+        "title": "LiveTelemetryPoint",
         "type": "object"
       },
       "LoggingRecipeResponse": {
@@ -994,6 +1583,12 @@
             "title": "Required Missing",
             "type": "array"
           },
+          "sampling_algorithm_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Sampling Algorithm Version",
+            "type": "string"
+          },
           "sampling_plan": {
             "items": { "$ref": "#/components/schemas/SamplingPlanResponse" },
             "title": "Sampling Plan",
@@ -1026,6 +1621,13 @@
       },
       "ProvisionalFindingResponse": {
         "properties": {
+          "canonical_reference": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Canonical Reference"
+          },
           "category": { "title": "Category", "type": "string" },
           "ended_at": {
             "anyOf": [
@@ -1288,10 +1890,20 @@
       },
       "SamplingPlanResponse": {
         "properties": {
-          "estimated_hz": { "title": "Estimated Hz", "type": "number" },
+          "estimated_hz": {
+            "maximum": 1000,
+            "minimum": 0,
+            "title": "Estimated Hz",
+            "type": "number"
+          },
           "priority": { "title": "Priority", "type": "string" },
           "signal": { "title": "Signal", "type": "string" },
-          "target_hz": { "title": "Target Hz", "type": "number" }
+          "target_hz": {
+            "maximum": 1000,
+            "minimum": 0,
+            "title": "Target Hz",
+            "type": "number"
+          }
         },
         "required": ["signal", "priority", "target_hz", "estimated_hz"],
         "title": "SamplingPlanResponse",
@@ -1467,7 +2079,14 @@
             "type": "string"
           },
           "sequence": {
-            "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "maximum": 9223372036854776000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              { "type": "null" }
+            ],
             "title": "Sequence"
           },
           "signal": {
@@ -1568,22 +2187,6 @@
           "end"
         ],
         "title": "TelemetryWindow",
-        "type": "object"
-      },
-      "ValidationError": {
-        "properties": {
-          "ctx": { "title": "Context", "type": "object" },
-          "input": { "title": "Input" },
-          "loc": {
-            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
-            "title": "Location",
-            "type": "array"
-          },
-          "msg": { "title": "Message", "type": "string" },
-          "type": { "title": "Error Type", "type": "string" }
-        },
-        "required": ["loc", "msg", "type"],
-        "title": "ValidationError",
         "type": "object"
       },
       "Vehicle": {
@@ -1850,10 +2453,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -1862,6 +2473,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Create Acquisition"
@@ -1893,13 +2512,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -1908,6 +2543,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Acquisition"
@@ -1956,13 +2599,29 @@
             },
             "description": "Successful Response"
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -1971,6 +2630,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Publish Acquisition Batch"
@@ -2002,13 +2669,29 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2017,6 +2700,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Finalize Acquisition"
@@ -2052,13 +2743,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2067,9 +2774,104 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Acquisition Findings"
+      }
+    },
+    "/api/v1/acquisitions/{acquisition_id}/heartbeat": {
+      "post": {
+        "operationId": "report_acquisition_heartbeat",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "acquisition_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Acquisition Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AcquisitionHeartbeat" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcquisitionStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Report Acquisition Heartbeat"
       }
     },
     "/api/v1/acquisitions/{acquisition_id}/live": {
@@ -2089,16 +2891,34 @@
         ],
         "responses": {
           "200": {
-            "content": { "application/json": { "schema": {} } },
+            "content": {
+              "text/event-stream": { "schema": { "type": "string" } }
+            },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
           },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2107,6 +2927,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Stream Acquisition Live"
@@ -2147,13 +2975,29 @@
             },
             "description": "Successful Response"
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2162,6 +3006,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Stop Acquisition"
@@ -2178,6 +3030,17 @@
             "schema": {
               "format": "uuid",
               "title": "Acquisition Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scenario",
+            "required": false,
+            "schema": {
+              "default": "boost_drop",
+              "enum": ["boost_drop", "missing_recommended"],
+              "title": "Scenario",
               "type": "string"
             }
           },
@@ -2204,13 +3067,29 @@
             },
             "description": "Successful Response"
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2219,6 +3098,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Start Synthetic Acquisition"
@@ -2259,13 +3146,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2274,6 +3177,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Compare Configurations"
@@ -2301,13 +3212,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2316,6 +3243,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Compare Pull Analytics"
@@ -2343,13 +3278,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2358,6 +3309,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Analyze Repeated Pulls"
@@ -2398,13 +3357,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2413,6 +3388,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Compare Sessions"
@@ -2473,10 +3456,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2485,6 +3476,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Vehicle Events"
@@ -2514,13 +3513,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2529,6 +3544,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Event"
@@ -2550,6 +3573,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -2557,6 +3596,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Logging Objectives"
@@ -2580,6 +3627,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -2587,6 +3650,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Logging Recipes"
@@ -2614,13 +3685,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2629,6 +3716,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Logging Recipe"
@@ -2662,13 +3757,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2677,6 +3788,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Preflight Logging Recipe"
@@ -2737,10 +3856,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2749,6 +3876,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Pulls"
@@ -2774,13 +3909,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2789,6 +3940,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Pull"
@@ -2824,13 +3983,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2839,6 +4014,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Pull Analytics"
@@ -2877,10 +4060,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2889,6 +4080,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Sessions"
@@ -2912,13 +4111,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2927,6 +4142,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Create Session"
@@ -2956,13 +4179,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -2971,6 +4210,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Session"
@@ -3008,13 +4255,37 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3023,6 +4294,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Analyze Session"
@@ -3062,13 +4341,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3077,6 +4372,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Session Analytics"
@@ -3112,21 +4415,35 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Assess Session Capabilities",
-                  "type": "object"
+                  "$ref": "#/components/schemas/DatasetCapabilityReport"
                 }
               }
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3135,6 +4452,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Assess Session Capabilities"
@@ -3258,10 +4583,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3270,6 +4603,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Session Events"
@@ -3307,13 +4648,37 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3322,6 +4687,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Analyze Session Events"
@@ -3354,10 +4727,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3366,6 +4747,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Summarize Session Events"
@@ -3403,13 +4792,45 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3418,9 +4839,111 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Import Csv"
+      }
+    },
+    "/api/v1/sessions/{session_id}/imports/csv/preview": {
+      "post": {
+        "operationId": "preview_csv_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_preview_csv_import"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CSVImportPreview" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Preview Csv Import"
       }
     },
     "/api/v1/sessions/{session_id}/pulls": {
@@ -3466,10 +4989,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3478,6 +5009,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Session Pulls"
@@ -3541,10 +5080,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3553,6 +5100,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Session Segments"
@@ -3629,13 +5184,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3644,6 +5215,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Query Telemetry"
@@ -3665,6 +5244,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -3672,6 +5267,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Signals"
@@ -3693,6 +5296,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -3700,6 +5319,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Vehicles"
@@ -3726,10 +5353,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3738,6 +5373,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Create Vehicle"
@@ -3767,13 +5410,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3782,6 +5441,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Vehicle"
@@ -3817,13 +5484,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3832,6 +5515,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Update Vehicle"
@@ -3882,10 +5573,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3894,6 +5593,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Configurations"
@@ -3934,10 +5641,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3946,6 +5661,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Create Configuration"
@@ -3995,13 +5718,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -4010,6 +5749,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Build Vehicle Baseline"
@@ -4046,10 +5793,18 @@
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -4058,6 +5813,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "List Modifications"
@@ -4093,13 +5856,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -4108,6 +5887,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Create Modification"
@@ -4153,13 +5940,29 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
           "422": {
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             },
-            "description": "Validation Error"
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -4168,6 +5971,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Get Vehicle Trends"
@@ -4185,6 +5996,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -4192,6 +6019,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Live"
@@ -4208,6 +6043,22 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -4241,6 +6092,22 @@
             },
             "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
           "500": {
             "content": {
               "application/json": {
@@ -4248,6 +6115,14 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Version"

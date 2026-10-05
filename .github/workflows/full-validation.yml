@@ -61,6 +61,7 @@ jobs:
         run: |
           make up
           make stack-check
+          make phase4-stack-acceptance
       - name: Run canonical Playwright E2E
         id: e2e
         continue-on-error: true

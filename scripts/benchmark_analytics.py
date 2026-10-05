@@ -63,13 +63,15 @@ def main() -> None:
     _, peak = tracemalloc.get_traced_memory()
     print(
         {
-            "observations": 100100,
+            "observations": sum(len(s.values) for p in pulls for s in p.samples),
+            "sample_frames": sum(len(p.samples) for p in pulls),
             "sessions": 25,
             "pulls": len(pulls),
             "bin_count": sum(len(p["curves"]["boost"]) for p in profiles),
             "timings_seconds": timings,
             "total_seconds": sum(timings.values()),
             "peak_python_bytes": peak,
+            "memory_scope": "analytics working allocations; fixture allocated before tracing",
         }
     )
 

@@ -1,12 +1,16 @@
 # Service boundaries
 
-The core is a modular monolith; web is a separate UI runtime. HTTP code depends on contracts,
-configuration and infrastructure through a DatabaseProbe interface. Infrastructure never depends
-on UI. Contracts are generated from the running application's models, not another hand-written API.
-There is no domain module until actual Phase 1 domain behavior exists.
+The core remains a modular monolith; Next.js runs separately. HTTP routes validate contracts and
+call domain services. Telemetry owns canonical parsing, normalization, identity, ingestion and query.
+Analysis owns deterministic segmentation and pulls; events owns factual anomaly evidence; analytics
+owns normalized comparisons, historical baselines and configuration-segmented trends. Dependencies
+flow from these services to typed domain models and database infrastructure, never to UI components.
 
-Future modules own ingestion/source adapters, session reconstruction, event detection, analytics,
-maintenance and agent/MCP interfaces. Extraction requires evidence of independent scaling,
-process isolation, security boundaries or independent deployment cadence. Specify contract ownership,
-idempotency, delivery guarantees, failure handling and observability before extraction.
-Streaming technology is undecided until Phase 4; no Kafka-versus-Redpanda selection is implied.
+Acquisition separates hardware adapters/recipes/collector from the authenticated gateway, Kafka
+transport and consumer process. Canonical samples in TimescaleDB remain the source of truth.
+Provisional windows and Kafka retention do not replace canonical storage. OpenAPI and generated
+TypeScript own HTTP contract synchronization; stream messages carry explicit version 1.0.
+
+ADRs 0011–0017 record these boundaries and delivery identities. Extraction requires demonstrated
+scaling, process isolation, security or deployment needs. MCP, agents, RAG, ML, diagnosis and
+production identity/infrastructure remain deferred beyond Phase 5.

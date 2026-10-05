@@ -56,3 +56,12 @@ If no event is returned, inspect detector-run states (`no_event`, `insufficient_
 that a vehicle is healthy from absence of configured events. Phase 4 streaming, OBD acquisition,
 Kafka and live events are deferred. ML, root-cause claims, repair advice, and labels such as boost
 leak, HPFP failure, heat soak, bad coil/fuel/tune, or turbo failure are explicitly out of scope.
+
+## Retrospective detector review
+
+Detector version 1.1.0 is included in the profile configuration hash, preserving historical
+results and preventing stale reuse. Temperature and overshoot thresholds require contiguous
+above-threshold samples; disconnected spikes and explicit gaps cannot establish sustained
+evidence. Same-session boost references include only comparable preceding pulls. The golden
+evaluator checks all emitted types, with per-scenario precision/recall/F1 and boundary gates;
+unexpected collateral events cannot be filtered away or matched across different scenarios.

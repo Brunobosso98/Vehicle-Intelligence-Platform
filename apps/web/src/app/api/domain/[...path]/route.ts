@@ -21,7 +21,9 @@ async function proxy(
           : {}),
       },
       body: request.method === "POST" ? await request.text() : undefined,
-      signal: liveStream ? undefined : AbortSignal.timeout(10_000),
+      signal: liveStream
+        ? request.signal
+        : AbortSignal.any([request.signal, AbortSignal.timeout(10_000)]),
     });
     return new NextResponse(
       liveStream ? response.body : await response.arrayBuffer(),

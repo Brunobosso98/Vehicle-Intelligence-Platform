@@ -15,18 +15,20 @@ from prometheus_client import CollectorRegistry, generate_latest
 
 from vehicle_platform.core.config import Settings
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.observability.exporter import SanitizingExporter
 
 
 class JSONFormatter(logging.Formatter):
-    def __init__(self, environment: str) -> None:
+    def __init__(self, environment: str, service_name: str = "vehicle-platform-api") -> None:
         super().__init__()
         self.environment = environment
+        self.service_name = service_name
 
     def format(self, record: logging.LogRecord) -> str:
         payload = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
-            "service": "vehicle-platform-api",
+            "service": self.service_name,
             "environment": self.environment,
             "event": record.getMessage(),
             "request_id": getattr(record, "request_id", None),
@@ -39,10 +41,15 @@ class JSONFormatter(logging.Formatter):
 
 
 class Telemetry:
-    def __init__(self, settings: Settings, database: Database | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        database: Database | None = None,
+        service_name: str = "vehicle-platform-api",
+    ) -> None:
         resource = Resource.create(
             {
-                "service.name": "vehicle-platform-api",
+                "service.name": service_name,
                 "service.version": settings.app_version,
                 "deployment.environment.name": settings.environment,
             }
@@ -51,9 +58,12 @@ class Telemetry:
         if settings.otel_exporter_otlp_endpoint:
             self.traces.add_span_processor(
                 BatchSpanProcessor(
-                    OTLPSpanExporter(
-                        endpoint=settings.otel_exporter_otlp_endpoint.rstrip("/") + "/v1/traces",
-                        timeout=2,
+                    SanitizingExporter(
+                        OTLPSpanExporter(
+                            endpoint=settings.otel_exporter_otlp_endpoint.rstrip("/")
+                            + "/v1/traces",
+                            timeout=2,
+                        )
                     )
                 )
             )
@@ -122,6 +132,10 @@ class Telemetry:
         self.acquisition_active = meter.create_up_down_counter("acquisition.sessions.active")
         self.acquisition_observations = meter.create_counter("acquisition.observations.received")
         self.acquisition_persisted = meter.create_counter("acquisition.observations.persisted")
+        self.collector_heartbeats = meter.create_counter("acquisition.collector.heartbeats")
+        self.broker_publish_duration = meter.create_histogram(
+            "acquisition.broker.publish.duration", unit="s"
+        )
         self.stream_publish_failures = meter.create_counter("acquisition.stream.publish_failures")
         self.consumer_lag = meter.create_histogram("acquisition.consumer.lag", unit="{message}")
         self.acquisition_dropped = meter.create_counter("acquisition.observations.dropped")
@@ -156,7 +170,7 @@ class Telemetry:
         self.logger = logging.getLogger(f"vehicle_platform.{id(self)}")
         self.logger.propagate = False
         handler = logging.StreamHandler()
-        handler.setFormatter(JSONFormatter(settings.environment))
+        handler.setFormatter(JSONFormatter(settings.environment, service_name))
         self.logger.handlers = [handler]
         self.logger.setLevel(logging.INFO)
 

@@ -1,5 +1,9 @@
 # Phase 5 automotive analytics
 
+An empty configuration history is a factual insufficient result with zero contributors and
+`insufficient_same_configuration_sessions`, rather than an API failure or a claim of mixed
+configuration. The browser displays this limitation and the zero session/pull counts explicitly.
+
 ## Pipeline and source of truth
 
 Canonical telemetry is the measurement source of truth. Phase 2 supplies persisted pulls; Phase 3
@@ -52,3 +56,37 @@ Identical identities are reusable; explicit recompute produces a new immutable r
 
 **Observed association is not root-cause diagnosis.** Phase 5 provides no repair recommendation,
 ECU/tuning control, causal inference, BMW proprietary signal invention, ML, MCP, agents, or RAG.
+
+## Retrospective calculation identity
+
+Algorithm 1.1.0 / calculation configuration `phase5-analytics-v1.1` corrects common-RPM
+window clipping, event-time endpoints, interval continuity, per-pull historical bin coverage,
+paired correlations and configuration-specific trend sufficiency. Old immutable results are
+retained; their identities cannot be reused for the new algorithm. Fingerprints include
+canonical measurements, event references, quality, context and semantic selectors (including
+trend metric and before/after roles). Advisory locks serialize concurrent identical requests.
+
+Session summaries use persisted telemetry, segments, categorized events and capability reports,
+including sessions without detected pulls. Empty history returns explicit insufficiency.
+Baseline bins report contributing pulls and sessions; across-pull median/MAD and percentiles
+do not bridge separate sessions. Trends require at least three eligible sessions in each
+configuration segment. Incomparable pulls do not produce pooled associations.
+
+## Retrospective metric and presentation completeness
+
+Observed acceleration is the difference between adjacent measured speeds divided by elapsed time,
+using only positive intervals within the configured gap bound. Its RPM bins retain m/s² units;
+no missing speed is replaced by zero. Thermal rate is endpoint delta divided by elapsed time only
+with complete, continuous signal coverage. Repeated-pull normalized metrics use the common RPM
+window, while thermal start/end and between-pull recovery use actual pull endpoints. Recovery
+threshold timing remains explicitly unavailable because the selected pull inputs do not include
+measurements between pulls; endpoint delta and elapsed time are factual, not interpolated recovery.
+
+Speed intervals are allowlisted typed configuration: one to five finite increasing pairs in
+0–300 km/h, defaulting to the original three intervals. Changing intervals changes the configuration
+hash. This is an additive OpenAPI request field; omitted fields preserve the original defaults.
+
+Comparison charts use common RPM/value axes, separate lines across insufficient bins, measured
+coverage, distinct dash patterns, accessible value tables and canonical Phase 3 event markers.
+Markers reference persisted event IDs and the nearest observed RPM at event start; analytics do
+not redetect events. Boost, IAT, fuel, speed, throttle and observed acceleration are selectable.

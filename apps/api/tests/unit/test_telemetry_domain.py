@@ -103,3 +103,67 @@ def test_configuration_time_contract() -> None:
             description="stock",
             provenance="owner",
         )
+
+
+async def test_csv_accepts_signed_measurements_and_rejects_broken_structure() -> None:
+    header = b"timestamp,signal,value,unit,record_id,sequence\n"
+    row = b"2026-01-01T00:00:00Z,boost,-30000,Pa,a,1\n"
+    parsed = [record async for record in CSVTelemetrySource(header + row).read()]
+    assert parsed[0].value == -30000
+    assert normalize_value(parsed[0].value, "Pa", SIGNAL_BY_KEY["engine.boost_pressure"]) == (
+        -30000,
+        DataQuality.VALID,
+    )
+    for broken in (
+        header + row.replace(b",a,1", b",a"),
+        header + row.replace(b",a,1", b",a,1,extra"),
+        header.replace(b"sequence", b"sequence,value") + row,
+    ):
+        with pytest.raises(ValueError):
+            [record async for record in CSVTelemetrySource(broken).read()]
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf"), 1e308])
+def test_nonfinite_measurements_and_conversion_overflow_are_rejected(value: float) -> None:
+    with pytest.raises(NormalizationError, match="finite"):
+        normalize_value(value, "bar", SIGNAL_BY_KEY["engine.boost_pressure"])
+
+
+@pytest.mark.parametrize("kind", ["session", "modification"])
+def test_session_and_modification_times_reject_naive_or_reversed_windows(kind: str) -> None:
+    from uuid import uuid4
+
+    from vehicle_platform.api.domain_contracts import ModificationCreate, SessionCreate
+
+    if kind == "session":
+        factory = SessionCreate
+        fields = {"vehicle_id": uuid4(), "source_type": "csv"}
+        beginning, ending = "started_at", "ended_at"
+    else:
+        factory = ModificationCreate
+        fields = {"category": "intake"}
+        beginning, ending = "installed_at", "removed_at"
+    for start, end in (
+        (datetime(2026, 1, 1), None),
+        (datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2)),
+        (datetime(2026, 1, 2, tzinfo=UTC), datetime(2026, 1, 1, tzinfo=UTC)),
+    ):
+        with pytest.raises(ValidationError):
+            factory(**fields, **{beginning: start, ending: end})
+    factory(
+        **fields,
+        **{beginning: datetime(2026, 1, 1, tzinfo=UTC), ending: datetime(2026, 1, 2, tzinfo=UTC)},
+    )
+
+
+async def test_csv_encoding_missing_cells_and_bad_numeric_input() -> None:
+    with pytest.raises(ValueError, match="UTF-8"):
+        CSVTelemetrySource(b"\xff")
+    header = b"timestamp,signal,value,unit,record_id,sequence\n"
+    for row in (
+        b"2026-01-01T00:00:00Z,rpm,invalid,rpm,a,1\n",
+        b"2026-01-01T00:00:00Z,rpm,1000,rpm,a,invalid\n",
+        b"2026-01-01T00:00:00Z,rpm,1000,rpm,=formula,1\n",
+    ):
+        with pytest.raises(ValueError):
+            [record async for record in CSVTelemetrySource(header + row).read()]

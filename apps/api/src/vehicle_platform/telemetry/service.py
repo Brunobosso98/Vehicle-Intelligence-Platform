@@ -1,6 +1,8 @@
 import hashlib
 import json
+from contextlib import nullcontext
 from datetime import datetime
+from time import perf_counter
 from uuid import UUID
 
 from sqlalchemy import bindparam, text
@@ -8,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vehicle_platform.api.domain_contracts import ImportResult, TelemetryPoint, TelemetryWindow
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.observability.telemetry import Telemetry
 from vehicle_platform.telemetry.domain import (
     SIGNAL_BY_ALIAS,
     NormalizationError,
@@ -16,6 +19,39 @@ from vehicle_platform.telemetry.domain import (
     normalize_value,
     sample_id,
 )
+
+
+async def validate_vehicle_context(
+    db: AsyncSession,
+    vehicle_id: UUID,
+    configuration_id: UUID | None,
+    observed_at: datetime | None = None,
+) -> None:
+    if await db.scalar(text("SELECT 1 FROM vehicles WHERE id=:id"), {"id": vehicle_id}) is None:
+        raise LookupError("vehicle not found")
+    if configuration_id is None:
+        return
+    row = (
+        (
+            await db.execute(
+                text(
+                    "SELECT vehicle_id,effective_at,ended_at FROM vehicle_configurations WHERE id=:id"
+                ),
+                {"id": configuration_id},
+            )
+        )
+        .mappings()
+        .one_or_none()
+    )
+    if row is None:
+        raise LookupError("configuration not found")
+    if row["vehicle_id"] != vehicle_id:
+        raise ValueError("configuration belongs to a different vehicle")
+    if observed_at is not None and (
+        observed_at < row["effective_at"]
+        or (row["ended_at"] is not None and observed_at >= row["ended_at"])
+    ):
+        raise ValueError("configuration is not effective at observation time")
 
 
 def _content_hash(record: RawTelemetryRecord, value: float, unit: str) -> str:
@@ -27,10 +63,42 @@ def _content_hash(record: RawTelemetryRecord, value: float, unit: str) -> str:
 
 
 class IngestionService:
-    def __init__(self, database: Database, batch_size: int = 1000) -> None:
-        self.database, self.batch_size = database, batch_size
+    def __init__(
+        self, database: Database, batch_size: int = 1000, telemetry: Telemetry | None = None
+    ) -> None:
+        self.database, self.batch_size, self.telemetry = database, batch_size, telemetry
 
     async def ingest(
+        self, session_id: UUID, source_name: str, source: TelemetrySource
+    ) -> ImportResult:
+        started = perf_counter()
+        labels = {
+            "source": source_name
+            if source_name in {"csv", "obd", "synthetic", "replay"}
+            else "other",
+            "outcome": "failed",
+        }
+        try:
+            with (
+                self.telemetry.tracer.start_as_current_span("telemetry.import")
+                if self.telemetry
+                else nullcontext()
+            ):
+                result = await self._ingest(session_id, source_name, source)
+            labels["outcome"] = "completed"
+            if self.telemetry:
+                for outcome in ("accepted", "rejected", "duplicates", "conflicts"):
+                    self.telemetry.import_rows.add(
+                        getattr(result, outcome), {"source": labels["source"], "outcome": outcome}
+                    )
+                self.telemetry.log("telemetry.import.completed", "internal")
+            return result
+        finally:
+            if self.telemetry:
+                self.telemetry.imports.add(1, labels)
+                self.telemetry.import_duration.record(perf_counter() - started, labels)
+
+    async def _ingest(
         self, session_id: UUID, source_name: str, source: TelemetrySource
     ) -> ImportResult:
         stats = {
@@ -85,14 +153,16 @@ class IngestionService:
                             "signal_key": signal.key,
                             "numeric_value": value,
                             "normalized_unit": signal.unit,
-                            "raw_signal": record.signal,
+                            "raw_signal": record.raw_signal or record.signal,
                             "raw_value": str(record.value),
                             "source": source_name,
                             "source_record_id": record.source_record_id,
                             "sequence_number": record.sequence,
                             "quality": quality.value,
                             "schema_version": 1,
-                            "source_metadata": "{}",
+                            "source_metadata": json.dumps(
+                                record.source_metadata | {"source_unit": record.unit}
+                            ),
                             "content_hash": _content_hash(record, value, signal.unit),
                         }
                     )
@@ -127,7 +197,47 @@ class IngestionService:
     async def _persist(
         self, db: AsyncSession, batch: list[dict[str, object]], stats: dict[str, int]
     ) -> None:
+        started = perf_counter()
+        try:
+            with (
+                self.telemetry.tracer.start_as_current_span("telemetry.persistence")
+                if self.telemetry
+                else nullcontext()
+            ):
+                await self._persist_rows(db, batch, stats)
+        finally:
+            if self.telemetry:
+                self.telemetry.db_batch_duration.record(
+                    perf_counter() - started, {"source": "import"}
+                )
+
+    async def _persist_rows(
+        self, db: AsyncSession, batch: list[dict[str, object]], stats: dict[str, int]
+    ) -> None:
         execute = db.execute
+        context = (
+            (
+                await execute(
+                    text(
+                        "SELECT vehicle_id,configuration_id FROM driving_sessions "
+                        "WHERE id=:id FOR UPDATE"
+                    ),
+                    {"id": batch[0]["session_id"]},
+                )
+            )
+            .mappings()
+            .one()
+        )
+        times: list[datetime] = []
+        for row in batch:
+            observed = row["observed_at"]
+            if not isinstance(observed, datetime):
+                raise ValueError("observation time must be a datetime")
+            times.append(observed)
+        for observed in (min(times), max(times)):
+            await validate_vehicle_context(
+                db, context["vehicle_id"], context["configuration_id"], observed
+            )
         ids = [row["sample_id"] for row in batch]
         existing = (
             await execute(
@@ -143,6 +253,7 @@ class IngestionService:
             previous = known.get(row["sample_id"])
             if previous is None:
                 fresh.append(row)
+                known[row["sample_id"]] = row["content_hash"]
             elif previous == row["content_hash"]:
                 stats["duplicates"] += 1
             else:
@@ -159,8 +270,8 @@ class IngestionService:
 
 
 class QueryService:
-    def __init__(self, database: Database) -> None:
-        self.database = database
+    def __init__(self, database: Database, telemetry: Telemetry | None = None) -> None:
+        self.database, self.telemetry = database, telemetry
 
     async def query(
         self,
@@ -170,9 +281,41 @@ class QueryService:
         end: datetime | None,
         limit: int,
     ) -> TelemetryWindow:
+        started = perf_counter()
+        try:
+            with (
+                self.telemetry.tracer.start_as_current_span("telemetry.query")
+                if self.telemetry
+                else nullcontext()
+            ):
+                result = await self._query(session_id, signals, start, end, limit)
+            if self.telemetry:
+                self.telemetry.query_points.add(result.returned)
+            return result
+        finally:
+            if self.telemetry:
+                self.telemetry.query_duration.record(perf_counter() - started)
+
+    async def _query(
+        self,
+        session_id: UUID,
+        signals: list[str],
+        start: datetime | None,
+        end: datetime | None,
+        limit: int,
+    ) -> TelemetryWindow:
+        if any(bound is not None and bound.tzinfo is None for bound in (start, end)):
+            raise ValueError("query timestamps require timezone offsets")
         if start and end and start >= end:
             raise ValueError("start must precede end")
         async with self.database.session() as db:
+            if (
+                await db.scalar(
+                    text("SELECT 1 FROM driving_sessions WHERE id=:id"), {"id": session_id}
+                )
+                is None
+            ):
+                raise LookupError("session not found")
             rows = (
                 await db.execute(
                     text(

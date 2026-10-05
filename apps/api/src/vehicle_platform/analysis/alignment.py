@@ -70,6 +70,19 @@ def align_observations(
             gap = previous_source_time is not None and freshest - previous_source_time > max_gap
             frames.append(AlignedFrame(cursor, values, ids, gap))
             previous_source_time = freshest
+        else:
+            next_times = [
+                stream[indexes[key]].observed_at
+                for key, stream in streams.items()
+                if indexes[key] < len(stream)
+            ]
+            if not next_times:
+                break
+            # Skip only expired, empty grid positions. Keep the original grid
+            # origin and gap flag; sparse years must not require years of ticks.
+            steps = max(1, (min(next_times) - cursor) // interval)
+            cursor += steps * interval
+            continue
         cursor += interval
     for signal in ("engine.rpm", "vehicle.speed"):
         smoothed = rolling_median(

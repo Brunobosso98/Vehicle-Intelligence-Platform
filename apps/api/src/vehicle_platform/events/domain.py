@@ -44,6 +44,7 @@ class EventProfile:
     """Development heuristics; these are not factory safety or N55 calibration limits."""
 
     name: str = "generic-event-v1"
+    algorithm_version: str = "1.1.0"
     min_duration_seconds: float = 1.0
     high_load_throttle_pct: float = 70.0
     boost_drop_relative: float = 0.15

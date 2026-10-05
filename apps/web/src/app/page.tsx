@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { SystemStatusPanel } from "../components/system-status";
-import { TelemetryDashboard } from "../components/telemetry-dashboard";
-import { LiveAcquisition } from "../components/live-acquisition";
-import { AnalyticsWorkspace } from "../components/analytics-workspace";
+import { VehicleWorkspace } from "../components/vehicle-workspace";
 export default function Home() {
   return (
     <>
@@ -31,9 +29,7 @@ export default function Home() {
           de veículos. A jornada começa com o BMW N55.
         </p>
         <SystemStatusPanel />
-        <LiveAcquisition />
-        <TelemetryDashboard />
-        <AnalyticsWorkspace />
+        <VehicleWorkspace />
         <section className="scope" aria-labelledby="scope-heading">
           <h2 id="scope-heading">O ponto de partida</h2>
           <p>
