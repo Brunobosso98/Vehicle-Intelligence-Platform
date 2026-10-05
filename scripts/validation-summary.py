@@ -13,6 +13,7 @@ labels = {
     "100k live stream": "STREAMING",
     "Container security": "SECURITY",
     "Observability": "OBSERVABILITY",
+    "Phase 6 MCP": "MCP",
 }
 outcome_status = {
     "success": "PASS",

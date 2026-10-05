@@ -16,10 +16,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      GIT_SHA: ${{ github.sha }}
+      GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
           version: 11.19.0
@@ -76,6 +78,12 @@ jobs:
         run: |
           make observability-up
           make observability-full
+      - name: Validate Phase 6 MCP platform and clean-state transports
+        id: mcp
+        continue-on-error: true
+        run: |
+          make phase6-acceptance test-mcp-e2e benchmark-mcp mcp-observability
+          make phase6-acceptance test-mcp-e2e
       - name: Scan all canonical images
         id: security
         continue-on-error: true
@@ -84,7 +92,7 @@ jobs:
       - name: Capture stack logs
         if: always()
         run: |
-          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability}
+          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability,mcp}
           if ! docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
             --profile observability ps --format json > validation-artifacts/summary/compose-ps.json; then
             echo '{"status":"NOT RUN","reason":"compose status unavailable"}' \
@@ -101,6 +109,7 @@ jobs:
           test ! -d apps/web/test-results || cp -r apps/web/test-results validation-artifacts/playwright/
           test ! -d .validation/security || cp -r .validation/security/. validation-artifacts/security/
           test ! -d .validation/observability || cp -r .validation/observability/. validation-artifacts/observability/
+          test ! -d .validation/mcp || cp -r .validation/mcp/. validation-artifacts/mcp/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -114,11 +123,12 @@ jobs:
           STREAMING: ${{ steps.streaming.outcome }}
           OBSERVABILITY: ${{ steps.observability.outcome }}
           SECURITY: ${{ steps.security.outcome }}
+          MCP: ${{ steps.mcp.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: phase-0-full-validation-${{ github.sha }}
+          name: phase-0-full-validation-${{ github.event.pull_request.head.sha || github.sha }}
           path: validation-artifacts
           if-no-files-found: error
           retention-days: 14
@@ -133,12 +143,13 @@ jobs:
           STREAMING: ${{ steps.streaming.outcome }}
           OBSERVABILITY: ${{ steps.observability.outcome }}
           SECURITY: ${{ steps.security.outcome }}
+          MCP: ${{ steps.mcp.outcome }}
         run: |
           failed=0
           for entry in \
             "cloud:$CLOUD" "containers:$CONTAINERS" "database:$DATABASE" \
             "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
-            "observability:$OBSERVABILITY" "security:$SECURITY"; do
+            "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

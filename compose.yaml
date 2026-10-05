@@ -25,7 +25,8 @@ services:
           "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null",
         ]
       interval: 5s
-      timeout: 5s
+      # Includes JVM startup; measured 6–8s on WSL even with a healthy broker.
+      timeout: 15s
       retries: 30
     volumes: ["broker-data:/tmp/kraft-combined-logs"]
     restart: unless-stopped
@@ -105,6 +106,42 @@ services:
     tmpfs: ["/tmp"]
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+  mcp:
+    profiles: ["mcp"]
+    image: vehicle-platform-api:local
+    command:
+      [
+        "python",
+        "-m",
+        "vehicle_platform.mcp.cli",
+        "--transport",
+        "streamable-http",
+      ]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENVIRONMENT: development
+      VIP_MCP_HOST: 0.0.0.0
+      VIP_MCP_TOKEN: ${VIP_MCP_TOKEN:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    ports: ["127.0.0.1:8001:8001"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; assert b'ready' in urllib.request.urlopen('http://127.0.0.1:8001/ready',timeout=3).read()",
+        ]
+      interval: 5s
+      timeout: 4s
+      retries: 12
     restart: unless-stopped
   stream-consumer:
     image: vehicle-platform-api:local

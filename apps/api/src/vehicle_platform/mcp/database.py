@@ -26,6 +26,7 @@ class ReadOnlyDatabase(Database):
             },
         )
         self.engine = self.engine.execution_options(postgresql_readonly=True)
+        self.sessions.configure(bind=self.engine)
 
         event.listen(self.engine.sync_engine.pool, "invalidate", self._abort_invalidated)
 

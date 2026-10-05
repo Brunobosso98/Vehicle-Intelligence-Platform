@@ -1,0 +1,29 @@
+services:
+  mcp:
+    image: vehicle-platform-api:local
+    command: ["vehicle-mcp", "--transport", "streamable-http"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vehicle:test-only@db:5432/vehicle_test
+      ENVIRONMENT: test
+      VIP_MCP_HOST: 0.0.0.0
+      VIP_MCP_TRANSPORT: streamable-http
+      VIP_MCP_TOKEN: ${VIP_MCP_TOKEN:?Disposable MCP token required}
+    ports: ["127.0.0.1::8001"]
+    read_only: true
+    tmpfs: ["/tmp:mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/ready', timeout=6)",
+        ]
+      interval: 2s
+      timeout: 8s
+      retries: 20
