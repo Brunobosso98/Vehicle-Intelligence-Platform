@@ -27,7 +27,10 @@ Tools return structured Pydantic envelopes with schema version 1.0, `data`, `con
 `returned`, `truncated`, structured `warnings` and `mcp_request_id`. Actual record identifiers and
 existing algorithm/configuration hashes remain in data. Units remain canonical. Missing values
 remain absent/null; they are never replaced with zero. Warnings include `missing_signal`,
-`truncated_result`, `insufficient_history` and existing domain limitation codes.
+`truncated_result`, `partial_window`, `insufficient_history` and existing domain limitation codes.
+A truncated sample set cannot establish signal absence; omitted signals are reported as
+`partial_window`. Nontruncated absence is `missing_signal`. Quality/configuration limitations
+preserve their domain warning codes; insufficient history is reported for insufficient results.
 
 Analytics uses the existing Phase 5 calculations without persistence. `calculation_id` identifies
 a transient versioned snapshot; `analysis_run_id` is null. `source_fingerprint` links selected

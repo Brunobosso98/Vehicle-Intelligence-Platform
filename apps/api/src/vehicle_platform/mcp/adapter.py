@@ -100,7 +100,7 @@ class Adapter:
             if truncated:
                 response.warnings.append(Warning(code="truncated_result"))
         response.warnings.extend(Warning(code=code) for code in result.warnings)
-        if result.status in {"insufficient", "limited"}:
+        if result.status == "insufficient":
             response.warnings.append(Warning(code="insufficient_history"))
         return response
 
@@ -129,7 +129,13 @@ class Adapter:
             response.warnings.append(Warning(code="truncated_result"))
         missing = sorted(set(signals) - {p.signal for p in result.points})
         if missing:
-            response.warnings.append(Warning(code="missing_signal", details={"signals": missing}))
+            response.warnings.append(
+                Warning(
+                    code="partial_window", details={"signals_without_returned_samples": missing}
+                )
+                if result.truncated
+                else Warning(code="missing_signal", details={"signals": missing})
+            )
         response.provenance.update(
             {"source": "canonical-telemetry", "requested_window": window.model_dump(mode="json")}
         )

@@ -491,3 +491,69 @@ async def test_resource_errors_are_safe(telemetry, caplog):
                 await client.read_resource(uri)
             assert "SECRET" not in str(caught.value)
     assert "SECRET" not in caplog.text
+
+
+@pytest.mark.parametrize("truncated,code", [(False, "missing_signal"), (True, "partial_window")])
+async def test_window_absence_distinguishes_truncation(truncated, code):
+    from vehicle_platform.api.domain_contracts import TelemetryPoint, TelemetryWindow
+
+    vehicle, session = uuid4(), uuid4()
+    start = datetime.now(UTC)
+    adapter = object.__new__(Adapter)
+    adapter.entity = AsyncMock(return_value={"configuration_id": None})
+    adapter.telemetry = MagicMock()
+    adapter.telemetry.query = AsyncMock(
+        return_value=TelemetryWindow(
+            session_id=session,
+            returned=1,
+            truncated=truncated,
+            start=start,
+            end=start + timedelta(seconds=1),
+            points=[
+                TelemetryPoint(
+                    sample_id="fixture",
+                    observed_at=start,
+                    signal="engine.rpm",
+                    value=900,
+                    unit="rpm",
+                    quality="valid",
+                    sequence=0,
+                )
+            ],
+        )
+    )
+    result = await adapter.window(
+        vehicle,
+        session,
+        ["engine.rpm", "engine.boost_pressure"],
+        Window(start=start, end=start + timedelta(seconds=1)),
+        1,
+    )
+    codes = {warning.code for warning in result.warnings}
+    assert code in codes
+    assert ("missing_signal" in codes) is not truncated
+
+
+@pytest.mark.parametrize("status,insufficient", [("limited", False), ("insufficient", True)])
+async def test_limited_quality_does_not_claim_missing_history(status, insufficient):
+    from vehicle_platform.api.domain_contracts import AnalyticsResultResponse
+
+    adapter = object.__new__(Adapter)
+    result = AnalyticsResultResponse(
+        id=uuid4(),
+        analytics_type="pull",
+        algorithm_name="fixture",
+        algorithm_version="1.1.0",
+        configuration_hash="a" * 64,
+        source_fingerprint="b" * 64,
+        vehicle_id=uuid4(),
+        configuration_id=None,
+        status=status,
+        warnings=["missing_signal"],
+        result={},
+        generated_at=datetime.now(UTC),
+    )
+    response = await adapter.analytical(result, {})
+    codes = {warning.code for warning in response.warnings}
+    assert "missing_signal" in codes
+    assert ("insufficient_history" in codes) is insufficient

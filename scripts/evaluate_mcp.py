@@ -156,6 +156,17 @@ async def evaluate(client: Client, f: dict[str, Any]) -> dict[str, Any]:
     )
     assert missing["returned"] == 0 and missing["data"]["points"] == []
     assert any(w["code"] == "missing_signal" for w in missing["warnings"])
+    partial = await call(
+        "get_telemetry_window",
+        **context,
+        session_id=session,
+        signals=["engine.rpm", "engine.boost_pressure"],
+        window=window,
+        max_samples=1,
+    )
+    assert partial["returned"] == 1 and partial["truncated"]
+    assert "partial_window" in {w["code"] for w in partial["warnings"]}
+    assert "missing_signal" not in {w["code"] for w in partial["warnings"]}
     await error(
         "get_telemetry_window",
         "UNSUPPORTED_CAPABILITY",
