@@ -3,7 +3,7 @@
 Audit date: 2026-10-04. Branch: `codex/pre-phase6-retrospective-hardening`.
 Merged Phase 5 baseline: `6282982483c99d2500a446dc82c747dd2ea81606`.
 
-**Current status: CANDIDATE VERIFIED on a clean isolated working tree; exact committed HEAD and remote CI remain pending.**
+**Local status: Phases 0–5 VERIFIED by a clean isolated run of `make verify` against the committed HEAD. Pull-request CI is the remaining external acceptance gate.**
 
 ## Repository SHA and execution evidence
 
@@ -13,7 +13,7 @@ The exact validated repository SHA is recorded in the generated commit-tied repo
 That report includes the complete text of this tracked report with the actual SHA, date, command
 results and artifact/log digests. A Git commit cannot embed its own content-derived SHA; this tracked document
 specifies the report/attestation location rather than falsely claiming an older SHA was validated.
-The PR and final delivery must cite the same attested HEAD. The clean working-tree PASS manifest is `vip-retrospective-6282982483c9-20261004221535-93302/manifest.json`; its generated report and checksummed artifacts are retained under `.validation/retrospective/runs/`. The final committed-state manifest remains pending.
+The PR and final delivery must cite the same attested HEAD. The latest clean isolated committed-state PASS manifest and its checksummed artifacts are retained under `.validation/retrospective/runs/`.
 
 ## Architecture assessment
 
@@ -35,14 +35,14 @@ See [traceability ledger](phases-0-5-traceability-ledger.md),
 
 ## Per-phase classification
 
-| Phase                      | Current classification | Outstanding acceptance                                                                                      |
-| -------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 0 — engineering foundation | PARTIAL                | candidate security and delivered observability passed; exact committed canonical gate pending               |
-| 1 — telemetry core         | PARTIAL                | candidate acceptance and real-stack integration/E2E passed; exact committed gate pending                    |
-| 2 — sessions and pulls     | PARTIAL                | candidate evaluator, benchmark and committed integration/E2E passed; exact committed gate pending           |
-| 3 — factual events         | PARTIAL                | candidate all-event evaluator, benchmark and committed integration/E2E passed; exact committed gate pending |
-| 4 — live acquisition       | PARTIAL                | candidate recovery/recreation, browser SSE and 100k stream passed; exact committed gate pending             |
-| 5 — automotive analytics   | PARTIAL                | candidate numerical/history acceptance, browser and trace passed; exact committed gate pending              |
+| Phase                      | Local classification | Evidence in the exact committed-state run                                             |
+| -------------------------- | -------------------- | ------------------------------------------------------------------------------------- |
+| 0 — engineering foundation | VERIFIED             | `make verify`, locked bootstrap, security, accessibility, readiness and observability |
+| 1 — telemetry core         | VERIFIED             | canonical import/query acceptance, integration, contract and browser coverage         |
+| 2 — sessions and pulls     | VERIFIED             | independent 5/10/20 Hz evaluator, benchmark and persisted/browser flows               |
+| 3 — factual events         | VERIFIED             | all 14 positive/negative scenarios, ground-truth scoring and browser coverage         |
+| 4 — live acquisition       | VERIFIED             | real broker/consumer/database/API recovery, spool replay, E2E and 100k benchmark      |
+| 5 — automotive analytics   | VERIFIED             | numerical/history acceptance, persisted recompute, browser flows and trace coverage   |
 
 ## Gaps found and corrections
 
@@ -118,21 +118,21 @@ See [traceability ledger](phases-0-5-traceability-ledger.md),
 
 ## Test and migration evidence
 
-The successful isolated working-tree run covers 219 backend cases and 32 frontend cases. Candidate API line coverage
+The successful isolated committed-state run covers 219 backend cases and 32 frontend cases. API line coverage
 is 98.65%, branch 93.20%; frontend statement coverage 95.90%, branch 86.34%, function 97.32%,
 line 97.19%. Six disposable Timescale/Postgres integration cases passed, including explicit CSV
 mapping preview/no-write, provenance, idempotent replay, expired-token capacity/rejection, and
-real Kafka malformed-sequence dead-letter/recovery with valid BIGINT-edge persistence. All six passed in the clean isolated working-tree run; exact committed acceptance remains pending.
+real Kafka malformed-sequence dead-letter/recovery with valid BIGINT-edge persistence. All six passed in the clean isolated committed-state run.
 
 An earlier full attempt failed the delivered Phase 1–5 trace check after recovery replaced consumer
-configuration. Recovery now preserves the enabled OTLP overlay, and the successful clean working-tree
-run below passed delivery checks. Earlier failed attempt logs remain local evidence only and never count
+configuration. Recovery now preserves the enabled OTLP overlay, and the successful clean committed-state
+run passed delivery checks. Earlier failed attempt logs remain local evidence only and never count
 as acceptance.
 
 Disposable real Timescale/Postgres integration discovers the single migration head/direct parent,
 executes clean base→head, meaningful Phase 3/4 and Phase 4/5 rollback boundaries, full base rollback,
 re-upgrade and repeated head. It checks actual earlier telemetry values, relational rows, Timescale
-extension, hypertable and Phase 5 restoration/use. All six disposable migration/integration cases passed in the clean isolated working-tree run; exact committed acceptance remains pending.
+extension, hypertable and Phase 5 restoration/use. All six disposable migration/integration cases passed in the clean isolated committed-state run.
 
 Independent gates cover Phase 1 CSV/canonical identity; Phase 2 positive/negative pulls at 5/10/20 Hz;
 Phase 3 all 14 scenarios without type filtering; Phase 4 all six recipes; Phase 5 numerical values,
@@ -142,7 +142,7 @@ expected-failure substitutes or reasons to lower thresholds.
 
 ## Failure, performance, security and observability
 
-The complete clean isolated working-tree `make verify` passed. Mandatory runtime evidence includes broker restart/recreation,
+The complete clean isolated committed-state `make verify` passed. Mandatory runtime evidence includes broker restart/recreation,
 consumer restart, database interruption, API transport interruption, bounded spool/replay, canonical
 identity/loss counts, streamed gap event, browser disconnect/recovery and canonical reconciliation.
 The live stream benchmark queries actual receipts and canonical identities at 100,000 observations;
@@ -203,4 +203,4 @@ measured guarantee. No unobserved recovery trajectory or device health may be in
 
 ## Delivery state
 
-Review, logical commits, exact committed acceptance, push and PR remain pending. The clean working-tree full gate passed, and no PR will be opened until logical commits and exact committed-state revalidation pass. Final publication never merges main.
+Three logical commits are present on the hardening branch. Exact committed-state local acceptance passed. The branch and PR are review-only; final delivery also reports the remote CI result. This work does not merge main.
