@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0–4 passed canonical full-stack validation. Phase 5 deterministic automotive analytics and Phase 6 read-only MCP adapters are implemented; Phase 6 delivery validation is in progress. Diagnosis and Phase 7+ infrastructure are not implemented.
+Phases 0–5 and the Phase 6 read-only MCP adapters passed local and canonical full-stack acceptance. See docs/validation/phase-6-acceptance.md for checkpoint evidence and the final HEAD delivery audit. Diagnosis and Phase 7+ infrastructure are not implemented.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and

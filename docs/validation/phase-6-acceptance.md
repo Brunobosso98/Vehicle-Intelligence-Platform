@@ -2,65 +2,100 @@
 
 Base main: `480e89acdecb6deecd2678389eab3f98fb7f3837` (Phase 0–5 hardening).
 Branch: `codex/phase-6-mcp-tool-platform`.
+[Pull request #20](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/20)
+is open against main; merging is reserved for the user.
 
-## Executed development evidence
+## Executed acceptance checkpoint
 
-- SDK 2.0.0 official client negotiated `2026-07-28` automatically.
-- Independent acceptance exercised all 22 tools, 36 positive/negative scenarios and three resources
-  against disposable TimescaleDB. Fixture: two vehicles, three configurations, six sessions,
-  eighteen detected pulls and factual boost-drop events, built through application routes.
-- Table-count fingerprints before/after MCP calls were identical, including analytics and capability
-  report tables. Read-only transactions additionally reject database writes.
-- Sanitized delivered trace evidence: 36 MCP spans, nine analytics source-selection spans and 292
-  database spans; SQL text and exception events absent.
-- API unit gate: 247 tests passed; 96.58% line and 92.10% branch coverage, thresholds unchanged.
+Checkpoint SHA: `3474678b5f35d1bc1798b622f3ee9c71130b3ab2`, 2026-10-05.
+`make verify` passed with a clean working tree, usable Docker and no skipped Docker gates.
+GitHub CI, Security and the canonical Docker/full-stack workflow also passed for this SHA.
 
-- Actual stdio and HTTP subprocess clients passed the complete inventory, resources,
-  safe validation errors, concurrent reads, authentication/scope/expiry negatives,
-  restart/reconnect and bounded backend loss/recovery.
-- Large fixture: 100,002 canonical samples and 102 sessions; 1,000 ordered points
-  returned with explicit truncation, 439,310 wire bytes, 2,806,060 peak traced Python
-  bytes; database UPDATE rejected by actual read-only transactions.
-- Benchmark: 34 successful requests, zero errors; p50 0.962s, p95 1.345s,
-  p99 1.458s, 1.324 requests/s, 2,104,956 peak traced Python bytes.
-  Quantiles are descriptive for this small sample on local WSL, not an SLA.
-- Actual Compose MCP request delivered MCP/database spans to Tempo and tool metrics
-  to Prometheus; SQL and bearer token redaction verified in delivered evidence.
-- Six existing disposable database/migration/stream integration tests passed.
-- `make verify-cloud` passed the Phase 0–5 non-Docker regressions and security gates.
+| Gate                    | Executed evidence                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| API                     | 247 unit tests; line coverage 96.58%, branches 92.10%; strict typing/lint PASS           |
+| Web                     | 32 unit tests; line coverage 97.19%, branches 86.34%; build/lint PASS                    |
+| Contracts/documentation | generation drift, formatting and documentation checks PASS                               |
+| Earlier phases          | All Phase 0–5 independent acceptance and benchmarks PASS                                 |
+| Database                | Six disposable integration tests, upgrade/downgrade/reupgrade and replay PASS            |
+| MCP acceptance          | 36 scenarios; all 22 tools and three resource templates PASS                             |
+| Protocol E2E            | Actual stdio and Streamable HTTP subprocess clients PASS                                 |
+| Container E2E           | Hardened MCP container, four concurrent calls, stop/start/reconnect PASS                 |
+| Dependency recovery     | Bounded readiness/tool failures during actual database pause, recovery PASS              |
+| Browser/stack           | Eight Playwright tests; broker/consumer/database/API interruption recovery PASS          |
+| Live streaming          | 100,000/100,000 persisted; zero loss or duplicate canonical rows                         |
+| Security                | Locked dependency, secret and all eight image policy gates PASS; no new exceptions       |
+| Observability           | Delivered Tempo traces and Prometheus metrics, SQL/token redaction PASS                  |
+| Clean state             | Each MCP evaluator uses a fresh disposable database; canonical CI repeats acceptance/E2E |
 
-- Docker MCP HTTP E2E passed all 22 tools/resources, four concurrent pull reads,
-  a real container stop/start and a new client lookup with the same fixture identity.
-- Existing canonical stack, dependency recovery and full Phase 1–5 observability passed.
-- Live stream benchmark persisted 100,000/100,000 observations with zero loss or duplicate canonical rows.
-- Existing browser suite: eight Playwright tests passed. Frontend line coverage
-  97.19%, branches 86.34%; thresholds and selectors unchanged.
+Coverage thresholds, migration history, frontend selectors and existing security risk exceptions
+were retained. No automotive calculation was duplicated, and no schema migration was needed.
 
-## Executed complete local checkpoint
+## Independent MCP evidence
 
-`make verify` passed at committed HEAD `4f15120966c2528aebf67739b84983f1b7f880a2`
-on 2026-10-05, with a clean tree. It executed cloud/typing/coverage/format/contracts,
-all Phase 0–5 acceptance and benchmarks, rebuilt images with this SHA, disposable
-integration/migration validation, fresh MCP acceptance and all actual transports,
-MCP runtime observability, canonical stack/recovery, eight browser E2E tests,
-100k live observations, all eight image security policies and full observability.
-No Docker-dependent check was skipped. Existing security risk exceptions were
-retained; no new exception was introduced.
+The official SDK `mcp==2.0.0` client negotiated protocol `2026-07-28` automatically.
+Fixtures use application routes: two vehicles, three configurations, six sessions, eighteen
+canonical pulls and factual boost-drop events. Acceptance checks actual identifiers, numeric
+comparisons, sufficient/insufficient histories, configuration segmentation, ownership negatives,
+safe validation errors, missing signals, partial windows and every tool/resource family.
 
-Checkpoint benchmark: 34/34 success, zero errors; p50 0.588s, p95 0.917s,
-p99 1.028s, 2.045 requests/s, 1,983,341 peak traced Python bytes, maximum
-173,166 wire bytes. Large results: 439,310 bytes and 2,781,888 peak traced bytes.
+Table-count fingerprints before/after calls are identical, including analytics and capability
+report tables. Actual read-only transactions reject UPDATE. Transient calculation identities
+retain existing algorithm/configuration/source hashes without persisting new analysis runs.
+Sanitized delivered evidence contains 36 MCP spans, nine analytics selection spans and 292
+database spans. SQL text, bearer tokens and exception details are absent.
 
-The completion audit then corrected two warning semantics: signals omitted by a
-truncated sample set use `partial_window`, and quality/configuration limitations
-do not imply insufficient history. Focused positive/negative unit cases and a
-real client multi-signal truncation case cover these corrections. The final
-committed revision must repeat the gate after this audit.
+Both real transports exercise authorization/scope/expiry negatives, origins, request limits,
+concurrent reads, restart/reconnect and actual backend failure/recovery. Container acceptance
+uses the built application image with a read-only filesystem, dropped capabilities and a new
+client after restart. Truncated telemetry uses `partial_window` when a requested signal is
+absent only from the returned subset; quality/configuration limits do not invent missing history.
 
-## Gates still requiring final committed-head evidence
+## Measured performance and bounds
 
-Stdio/HTTP complete E2E, backend recovery, restart/reconnect, benchmark/result-size validation,
-full existing Phase 0–5 regression, all local project checks, clean-state rerun, final SHA validation,
-push, open PR and required checks for that SHA must all pass before Phase 6 is declared verified.
-Development results above do not claim final delivery completion. The traceability ledger records
-implementation/test ownership and remaining evidence.
+| Measure                        | Local WSL checkpoint          | Canonical GitHub checkpoint   |
+| ------------------------------ | ----------------------------- | ----------------------------- |
+| Representative MCP requests    | 34/34 success, zero errors    | 34/34 success, zero errors    |
+| p50 / p95 / p99                | 0.608 / 1.054 / 1.133 seconds | 0.226 / 0.348 / 0.491 seconds |
+| Throughput                     | 1.880 requests/s              | 5.050 requests/s              |
+| Peak traced Python allocations | 1,984,055 bytes               | 1,987,045 bytes               |
+| Maximum benchmark wire result  | 173,166 bytes                 | 173,166 bytes                 |
+| Maximum exercised concurrency  | Four calls                    | Four calls                    |
+
+Large acceptance ingests 100,002 canonical samples and 102 sessions, returns 1,000 ordered
+points with explicit truncation, and rejects database writes. The complete tool wire result is
+439,310 bytes; peak traced allocations are 2,822,487 bytes locally and 2,810,940 bytes in CI.
+These measured quantiles describe a small sample, not an SLA; Python allocation tracing does
+not measure total process/container RSS. Limits are enforced separately: 512 KiB whole tool
+results, 64 KiB HTTP bodies, eight active calls, ten-second execution, five-second SQL statements,
+one-second lock waits, lists ≤100, comparisons ≤20 pulls, cross-session ≤10 sessions and
+telemetry ≤8 signals / 60 seconds / 1,000 points.
+
+## Remote proof and final HEAD identity
+
+Checkpoint runs: [CI](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/37354020469),
+[Security](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/37354020124),
+[canonical full validation](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/37354020332).
+The downloaded artifact `phase-0-full-validation-3474678b5f35d1bc1798b622f3ee9c71130b3ab2`
+contains `summary/validation-summary.json`: the exact checkpoint commit, all nine checks PASS
+and `full_gate: PASS`. Its `mcp/commit.txt` agrees. Python/TypeScript CodeQL, the aggregate CodeQL
+result and dependency review also passed. The PR was OPEN, non-draft and MERGEABLE, with no merge.
+
+This tracked document records executed checkpoint evidence; a commit cannot contain its own
+content-derived SHA. Any subsequent documentation or implementation commit must repeat local
+committed-head validation and receive green remote checks before the delivery verdict.
+The [latest PR checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/20/checks)
+and canonical artifact `phase-0-full-validation-<PR-HEAD-SHA>` bind the delivered revision.
+Local logs are retained under `.cache/verify-*.log`; fresh MCP evidence and its current commit
+are under `.validation/mcp/`. The final 34-item delivery report records the final SHA, matching
+local/remote evidence, clean tree and unmerged PR; this checkpoint does not replace that audit.
+
+## Limitations and deferred scope
+
+The provisioned `mcp:read` token grants one operator reader access; tenant authorization and
+OAuth issuance are not implemented. Public deployment requires externally terminated TLS.
+Lists have no opaque cursor; Phase 5 historical selection bounds remain. Snapshots may change
+when canonical source data changes. Observations and comparisons establish neither diagnosis
+nor causation. Real proprietary BMW/Vgate/BimmerLink hardware compatibility remains outside
+this synthetic protocol acceptance. Phase 7 LLM/agent orchestration and Phase 8 retrieval/RAG/
+diagnosis remain deferred. No LLM, agent, RAG or vehicle-control functionality was added.
