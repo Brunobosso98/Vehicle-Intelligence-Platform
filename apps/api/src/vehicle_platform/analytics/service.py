@@ -3,9 +3,10 @@ import hashlib
 import json
 from collections.abc import Callable
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from time import perf_counter
-from uuid import UUID
+from typing import Literal, cast
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from opentelemetry import trace
 from sqlalchemy import text
@@ -38,7 +39,10 @@ class AnalyticsLimitError(ValueError):
 
 
 class AnalyticsService:
-    def __init__(self, database: Database, telemetry: Telemetry | None = None) -> None:
+    def __init__(
+        self, database: Database, telemetry: Telemetry | None = None, *, read_only: bool = False
+    ) -> None:
+        self.read_only = read_only
         self.database = database
         self.telemetry = telemetry
         self.tracer = (
@@ -176,25 +180,26 @@ class AnalyticsService:
                 ).hexdigest()[:16],
                 16,
             ) & ((1 << 63) - 1)
-            await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock_key})
-            existing = (
-                (
-                    await db.execute(
-                        text("""SELECT * FROM analytics_runs WHERE analytics_type=:type AND algorithm_version=:version
-                AND configuration_hash=:hash AND source_fingerprint=:source ORDER BY generated_at DESC LIMIT 1"""),
-                        {
-                            "type": analytics_type,
-                            "version": ALGORITHM_VERSION,
-                            "hash": config.configuration_hash,
-                            "source": source,
-                        },
+            if not self.read_only:
+                await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock_key})
+                existing = (
+                    (
+                        await db.execute(
+                            text("""SELECT * FROM analytics_runs WHERE analytics_type=:type AND algorithm_version=:version
+                    AND configuration_hash=:hash AND source_fingerprint=:source ORDER BY generated_at DESC LIMIT 1"""),
+                            {
+                                "type": analytics_type,
+                                "version": ALGORITHM_VERSION,
+                                "hash": config.configuration_hash,
+                                "source": source,
+                            },
+                        )
                     )
+                    .mappings()
+                    .one_or_none()
                 )
-                .mappings()
-                .one_or_none()
-            )
-            if existing and not recompute:
-                return AnalyticsResultResponse.model_validate({**existing, "reused": True})
+                if existing and not recompute:
+                    return AnalyticsResultResponse.model_validate({**existing, "reused": True})
             tracing = CURRENT_TRACER.set(self.tracer)
             try:
                 with self.tracer.start_as_current_span("analytics.metric_extraction"):
@@ -233,6 +238,26 @@ class AnalyticsService:
                 if isinstance(limitation_value, list)
                 else []
             )
+            if self.read_only:
+                # A deterministic transient calculation identity, never a persisted run ID.
+                return AnalyticsResultResponse(
+                    id=uuid5(
+                        NAMESPACE_URL,
+                        f"{analytics_type}:{ALGORITHM_VERSION}:{config.configuration_hash}:{source}",
+                    ),
+                    analytics_type=analytics_type,
+                    algorithm_name=ALGORITHM_NAME,
+                    algorithm_version=ALGORITHM_VERSION,
+                    configuration_hash=config.configuration_hash,
+                    source_fingerprint=source,
+                    vehicle_id=vehicle_id,
+                    configuration_id=UUID(configuration_id) if configuration_id else None,
+                    status=cast(Literal["completed", "limited", "insufficient", "failed"], status),
+                    warnings=warnings,
+                    result=result,
+                    generated_at=datetime.now(UTC),
+                    reused=False,
+                )
             with self.tracer.start_as_current_span("analytics.persistence"):
                 row = (
                     (

@@ -51,3 +51,16 @@ unaffected health/lifespan and real disposable-DB excess SSE clients plus recove
 The collector treats HTTP 429 as a retryable gateway condition, retaining bounded backoff and
 durable spool behavior. Authentication/schema rejection remains explicit. Heartbeat rate rejection
 is reported safely and never acknowledges or deletes pending telemetry.
+
+## Phase 6 MCP boundary
+
+The MCP allowlist contains only deterministic reads. There is no SQL, file, network, shell, OBD
+or ECU passthrough. Adapter calls use read-only transactions and cannot persist analytics/capability
+results. An opaque provisioned reader token and SDK scope enforcement protect HTTP. Stdio trusts
+the process owner. Token expiry and constant-time verification, sanitized tool errors, bounded
+requests/results, context checks, execution/query deadlines and concurrency admission limit abuse.
+Host/Origin validation and loopback publication protect local discovery from DNS rebinding.
+All repository vehicles are readable to the provisioned reader; tenant ACLs and token issuance
+are not implemented. Production requires operator-managed HTTPS/secrets/database access. Tokens
+never enter discovery, tool metadata, logs or trace attributes. Telemetry text/metadata is evidence,
+not instructions to execute; future agents must preserve this trust boundary.

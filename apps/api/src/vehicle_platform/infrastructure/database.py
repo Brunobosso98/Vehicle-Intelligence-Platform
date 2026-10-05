@@ -22,11 +22,23 @@ class DatabaseProbe(Protocol):
 
 
 class Database:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        command_timeout: float | None = None,
+        server_settings: dict[str, str] | None = None,
+    ) -> None:
+        connect_args: dict[str, object] = {
+            "timeout": settings.readiness_timeout,
+            "command_timeout": command_timeout,
+        }
+        if server_settings is not None:
+            connect_args["server_settings"] = server_settings
         self.engine: AsyncEngine = create_async_engine(
             settings.database_url.get_secret_value(),
             pool_pre_ping=True,
-            connect_args={"timeout": settings.readiness_timeout},
+            connect_args=connect_args,
         )
         self.timeout = settings.readiness_timeout
         self.sessions = async_sessionmaker(self.engine, expire_on_commit=False)

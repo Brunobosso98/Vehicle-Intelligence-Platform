@@ -13,6 +13,7 @@ labels = {
     "100k live stream": "STREAMING",
     "Container security": "SECURITY",
     "Observability": "OBSERVABILITY",
+    "Phase 6 MCP": "MCP",
 }
 outcome_status = {
     "success": "PASS",
@@ -26,7 +27,7 @@ results = {
 }
 full_gate = "PASS" if all(value == "PASS" for value in results.values()) else "FAIL"
 payload = {
-    "commit": os.environ["GITHUB_SHA"],
+    "commit": os.environ.get("GIT_SHA") or os.environ["GITHUB_SHA"],
     "checks": results,
     "full_gate": full_gate,
 }

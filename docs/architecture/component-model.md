@@ -13,7 +13,11 @@ Collector/Tempo/Prometheus/Grafana stack receives traces and scrapes metrics. Sa
 remain on stdout. Database trace export preserves operations and error categories without query
 text or driver exception messages.
 
+MCP serves the same bounded read tools/resources through stdio and authenticated Streamable HTTP.
+It reuses domain calculations with no persistence, uses read-only SQL transactions and exports
+correlated logs/metrics/traces. See [Phase 6](phase-6-mcp-tool-platform.md).
+
 ## FUTURE
 
-MCP, agents, RAG, ML, causal diagnosis, production authentication and managed infrastructure are
+Agents, RAG, ML, causal diagnosis, production authentication and managed infrastructure are
 outside Phases 0–5. No Redis, vector database, data lake or learned analytical model is installed.

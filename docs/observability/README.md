@@ -67,3 +67,14 @@ completed/failed execution counters, accepted/rejected/duplicate input counts an
 `acquisition.broker.publish.duration` measures acknowledgement of the Kafka batch separately from
 HTTP handling; the worker exposes `acquisition_consumer_buffered_points` for actual retained windows
 (maximum 10 × 2,000). Labels use bounded source/outcome/profile categories, never vehicle/session IDs.
+
+## MCP
+
+`vehicle-platform-mcp` exports `mcp.tool.calls`, `mcp.tool.errors`, `mcp.tool.duration`,
+`mcp.active.calls`, `mcp.result.items`, `mcp.truncated.results`, `mcp.auth.failures`.
+Prometheus normalizes dots to underscores and appends counter/histogram suffixes. Labels are
+closed tool names, transport, status and error/reason codes; no entity IDs or raw arguments.
+`mcp.call.completed` JSON records request ID, trace ID, tool, outcome, duration and result count.
+MCP spans parent domain selection/calculation spans and SQLAlchemy spans. SanitizingExporter
+removes query text and exception events. Acceptance inspects delivered spans. Docker's `/metrics`
+endpoint is scraped as job `mcp`; `mcp-up` enables the existing OTLP collector destination.

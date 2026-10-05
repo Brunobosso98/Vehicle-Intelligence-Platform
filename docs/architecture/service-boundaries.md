@@ -12,5 +12,7 @@ Provisional windows and Kafka retention do not replace canonical storage. OpenAP
 TypeScript own HTTP contract synchronization; stream messages carry explicit version 1.0.
 
 ADRs 0011–0017 record these boundaries and delivery identities. Extraction requires demonstrated
-scaling, process isolation, security or deployment needs. MCP, agents, RAG, ML, diagnosis and
-production identity/infrastructure remain deferred beyond Phase 5.
+scaling, process isolation, security or deployment needs. MCP is a read-only adapter over application services with a shared protocol registry and separate
+process runtime. Its nonpersistent analytics/capability paths cannot change stored evidence.
+Agents, RAG, ML, diagnosis and production identity/infrastructure remain deferred.
+See [Phase 6](phase-6-mcp-tool-platform.md).
