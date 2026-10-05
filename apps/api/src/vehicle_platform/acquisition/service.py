@@ -726,7 +726,12 @@ class AcquisitionService:
         }
 
     async def capability_report(
-        self, session_id: UUID, recipe_key: str, *, configuration_hash: str | None = None
+        self,
+        session_id: UUID,
+        recipe_key: str,
+        *,
+        configuration_hash: str | None = None,
+        persist: bool = True,
     ) -> dict[str, object]:
         recipe = BY_KEY.get(recipe_key)
         if recipe is None:
@@ -741,6 +746,8 @@ class AcquisitionService:
                 raise LookupError("session not found")
         config_hash = configuration_hash or recipe.configuration_hash
         report = await self._capability_report(session_id, recipe_key, config_hash)
+        if not persist:
+            return report
         async with self.database.session() as db:
             await db.execute(
                 text(
