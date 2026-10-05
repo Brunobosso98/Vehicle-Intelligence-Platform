@@ -6,11 +6,11 @@ telemetria e documentação em análises explicáveis e auditáveis.
 
 ## Estado atual
 
-Fases 0–5 estão implementadas. A auditoria retrospectiva antes da Fase 6 está em andamento;
-implementação e testes verdes, isoladamente, não comprovam todos os critérios de aceitação.
+Fases 0–5 passaram pela auditoria retrospectiva. A Fase 6 expõe ferramentas e resources MCP
+somente leitura; a evidência de entrega está no [relatório de aceitação](docs/validation/phase-6-acceptance.md).
 A Fase 5 fornece analytics determinísticos e versionados sobre telemetria, sessões, pulls,
 eventos factuais e configurações históricas. A Fase 4 fornece aquisição somente leitura,
-receitas, preflight e streaming durável. Diagnóstico/root cause, MCP, agentes, RAG e ML
+receitas, preflight e streaming durável. Diagnóstico/root cause, agentes, RAG e ML
 permanecem planejados. Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
 Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
 [desenho de análise da Fase 2](docs/architecture/phase-2-session-analysis.md) e o
@@ -22,7 +22,10 @@ Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
 flowchart LR
   Browser --> Web[Next.js]
   Web --> API[FastAPI modular monolith]
-  API --> DB[(PostgreSQL / TimescaleDB)]
+  API --> Domain[Serviços determinísticos]
+  MCPClient[Cliente MCP] --> MCP[MCP stdio / HTTP]
+  MCP --> Domain
+  Domain --> DB[(PostgreSQL / TimescaleDB)]
   API -. optional .-> OTel[Collector / Tempo / Prometheus / Grafana]
 ```
 
@@ -63,3 +66,13 @@ Veja [instrumentação e verificação](docs/observability/README.md).
 Observação, diagnóstico, análise, simulação, pesquisa e recomendações técnicas.
 Nenhum controle de acelerador, freios, direção, tuning ou flash/ECU automático.
 Dados veiculares podem ser incompletos ou ruidosos; conclusões futuras devem indicar evidência e incerteza.
+
+## Phase 6 MCP
+
+The read-only MCP interface exposes 22 typed tools and three contextual JSON resources through
+stdio and authenticated Streamable HTTP, using official SDK 2.0.0. It preserves Phase 5 evidence
+and provenance without persisting reads. No LLM, agent, RAG or diagnosis is added.
+See [architecture](docs/architecture/phase-6-mcp-tool-platform.md),
+[runbook](docs/runbooks/mcp-server.md) and [acceptance](docs/validation/phase-6-acceptance.md).
+Run `make test-mcp`, `make phase6-acceptance`, `make test-mcp-e2e`, `make benchmark-mcp`.
+`make mcp-up` starts the optional container process with a provisioned local token.
