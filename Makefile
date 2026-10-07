@@ -109,9 +109,29 @@ phase5-acceptance:
 	$(MAKE) analytics-benchmark
 verify-cloud: phases-0-5-acceptance security-cloud
 verify: verify-cloud containers test-integration up observability-up
+	$(MAKE) phase6-acceptance
+	$(MAKE) test-mcp-e2e
+	$(MAKE) benchmark-mcp
+	$(MAKE) mcp-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) test-e2e
 	$(MAKE) live-stream-benchmark
 	$(MAKE) security
 	$(MAKE) observability-full
+
+.PHONY: test-mcp test-mcp-e2e phase6-acceptance benchmark-mcp mcp-up mcp-observability
+test-mcp:
+	$(API)/pytest apps/api/tests/unit/test_mcp.py
+phase6-acceptance:
+	bash scripts/mcp-validation.sh scripts/evaluate_mcp.py
+	bash scripts/mcp-validation.sh scripts/mcp_large_results.py
+test-mcp-e2e:
+	bash scripts/mcp-validation.sh scripts/mcp_protocol_e2e.py
+	bash scripts/mcp-validation.sh scripts/mcp_container_e2e.py
+benchmark-mcp:
+	bash scripts/mcp-validation.sh scripts/benchmark_mcp.py
+mcp-up:
+	bash scripts/mcp-up.sh
+mcp-observability:
+	bash scripts/mcp-up.sh --validate-observability

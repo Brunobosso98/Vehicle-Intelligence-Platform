@@ -90,3 +90,13 @@ It requires the explicitly supplied `vehicle_test*` database and never resets re
 volumes. Kafka's external test listener is selected only after an actual Docker host-port publication
 probe. This avoids treating a free Linux ephemeral port as proof of Docker Desktop/WSL host forwarding.
 A known publishable `TEST_KAFKA_PORT` can be supplied; bounded setup failure remains a failed gate.
+
+# Phase 6 acceptance
+
+`make phase6-acceptance` is an independent SDK-client evaluator over real application fixtures in
+a freshly migrated disposable TimescaleDB. It verifies all tools, structured schemas, IDs, factual
+values, comparability, context isolation, missing capabilities, resource reads and persistence
+fingerprints. `make test-mcp-e2e` repeats acceptance over real stdio and HTTP subprocess transports
+and checks authorization negatives, request bounds, concurrency, dependency recovery and restart.
+`make benchmark-mcp` measures representative domain reads, result bytes and traced Python memory.
+All are included in `make verify`; Docker-free validation never reports them as passing.

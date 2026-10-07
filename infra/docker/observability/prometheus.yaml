@@ -7,3 +7,6 @@ scrape_configs:
   - job_name: vehicle-platform-stream-consumer
     static_configs:
       - targets: ["stream-consumer:8001"]
+  - job_name: mcp
+    static_configs:
+      - targets: ["mcp:8001"]

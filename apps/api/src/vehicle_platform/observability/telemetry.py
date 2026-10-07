@@ -34,6 +34,18 @@ class JSONFormatter(logging.Formatter):
             "request_id": getattr(record, "request_id", None),
             "trace_id": getattr(record, "trace_id", None),
         }
+        for key in (
+            "tool_name",
+            "transport",
+            "status",
+            "duration_seconds",
+            "result_count",
+            "truncated",
+            "error_code",
+        ):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
         # Never render exception strings: drivers may embed credentials or SQL inputs.
         if record.exc_info and record.exc_info[0]:
             payload["exception_type"] = record.exc_info[0].__name__

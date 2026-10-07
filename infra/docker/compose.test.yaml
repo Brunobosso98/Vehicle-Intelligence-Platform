@@ -41,5 +41,6 @@ services:
           "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null",
         ]
       interval: 5s
-      timeout: 5s
+      # Includes JVM startup; measured 6–8s on WSL even with a healthy broker.
+      timeout: 15s
       retries: 30
