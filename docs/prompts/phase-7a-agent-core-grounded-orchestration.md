@@ -863,10 +863,12 @@ Create controlled fixtures such as:
 Vehicle A:
 
 Configuration A:
+
 - stock-like context;
 - sessions before modification date.
 
 Configuration B:
+
 - named upgrade/modification;
 - effective date;
 - sessions after change.
@@ -1516,6 +1518,7 @@ Golden expected findings must be independently defined.
 At minimum:
 
 ### Unit
+
 - schemas;
 - provider normalization;
 - context resolver;
@@ -1529,6 +1532,7 @@ At minimum:
 - rendering/sanitization.
 
 ### Integration
+
 - migrations;
 - AgentRun lifecycle;
 - ToolCall persistence;
@@ -1537,11 +1541,13 @@ At minimum:
 - failed/recovered runs.
 
 ### Acceptance
+
 - independent Phase 7A evaluator;
 - golden grounded questions;
 - malicious/negative cases.
 
 ### Browser E2E
+
 - natural-language interaction;
 - streaming;
 - evidence drilldown;
@@ -1549,6 +1555,7 @@ At minimum:
 - insufficient evidence.
 
 ### Security
+
 - secret scan;
 - dependency scan;
 - CodeQL;
@@ -1557,6 +1564,7 @@ At minimum:
 - cross-vehicle isolation.
 
 ### Observability
+
 - delivered traces;
 - metrics;
 - correlation;
@@ -1973,6 +1981,7 @@ Do not accept pending/cancelled/unexpectedly skipped required checks.
 Phase 7A is complete only when all applicable items are true.
 
 ### Architecture
+
 - [ ] one grounded orchestrator;
 - [ ] provider abstraction;
 - [ ] deterministic CI provider;
@@ -1981,6 +1990,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] no Phase 7B/7C/8 scope creep.
 
 ### Vehicle context
+
 - [ ] model/engine/platform context where available;
 - [ ] effective VehicleConfiguration;
 - [ ] modifications/upgrades/parts;
@@ -1989,6 +1999,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] cross-vehicle isolation.
 
 ### Grounding
+
 - [ ] structured evidence model;
 - [ ] claim → evidence references;
 - [ ] deterministic validation;
@@ -1997,6 +2008,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] unsupported diagnosis rejected/downgraded.
 
 ### Orchestration
+
 - [ ] MCP tool discovery;
 - [ ] tool allowlist;
 - [ ] bounded steps;
@@ -2007,6 +2019,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] no unbounded telemetry dump.
 
 ### Persistence
+
 - [ ] AgentRun;
 - [ ] ToolCall audit;
 - [ ] evidence references;
@@ -2014,6 +2027,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] no chain-of-thought persistence.
 
 ### API/UI
+
 - [ ] natural-language ask API;
 - [ ] run retrieval;
 - [ ] bounded run history;
@@ -2024,6 +2038,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] accessible UI.
 
 ### Safety/security
+
 - [ ] prompt-injection tests;
 - [ ] malicious tool-data tests;
 - [ ] API key redaction;
@@ -2034,6 +2049,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] cross-run evidence isolation.
 
 ### Observability
+
 - [ ] agent spans;
 - [ ] MCP trace continuity;
 - [ ] metrics;
@@ -2043,6 +2059,7 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] redaction proof.
 
 ### Testing
+
 - [ ] unit;
 - [ ] DB integration;
 - [ ] real MCP integration;
@@ -2054,12 +2071,14 @@ Phase 7A is complete only when all applicable items are true.
 - [ ] Phase 0–6 regressions.
 
 ### Performance
+
 - [ ] deterministic agent benchmark;
 - [ ] bounded concurrent runs;
 - [ ] bounded result sizes;
 - [ ] no unbounded memory path.
 
 ### Delivery
+
 - [ ] clean working tree;
 - [ ] exact committed HEAD validated;
 - [ ] branch pushed;

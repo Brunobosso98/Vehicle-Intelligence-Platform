@@ -1,5 +1,8 @@
 [extend]
 useDefault = true
-[allowlist]
+[[allowlists]]
 description = "Generated/dependency/build artifacts, never first-party source"
 paths = ['''(^|/)(node_modules|\.venv|\.next|\.cache|\.validation|coverage|playwright-report|test-results)/''']
+[[allowlists]]
+description = "Graphify generated stat index stores source paths and SHA-256 file digests"
+paths = ['''^graphify-out/cache/stat-index\.json$''']

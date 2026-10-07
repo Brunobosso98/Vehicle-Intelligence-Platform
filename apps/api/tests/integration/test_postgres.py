@@ -105,6 +105,9 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "dataset_capability_reports",
             "stream_dead_letters",
             "analytics_runs",
+            "agent_runs",
+            "agent_tool_calls",
+            "agent_stream_events",
         }
         assert await connection.scalar(
             text(
@@ -113,11 +116,10 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             )
         )
 
-    # Phase 5 semantic boundary: discover the current head and direct parent rather than
-    # duplicating a stale revision literal in migration guards.
-    head_revision = script.get_revision(expected_head)
-    assert head_revision is not None and head_revision.down_revision is not None
-    phase5_parent = str(head_revision.down_revision)
+    # The Phase 5 boundary remains 0008 even when later phases add a new head.
+    phase5_revision = script.get_revision("0008")
+    assert phase5_revision is not None and phase5_revision.down_revision is not None
+    phase5_parent = str(phase5_revision.down_revision)
     # Seed earlier-phase data before crossing the Phase 5 boundary. Table names
     # alone cannot establish that a downgrade preserves actual canonical history.
     async with engine.begin() as connection:

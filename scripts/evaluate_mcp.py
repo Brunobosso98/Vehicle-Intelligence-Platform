@@ -57,6 +57,12 @@ async def evaluate(client: Client, f: dict[str, Any]) -> dict[str, Any]:
     await call(
         "get_vehicle_configuration", **context, configuration_id=f["configurations"][0]
     )
+    configurations = await call("list_vehicle_configurations", **context, limit=100)
+    assert {item["id"] for item in configurations["data"]} == set(f["configurations"])
+    assert all(item["vehicle_id"] == vehicle for item in configurations["data"])
+    limited = await call("list_vehicle_configurations", **context, limit=1)
+    assert limited["returned"] == 1 and limited["truncated"]
+    await error("list_vehicle_configurations", "INVALID_ARGUMENT", **context, limit=101)
     await call("list_vehicle_modifications", **context)
     sessions = await call("list_sessions", **context, limit=2)
     assert sessions["returned"] == 2 and sessions["truncated"]

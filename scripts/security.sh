@@ -7,7 +7,7 @@ export TRIVY_DB_REPOSITORY=ghcr.io/aquasecurity/trivy-db:2
 bash scripts/security-cloud.sh
 
 upstream_db_image="timescale/timescaledb:2.30.2-pg17@sha256:b346edcdb51a1fd6020e3965e0bd1c9f3406fa6d5fbce1e28f4852587ef934e2"
-trivy image --cache-dir .cache/trivy --scanners vuln --severity HIGH,CRITICAL --exit-code 0 \
+trivy image --cache-dir "${TRIVY_CACHE_DIR:-.cache/trivy}" --scanners vuln --severity HIGH,CRITICAL --exit-code 0 \
   --format json --output .validation/security/images/upstream-timescaledb.json \
   "$upstream_db_image"
 
@@ -19,7 +19,7 @@ while IFS= read -r image; do
   report=".validation/security/images/${artifact}.json"
   policy_report=".validation/security/policy/${artifact}.json"
 
-  if ! trivy image --cache-dir .cache/trivy --scanners vuln --severity HIGH,CRITICAL --exit-code 0 \
+  if ! trivy image --cache-dir "${TRIVY_CACHE_DIR:-.cache/trivy}" --scanners vuln --severity HIGH,CRITICAL --exit-code 0 \
     --format json --output "$report" "$image"; then
     echo "Image scanner execution failed: $image" >&2
     scan_status=1

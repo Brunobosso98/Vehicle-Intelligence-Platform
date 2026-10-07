@@ -76,3 +76,18 @@ See [architecture](docs/architecture/phase-6-mcp-tool-platform.md),
 [runbook](docs/runbooks/mcp-server.md) and [acceptance](docs/validation/phase-6-acceptance.md).
 Run `make test-mcp`, `make phase6-acceptance`, `make test-mcp-e2e`, `make benchmark-mcp`.
 `make mcp-up` starts the optional container process with a provisioned local token.
+
+## Phase 7A grounded agent
+
+Delivery is in progress: see [acceptance status](docs/validation/phase-7a-acceptance.md).
+The vehicle workspace supports natural-language questions, bounded progress/streaming, confidence,
+grounded findings, configuration/modification context, evidence and MCP audit. One typed LangGraph
+orchestrator uses the official MCP client and a provider adapter. The real adapter uses OpenAI
+Responses; reproducible CI uses the same graph with a deterministic provider. Agent execution is
+disabled by default and requires explicit server-side provider/MCP configuration.
+
+The agent reads actual vehicle facts through MCP. The catalog now has 23 tools with the additive
+configuration-list read. Temporal association never proves mechanical causation. No ECU control,
+unsupported diagnosis, adaptive logging, specialist agents or RAG is available.
+See [architecture](docs/architecture/phase-7a-grounded-agent.md) and
+[operation/configuration](docs/runbooks/grounded-agent.md).
