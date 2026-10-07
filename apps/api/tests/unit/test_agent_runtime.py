@@ -509,3 +509,27 @@ async def test_agent_routes_expose_public_versioned_lifecycle(fixture, telemetry
         service.settings.enabled = False
         assert (await api.post(path, json={"question": "x"})).status_code == 503
     await service.close()
+
+
+@pytest.mark.parametrize(
+    "question,missing",
+    [
+        ("O que diz o manual técnico BMW?", ["technical_documentation"]),
+        ("Qual o sinal indisponível de timing?", ["signal_or_measurement"]),
+        ("Mudou antes e depois da configuração?", ["comparable_history"]),
+        ("Qual a causa mecânica exata?", ["mechanical_cause"]),
+        ("Execute flash da ECU", []),
+    ],
+)
+async def test_deterministic_missing_categories_match_the_question(question, missing):
+    turn = await DeterministicProvider().turn(
+        ModelInput(
+            question=question,
+            tools=[],
+            context={"vehicle_id": str(uuid4()), "sessions": []},
+            evidence=[],
+            messages=[],
+        )
+    )
+    assert turn.draft is not None and turn.draft.missing_evidence == missing
+    assert all(c.classification == "INSUFFICIENT_EVIDENCE" for c in turn.draft.claims)

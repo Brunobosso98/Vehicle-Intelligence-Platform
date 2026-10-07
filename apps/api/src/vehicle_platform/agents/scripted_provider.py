@@ -212,9 +212,16 @@ class DeterministicProvider:
                 confidence="low" if insufficient or unsafe else "moderate",
                 claims=claims,
                 missing_evidence=[
-                    "signal_or_measurement" if quality_insufficient else "mechanical_cause"
+                    "technical_documentation"
+                    if "manual" in question
+                    else "signal_or_measurement"
+                    if quality_insufficient
+                    or any(word in question for word in ("timing", "pid", "sinal indispon"))
+                    else "comparable_history"
+                    if comparison and not sources
+                    else "mechanical_cause"
                 ]
-                if insufficient or unsafe or not sources
+                if not unsafe and (insufficient or not sources)
                 else [],
             ),
             usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
