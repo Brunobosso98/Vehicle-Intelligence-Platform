@@ -90,6 +90,23 @@ class Catalog:
             )
         return [Modification.model_validate(row).model_dump(mode="json") for row in rows]
 
+    async def configurations(self, vehicle_id: UUID, limit: int) -> list[dict[str, Any]]:
+        async with self.database.session() as db:
+            rows = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT * FROM vehicle_configurations WHERE vehicle_id=:vehicle "
+                            "ORDER BY effective_at DESC,id LIMIT :limit"
+                        ),
+                        {"vehicle": vehicle_id, "limit": limit},
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        return [VehicleConfiguration.model_validate(row).model_dump(mode="json") for row in rows]
+
     async def history_truncated(
         self,
         vehicle_id: UUID,

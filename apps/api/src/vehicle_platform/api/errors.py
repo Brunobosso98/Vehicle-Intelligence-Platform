@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
+from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.api.contracts import ErrorDetail, ErrorResponse
 from vehicle_platform.infrastructure.database import DependencyUnavailable
 from vehicle_platform.observability.telemetry import Telemetry
@@ -15,6 +16,27 @@ def response(request: Request, status: int, code: str, message: str) -> JSONResp
 
 
 def register_errors(app: FastAPI, telemetry: Telemetry) -> None:
+    @app.exception_handler(AgentError)
+    async def agent_error(request: Request, exc: AgentError) -> JSONResponse:
+        telemetry.log(
+            "agent.request.failed",
+            getattr(request.state, "request_id", "unavailable"),
+            error_code=exc.category,
+            exception_type=type(exc.__context__).__name__ if exc.__context__ else "AgentError",
+        )
+        status = (
+            404
+            if exc.category in {"run_not_found", "vehicle_not_found"}
+            else 429
+            if "concurrency" in exc.category
+            else 503
+            if exc.category in {"agent_disabled", "database_unavailable"}
+            else 422
+        )
+        return response(
+            request, status, exc.category.upper(), "Agent request could not be processed"
+        )
+
     @app.exception_handler(DependencyUnavailable)
     async def unavailable(request: Request, exc: DependencyUnavailable) -> JSONResponse:
         telemetry.readiness_failures.add(1)
