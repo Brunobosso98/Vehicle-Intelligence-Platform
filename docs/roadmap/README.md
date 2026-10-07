@@ -7,7 +7,7 @@
 - Phase 4 — Streaming & Live Vehicle Acquisition (complete)
 - Phase 5 — Automotive Analytics (complete)
 - Phase 6 — MCP Tool Platform (complete; see Phase 6 acceptance evidence)
-- Phase 7A — Agent Core & Grounded Orchestration (implementation/validation in progress)
+- Phase 7A — Agent Core & Grounded Orchestration (implemented; see acceptance and PR-head receipts)
 - Phase 7B — Adaptive Investigation / Logging (planned)
 - Phase 7C — Specialist Agent Orchestration (planned)
 - Phase 8 — Technical RAG (planned)
@@ -17,10 +17,11 @@
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
 
-Phase 7A is the current delivery scope. Phase 7B/7C/8+ capabilities remain deferred.
+Phase 7A is implemented. Phase 7B/7C/8+ capabilities remain deferred.
 
 # Current phase
 
 Phases 0–6 passed canonical acceptance. The Phase 7A agent consumes MCP facts and validates
-structured claims. Final delivery is pending the [Phase 7A gate](../validation/phase-7a-acceptance.md).
+structured claims. The [Phase 7A gate](../validation/phase-7a-acceptance.md) records executed
+checkpoint evidence and identifies the exact-head delivery receipts.
 Unsupported diagnosis, proven root-cause interpretation, RAG, ML and future infrastructure remain deferred.

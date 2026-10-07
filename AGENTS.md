@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0–5 and the Phase 6 read-only MCP adapters passed local and canonical full-stack acceptance. See docs/validation/phase-6-acceptance.md for checkpoint evidence and the final HEAD delivery audit. Diagnosis and Phase 7+ infrastructure are not implemented.
+Phases 0–5 and the Phase 6 read-only MCP adapters passed local and canonical full-stack acceptance. Phase 7A implements one grounded MCP agent with bounded run persistence and public streaming; see docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts. Diagnosis, Phase 7B adaptive investigation, Phase 7C specialists and Phase 8+ infrastructure are not implemented.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and

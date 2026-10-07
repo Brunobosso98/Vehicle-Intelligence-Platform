@@ -79,7 +79,7 @@ Run `make test-mcp`, `make phase6-acceptance`, `make test-mcp-e2e`, `make benchm
 
 ## Phase 7A grounded agent
 
-Delivery is in progress: see [acceptance status](docs/validation/phase-7a-acceptance.md).
+Implemented: see [acceptance evidence and delivery audit](docs/validation/phase-7a-acceptance.md).
 The vehicle workspace supports natural-language questions, bounded progress/streaming, confidence,
 grounded findings, configuration/modification context, evidence and MCP audit. One typed LangGraph
 orchestrator uses the official MCP client and a provider adapter. The real adapter uses OpenAI
