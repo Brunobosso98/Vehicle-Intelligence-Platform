@@ -8,7 +8,8 @@ async function proxy(
   const base = process.env.API_BASE_URL ?? "http://api:8000";
   const target = new URL(`/api/v1/${path.join("/")}`, base);
   target.search = request.nextUrl.search;
-  const liveStream = request.method === "GET" && path.at(-1) === "live";
+  const liveStream =
+    request.method === "GET" && ["live", "stream"].includes(path.at(-1) ?? "");
   try {
     const authorization = request.headers.get("authorization");
     const response = await fetch(target, {

@@ -7,6 +7,32 @@
   --accent: #a9e7cc;
 }
 
+.agent-workspace textarea {
+  display: block;
+  width: 100%;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--muted);
+  font: inherit;
+}
+.agent-workspace pre {
+  max-height: 28rem;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--bg);
+  font-size: 0.85rem;
+}
+.agent-workspace pre:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.agent-workspace li {
+  overflow-wrap: anywhere;
+}
+
 .analytics-card {
   margin-top: 3rem;
   border: 1px solid #384253;
