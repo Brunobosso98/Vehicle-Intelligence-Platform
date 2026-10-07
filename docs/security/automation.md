@@ -18,6 +18,9 @@ Tools download vulnerability databases; network failure is a blocked check, neve
 `TRIVY_CACHE_DIR` optionally selects the scanner cache location; the default remains `.cache/trivy`.
 On WSL, a Linux filesystem cache avoids repeated database reads across the Windows mount. This
 changes storage only; scanner scope, severity thresholds and exception policy are unchanged.
+Filesystem scanning excludes installed dependency directories and generated builds/reports at any
+depth. All first-party source, IaC and committed lockfiles remain included; locked dependencies
+and canonical images receive their existing vulnerability audits.
 
 `make security-cloud` runs the Docker-independent portion with machine-readable reports: Gitleaks,
 locked Python/Node production audits, and Trivy filesystem/IaC. `make security` first runs that target,
