@@ -64,6 +64,48 @@ recorded in the checkpoint receipt after terminal completion; individual execute
 These are checkpoint receipts. The final HEAD is revalidated after all source/documentation
 commits; its results and local full-verification exit status belong to the PR delivery receipt.
 
+## Pushed-head full verification checkpoint: `66efbc744ab23c5ba0044cb6029ebd69c56f2206`
+
+The Linux validation worktree was clean at this exact pushed SHA and `make verify` exited **0**.
+The command completed all local gates, including a fresh full-stack run and fresh disposable
+database/MCP projects. The canonical workflow artifact independently reports all ten gates
+PASS for this same commit: [run 37674751426](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/37674751426).
+Its `validation-summary.json` records `full_gate: PASS` and commit
+`66efbc744ab23c5ba0044cb6029ebd69c56f2206`.
+
+- API unit suite: **401 passed**; coverage **96.37% line / 91.23% branch**. Acquisition suite:
+  **71 passed**. Web suite: **37 passed**, coverage **97.22% line / 86.21% branch**; lint,
+  TypeScript, builds, contract checks, formatting and documentation checks passed.
+- Disposable database integration: **8 passed**, including clean upgrade/downgrade/re-upgrade
+  and agent lifecycle/recovery. Live stream benchmark: **100,000 produced, accepted and
+  persisted; zero loss or duplicate canonical rows**. Analytics benchmark: 600,600
+  observations; 5.38 MB peak traced Python allocation.
+- Phase 6 acceptance: **23 tools**, **38 tool spans**, **9 domain spans** and **300 database
+  spans**. Large MCP result: **100,002 canonical samples**, **1,000 returned**, truncation
+  explicit, **439,310 result bytes**, **2,783,849 peak traced bytes**; write attempt rejected.
+  Protocol/restart/reconnect, hardened container, benchmark and MCP observability passed.
+- Phase 7A grounding: all **12 controlled scenarios** passed; factual support, evidence
+  reference and configuration context rates **1.0**; unsupported claims, cross-vehicle leaks,
+  unsafe action calls and budget violations **0**. HTTP cancellation, disconnect/replay and
+  MCP/database failure recovery passed. Dedicated Chromium agent E2E passed in 1.8 minutes.
+  The regular 9-test browser suite passed **8**, with its opt-in agent case skipped because the
+  dedicated authenticated-MCP agent E2E ran separately and passed.
+- Agent benchmark: four scenarios used **5/6/7/17 MCP calls**, four concurrent runs completed,
+  excess admission returned **429**. Database deltas were measured; LLM latency was not
+  claimed. Agent success/failure traces, MCP continuity, metrics and redaction passed.
+- Secret, dependency and filesystem scans passed. Image policy reported zero critical findings
+  and zero blocked findings; accepted high findings were API **44**, web **43**, Tempo **12**
+  and Grafana **2**, with zero accepted high findings in the other scanned images.
+- Phase 0–6 regressions, full observability path, recovery and stack checks passed. The final
+  local `make verify` command exited **0**. Logs and generated evidence are in ignored
+  `.validation/` paths in the native validation worktree.
+
+At `66efbc7`, GitHub CI quality/integration, Security, Python and JavaScript CodeQL,
+dependency review, aggregate CodeQL and canonical Docker/full-stack all succeeded. Exact
+check details are linked from PR #21. This remains a checkpoint: the documentation commit
+that records this receipt must itself be pushed and revalidated before the PR delivery receipt
+can certify the final HEAD.
+
 ## Missing-evidence correction: `4df84696ab3ffb5d900399877849975b008fe4cf`
 
 Questions about absent signals, unavailable technical manuals and absent comparable history
