@@ -18,6 +18,10 @@ dependencies = [
  "typer==0.21.0",
  "httpx==0.28.1",
  "mcp==2.0.0",
+ "openai==3.26.0",
+ "langgraph==1.2.14",
+ "jsonschema==4.26.0",
+ "langchain-core==1.6.7",
 ]
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"

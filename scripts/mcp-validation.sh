@@ -18,6 +18,10 @@ export DATABASE_URL="$TEST_DATABASE_URL"
 export ENVIRONMENT=test
 (cd apps/api && .venv/bin/alembic upgrade head)
 entrypoint="${1:-scripts/evaluate_mcp.py}"
-mkdir -p .validation/mcp
-git rev-parse HEAD > .validation/mcp/commit.txt
-apps/api/.venv/bin/python "$entrypoint" | tee ".validation/mcp/$(basename "$entrypoint" .py).log"
+evidence=.validation/mcp
+case "$entrypoint" in
+  scripts/*agent*|scripts/*grounding*) evidence=.validation/agent ;;
+esac
+mkdir -p "$evidence"
+git rev-parse HEAD > "$evidence/commit.txt"
+apps/api/.venv/bin/python "$entrypoint" | tee "$evidence/$(basename "$entrypoint" .py).log"

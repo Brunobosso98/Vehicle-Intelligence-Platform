@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { components } from "../../../../packages/contracts/generated/api";
 import { AnalyticsWorkspace } from "./analytics-workspace";
+import { AgentWorkspace } from "./agent-workspace";
 import { LiveAcquisition } from "./live-acquisition";
 import { TelemetryDashboard } from "./telemetry-dashboard";
 
@@ -80,6 +81,7 @@ export function VehicleWorkspace() {
           />
           <TelemetryDashboard vehicleId={vehicleId || undefined} />
           <AnalyticsWorkspace vehicleId={vehicleId || undefined} />
+          <AgentWorkspace vehicleId={vehicleId} />
         </div>
       ) : null}
     </>

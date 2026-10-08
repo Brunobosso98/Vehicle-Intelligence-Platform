@@ -78,3 +78,18 @@ closed tool names, transport, status and error/reason codes; no entity IDs or ra
 MCP spans parent domain selection/calculation spans and SQLAlchemy spans. SanitizingExporter
 removes query text and exception events. Acceptance inspects delivered spans. Docker's `/metrics`
 endpoint is scraped as job `mcp`; `mcp-up` enables the existing OTLP collector destination.
+
+## Grounded agent
+
+Spans: `agent.run`, `agent.context`, `agent.model_turn`, `agent.mcp_tool`, `agent.grounding`.
+Each actual HTTP MCP call propagates its current trace parent to the server/domain/SQL spans.
+Metrics include runs/errors/duration, MCP calls/errors/duration, grounding failures, budget
+exhaustions, known token counts and active runs. Labels contain only bounded provider/tool/status
+or error categories. Model names, prompts, question text, identities and keys are not metric labels.
+`agent.run.completed` logs run/trace IDs, versions through persisted runs, provider/model, outcome,
+duration and nullable token counters. No model reasoning or raw SQL enters telemetry.
+
+`make agent-observability` uses the isolated agent test Compose overlay. It queries actual Tempo
+and Prometheus backends, verifies successful and failing agent/MCP/database paths and checks a
+secret sentinel against delivered traces, metrics, public results and logs. Evidence is stored in
+`.validation/agent/observability`; configuration or a mocked exporter alone does not prove delivery.

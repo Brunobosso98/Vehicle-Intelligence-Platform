@@ -18,6 +18,7 @@ class MCPSettings(BaseSettings):
     max_active_calls: int = Field(default=8, ge=1, le=32)
     execution_timeout: float = Field(default=10, gt=0, le=30)
     max_result_bytes: int = Field(default=524288, ge=1024, le=1048576)
+    allow_docker_internal_host: bool = False
 
     @model_validator(mode="after")
     def secure_http(self) -> "MCPSettings":

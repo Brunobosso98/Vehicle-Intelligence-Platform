@@ -22,6 +22,7 @@ TOOL_NAMES = frozenset(
         "list_vehicles",
         "get_vehicle",
         "get_vehicle_configuration",
+        "list_vehicle_configurations",
         "list_vehicle_modifications",
         "list_sessions",
         "get_session",
@@ -63,6 +64,15 @@ def register_tools(
         return adapter.envelope(
             await adapter.entity("configuration", configuration_id, vehicle_id),
             {"vehicle_id": vehicle_id, "configuration_id": configuration_id},
+        )
+
+    async def list_vehicle_configurations(vehicle_id: UUID, limit: Limit = 20) -> Envelope:
+        """List bounded effective configuration intervals, newest first, for one vehicle."""
+        await adapter.entity("vehicle", vehicle_id, vehicle_id)
+        return adapter.envelope(
+            await adapter.catalog.configurations(vehicle_id, limit + 1),
+            {"vehicle_id": vehicle_id},
+            limit=limit,
         )
 
     async def list_vehicle_modifications(vehicle_id: UUID, limit: Limit = 20) -> Envelope:
@@ -271,6 +281,7 @@ def register_tools(
         list_vehicles,
         get_vehicle,
         get_vehicle_configuration,
+        list_vehicle_configurations,
         list_vehicle_modifications,
         list_sessions,
         get_session,

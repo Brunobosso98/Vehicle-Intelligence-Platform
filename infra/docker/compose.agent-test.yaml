@@ -1,0 +1,57 @@
+# Only merge into the disposable MCP_TEST_PROJECT; no retained application volumes.
+services:
+  agent-api:
+    image: vehicle-platform-api:local
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vehicle:test-only@db:5432/vehicle_test
+      ENVIRONMENT: test
+      VIP_AGENT_ENABLED: "true"
+      VIP_AGENT_PROVIDER: deterministic
+      VIP_AGENT_API_KEY: ${AGENT_REDACTION_SENTINEL:?Disposable sentinel required}
+      VIP_AGENT_MCP_TOKEN: ${VIP_MCP_TOKEN:?Disposable token required}
+      VIP_AGENT_MCP_URL: http://mcp:8001/mcp
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    ports: ["127.0.0.1::8000"]
+    read_only: true
+    tmpfs: ["/tmp:mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on: [db, mcp, otel-collector]
+    healthcheck:
+      test:
+        [
+          CMD,
+          python,
+          -c,
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=6)",
+        ]
+      interval: 2s
+      timeout: 8s
+      retries: 20
+  mcp:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      VIP_MCP_ALLOW_DOCKER_INTERNAL_HOST: "true"
+    depends_on: [otel-collector]
+  otel-collector:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.161.0@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes: ["./observability/collector.yaml:/etc/otel/config.yaml:ro"]
+    depends_on: [tempo]
+  tempo:
+    image: grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - "./observability/tempo.yaml:/etc/tempo.yaml:ro"
+      - "agent-tempo-data:/var/tempo"
+    ports: ["127.0.0.1::3200"]
+  prometheus:
+    image: quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - "./observability/prometheus-agent.yaml:/etc/prometheus/prometheus.yml:ro"
+      - "agent-prometheus-data:/prometheus"
+    ports: ["127.0.0.1::9090"]
+volumes:
+  agent-tempo-data:
+  agent-prometheus-data:

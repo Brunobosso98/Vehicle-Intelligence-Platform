@@ -14,6 +14,7 @@ labels = {
     "Container security": "SECURITY",
     "Observability": "OBSERVABILITY",
     "Phase 6 MCP": "MCP",
+    "Phase 7A grounded agent": "AGENT",
 }
 outcome_status = {
     "success": "PASS",

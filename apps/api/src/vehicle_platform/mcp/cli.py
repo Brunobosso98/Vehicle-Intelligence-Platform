@@ -48,7 +48,8 @@ def main() -> None:
         stateless_http=True,
         max_request_body_size=65536,
         transport_security=TransportSecuritySettings(
-            allowed_hosts=[authority, "localhost:*", "127.0.0.1:*"],
+            allowed_hosts=[authority, "localhost:*", "127.0.0.1:*"]
+            + (["mcp:8001"] if config.allow_docker_internal_host else []),
             allowed_origins=[config.resource_url.rsplit("/", 1)[0]],
         ),
     )

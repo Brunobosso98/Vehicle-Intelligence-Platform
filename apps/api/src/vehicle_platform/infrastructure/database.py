@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import Pool
 
 from vehicle_platform.core.config import Settings
 
@@ -28,6 +29,8 @@ class Database:
         *,
         command_timeout: float | None = None,
         server_settings: dict[str, str] | None = None,
+        pool_pre_ping: bool = True,
+        poolclass: type[Pool] | None = None,
     ) -> None:
         connect_args: dict[str, object] = {
             "timeout": settings.readiness_timeout,
@@ -37,7 +40,8 @@ class Database:
             connect_args["server_settings"] = server_settings
         self.engine: AsyncEngine = create_async_engine(
             settings.database_url.get_secret_value(),
-            pool_pre_ping=True,
+            pool_pre_ping=pool_pre_ping,
+            poolclass=poolclass,
             connect_args=connect_args,
         )
         self.timeout = settings.readiness_timeout

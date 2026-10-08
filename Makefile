@@ -113,6 +113,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) test-mcp-e2e
 	$(MAKE) benchmark-mcp
 	$(MAKE) mcp-observability
+	$(MAKE) phase7a-acceptance test-agent-e2e benchmark-agent agent-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) test-e2e
@@ -135,3 +136,18 @@ mcp-up:
 	bash scripts/mcp-up.sh
 mcp-observability:
 	bash scripts/mcp-up.sh --validate-observability
+
+.PHONY: test-agent phase7a-acceptance test-agent-e2e benchmark-agent agent-observability agent-real-smoke
+test-agent:
+	$(API)/pytest apps/api/tests/unit/test_agent*.py
+phase7a-acceptance:
+	bash scripts/mcp-validation.sh scripts/evaluate_agent_grounding.py
+	bash scripts/mcp-validation.sh scripts/agent_http_acceptance.py
+test-agent-e2e: build
+	bash scripts/mcp-validation.sh scripts/agent_browser_e2e.py
+benchmark-agent:
+	bash scripts/mcp-validation.sh scripts/benchmark_agent.py
+agent-observability:
+	bash scripts/mcp-validation.sh scripts/observability_agent.py
+agent-real-smoke:
+	bash scripts/mcp-validation.sh scripts/agent_real_smoke.py

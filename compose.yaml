@@ -98,6 +98,12 @@ services:
       APP_VERSION: ${APP_VERSION:-0.1.0}
       NO_PROXY: localhost,127.0.0.1,api,db,otel-collector,tempo
       KAFKA_BOOTSTRAP_SERVERS: broker:9092
+      VIP_AGENT_ENABLED: ${VIP_AGENT_ENABLED:-false}
+      VIP_AGENT_PROVIDER: ${VIP_AGENT_PROVIDER:-openai}
+      VIP_AGENT_MODEL: ${VIP_AGENT_MODEL:-}
+      VIP_AGENT_API_KEY: ${VIP_AGENT_API_KEY:-}
+      VIP_AGENT_MCP_URL: http://mcp:8001/mcp
+      VIP_AGENT_MCP_TOKEN: ${VIP_MCP_TOKEN:-}
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -122,6 +128,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENVIRONMENT: development
       VIP_MCP_HOST: 0.0.0.0
+      VIP_MCP_ALLOW_DOCKER_INTERNAL_HOST: "true"
       VIP_MCP_TOKEN: ${VIP_MCP_TOKEN:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     ports: ["127.0.0.1:8001:8001"]

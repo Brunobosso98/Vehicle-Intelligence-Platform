@@ -1,5 +1,8 @@
 # Testing strategy
 
+Local alternate checkouts under `.kilo` and hook state under `.impeccable` are excluded from
+formatting and filesystem scanning. The tracked source in the current checkout remains in scope.
+
 Fast unit tests cover config, middleware, errors, timeout/unavailable behavior and frontend states
 without external APIs. Backend coverage uses branches and separate 90% line and branch thresholds; frontend first-party
 logic and status component require 85% in each dimension. Generated artifacts, declarative framework
@@ -100,3 +103,25 @@ fingerprints. `make test-mcp-e2e` repeats acceptance over real stdio and HTTP su
 and checks authorization negatives, request bounds, concurrency, dependency recovery and restart.
 `make benchmark-mcp` measures representative domain reads, result bytes and traced Python memory.
 All are included in `make verify`; Docker-free validation never reports them as passing.
+
+## Phase 7A acceptance
+
+`make test-agent` covers deterministic claim validation, temporal context, provider wire parsing,
+budgets, duplicate calls, malicious metadata, cancellation and lifecycle errors. It uses unit doubles
+only at test boundaries. `make test-integration` exercises real agent tables, migrations, persistence,
+audit and actual MCP protocol over a disposable TimescaleDB.
+
+`make phase7a-acceptance` independently seeds known before/after configurations and modifications,
+checks a controlled −10 K IAT delta and numeric citations, and exercises real stdio/HTTP MCP plus
+API/SSE cancellation, reconnect and dependency recovery. `make test-agent-e2e` builds the existing
+Next.js app and checks factual findings, evidence IDs, modification history, insufficient causal
+evidence and accessibility in Chromium. The dedicated fixture environment is mandatory for this
+gate; ordinary browser smoke does not substitute for it.
+
+`make benchmark-agent` reports deterministic latency, MCP contribution, public bytes, process
+memory and aggregate disposable database counters. It explicitly does not measure LLM latency.
+`make agent-observability` proves successful/failed traces in Tempo and actual metrics in Prometheus,
+including HTTP MCP trace continuity and redaction. Real provider smoke is opt-in and requires
+operator credentials; ordinary CI remains deterministic. The canonical full-validation job includes
+all these gates and repeats acceptance/browser scenarios on fresh disposable databases. A declared
+target or instrumentation artifact is not PASS without execution at the final pushed SHA.

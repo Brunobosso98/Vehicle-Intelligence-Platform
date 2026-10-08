@@ -64,3 +64,22 @@ All repository vehicles are readable to the provisioned reader; tenant ACLs and 
 are not implemented. Production requires operator-managed HTTPS/secrets/database access. Tokens
 never enter discovery, tool metadata, logs or trace attributes. Telemetry text/metadata is evidence,
 not instructions to execute; future agents must preserve this trust boundary.
+
+## Phase 7A agent boundary
+
+Agent questions and MCP-returned metadata are untrusted. The model receives only discovered,
+validated read-only tools scoped to one vehicle. Code enforces tool/argument/byte/time/concurrency
+budgets, nested ownership, current-run evidence references and exact numeric/unit bindings.
+It cannot issue SQL, filesystem, shell, arbitrary HTTP or vehicle commands. MCP credentials and
+provider keys remain server-side; exact configured secrets are redacted from public state/events.
+
+Model prose is not streamed before validation. React renders public content as text; no executable
+HTML or Markdown is accepted. Fixed application templates separate observations, associations,
+hypotheses and insufficient evidence. Claims about mechanical causation or unsupported diagnosis
+are rejected. Prompt injection in modification notes never grants a capability.
+
+Agent-owned SQL persistence stores bounded public runs/audits/events, not telemetry dumps, SDK
+response objects or private reasoning. The application still lacks end-user authorization; vehicle
+UUID checks establish context isolation within the existing trusted operator deployment, not tenant
+ACLs. The MCP reader token retains its documented repository-wide scope. See the
+[agent runbook](../runbooks/grounded-agent.md) for deployment limits and recovery.

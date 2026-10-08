@@ -17,7 +17,8 @@ apps/api/.venv/bin/pip-audit -r .validation/security/requirements.txt \
   --require-hashes --disable-pip --format=json \
   --output=.validation/security/python-audit.json
 pnpm audit --prod --audit-level high --json > .validation/security/node-audit.json
-trivy fs --cache-dir .cache/trivy --scanners vuln,misconfig --severity HIGH,CRITICAL \
-  --exit-code 1 --skip-dirs .git,node_modules,apps/api/.venv,.cache,.validation \
+trivy fs --cache-dir "${TRIVY_CACHE_DIR:-.cache/trivy}" --scanners vuln,misconfig --severity HIGH,CRITICAL \
+  --exit-code 1 \
+  --skip-dirs '.git,**/node_modules,**/.venv,**/.next,**/coverage,**/test-results,**/playwright-report,.cache,.validation,.kilo,.impeccable' \
   --format json --output .validation/security/filesystem.json .
 echo "Cloud security checks passed."

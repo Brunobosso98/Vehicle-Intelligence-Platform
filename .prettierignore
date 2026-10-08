@@ -9,3 +9,5 @@ pnpm-lock.yaml
 apps/api/uv.lock
 attachments
 graphify-out/**
+.kilo/**
+.impeccable/**

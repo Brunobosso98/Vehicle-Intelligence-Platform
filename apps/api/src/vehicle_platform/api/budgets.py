@@ -1,11 +1,12 @@
 """Constant-memory local request budgets for the Phase 4 resource boundaries."""
 
+import asyncio
 import math
 from collections.abc import Callable
 from time import monotonic
 
 from starlette.requests import Request
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from vehicle_platform.api.errors import response
 
@@ -93,3 +94,84 @@ class ResourceBudgetMiddleware:
             self.requests -= 1
             self.live -= int(live)
             self.analyses -= int(analysis)
+
+
+class AgentRequestBudgetMiddleware:
+    """Bound admission and body buffering before FastAPI parses an agent question."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        request_limit: int = 64,
+        body_limit: int = 32768,
+        body_timeout: float = 5,
+    ) -> None:
+        if min(request_limit, body_limit, body_timeout) <= 0:
+            raise ValueError("agent request budgets must be positive")
+        self.app = app
+        self.request_limit, self.body_limit, self.body_timeout = (
+            request_limit,
+            body_limit,
+            body_timeout,
+        )
+        self.requests = 0
+        self.creation_rate = TokenBucket(20, 20 / 60)
+        self.read_rate = TokenBucket(200, 100)
+
+    async def reject(self, scope: Scope, receive: Receive, send: Send, status: int) -> None:
+        rejected = response(
+            Request(scope), status, "AGENT_REQUEST_BUDGET_EXCEEDED", "Agent request budget exceeded"
+        )
+        if status == 429:
+            rejected.headers["Retry-After"] = "3"
+        await rejected(scope, receive, send)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        path = scope.get("path", "").rstrip("/")
+        if (
+            scope["type"] != "http"
+            or not path.startswith("/api/v1/vehicles/")
+            or "/agent-runs" not in path
+        ):
+            await self.app(scope, receive, send)
+            return
+        creation = scope.get("method") == "POST" and path.endswith("/agent-runs")
+        rate = self.creation_rate if creation else self.read_rate
+        if self.requests >= self.request_limit or not rate.take():
+            await self.reject(scope, receive, send, 429)
+            return
+        self.requests += 1
+        try:
+            if not creation:
+                await self.app(scope, receive, send)
+                return
+            body = bytearray()
+            try:
+                async with asyncio.timeout(self.body_timeout):
+                    while True:
+                        message = await receive()
+                        if message["type"] == "http.disconnect":
+                            return
+                        chunk = message.get("body", b"")
+                        if len(body) + len(chunk) > self.body_limit:
+                            await self.reject(scope, receive, send, 413)
+                            return
+                        body.extend(chunk)
+                        if not message.get("more_body", False):
+                            break
+            except TimeoutError:
+                await self.reject(scope, receive, send, 408)
+                return
+
+            delivered = False
+
+            async def bounded_receive() -> Message:
+                nonlocal delivered
+                if delivered:
+                    return await receive()
+                delivered = True
+                return {"type": "http.request", "body": bytes(body), "more_body": False}
+
+            await self.app(scope, bounded_receive, send)
+        finally:
+            self.requests -= 1

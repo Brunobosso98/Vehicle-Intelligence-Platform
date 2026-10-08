@@ -655,10 +655,6 @@ test("Phase 4 browser reconciles streamed provisional findings to canonical resu
       live.getByText("Acquisition: active", { exact: true }),
     ).toBeVisible();
   }
-  await page.screenshot({
-    path: "test-results/phase4-browser-provisional.png",
-    fullPage: true,
-  });
   await live.getByRole("button", { name: "Stop and finalize" }).click();
   const canonical = live.getByLabel("Canonical final results");
   await expect(
@@ -676,10 +672,6 @@ test("Phase 4 browser reconciles streamed provisional findings to canonical resu
   await expect(
     live.getByText("Acquisition: completed", { exact: true }),
   ).toBeVisible();
-  await page.screenshot({
-    path: "test-results/phase4-browser-canonical.png",
-    fullPage: true,
-  });
 });
 
 test("Phase 4 degraded recipe exposes a missing simulated boost capability", async ({

@@ -112,7 +112,7 @@ def create_server(
         verifier = ReadTokenVerifier(config, telemetry)
     server = SafeMCPServer(
         "vehicle-platform-mcp",
-        version="1.0.0",
+        version="1.1.0",
         lifespan=lifespan,
         instructions=(
             "Read-only factual automotive evidence. Anomaly detection is not diagnosis. "
