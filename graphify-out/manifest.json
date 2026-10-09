@@ -786,9 +786,9 @@
     "semantic_hash": "3a51d15ea732225e1d4c0f3f22867501"
   },
   "scripts/validation-summary.py": {
-    "mtime": 1791379395.075302,
-    "seen": 1791560289.156036,
-    "ast_hash": "6ff498e1f954e2ad41eef247c3cc0c45",
+    "mtime": 1791571580.7090354,
+    "seen": 1791572138.7579613,
+    "ast_hash": "9f0e428cd134109e3df6be483211ad6e",
     "semantic_hash": ""
   },
   "scripts/validation_fingerprint.py": {
@@ -1218,9 +1218,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/full-validation.yml": {
-    "mtime": 1791379395.0545,
-    "seen": 1791560289.1561916,
-    "ast_hash": "1d88a4496022472f50038e6575ce6f87",
+    "mtime": 1791571577.0295284,
+    "seen": 1791572138.7580278,
+    "ast_hash": "ea8404bb0cbb8946d7195d35d7175e47",
     "semantic_hash": ""
   },
   ".github/workflows/security.yml": {
@@ -1236,9 +1236,9 @@
     "semantic_hash": ""
   },
   "AI_CONTEXT.md": {
-    "mtime": 1791560749.074864,
-    "seen": 1791561030.687462,
-    "ast_hash": "9de3475747b032729800e04ca1aa8220",
+    "mtime": 1791571863.9827993,
+    "seen": 1791572138.7580357,
+    "ast_hash": "ace67ad9ad8ec1e72c65f8fde67fadca",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -1272,9 +1272,9 @@
     "semantic_hash": ""
   },
   "compose.yaml": {
-    "mtime": 1791466545.700327,
-    "seen": 1791560289.1562266,
-    "ast_hash": "fd470756f12946a636d489d50fe65f94",
+    "mtime": 1791571655.3919773,
+    "seen": 1791572138.7580528,
+    "ast_hash": "3250a7b53ad012b2841f853a6a662dcb",
     "semantic_hash": ""
   },
   "docs/adr/0001-modular-monolith-first.md": {
@@ -1572,15 +1572,15 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1791371382.5076606,
-    "seen": 1791560289.156457,
-    "ast_hash": "a96ce590f0579aeaf9e8f0d84b87d7e4",
+    "mtime": 1791571666.9542053,
+    "seen": 1791572138.7582123,
+    "ast_hash": "e69426839ca9fce1fc42500aee347e66",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
-    "mtime": 1791371382.5292547,
-    "seen": 1791560289.1564605,
-    "ast_hash": "14a466e77119d432d948589cf5e081fd",
+    "mtime": 1791571655.4310882,
+    "seen": 1791572138.7582147,
+    "ast_hash": "f1555da406545ff9a8db2f2762b3b71f",
     "semantic_hash": ""
   },
   "docs/security/threat-model.md": {
@@ -1596,9 +1596,9 @@
     "semantic_hash": ""
   },
   "docs/testing/strategy.md": {
-    "mtime": 1791476885.8826175,
-    "seen": 1791560289.156472,
-    "ast_hash": "259657ae476ba73941032df803f36351",
+    "mtime": 1791571583.6253638,
+    "seen": 1791572138.7582226,
+    "ast_hash": "5e9e5424deac46fba31be50d8aa6d89c",
     "semantic_hash": ""
   },
   "docs/testing/validation-evidence.md": {
@@ -1986,9 +1986,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-7b-acceptance.md": {
-    "mtime": 1791560838.926157,
-    "seen": 1791561030.6878161,
-    "ast_hash": "f60c01098c3a3411a7c5a6d4ee1b9e36",
+    "mtime": 1791571592.0321226,
+    "seen": 1791572138.7582386,
+    "ast_hash": "f54cee6a3954a4adee181925d025381e",
     "semantic_hash": ""
   },
   "docs/validation/phase-7b-traceability-ledger.md": {

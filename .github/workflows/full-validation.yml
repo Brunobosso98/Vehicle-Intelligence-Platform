@@ -94,11 +94,17 @@ jobs:
         run: |
           make phase7a-acceptance test-agent-e2e benchmark-agent agent-observability
           make phase7a-acceptance test-agent-e2e
+      - name: Validate Phase 7B investigation, real capture, browser and observability
+        id: investigation
+        continue-on-error: true
+        run: |
+          make phase7b-acceptance test-investigation-e2e benchmark-investigation investigation-observability
+          make phase7b-acceptance test-investigation-e2e
 
       - name: Capture stack logs
         if: always()
         run: |
-          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability,mcp,agent}
+          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability,mcp,agent,investigation}
           if ! docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
             --profile observability ps --format json > validation-artifacts/summary/compose-ps.json; then
             echo '{"status":"NOT RUN","reason":"compose status unavailable"}' \
@@ -117,6 +123,7 @@ jobs:
           test ! -d .validation/observability || cp -r .validation/observability/. validation-artifacts/observability/
           test ! -d .validation/mcp || cp -r .validation/mcp/. validation-artifacts/mcp/
           test ! -d .validation/agent || cp -r .validation/agent/. validation-artifacts/agent/
+          test ! -d .validation/investigation || cp -r .validation/investigation/. validation-artifacts/investigation/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -132,6 +139,7 @@ jobs:
           SECURITY: ${{ steps.security.outcome }}
           MCP: ${{ steps.mcp.outcome }}
           AGENT: ${{ steps.agent.outcome }}
+          INVESTIGATION: ${{ steps.investigation.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -153,12 +161,14 @@ jobs:
           SECURITY: ${{ steps.security.outcome }}
           MCP: ${{ steps.mcp.outcome }}
           AGENT: ${{ steps.agent.outcome }}
+          INVESTIGATION: ${{ steps.investigation.outcome }}
         run: |
           failed=0
           for entry in \
             "cloud:$CLOUD" "containers:$CONTAINERS" "database:$DATABASE" \
             "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
-            "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" "agent:$AGENT"; do
+            "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" \
+            "agent:$AGENT" "investigation:$INVESTIGATION"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

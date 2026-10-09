@@ -75,3 +75,6 @@ CI, Security, CodeQL, dependency review and canonical Docker/full-stack checks. 
 local SHA and PR HEAD must match; the PR must remain open and unmerged. The
 [traceability ledger](phase-7b-traceability-ledger.md) records requirement-level evidence and
 status. Optional real-provider smoke remains NOT RUN when no operator-provided credentials exist.
+The canonical workflow must execute Phase 7B acceptance, the real capture browser journey,
+benchmark and observability, then repeat acceptance and browser E2E on fresh disposable stacks;
+its commit-tied summary and final enforcement must include the Phase 7B result.

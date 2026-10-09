@@ -138,3 +138,7 @@ the separate Phase 4 stack gate proves the collector/stream/finalization path. B
 fresh stack to check the real operator UI and accessibility. Observability and benchmark gates must
 measure delivered instrumentation and resource use before final verification. The deterministic
 CI path never requires a paid provider key. See the [Phase 7B architecture](../architecture/phase-7b-investigation-adaptive-logging.md).
+The canonical `full-validation` job runs Phase 7B acceptance, real capture browser E2E,
+benchmark and observability, then repeats acceptance and browser E2E on fresh disposable stacks.
+Its commit-tied summary and final enforcement include the Phase 7B result; a green Phase 7A or
+security check alone cannot certify this phase.

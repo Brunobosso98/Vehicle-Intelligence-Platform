@@ -77,8 +77,9 @@ No vehicle control, unsupported diagnosis or RAG functionality is implemented.
 Phase 7B implements a bounded investigation workflow. Its semantic needs resolve only through
 known canonical signals and existing Phase 4 recipe/preflight contracts. Approval precedes
 acquisition readiness; finalized session linkage creates a separate grounded follow-up run.
-Phase 7C specialists and Phase 8 RAG remain deferred. Final-SHA validation evidence belongs
-in docs/validation/phase-7b-acceptance.md and its traceability ledger.
+Phase 7C specialists and Phase 8 RAG remain deferred. Checkpoint evidence is in
+docs/validation/phase-7b-acceptance.md and its traceability ledger; the exact final-SHA receipt
+belongs in the open PR after local and remote gates finish.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -86,3 +87,5 @@ See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-
 Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`,
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
+The canonical GitHub `full-validation` workflow includes the Phase 7B investigation acceptance,
+real capture browser journey, benchmark, observability and a clean-state repeat at the PR SHA.
