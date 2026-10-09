@@ -8,7 +8,7 @@ Phase 7A introduced a grounded natural-language agent over the Phase 6 MCP platf
 
 The target behavior is:
 
-~~~
+```
 user question
 → grounded Phase 7A analysis
 → insufficient evidence detected
@@ -25,7 +25,7 @@ user question
 → deterministic Phase 2–5 processing
 → grounded re-analysis
 → hypothesis status update
-~~~
+```
 
 This phase must be implemented end-to-end: architecture, persistence, investigation state, hypothesis/evidence-gap contracts, capability-aware signal planning, LoggingRecipe generation, approval workflow, acquisition linkage, follow-up/re-analysis, API, streaming, minimal frontend, observability, security, deterministic acceptance, real-stack E2E, recovery, documentation, local validation, remote GitHub validation, branch push and pull request.
 
@@ -108,10 +108,10 @@ Examples:
 
 The core design principle is:
 
-~~~
+```
 LLM / agent decides WHAT evidence would discriminate hypotheses.
 Deterministic platform code decides WHETHER and HOW that evidence can be collected.
-~~~
+```
 
 The LLM must not invent arbitrary PIDs, BMW channels, frequencies or acquisition capabilities.
 
@@ -219,7 +219,7 @@ Prefer an architecture that extends the existing Phase 7A modules rather than bu
 
 A reasonable conceptual structure:
 
-~~~
+```
 vehicle_platform/
     agents/
         ... existing Phase 7A ...
@@ -235,13 +235,13 @@ vehicle_platform/
             repository.py
             follow_up.py
             instrumentation.py
-~~~
+```
 
 Exact file layout should follow repository conventions.
 
 Required dependency flow:
 
-~~~
+```
 Phase 7A grounded analysis
         ↓
 Investigation planner
@@ -265,7 +265,7 @@ Phase 2/3/5 deterministic processing
 Phase 7A grounded re-analysis
         ↓
 updated investigation
-~~~
+```
 
 Do not duplicate Phase 4 acquisition logic.
 
@@ -618,13 +618,13 @@ This avoids unnecessary data collection.
 
 Use this preference order:
 
-~~~
+```
 existing summary
 → existing pulls/events
 → existing analytics/baseline/history
 → bounded existing telemetry
 → only then new capture
-~~~
+```
 
 Do not jump straight to a new logging recipe.
 
@@ -657,7 +657,7 @@ The LLM should never directly author the final low-level acquisition recipe.
 
 Preferred flow:
 
-~~~
+```
 hypotheses
 → evidence gaps
 → semantic signal needs
@@ -665,7 +665,7 @@ hypotheses
 → capability resolver
 → Sampling Planner
 → Phase 4 LoggingRecipe
-~~~
+```
 
 The recipe should include existing Phase 4 metadata such as:
 
@@ -1620,7 +1620,7 @@ Do not label metrics by vehicle ID, investigation ID or raw question.
 
 Trace:
 
-~~~
+```
 AgentRun
 → investigation creation
 → hypothesis planning
@@ -1633,7 +1633,7 @@ AgentRun
 → session linkage
 → reanalysis AgentRun
 → outcome
-~~~
+```
 
 Preserve MCP/domain/database trace continuity.
 
@@ -2323,6 +2323,7 @@ Do not accept unexpected skipped required gates.
 Phase 7B is complete only if all applicable items are true.
 
 ### Investigation domain
+
 - [ ] first-class InvestigationPlan
 - [ ] explicit lifecycle/state machine
 - [ ] bounded hypotheses
@@ -2331,12 +2332,14 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] no chain-of-thought persistence
 
 ### Existing evidence
+
 - [ ] existing-data-first
 - [ ] no unnecessary captures
 - [ ] Phase 7A evidence reused safely
 - [ ] cross-run/context validation
 
 ### Signals / capability
+
 - [ ] semantic SignalNeed abstraction
 - [ ] deterministic canonical mapping
 - [ ] no invented PID/channel
@@ -2345,6 +2348,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] degraded signals explicit
 
 ### Logging plan
+
 - [ ] Phase 4 Sampling Planner reused
 - [ ] Phase 4 LoggingRecipe reused
 - [ ] deterministic feasibility
@@ -2352,6 +2356,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] no low-level LLM recipe execution
 
 ### Approval
+
 - [ ] explicit user approval
 - [ ] stale approval protection
 - [ ] recipe change invalidates approval
@@ -2359,6 +2364,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] no auto-start
 
 ### Acquisition / follow-up
+
 - [ ] safe existing acquisition integration
 - [ ] no vehicle control
 - [ ] resulting session link
@@ -2369,6 +2375,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] bounded cycles
 
 ### Vehicle/configuration/modification
+
 - [ ] actual vehicle context
 - [ ] effective configuration
 - [ ] installed/removed modification context
@@ -2376,6 +2383,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] no unsupported causal claim
 
 ### API / UI
+
 - [ ] investigation endpoints
 - [ ] streaming events
 - [ ] minimal frontend
@@ -2386,6 +2394,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] accessibility
 
 ### Security
+
 - [ ] prompt injection
 - [ ] recipe injection
 - [ ] cross-vehicle isolation
@@ -2398,6 +2407,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] secrets redacted
 
 ### Testing
+
 - [ ] unit
 - [ ] DB integration
 - [ ] Phase 4 real integration
@@ -2410,6 +2420,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] Phase 0–7A regressions
 
 ### Observability / performance
+
 - [ ] metrics
 - [ ] traces
 - [ ] logs
@@ -2419,6 +2430,7 @@ Phase 7B is complete only if all applicable items are true.
 - [ ] bounded concurrency
 
 ### Delivery
+
 - [ ] clean tree
 - [ ] exact committed HEAD locally validated
 - [ ] branch pushed

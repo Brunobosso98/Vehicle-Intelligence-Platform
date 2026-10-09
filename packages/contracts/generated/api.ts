@@ -786,6 +786,194 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/vehicles/{vehicle_id}/investigations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent */
+    get: operations["recent_api_v1_vehicles__vehicle_id__investigations_get"];
+    put?: never;
+    /** Create */
+    post: operations["create_api_v1_vehicles__vehicle_id__investigations_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/source-preflight": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Source Preflight */
+    post: operations["source_preflight_api_v1_vehicles__vehicle_id__investigations_source_preflight_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get */
+    get: operations["get_api_v1_vehicles__vehicle_id__investigations__investigation_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve */
+    post: operations["approve_api_v1_vehicles__vehicle_id__investigations__investigation_id__approve_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel */
+    post: operations["cancel_api_v1_vehicles__vehicle_id__investigations__investigation_id__cancel_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Events */
+    get: operations["events_api_v1_vehicles__vehicle_id__investigations__investigation_id__events_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/reanalyze": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reanalyze */
+    post: operations["reanalyze_api_v1_vehicles__vehicle_id__investigations__investigation_id__reanalyze_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/refresh": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Refresh */
+    post: operations["refresh_api_v1_vehicles__vehicle_id__investigations__investigation_id__refresh_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reject */
+    post: operations["reject_api_v1_vehicles__vehicle_id__investigations__investigation_id__reject_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Link Session */
+    post: operations["link_session_api_v1_vehicles__vehicle_id__investigations__investigation_id__sessions_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Stream */
+    get: operations["stream_api_v1_vehicles__vehicle_id__investigations__investigation_id__stream_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/vehicles/{vehicle_id}/modifications": {
     parameters: {
       query?: never;
@@ -1267,6 +1455,27 @@ export interface components {
       /** Uncertainties */
       uncertainties: string[];
     };
+    /** Approval */
+    Approval: {
+      /** Actor */
+      actor?: string | null;
+      /** Approved At */
+      approved_at?: string | null;
+      /** Recipe Hash */
+      recipe_hash?: string | null;
+      /**
+       * Status
+       * @default PENDING
+       */
+      status: string;
+    };
+    /** ApprovalRequest */
+    ApprovalRequest: {
+      /** Recipe Hash */
+      recipe_hash: string;
+      /** Version */
+      version: number;
+    };
     /** Ask */
     Ask: {
       /** Previous Run Id */
@@ -1276,6 +1485,16 @@ export interface components {
       /** Session Id */
       session_id?: string | null;
     };
+    /**
+     * Availability
+     * @enum {string}
+     */
+    Availability:
+      | "AVAILABLE"
+      | "AVAILABLE_DEGRADED"
+      | "UNAVAILABLE"
+      | "UNKNOWN"
+      | "NOT_APPLICABLE";
     /** Binding */
     Binding: {
       /**
@@ -1374,6 +1593,26 @@ export interface components {
       /** Unit */
       unit: string;
     };
+    /** CapabilitySnapshot */
+    CapabilitySnapshot: {
+      /** Adapter */
+      adapter: string;
+      /** Maximum Requests Per Second */
+      maximum_requests_per_second: number;
+      /**
+       * Observed At
+       * Format: date-time
+       */
+      observed_at: string;
+      /** Signals */
+      signals: {
+        [key: string]: components["schemas"]["Support"];
+      };
+      /** Source Acquisition Id */
+      source_acquisition_id?: string | null;
+      /** Source Preflight Id */
+      source_preflight_id?: string | null;
+    };
     /**
      * Classification
      * @enum {string}
@@ -1449,6 +1688,21 @@ export interface components {
       };
       /** Provenance */
       provenance: string;
+    };
+    /** CreateInvestigation */
+    CreateInvestigation: {
+      /**
+       * Adapter
+       * @enum {string}
+       */
+      adapter: "synthetic" | "replay" | "obd";
+      /**
+       * Agent Run Id
+       * Format: uuid
+       */
+      agent_run_id: string;
+      /** Source Id */
+      source_id: string;
     };
     /** DatasetCapabilityReport */
     DatasetCapabilityReport: {
@@ -1748,6 +2002,32 @@ export interface components {
       /** Warnings */
       warnings?: string[];
     };
+    /** EvidenceGap */
+    EvidenceGap: {
+      category: components["schemas"]["GapType"];
+      /** Description */
+      description: string;
+      /** Hypothesis Ids */
+      hypothesis_ids?: string[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Required
+       * @default true
+       */
+      required: boolean;
+      /** Resolution Source */
+      resolution_source?: string | null;
+      /** Signal Need Ids */
+      signal_need_ids?: string[];
+      /** @default OPEN */
+      status: components["schemas"]["GapStatus"];
+      /** Why It Matters */
+      why_it_matters: string;
+    };
     /** Fact */
     Fact: {
       /** Path */
@@ -1757,6 +2037,15 @@ export interface components {
       /** Value */
       value: string | number | boolean | null;
     };
+    /**
+     * Feasibility
+     * @enum {string}
+     */
+    Feasibility:
+      | "FEASIBLE"
+      | "FEASIBLE_WITH_DEGRADATION"
+      | "PARTIALLY_FEASIBLE"
+      | "NOT_FEASIBLE";
     /** Finding */
     Finding: {
       /** Bindings */
@@ -1777,6 +2066,28 @@ export interface components {
         | "thermal_hypothesis"
         | "unsafe_operation_refused";
     };
+    /**
+     * GapStatus
+     * @enum {string}
+     */
+    GapStatus:
+      | "OPEN"
+      | "AVAILABLE_IN_EXISTING_DATA"
+      | "NEEDS_NEW_CAPTURE"
+      | "UNAVAILABLE_WITH_CURRENT_SOURCE"
+      | "RESOLVED"
+      | "WAIVED";
+    /**
+     * GapType
+     * @enum {string}
+     */
+    GapType:
+      | "signal_or_measurement"
+      | "comparable_history"
+      | "technical_documentation"
+      | "data_quality"
+      | "configuration_context"
+      | "mechanical_cause";
     /** Health */
     Health: {
       /**
@@ -1786,6 +2097,68 @@ export interface components {
        */
       status: "ok";
     };
+    /** Hypothesis */
+    Hypothesis: {
+      category: components["schemas"]["HypothesisCategory"];
+      /**
+       * Created By
+       * @default agent
+       */
+      created_by: string;
+      /** Discriminating Goal */
+      discriminating_goal: string;
+      /** Evidence Against */
+      evidence_against?: string[];
+      /** Evidence For */
+      evidence_for?: string[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Limitations */
+      limitations?: string[];
+      /** Missing Gap Ids */
+      missing_gap_ids?: string[];
+      /** Statement */
+      statement: string;
+      /** @default CANDIDATE */
+      status: components["schemas"]["HypothesisStatus"];
+      /**
+       * Support Level
+       * @default unknown
+       */
+      support_level: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at?: string;
+    };
+    /**
+     * HypothesisCategory
+     * @enum {string}
+     */
+    HypothesisCategory:
+      | "THERMAL"
+      | "AIRFLOW_BOOST"
+      | "FUELING"
+      | "THROTTLE_TORQUE_INTERVENTION"
+      | "DATA_QUALITY"
+      | "CONFIGURATION_ASSOCIATION"
+      | "PERFORMANCE_VARIATION"
+      | "UNKNOWN_OTHER";
+    /**
+     * HypothesisStatus
+     * @enum {string}
+     */
+    HypothesisStatus:
+      | "CANDIDATE"
+      | "SUPPORTED"
+      | "WEAKENED"
+      | "NOT_SUPPORTED"
+      | "UNRESOLVED"
+      | "NOT_TESTABLE_WITH_CURRENT_CAPABILITIES";
     /** ImportResult */
     ImportResult: {
       /** Accepted */
@@ -1813,6 +2186,172 @@ export interface components {
       start_observed_at: string | null;
       /** Unknown Signals */
       unknown_signals: number;
+    };
+    /** InvestigationEvent */
+    InvestigationEvent: {
+      /**
+       * At
+       * Format: date-time
+       */
+      at?: string;
+      /** Detail */
+      detail?: string | null;
+      /**
+       * Investigation Id
+       * Format: uuid
+       */
+      investigation_id: string;
+      /**
+       * Schema Version
+       * @default 1.0
+       */
+      schema_version: string;
+      /** Sequence */
+      sequence: number;
+      status: components["schemas"]["InvestigationStatus"];
+      /** Type */
+      type: string;
+    };
+    /** InvestigationOutcome */
+    InvestigationOutcome: {
+      /** Classification */
+      classification: string;
+      /** Conclusion */
+      conclusion: string;
+      /** Confidence */
+      confidence: string;
+      /** Evidence Summary */
+      evidence_summary?: string[];
+      /** Follow Up */
+      follow_up?: string | null;
+      /** Limitations */
+      limitations?: string[];
+      /** Resolved Gap Ids */
+      resolved_gap_ids?: string[];
+      /** Supported Hypothesis Ids */
+      supported_hypothesis_ids?: string[];
+      /** Unresolved Gap Ids */
+      unresolved_gap_ids?: string[];
+      /** Weakened Hypothesis Ids */
+      weakened_hypothesis_ids?: string[];
+    };
+    /** InvestigationPlan */
+    InvestigationPlan: {
+      /**
+       * Agent Run Id
+       * Format: uuid
+       */
+      agent_run_id: string;
+      approval?: components["schemas"]["Approval"];
+      capability_snapshot?: components["schemas"]["CapabilitySnapshot"] | null;
+      /** Configuration Id */
+      configuration_id?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at?: string;
+      /**
+       * Cycle Count
+       * @default 0
+       */
+      cycle_count: number;
+      /**
+       * Findings Summary
+       * @default
+       */
+      findings_summary: string;
+      /** Gaps */
+      gaps?: components["schemas"]["EvidenceGap"][];
+      /** Goal */
+      goal: string;
+      /** Hypotheses */
+      hypotheses?: components["schemas"]["Hypothesis"][];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Linked Session Ids */
+      linked_session_ids?: string[];
+      outcome?: components["schemas"]["InvestigationOutcome"] | null;
+      /**
+       * Prompt Version
+       * @default investigation-v1
+       */
+      prompt_version: string;
+      /** Question */
+      question: string;
+      /** Reanalysis Run Id */
+      reanalysis_run_id?: string | null;
+      recipe?: components["schemas"]["RecipeReference"] | null;
+      /**
+       * Schema Version
+       * @default 1.0
+       */
+      schema_version: string;
+      /** Signal Needs */
+      signal_needs?: components["schemas"]["SignalNeed"][];
+      /** Source Adapter */
+      source_adapter?: ("synthetic" | "replay" | "obd") | null;
+      /**
+       * Source Id
+       * @default
+       */
+      source_id: string;
+      /** Source Session Id */
+      source_session_id?: string | null;
+      /** @default DRAFT */
+      status: components["schemas"]["InvestigationStatus"];
+      /** Trace Id */
+      trace_id?: string | null;
+      /** Transitions */
+      transitions?: components["schemas"]["Transition"][];
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at?: string;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+      /**
+       * Version
+       * @default 1
+       */
+      version: number;
+    };
+    /**
+     * InvestigationStatus
+     * @enum {string}
+     */
+    InvestigationStatus:
+      | "DRAFT"
+      | "EVIDENCE_GAPS_IDENTIFIED"
+      | "CAPABILITIES_RESOLVED"
+      | "RECIPE_PROPOSED"
+      | "AWAITING_APPROVAL"
+      | "APPROVED"
+      | "ACQUISITION_READY"
+      | "AWAITING_DATA"
+      | "DATA_RECEIVED"
+      | "REANALYZING"
+      | "COMPLETED"
+      | "INCONCLUSIVE"
+      | "REJECTED"
+      | "CANCELLED"
+      | "FAILED";
+    /** LinkSessionRequest */
+    LinkSessionRequest: {
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+      /** Version */
+      version: number;
     };
     /** LiveSignalQuality */
     LiveSignalQuality: {
@@ -2112,6 +2651,34 @@ export interface components {
        */
       status: "ready";
     };
+    /** RecipeReference */
+    RecipeReference: {
+      /** Configuration Hash */
+      configuration_hash: string;
+      /** Dropped Signals */
+      dropped_signals?: string[];
+      feasibility: components["schemas"]["Feasibility"];
+      /** Key */
+      key: string;
+      /** Minimum Duration Seconds */
+      minimum_duration_seconds: number;
+      /** Rate Compromises */
+      rate_compromises?: string[];
+      /** Rationale */
+      rationale?: string[];
+      /** Required Missing */
+      required_missing?: string[];
+      /** Sampling Algorithm Version */
+      sampling_algorithm_version: string;
+      /** Source */
+      source: string;
+      /** Supported Modes */
+      supported_modes: string[];
+      /** Vehicle Scope */
+      vehicle_scope: string;
+      /** Version */
+      version: number;
+    };
     /** RecipeSignal */
     RecipeSignal: {
       /**
@@ -2135,6 +2702,27 @@ export interface components {
       /** Signal */
       signal: string;
     };
+    /** RegisterSourcePreflight */
+    RegisterSourcePreflight: {
+      /**
+       * Adapter
+       * @enum {string}
+       */
+      adapter: "obd" | "replay";
+      capability_snapshot: components["schemas"]["PreflightRequest"];
+      /**
+       * Configuration Id
+       * Format: uuid
+       */
+      configuration_id: string;
+      /** Source Id */
+      source_id: string;
+    };
+    /**
+     * Resolution
+     * @enum {string}
+     */
+    Resolution: "HIGH" | "MEDIUM" | "LOW" | "EVENT_CONTEXT";
     /** RunAudit */
     RunAudit: {
       /** Evidence */
@@ -2261,6 +2849,54 @@ export interface components {
       /** Unit */
       unit: string;
     };
+    /** SignalNeed */
+    SignalNeed: {
+      /** @default UNKNOWN */
+      availability: components["schemas"]["Availability"];
+      /** Canonical Signal */
+      canonical_signal?: string | null;
+      /** Gap Ids */
+      gap_ids: string[];
+      /** Hypothesis Ids */
+      hypothesis_ids?: string[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Provenance
+       * @default unresolved
+       */
+      provenance: string;
+      /** Recorded In Session */
+      recorded_in_session?: boolean | null;
+      /** Required */
+      required: boolean;
+      resolution: components["schemas"]["Resolution"];
+      role: components["schemas"]["SignalRole"];
+      /** @default UNKNOWN */
+      source_support: components["schemas"]["Availability"];
+      /** Unavailable Reason */
+      unavailable_reason?: string | null;
+    };
+    /**
+     * SignalRole
+     * @enum {string}
+     */
+    SignalRole:
+      | "engine_speed_context"
+      | "vehicle_speed_context"
+      | "throttle_opening_behavior"
+      | "boost_pressure_behavior"
+      | "intake_temperature_behavior"
+      | "coolant_temperature_context"
+      | "oil_temperature_context"
+      | "high_fuel_pressure_behavior"
+      | "low_fuel_pressure_behavior"
+      | "lambda_behavior"
+      | "timing_behavior"
+      | "timestamp_sequence_quality";
     /** StreamEvent */
     StreamEvent: {
       /** Data */
@@ -2318,6 +2954,16 @@ export interface components {
       /** Value */
       value: number;
     };
+    /**
+     * Support
+     * @enum {string}
+     */
+    Support:
+      | "supported"
+      | "unsupported"
+      | "unavailable"
+      | "unknown"
+      | "adapter_does_not_support_discovery";
     /** TelemetryPoint */
     TelemetryPoint: {
       /**
@@ -2403,6 +3049,15 @@ export interface components {
        * @default false
        */
       truncated: boolean;
+    };
+    /** Transition */
+    Transition: {
+      /**
+       * At
+       * Format: date-time
+       */
+      at: string;
+      status: components["schemas"]["InvestigationStatus"];
     };
     /** Usage */
     Usage: {
@@ -2569,6 +3224,11 @@ export interface components {
       git_sha: string | null;
       /** Version */
       version: string;
+    };
+    /** VersionRequest */
+    VersionRequest: {
+      /** Version */
+      version: number;
     };
   };
   responses: never;
@@ -5942,6 +6602,769 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  recent_api_v1_vehicles__vehicle_id__investigations_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"][];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  create_api_v1_vehicles__vehicle_id__investigations_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateInvestigation"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  source_preflight_api_v1_vehicles__vehicle_id__investigations_source_preflight_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterSourcePreflight"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CapabilitySnapshot"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  get_api_v1_vehicles__vehicle_id__investigations__investigation_id__get: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  approve_api_v1_vehicles__vehicle_id__investigations__investigation_id__approve_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ApprovalRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  cancel_api_v1_vehicles__vehicle_id__investigations__investigation_id__cancel_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VersionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  events_api_v1_vehicles__vehicle_id__investigations__investigation_id__events_get: {
+    parameters: {
+      query?: {
+        after?: number;
+      };
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationEvent"][];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reanalyze_api_v1_vehicles__vehicle_id__investigations__investigation_id__reanalyze_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  refresh_api_v1_vehicles__vehicle_id__investigations__investigation_id__refresh_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VersionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reject_api_v1_vehicles__vehicle_id__investigations__investigation_id__reject_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VersionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  link_session_api_v1_vehicles__vehicle_id__investigations__investigation_id__sessions_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LinkSessionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvestigationPlan"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  stream_api_v1_vehicles__vehicle_id__investigations__investigation_id__stream_get: {
+    parameters: {
+      query?: {
+        after?: number;
+      };
+      header?: {
+        "x-investigation-token"?: string | null;
+      };
+      path: {
+        vehicle_id: string;
+        investigation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Unprocessable Entity */

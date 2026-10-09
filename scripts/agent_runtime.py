@@ -65,7 +65,9 @@ class Process:
 
 
 @asynccontextmanager
-async def runtime(url: str, *, web: bool = False, real: bool = False):
+async def runtime(
+    url: str, *, web: bool = False, real: bool = False, worker: bool = False
+):
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise AssertionError(
             "Phase 7A acceptance requires disposable vehicle_test* database"
@@ -85,6 +87,7 @@ async def runtime(url: str, *, web: bool = False, real: bool = False):
         "VIP_AGENT_PROVIDER": "openai" if real else "deterministic",
         "VIP_AGENT_MCP_URL": mcp_base + "/mcp",
         "VIP_AGENT_MCP_TOKEN": token,
+        "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
     }
     processes = [
@@ -108,6 +111,14 @@ async def runtime(url: str, *, web: bool = False, real: bool = False):
             api_base + "/health/ready",
         ),
     ]
+    if worker:
+        processes.append(
+            Process(
+                [sys.executable, "-m", "vehicle_platform.acquisition.worker"],
+                env | {"WORKER_METRICS_HOST": "127.0.0.2"},
+                "http://127.0.0.2:8001/metrics",
+            )
+        )
     if web:
         processes.append(
             Process(

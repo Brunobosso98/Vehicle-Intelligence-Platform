@@ -12,11 +12,15 @@ async function proxy(
     request.method === "GET" && ["live", "stream"].includes(path.at(-1) ?? "");
   try {
     const authorization = request.headers.get("authorization");
+    const investigationToken = request.headers.get("x-investigation-token");
     const response = await fetch(target, {
       method: request.method,
       cache: "no-store",
       headers: {
         ...(authorization ? { authorization } : {}),
+        ...(investigationToken
+          ? { "x-investigation-token": investigationToken }
+          : {}),
         ...(request.method === "POST"
           ? { "content-type": "application/json" }
           : {}),

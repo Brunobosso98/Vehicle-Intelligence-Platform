@@ -17,7 +17,14 @@ MCP serves the same bounded read tools/resources through stdio and authenticated
 It reuses domain calculations with no persistence, uses read-only SQL transactions and exports
 correlated logs/metrics/traces. See [Phase 6](phase-6-mcp-tool-platform.md).
 
+The Phase 7A agent produces grounded read-only answers through MCP. Phase 7B adds a typed,
+operator-authorized investigation layer over completed insufficient answers. It checks existing
+MCP evidence, resolves source capabilities, selects a versioned Phase 4 logging recipe, records
+exact approval, links a finalized capture and runs a separate grounded follow-up. The web
+workspace displays the public plan and approval; it never starts a vehicle or collector remotely.
+See [Phase 7B](phase-7b-investigation-adaptive-logging.md).
+
 ## FUTURE
 
-Agents, RAG, ML, causal diagnosis, production authentication and managed infrastructure are
-outside Phases 0–5. No Redis, vector database, data lake or learned analytical model is installed.
+Specialist agents, RAG, ML, causal diagnosis, production authentication and managed infrastructure
+remain future work. No Redis, vector database, data lake or learned analytical model is installed.

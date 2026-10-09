@@ -1,5 +1,10 @@
 # Phase 7A grounded agent
 
+Phase 7B adds a separate, operator-approved investigation to a completed grounded AgentRun.
+Its evidence search, source capability, Phase 4 recipe and follow-up boundaries are specified in
+[Phase 7B investigation and adaptive logging](phase-7b-investigation-adaptive-logging.md).
+The Phase 7A answer and evidence contract remains the source of the investigation threshold.
+
 Delivery status and executed evidence are recorded in [acceptance](../validation/phase-7a-acceptance.md).
 The lasting decisions are [ADR 0019](../adr/0019-grounded-agent-state-and-evidence.md).
 
