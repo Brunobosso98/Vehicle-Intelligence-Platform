@@ -20664,7 +20664,7 @@
       "node_kind": "heading",
       "norm_label": "validation",
       "source_file": "AI_CONTEXT.md",
-      "source_location": "L84"
+      "source_location": "L85"
     },
     {
       "id": "ai_context_vehicle_intelligence_platform_context",
@@ -83522,7 +83522,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "AI_CONTEXT.md",
-      "source_location": "L84",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -127351,5 +127351,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "718f009c66c6a378b444048a5f3960d8d8057552"
+  "built_at_commit": "e32fc68cf2ee7d40c4434374294761a3b20542bf"
 }

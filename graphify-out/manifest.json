@@ -1572,9 +1572,9 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1791571666.9542053,
-    "seen": 1791572138.7582123,
-    "ast_hash": "e69426839ca9fce1fc42500aee347e66",
+    "mtime": 1791572673.901289,
+    "seen": 1791572933.1499696,
+    "ast_hash": "ed167653fde9091f0a77bb536cfe6fe3",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {

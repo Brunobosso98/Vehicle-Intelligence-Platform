@@ -113,6 +113,13 @@ to its exact multi-platform digest and checks it under the same fail-closed poli
 
 ## 2026-10-09 Go advisory refresh
 
+The same database refresh found four High occurrences in the first-party hardened TimescaleDB
+image: the two Go advisories below appeared in each of `gosu` and `timescaledb-tune`, which had
+been compiled with Go 1.26.6. The helper builder now uses the pinned official Go 1.26.9 image
+digest. A fresh build confirmed both helpers and PostgreSQL start, and a scan of the rebuilt
+runtime image reports **zero High and zero Critical** findings. No database-image exception was
+added.
+
 The refreshed Trivy database reported two newly published Go standard-library High findings in
 the pinned observability images. The exact image scans found 2 Collector, 4 Prometheus, 2 new
 Tempo and 6 new Grafana occurrences, with zero new Critical findings. The extra Prometheus and

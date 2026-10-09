@@ -1,7 +1,7 @@
 # Graph Report - vehicle-intelligence-platform  (2026-10-09)
 
 ## Corpus Check
-- 314 files · ~245,770 words
+- 314 files · ~245,784 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `718f009c`
+- Built from commit: `e32fc68c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -864,11 +864,11 @@ Nodes (3): main(), address(), command()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `register_tools()` connect `register_tools` to `Adapter`, `Envelope`, `test_mcp.py`, `typing`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
 - **Why does `AgentError` connect `AgentError` to `insufficient_run`, `test_investigation.py`, `benchmark_mcp.py`, `Envelope`, `AgentRun`, `typing`, `main.py`, `provider.py`, `budgets.py`, `resolve_context`, `agents/schemas.py`, `test_agent_runtime.py`, `InvestigationStatus`, `Orchestrator`, `investigation/domain.py`, `test_agents.py`, `failure_category`, `investigation/service.py`, `pytest`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Why does `Phase 7A — Agent Core & Grounded Orchestration` connect `Phase 7A — Agent Core & Grounded Orchestration` to `73. Definition of Done`, `register_tools`, `55. Required test layers`, `phase-7a-traceability-ledger.md`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
 - **Are the 68 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 68 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 45 inferred relationships involving `router()` (e.g. with `LoggingRecipe` and `AcquisitionAuthError`) actually correct?**
