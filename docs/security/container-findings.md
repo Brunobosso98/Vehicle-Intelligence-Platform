@@ -104,10 +104,73 @@ Tempo 3.0.3 retained the same 12 High findings, while Grafana 13.2.2 increased t
 occurrences across 33 unique advisories. Neither candidate is a security remediation, and adopting
 either would add major-version compatibility risk without reducing the relevant findings. The
 working 2.10.8 and 12.4.12 releases therefore remain selected, with every exception scoped to its
-exact immutable image digest. Collector 0.161.0 and Prometheus 3.15.0 are likewise digest-pinned;
+exact immutable image digest. Collector 0.161.0 and Prometheus 3.15.0 were likewise digest-pinned;
 both produced zero Critical and zero High findings in the canonical scan.
 
-OpenTelemetry Collector 0.162.0 was not accepted as a remediation in this run because its container
-manifest was not published by the upstream release pipeline; the scanner returned MANIFEST_UNKNOWN.
-The repository therefore uses the immediately prior published 0.161.0 image and keeps it subject to
-the same fail-closed image policy.
+At that earlier scan, OpenTelemetry Collector 0.162.0 had no published container manifest, so the
+repository retained 0.161.0. The 0.162.0 manifest is now published. The 2026-10-09 refresh moves
+to its exact multi-platform digest and checks it under the same fail-closed policy.
+
+## 2026-10-09 Go advisory refresh
+
+The same database refresh found four High occurrences in the first-party hardened TimescaleDB
+image: the two Go advisories below appeared in each of `gosu` and `timescaledb-tune`, which had
+been compiled with Go 1.26.6. The helper builder now uses the pinned official Go 1.26.9 image
+digest. A fresh build confirmed both helpers and PostgreSQL start, and a scan of the rebuilt
+runtime image reports **zero High and zero Critical** findings. No database-image exception was
+added.
+
+The refreshed Trivy database reported two newly published Go standard-library High findings in
+the pinned observability images. The exact image scans found 2 Collector, 4 Prometheus, 2 new
+Tempo and 6 new Grafana occurrences, with zero new Critical findings. The extra Prometheus and
+Grafana occurrences are repeated embedded binaries, not additional CVEs. The full image scans
+still enforce every pre-existing finding through `container-risk-acceptance.yaml`.
+
+The [Go advisory for CVE-2026-78667](https://pkg.go.dev/vuln/GO-2026-6609) describes CPU
+exhaustion in `net/http` file-serving functions when parsing a Range header with many small ranges.
+The [Go advisory for CVE-2026-97031](https://pkg.go.dev/vuln/GO-2026-6607) describes memory
+exhaustion from malformed TLS ECH outer-extension references. Both were published on 2026-10-08
+and are fixed in Go 1.26.9 or 1.27.2. Collector 0.162.0 contains Go 1.26.8, Prometheus 3.15.0
+contains 1.27.1, Tempo 2.10.8 contains 1.26.5, and Grafana 12.4.12 contains 1.26.6 in the
+scanned binaries. These are the latest compatible published image releases currently selected;
+the Go fixes had not yet reached them at this scan.
+
+The four images are enabled only by the local observability Compose profile, which publishes
+their HTTP ports to `127.0.0.1`. This limits the Range-header denial-of-service path to local
+callers. The profile configures no TLS/ECH listener, so the ECH server path is not exposed. Exact
+image/CVE/package exceptions expire on 2026-10-15. The repository maintainer must refresh each
+digest when a vendor image built with a fixed Go version is available; no Critical finding is
+accepted.
+
+## 2026-10-10 Kafka dependency refresh
+
+The Phase 7B Security run for commit `147b0332fcd712328ba757d97d12d61195514392` found one
+unaccepted High finding in `vehicle-platform-kafka:local`: `CVE-2026-106451` in the bundled
+`at.yawk.lz4:lz4-java` 1.11.2 JAR. The exact Trivy report is retained in the Phase 0 full-validation
+artifact for that SHA. Kafka 4.2.2 brought in 1.11.2; the vulnerability record marks versions before
+1.11.4 affected. This first-party image fix replaces the bundled JAR with 1.11.4 during its build.
+
+The replacement is downloaded from Maven Central and checked against SHA-256
+`58c8e0b813960d2a248e050c353baea73139b48a2ffc55382d42c69707e17325` before installation. The
+superseded `lz4-java-*.jar` is removed from `/opt/kafka/libs`; no risk exception or scanner exclusion
+is added. The rebuilt Kafka image must pass the same full Trivy image policy and Kafka integration
+checks before the repair is considered validated.
+
+## 2026-10-10 Go HTTP/2 advisory refresh
+
+The refreshed Trivy database also reports [`CVE-2026-78669` (Go advisory GO-2026-6611)](https://pkg.go.dev/vuln/GO-2026-6611)
+in the four pinned observability images: in `golang.org/x/net` and Go's `stdlib`. It affects HTTP/2
+flow-control handling and is fixed in `golang.org/x/net` 0.60.0 and Go 1.26.9/1.27.2. The exact-image scans show installed
+versions from `x/net` 0.56.0–0.59.0 and Go 1.26.5–1.27.1. The records cover only those four immutable
+digests and those two package identities; they expire on 2026-10-15. The existing narrow acceptance
+is temporary because no current stable vendor image in the repository is built with the fixed
+versions. The official schedules list Collector 0.163.0 for 2026-10-12 and Prometheus 3.16 for
+2026-10-21; Tempo 3.1.0 and Grafana 13.2.2 candidates were also scanned and still contain the
+affected standard library and `x/net` versions.
+
+The impact is constrained by the supported local profile. All published observability ports bind to
+`127.0.0.1`; Collector accepts OTLP/HTTP on 4318, Tempo accepts OTLP/HTTP on 4318 and serves HTTP on
+3200, Prometheus scrapes only fixed internal HTTP targets, and Grafana serves HTTP on 3000. The
+checked-in configuration enables no TLS or HTTP/2 listener. This reduces the relevant exposure to
+local callers and the isolated Compose network; it does not make the scanner finding disappear.
+Each pinned image remains scheduled for replacement and a fresh full scan before the short expiry.

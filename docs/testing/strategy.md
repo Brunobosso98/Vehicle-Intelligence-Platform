@@ -125,3 +125,20 @@ including HTTP MCP trace continuity and redaction. Real provider smoke is opt-in
 operator credentials; ordinary CI remains deterministic. The canonical full-validation job includes
 all these gates and repeats acceptance/browser scenarios on fresh disposable databases. A declared
 target or instrumentation artifact is not PASS without execution at the final pushed SHA.
+
+## Phase 7B acceptance
+
+`make test-investigation` covers typed plans, lifecycle guards, canonical recipe/preflight mapping,
+source isolation, token checks and conservative follow-up hypothesis updates. The disposable
+integration gate migrates Phase 7B tables and checks that rollback to 0009 preserves agent and
+canonical telemetry records. `make phase7b-acceptance` seeds an independent disposable database,
+starts real HTTP MCP/API, and scores plan, approval, source, isolation, session-link, follow-up and
+replay behavior against controlled expectations. Its finalized-session rows are explicit fixtures;
+the separate Phase 4 stack gate proves the collector/stream/finalization path. Browser E2E uses a
+fresh stack to check the real operator UI and accessibility. Observability and benchmark gates must
+measure delivered instrumentation and resource use before final verification. The deterministic
+CI path never requires a paid provider key. See the [Phase 7B architecture](../architecture/phase-7b-investigation-adaptive-logging.md).
+The canonical `full-validation` job runs Phase 7B acceptance, real capture browser E2E,
+benchmark and observability, then repeats acceptance and browser E2E on fresh disposable stacks.
+Its commit-tied summary and final enforcement include the Phase 7B result; a green Phase 7A or
+security check alone cannot certify this phase.

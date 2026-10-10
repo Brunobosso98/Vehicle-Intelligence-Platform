@@ -15,6 +15,7 @@ labels = {
     "Observability": "OBSERVABILITY",
     "Phase 6 MCP": "MCP",
     "Phase 7A grounded agent": "AGENT",
+    "Phase 7B investigation": "INVESTIGATION",
 }
 outcome_status = {
     "success": "PASS",
@@ -35,7 +36,7 @@ payload = {
 root = Path("validation-artifacts/summary")
 root.mkdir(parents=True, exist_ok=True)
 (root / "validation-summary.json").write_text(json.dumps(payload, indent=2) + "\n")
-lines = ["PHASE 0 FULL VALIDATION", "", f"Commit: {payload['commit']}", ""]
+lines = ["CANONICAL FULL VALIDATION", "", f"Commit: {payload['commit']}", ""]
 lines.extend(f"{label:.<32} {status}" for label, status in results.items())
 lines.extend(["", f"{'FULL GATE':.<32} {full_gate}"])
 summary = "\n".join(lines) + "\n"

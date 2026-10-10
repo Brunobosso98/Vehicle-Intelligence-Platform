@@ -88,6 +88,19 @@ disabled by default and requires explicit server-side provider/MCP configuration
 
 The agent reads actual vehicle facts through MCP. The catalog now has 23 tools with the additive
 configuration-list read. Temporal association never proves mechanical causation. No ECU control,
-unsupported diagnosis, adaptive logging, specialist agents or RAG is available.
+unsupported diagnosis, specialist agents or RAG is available.
 See [architecture](docs/architecture/phase-7a-grounded-agent.md) and
 [operation/configuration](docs/runbooks/grounded-agent.md).
+
+## Phase 7B investigation and adaptive logging
+
+Phase 7B extends a completed insufficient answer into a bounded investigation. Candidate
+hypotheses and evidence gaps are checked against current-run evidence and existing MCP data.
+Semantic signal needs map to the canonical registry; Phase 4 alone supplies recipe contents,
+hashes, sampling rates and preflight. An operator reviews and approves an exact plan version and
+recipe hash. The local read-only collector is started explicitly outside the agent. A finalized,
+matching session can then be linked for a separate grounded follow-up run. The workflow does not
+claim a mechanical diagnosis or automatically repeat capture. See the
+[architecture](docs/architecture/phase-7b-investigation-adaptive-logging.md),
+[runbook](docs/runbooks/investigation-workflow.md) and
+[acceptance ledger](docs/validation/phase-7b-acceptance.md).

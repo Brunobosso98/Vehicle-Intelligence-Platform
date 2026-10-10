@@ -90,6 +90,8 @@ class Draft(StrictModel):
             "signal_or_measurement",
             "comparable_history",
             "technical_documentation",
+            "data_quality",
+            "configuration_context",
         ]
     ] = Field(max_length=4)
 

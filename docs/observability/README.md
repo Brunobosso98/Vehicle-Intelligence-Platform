@@ -93,3 +93,25 @@ duration and nullable token counters. No model reasoning or raw SQL enters telem
 and Prometheus backends, verifies successful and failing agent/MCP/database paths and checks a
 secret sentinel against delivered traces, metrics, public results and logs. Evidence is stored in
 `.validation/agent/observability`; configuration or a mocked exporter alone does not prove delivery.
+
+## Investigation and adaptive logging
+
+Committed transitions emit `investigations.total`, `investigations.completed`,
+`investigations.inconclusive`, `investigations.failures`, `investigations.hypotheses`,
+`investigations.evidence_gaps`, `investigations.unavailable_signal_needs`,
+`investigations.recipes_proposed`, `investigations.recipes_feasible`,
+`investigations.recipes_degraded`, `investigations.approvals`, `investigations.reanalyses`
+and `investigations.duration`. Prometheus normalizes names as usual. Counters have no vehicle,
+session, investigation, question or source labels. A committed transition creates a bounded
+`investigation.<event>` span under the request context and a structured
+`investigation.transition` record with plan/run IDs, counts, state, recipe version/hash,
+feasibility, approval state, linked session count and duration. Logs omit source reports,
+telemetry payloads, provider keys, operator tokens and private reasoning. The follow-up AgentRun
+retains the Phase 7A MCP/domain/database instrumentation.
+
+The API also logs bounded `investigation.planning.completed`,
+`investigation.existing_evidence.completed` and
+`investigation.recipe_generation.completed` timing/count events. They carry only run or
+investigation identifiers, elapsed seconds and bounded counts; questions, credentials and
+provider text are excluded. The deterministic benchmark reads these process-local events to
+separate provider planning and Phase 4 recipe selection from total HTTP latency.

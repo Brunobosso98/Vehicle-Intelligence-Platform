@@ -55,7 +55,14 @@ class AgentService:
         self.active = 0
         self.streams = 0
 
-    async def start(self, vehicle_id: UUID, ask: Ask) -> AgentRun:
+    async def start(
+        self,
+        vehicle_id: UUID,
+        ask: Ask,
+        *,
+        run_id: UUID | None = None,
+        follow_up_context: str | None = None,
+    ) -> AgentRun:
         if not self.settings.enabled:
             raise AgentError("agent_disabled")
         if self.active >= self.settings.max_concurrent_runs:
@@ -69,8 +76,23 @@ class AgentService:
                 prior = await self.repository.get(vehicle_id, ask.previous_run_id)
                 if prior.status != "completed":
                     raise AgentError("invalid_follow_up")
+            if run_id is not None:
+                try:
+                    existing = await self.repository.get(vehicle_id, run_id)
+                except AgentError as exc:
+                    if exc.category != "run_not_found":
+                        raise
+                else:
+                    if existing.status == "running" and run_id not in self.tasks:
+                        self.tasks[run_id] = asyncio.create_task(
+                            self.execute(existing, ask, prior, follow_up_context)
+                        )
+                        return existing
+                    self.active -= 1
+                    self.signals.active.add(-1)
+                    return existing
             run = AgentRun(
-                id=uuid4(),
+                id=run_id or uuid4(),
                 vehicle_id=vehicle_id,
                 user_question=self.redact(ask.question),
                 status="running",
@@ -81,7 +103,9 @@ class AgentService:
                 started_at=datetime.now(UTC),
             )
             await self.repository.create(run)
-            self.tasks[run.id] = asyncio.create_task(self.execute(run, ask, prior))
+            self.tasks[run.id] = asyncio.create_task(
+                self.execute(run, ask, prior, follow_up_context)
+            )
             return run
         except BaseException as exc:
             self.active -= 1
@@ -95,7 +119,13 @@ class AgentService:
     def redact(self, value: str) -> str:
         return cast(str, redact_data(value, self.settings))
 
-    async def execute(self, run: AgentRun, ask: Ask, prior: AgentRun | None) -> None:
+    async def execute(
+        self,
+        run: AgentRun,
+        ask: Ask,
+        prior: AgentRun | None,
+        follow_up_context: str | None = None,
+    ) -> None:
         sequence = 0
         started = perf_counter()
         provider: Provider | None = None
@@ -139,6 +169,14 @@ class AgentService:
                     "role": "user",
                     "content": "Bounded previous question (facts must be re-read in this run): "
                     + prior.user_question[:2000],
+                }
+            )
+        if follow_up_context:
+            state.messages.append(
+                {
+                    "role": "developer",
+                    "content": "Investigation follow-up context (bounded public IDs/categories): "
+                    + follow_up_context[:1000],
                 }
             )
         with self.telemetry.tracer.start_as_current_span(

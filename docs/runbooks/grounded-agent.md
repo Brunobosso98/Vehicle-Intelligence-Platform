@@ -1,5 +1,9 @@
 # Grounded agent operation
 
+A completed answer with a material evidence gap can start a separate Phase 7B investigation.
+The [investigation runbook](investigation-workflow.md) covers source preflight, recipe review,
+explicit approval, compatible session linking and follow-up recovery.
+
 The agent is disabled by default. Apply migrations through `make db-migrate` and run the existing
 MCP server before enabling agent execution. No vehicle control or ECU writes are available.
 
