@@ -141,3 +141,17 @@ callers. The profile configures no TLS/ECH listener, so the ECH server path is n
 image/CVE/package exceptions expire on 2026-10-15. The repository maintainer must refresh each
 digest when a vendor image built with a fixed Go version is available; no Critical finding is
 accepted.
+
+## 2026-10-10 Kafka dependency refresh
+
+The Phase 7B Security run for commit `147b0332fcd712328ba757d97d12d61195514392` found one
+unaccepted High finding in `vehicle-platform-kafka:local`: `CVE-2026-106451` in the bundled
+`at.yawk.lz4:lz4-java` 1.11.2 JAR. The exact Trivy report is retained in the Phase 0 full-validation
+artifact for that SHA. Kafka 4.2.2 brought in 1.11.2; the vulnerability record marks versions before
+1.11.4 affected. This first-party image fix replaces the bundled JAR with 1.11.4 during its build.
+
+The replacement is downloaded from Maven Central and checked against SHA-256
+`58c8e0b813960d2a248e050c353baea73139b48a2ffc55382d42c69707e17325` before installation. The
+superseded `lz4-java-*.jar` is removed from `/opt/kafka/libs`; no risk exception or scanner exclusion
+is added. The rebuilt Kafka image must pass the same full Trivy image policy and Kafka integration
+checks before the repair is considered validated.
