@@ -267,3 +267,16 @@ exceptions:
     owner: repository-maintainer
     expires: 2026-10-15
     rationale: "Go TLS ECH outer-extension parsing can exhaust server memory. The local observability profile exposes only HTTP endpoints and no TLS or ECH listener; refresh each vendor image as soon as one built with Go 1.26.9 or 1.27.2 is available."
+  - id: observability-go-cve-2026-78669
+    images:
+      [
+        "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6",
+        "quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
+        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
+        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
+      ]
+    vulnerability_id: CVE-2026-78669
+    packages: ["golang.org/x/net", "stdlib"]
+    owner: repository-maintainer
+    expires: 2026-10-15
+    rationale: "HTTP/2 SETTINGS handling can consume excessive CPU. These exact images are confined to the local observability profile with host ports bound to 127.0.0.1. Collector and Tempo are configured for OTLP/HTTP only, Prometheus scrapes fixed internal HTTP targets, and Grafana uses HTTP; none configures TLS or an HTTP/2 listener. Vendor fixes are not yet in stable images; replace and rescan at the next patched release, before expiry."

@@ -155,3 +155,22 @@ The replacement is downloaded from Maven Central and checked against SHA-256
 superseded `lz4-java-*.jar` is removed from `/opt/kafka/libs`; no risk exception or scanner exclusion
 is added. The rebuilt Kafka image must pass the same full Trivy image policy and Kafka integration
 checks before the repair is considered validated.
+
+## 2026-10-10 Go HTTP/2 advisory refresh
+
+The refreshed Trivy database also reports [`CVE-2026-78669` (Go advisory GO-2026-6611)](https://pkg.go.dev/vuln/GO-2026-6611)
+in the four pinned observability images: in `golang.org/x/net` and Go's `stdlib`. It affects HTTP/2
+flow-control handling and is fixed in `golang.org/x/net` 0.60.0 and Go 1.26.9/1.27.2. The exact-image scans show installed
+versions from `x/net` 0.56.0–0.59.0 and Go 1.26.5–1.27.1. The records cover only those four immutable
+digests and those two package identities; they expire on 2026-10-15. The existing narrow acceptance
+is temporary because no current stable vendor image in the repository is built with the fixed
+versions. The official schedules list Collector 0.163.0 for 2026-10-12 and Prometheus 3.16 for
+2026-10-21; Tempo 3.1.0 and Grafana 13.2.2 candidates were also scanned and still contain the
+affected standard library and `x/net` versions.
+
+The impact is constrained by the supported local profile. All published observability ports bind to
+`127.0.0.1`; Collector accepts OTLP/HTTP on 4318, Tempo accepts OTLP/HTTP on 4318 and serves HTTP on
+3200, Prometheus scrapes only fixed internal HTTP targets, and Grafana serves HTTP on 3000. The
+checked-in configuration enables no TLS or HTTP/2 listener. This reduces the relevant exposure to
+local callers and the isolated Compose network; it does not make the scanner finding disappear.
+Each pinned image remains scheduled for replacement and a fresh full scan before the short expiry.
