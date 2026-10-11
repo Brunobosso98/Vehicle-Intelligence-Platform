@@ -188,3 +188,89 @@ async def test_real_database_agent_lifecycle_failure_recovery_and_audit(url):
         metrics = (await api.get("/metrics")).text
         assert "agent_runs_total" in metrics and "agent_run_errors_total" in metrics
     await reader.close()
+
+
+async def test_supervisor_snapshot_versions_and_durable_events(url):
+    """Additive snapshots preserve pre-7C runs while a real MCP quality gate persists."""
+    settings = Settings(database_url=url, environment="test")
+    app = create_app(settings)
+    service = app.state.agent_service
+    service.settings = AgentSettings(enabled=False, provider="deterministic")
+    service.settings.enabled = True
+    service.provider_factory = DeterministicProvider
+    reader = ReadOnlyDatabase(settings)
+
+    @asynccontextmanager
+    async def connection():
+        async with Client(
+            create_server(
+                Adapter(reader, settings, app.state.telemetry), app.state.telemetry, MCPSettings()
+            )
+        ) as client:
+            yield MCPClient(client)
+
+    service.client_factory = connection
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as api,
+    ):
+        vehicle = (
+            await api.post(
+                "/api/v1/vehicles", json={"manufacturer": "fixture", "model": "supervisor"}
+            )
+        ).json()["id"]
+        historical = AgentRun(
+            id=uuid4(),
+            vehicle_id=UUID(vehicle),
+            user_question="Historical query",
+            status="completed",
+            provider="deterministic",
+            model="scripted-v1",
+            agent_version="phase7b-v1",
+            prompt_version="grounded-v1",
+            started_at=datetime.now(UTC),
+        )
+        await service.repository.create(historical)
+        # An actual legacy snapshot has no supervisor key, not an explicit null field.
+        engine = create_async_engine(url)
+        try:
+            async with engine.begin() as db:
+                await db.execute(
+                    text("UPDATE agent_runs SET snapshot=snapshot-'supervisor' WHERE id=:id"),
+                    {"id": historical.id},
+                )
+            old = await service.repository.get(UUID(vehicle), historical.id)
+            assert old.supervisor is None and old.agent_version == "phase7b-v1"
+            base = f"/api/v1/vehicles/{vehicle}/agent-runs"
+            response = await api.post(base, json={"question": "Is heat soak increasing?"})
+            assert response.status_code == 202
+            identifier = response.json()["id"]
+            stream = await api.get(f"{base}/{identifier}/stream")
+            assert (
+                "event: specialist_completed" in stream.text
+                and "event: run_completed" in stream.text
+            )
+            run = (await api.get(f"{base}/{identifier}")).json()
+            assert run["supervisor"]["sufficiency"] == "UNRELIABLE_DATA"
+            assert run["supervisor"]["specialists"][0]["specialist"] == "data_quality"
+            events = (await api.get(f"{base}/{identifier}/events")).json()
+            assert [e["sequence"] for e in events] == list(range(1, len(events) + 1))
+            assert all(
+                e["schema_version"] == "1.1"
+                for e in events
+                if e["type"] in {"routing_completed", "specialist_started", "specialist_completed"}
+            )
+            replay = await api.get(f"{base}/{identifier}/stream?after=1")
+            assert "event: run_started" not in replay.text
+            assert (await service.repository.get(UUID(vehicle), historical.id)).supervisor is None
+            async with engine.connect() as db:
+                assert (
+                    await db.scalar(
+                        text("SELECT snapshot->'supervisor' FROM agent_runs WHERE id=:id"),
+                        {"id": historical.id},
+                    )
+                    is None
+                )
+        finally:
+            await engine.dispose()
+            await reader.close()

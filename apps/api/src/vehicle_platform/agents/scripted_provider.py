@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Callable
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
@@ -17,8 +18,25 @@ from vehicle_platform.agents.investigation.proposal import (
     ProposedGap,
     ProposedHypothesis,
 )
-from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, ToolRequest
-from vehicle_platform.agents.schemas import Binding, Claim, Classification, Draft, Usage
+from vehicle_platform.agents.provider import (
+    AgentError,
+    ModelInput,
+    ModelTurn,
+    RoutingInput,
+    ToolRequest,
+)
+from vehicle_platform.agents.schemas import (
+    Binding,
+    Claim,
+    Classification,
+    Draft,
+    Evidence,
+    Intent,
+    RoutingProposal,
+    Specialist,
+    Usage,
+)
+from vehicle_platform.agents.specialists.routing import hints_for
 
 
 class ScriptedProvider:
@@ -26,9 +44,14 @@ class ScriptedProvider:
         self,
         turns: list[ModelTurn | AgentError | Callable[[ModelInput], ModelTurn]],
         proposal: InvestigationProposal | None = None,
+        routing: RoutingProposal | None = None,
     ) -> None:
         self.turns = iter(turns)
         self.proposal = proposal
+        self.routing = routing
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return self.routing or await DeterministicProvider().route(request)
 
     async def turn(self, request: ModelInput) -> ModelTurn:
         try:
@@ -53,6 +76,16 @@ class DeterministicProvider:
 
     def __init__(self) -> None:
         self.index = 0
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        hints = hints_for(
+            request.question, [Evidence.model_validate(item) for item in request.evidence]
+        )
+        return RoutingProposal(
+            intent=hints.intent or Intent.FACTUAL,
+            specialists=list(hints.required),
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )
 
     async def propose(self, request: InvestigationInput) -> InvestigationProposal:
         question = request.question.casefold()
@@ -91,14 +124,35 @@ class DeterministicProvider:
                     ),
                 ],
             )
-        if any(word in question for word in ("fuel", "combust", "hpfp", "pressão")):
+        if "boost" in question:
+            return InvestigationProposal(
+                hypotheses=[ProposedHypothesis(category=HypothesisCategory.AIRFLOW_BOOST)],
+                gaps=[
+                    ProposedGap(
+                        category=GapType.SIGNAL_OR_MEASUREMENT,
+                        hypothesis_indexes=[0],
+                        signal_roles=[
+                            SignalRole.BOOST,
+                            SignalRole.THROTTLE,
+                            SignalRole.ENGINE_SPEED,
+                        ],
+                        resolution=Resolution.HIGH,
+                    )
+                ],
+            )
+        if any(word in question for word in ("fuel", "combust", "hpfp", "pressão", "lambda")):
             return InvestigationProposal(
                 hypotheses=[ProposedHypothesis(category=HypothesisCategory.FUELING)],
                 gaps=[
                     ProposedGap(
                         category=GapType.SIGNAL_OR_MEASUREMENT,
                         hypothesis_indexes=[0],
-                        signal_roles=[SignalRole.HIGH_FUEL_PRESSURE, SignalRole.ENGINE_SPEED],
+                        signal_roles=[
+                            SignalRole.LAMBDA
+                            if "lambda" in question
+                            else SignalRole.HIGH_FUEL_PRESSURE,
+                            SignalRole.ENGINE_SPEED,
+                        ],
                         resolution=Resolution.HIGH,
                     )
                 ],
@@ -142,6 +196,8 @@ class DeterministicProvider:
         )
 
     async def turn(self, request: ModelInput) -> ModelTurn:
+        if request.specialist:
+            return await self.specialist_turn(request)
         self.index += 1
         question = request.question.casefold()
         context = request.context
@@ -182,7 +238,18 @@ class DeterministicProvider:
             elif comparison and "compare_configurations" not in executed:
                 records = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
                 represented = {e.get("session_id") for e in records}
-                missing = [s for s in sessions[:6] if s["id"] not in represented]
+                # Bound capture reads while preserving both sides of the temporal boundary.
+                # Taking only the six newest sessions can silently omit the earlier configuration.
+                by_config: dict[str, list[dict[str, Any]]] = {}
+                for session in sessions:
+                    if session.get("configuration_id") and session.get(
+                        "temporal_configuration_valid"
+                    ):
+                        by_config.setdefault(str(session["configuration_id"]), []).append(session)
+                comparison_sessions = [
+                    session for group in list(by_config.values())[:2] for session in group[:3]
+                ]
+                missing = [s for s in comparison_sessions if s["id"] not in represented]
                 if missing:
                     calls = [
                         ("list_session_pulls", {"session_id": s["id"], "limit": 3})
@@ -194,12 +261,19 @@ class DeterministicProvider:
                         config = record.get("configuration_id")
                         if config:
                             groups.setdefault(config, []).append(record["entity_id"])
-                    populated = [ids[:9] for ids in groups.values() if len(ids) >= 2]
+                    timeline = {
+                        c["id"]: c["effective_at"] for c in request.context["configurations"]
+                    }
+                    populated = [
+                        groups[key][:9]
+                        for key in sorted(groups, key=lambda key: timeline.get(key, ""))
+                        if len(groups[key]) >= 2
+                    ]
                     if len(populated) >= 2:
                         calls = [
                             (
                                 "compare_configurations",
-                                {"before_pull_ids": populated[-1], "after_pull_ids": populated[0]},
+                                {"before_pull_ids": populated[0], "after_pull_ids": populated[-1]},
                             )
                         ]
             elif events and "list_session_events" not in executed:
@@ -315,6 +389,43 @@ class DeterministicProvider:
                         }
                     )
                 )
+        if request.supervisor and not request.supervisor.get("conflicts"):
+            for source in sources:
+                if (
+                    source["source_tool"] != "get_repeated_pull_analysis"
+                    or source["warnings"]
+                    or source["truncated"]
+                ):
+                    continue
+                numeric = [f for f in source["facts"] if type(f["value"]) in {int, float}]
+                temperatures = [f for f in numeric if f["path"].endswith("/end_iat")]
+                acceleration = [
+                    f for f in numeric if f["path"].endswith("/normalized_acceleration")
+                ]
+                if (
+                    len(temperatures) >= 2
+                    and len(acceleration) >= 2
+                    and temperatures[-1]["value"] > temperatures[0]["value"]
+                    and acceleration[-1]["value"] < acceleration[0]["value"]
+                ):
+                    identifier = UUID(source["id"])
+                    claims.append(
+                        Claim(
+                            classification=Classification.HYPOTHESIS,
+                            template="thermal_hypothesis",
+                            evidence_ids=[identifier],
+                            bindings=[
+                                Binding(evidence_id=identifier, **f)
+                                for f in (
+                                    temperatures[0],
+                                    temperatures[-1],
+                                    acceleration[0],
+                                    acceleration[-1],
+                                )
+                            ],
+                        )
+                    )
+                    break
         if insufficient or unsafe or not claims:
             claims.append(
                 Claim(
@@ -356,3 +467,132 @@ class DeterministicProvider:
 
     async def close(self) -> None:
         return None
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        scope = request.specialist
+        if scope is None:
+            raise AgentError("invalid_specialist_request")
+        specialist = scope.specialist
+        executed = {m.get("name") for m in request.messages if m.get("type") == "function_call"}
+        if specialist is Specialist.PERFORMANCE:
+            q = request.question.casefold()
+            if any(word in q for word in ("configur", "intercooler", "modific")):
+                return await self.turn(replace(request, specialist=None))
+            if request.context["sessions"] and any(word in q for word in ("pull", "puxada")):
+                pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
+                tool: tuple[str, dict[str, Any]] | None = None
+                if "list_session_pulls" not in executed:
+                    tool = (
+                        "list_session_pulls",
+                        {"session_id": request.context["sessions"][0]["id"], "limit": 4},
+                    )
+                elif len(pulls) >= 2 and "get_repeated_pull_analysis" not in executed:
+                    tool = (
+                        "get_repeated_pull_analysis",
+                        {"pull_ids": [p["entity_id"] for p in pulls[:3]]},
+                    )
+                if tool:
+                    return ModelTurn(
+                        tool_calls=[
+                            ToolRequest(
+                                call_id=f"specialist-{specialist.value}-{len(executed)}",
+                                name=tool[0],
+                                arguments=tool[1] | {"vehicle_id": str(scope.vehicle_id)},
+                            )
+                        ],
+                        usage=Usage(
+                            input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0
+                        ),
+                    )
+        claims: list[Claim] = []
+        sources = [
+            e
+            for e in request.evidence
+            if e["source_tool"]
+            in {
+                "get_session_summary",
+                "get_repeated_pull_analysis",
+                "get_session_capabilities",
+                "list_session_events",
+            }
+        ]
+        for source in sources:
+            selected = []
+            for fact in source["facts"]:
+                path = fact["path"].casefold()
+                numeric = type(fact["value"]) in {int, float}
+                keep = False
+                if specialist is Specialist.DATA_QUALITY:
+                    keep = source["source_tool"] == "get_session_capabilities" and (
+                        (numeric and any(key in path for key in ("actual_hz", "missing_ratio")))
+                        or (path.endswith("/signal") and isinstance(fact["value"], str))
+                    )
+                elif specialist is Specialist.PERFORMANCE:
+                    keep = numeric and any(
+                        key in path for key in ("acceleration", "duration", "repeatability")
+                    )
+                elif specialist is Specialist.THERMAL:
+                    keep = numeric and any(key in path for key in ("iat", "temperature", "thermal"))
+                    keep = keep or (
+                        path == "/event_type"
+                        and fact["value"]
+                        in {
+                            "iat_rise",
+                            "intake_temperature_high",
+                            "oil_temperature_high",
+                            "coolant_temperature_high",
+                        }
+                    )
+                elif specialist is Specialist.FUEL_AIR_BOOST:
+                    keep = numeric and any(
+                        key in path for key in ("boost", "fuel", "throttle", "lambda")
+                    )
+                    keep = keep or (
+                        path == "/event_type"
+                        and fact["value"]
+                        in {
+                            "boost_drop",
+                            "boost_overshoot",
+                            "fuel_pressure_drop",
+                            "unexpected_throttle_closure",
+                        }
+                    )
+                if keep:
+                    selected.append(fact)
+            if selected:
+                claims.append(
+                    Claim(
+                        classification=Classification.OBSERVATION,
+                        template="recorded_fact",
+                        evidence_ids=[UUID(source["id"])],
+                        bindings=[
+                            Binding(evidence_id=UUID(source["id"]), **f) for f in selected[:8]
+                        ],
+                    )
+                )
+            if len(claims) >= 6:
+                break
+        missing = not claims
+        if missing:
+            claims.append(
+                Claim(
+                    classification=Classification.INSUFFICIENT_EVIDENCE,
+                    template="insufficient_evidence",
+                    evidence_ids=[],
+                    bindings=[],
+                )
+            )
+        return ModelTurn(
+            draft=Draft(
+                confidence="low" if missing else "moderate",
+                claims=claims,
+                missing_evidence=[
+                    "data_quality"
+                    if specialist is Specialist.DATA_QUALITY
+                    else "signal_or_measurement"
+                ]
+                if missing
+                else [],
+            ),
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )

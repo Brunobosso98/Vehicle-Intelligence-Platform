@@ -76,6 +76,23 @@ class EvidenceRegistry:
         self.run_id, self.vehicle_id, self.maximum = run_id, vehicle_id, maximum
         self.items: dict[UUID, Evidence] = {}
 
+    def ordered(self) -> list[Evidence]:
+        """Merge independent reads by tool/selection, preserving each MCP result's row order."""
+        positions: dict[UUID, int] = {}
+        counts: dict[UUID, int] = {}
+        for item in self.items.values():
+            positions[item.id] = counts.get(item.tool_call_id, 0)
+            counts[item.tool_call_id] = positions[item.id] + 1
+        return sorted(
+            self.items.values(),
+            key=lambda item: (
+                item.source_tool,
+                canonical_hash(item.provenance.get("selection", {})),
+                positions[item.id],
+                item.source_fingerprint,
+            ),
+        )
+
     def add(self, tool: str, call_id: UUID, envelope: Envelope) -> list[Evidence]:
         selected = str(self.vehicle_id)
         context = envelope.model_dump(mode="json")["context"]

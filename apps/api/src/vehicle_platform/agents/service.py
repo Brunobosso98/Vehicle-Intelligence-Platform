@@ -127,24 +127,50 @@ class AgentService:
         follow_up_context: str | None = None,
     ) -> None:
         sequence = 0
+        event_lock = asyncio.Lock()
         started = perf_counter()
         provider: Provider | None = None
 
         async def emit(kind: str, data: dict[str, Any]) -> None:
             nonlocal sequence
-            sequence += 1
-            sanitized = cast(dict[str, Any], redact_data(data, self.settings))
-            event = StreamEvent.model_validate(
-                {"sequence": sequence, "run_id": run.id, "type": kind, "data": sanitized}
-            )
-            await self.repository.event(event)
+            async with event_lock:
+                sanitized = cast(dict[str, Any], redact_data(data, self.settings))
+                event = StreamEvent.model_validate(
+                    {
+                        "sequence": sequence + 1,
+                        "run_id": run.id,
+                        "type": kind,
+                        "data": sanitized,
+                        "schema_version": "1.1"
+                        if kind.startswith(("specialist_", "supervisor_"))
+                        or kind
+                        in {
+                            "routing_completed",
+                            "conflict_detected",
+                            "sufficiency_evaluated",
+                            "investigation_proposed",
+                            "synthesis_started",
+                        }
+                        else "1.0",
+                    }
+                )
+                # Advance only after persistence. If cancellation intersects commit, reconcile
+                # the cursor from durable events while still holding the run-local writer lock.
+                # Publication remains cancellable and cannot outlive the parent run deadline.
+                try:
+                    await self.repository.event(event)
+                except asyncio.CancelledError:
+                    persisted = await self.repository.events(run.vehicle_id, run.id, sequence)
+                    sequence = max([sequence, *(item.sequence for item in persisted)])
+                    raise
+                sequence = event.sequence
 
         async def audit(call: ToolCall) -> None:
             await self.repository.audit(call)
             if call.status != "running":
                 run.evidence = [
                     Evidence.model_validate(redact_data(e.model_dump(mode="json"), self.settings))
-                    for e in state.registry.items.values()
+                    for e in state.registry.ordered()
                 ]
                 await self.repository.save(run)
                 self.signals.tools.add(1, {"tool": call.tool_name, "status": call.status})
@@ -217,7 +243,7 @@ class AgentService:
                 run.tool_call_count = len(state.tool_calls)
                 run.evidence = [
                     Evidence.model_validate(redact_data(e.model_dump(mode="json"), self.settings))
-                    for e in state.registry.items.values()
+                    for e in state.registry.ordered()
                 ]
                 if run.status != "completed":
                     run.result = None
