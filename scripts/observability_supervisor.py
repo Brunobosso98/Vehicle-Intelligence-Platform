@@ -149,12 +149,21 @@ async def main() -> None:
                                 for a in s.get("attributes", [])
                                 if a["key"] == "specialist"
                             }
-                            assert roles == {
+                            expected_roles = {
                                 s["specialist"]
                                 for s in current["supervisor"]["specialists"]
-                            }, roles
-                            assert len({s["parentSpanId"] for s in siblings}) == 1
-                        if expected <= names and any(
+                            }
+                            # Tempo can return the root and some child spans before the
+                            # remaining sibling exports arrive. Keep polling until the
+                            # complete specialist set is visible in one trace snapshot.
+                            expected_spans_ready = (
+                                expected <= names
+                                and roles == expected_roles
+                                and len({s["parentSpanId"] for s in siblings}) == 1
+                            )
+                        else:
+                            expected_spans_ready = expected <= names
+                        if expected_spans_ready and any(
                             a["key"] in {"db.system", "db.system.name"}
                             for s in spans
                             for a in s.get("attributes", [])
