@@ -11,7 +11,7 @@ Phase 7C must introduce a **supervisor + specialist-agent architecture** without
 
 The target behavior is:
 
-~~~text
+```text
 User question
     ↓
 Supervisor
@@ -33,7 +33,7 @@ conflict / insufficiency evaluation
 Supervisor grounded synthesis
     ├─ enough evidence → final answer
     └─ insufficient evidence → Phase 7B investigation
-~~~
+```
 
 This phase must be implemented end-to-end: architecture, specialist contracts, supervisor routing, budgets, concurrency, evidence sharing, conflict handling, Phase 7B integration, API, persistence where necessary, SSE, frontend, observability, deterministic acceptance, browser E2E, security, recovery, benchmark, regression, documentation, local validation, remote GitHub validation and PR delivery.
 
@@ -216,7 +216,7 @@ The supervisor is the single coordinator.
 
 Conceptually:
 
-~~~text
+```text
 START
   ↓
 Resolve vehicle context
@@ -241,7 +241,7 @@ Enough evidence?
   └─ no  → Phase 7B investigation proposal/path
   ↓
 END
-~~~
+```
 
 The exact LangGraph structure may differ if a cleaner tested architecture exists.
 
@@ -672,9 +672,9 @@ Communication is through:
 
 Do not create:
 
-~~~text
+```text
 Thermal → Performance → Fuel → Thermal → ...
-~~~
+```
 
 All coordination passes through the supervisor.
 
@@ -1015,13 +1015,13 @@ Every vehicle-specific factual claim must map to evidence.
 
 Every specialist-derived statement must map through:
 
-~~~text
+```text
 final claim
 → specialist finding
 → evidence IDs
 → MCP tool calls
 → deterministic source
-~~~
+```
 
 Do not weaken Phase 7A's structural grounding validator.
 
@@ -1130,6 +1130,7 @@ If one specialist fails:
 Example:
 
 Performance succeeds, Thermal provider step fails:
+
 - answer performance factually;
 - mark thermal analysis unavailable;
 - do not invent thermal conclusion.
@@ -1746,7 +1747,7 @@ Avoid high-cardinality IDs in labels.
 
 Trace hierarchy should show:
 
-~~~text
+```text
 HTTP request
 → AgentRun
 → Supervisor
@@ -1760,7 +1761,7 @@ HTTP request
 → conflict/sufficiency
 → optional Phase 7B
 → final synthesis
-~~~
+```
 
 Parallel specialists should appear as sibling spans.
 
@@ -2145,6 +2146,7 @@ Do not declare success based on checks from an older SHA.
 Phase 7C is complete only if all applicable items are true.
 
 ### Supervisor
+
 - [ ] one bounded supervisor
 - [ ] typed routing
 - [ ] deterministic routing hints
@@ -2155,6 +2157,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] Phase 7B escalation
 
 ### Specialists
+
 - [ ] Data Quality Specialist
 - [ ] Performance Specialist
 - [ ] Thermal Specialist
@@ -2165,6 +2168,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] bounded tool/model budgets
 
 ### Evidence
+
 - [ ] shared evidence registry
 - [ ] evidence deduplication/reuse
 - [ ] no cross-run leak
@@ -2173,17 +2177,20 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] final answer structurally grounded
 
 ### Data quality
+
 - [ ] data quality gating
 - [ ] bad data can block/degrade deeper reasoning
 - [ ] quality warnings visible
 
 ### Conflicts
+
 - [ ] factual conflict validation
 - [ ] hypothesis conflict representation
 - [ ] no silent conflict resolution
 - [ ] ambiguous multi-mechanism case routes to 7B
 
 ### Parallelism
+
 - [ ] safe parallel independent specialists
 - [ ] deterministic aggregation
 - [ ] cancellation
@@ -2191,6 +2198,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] no debate loops
 
 ### Vehicle/modification context
+
 - [ ] effective vehicle context
 - [ ] effective configuration
 - [ ] installed/removed modifications
@@ -2198,12 +2206,14 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] no unsupported causality
 
 ### Phase 7B integration
+
 - [ ] insufficiency creates/proposes existing InvestigationPlan path
 - [ ] no duplicate investigation implementation
 - [ ] linked-session reanalysis can rerun relevant specialists
 - [ ] bounded cycles preserved
 
 ### API/UI/SSE
+
 - [ ] routing visible
 - [ ] specialist status/findings
 - [ ] conflicts/warnings
@@ -2214,6 +2224,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] safe rendering
 
 ### Security
+
 - [ ] prompt injection tests
 - [ ] specialist impersonation blocked
 - [ ] tool escalation blocked
@@ -2224,6 +2235,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] security policy unchanged or stronger
 
 ### Testing
+
 - [ ] unit
 - [ ] DB integration
 - [ ] actual MCP integration
@@ -2236,6 +2248,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] Phase 0–7B regressions
 
 ### Observability/performance
+
 - [ ] specialist spans
 - [ ] supervisor spans
 - [ ] routing metrics
@@ -2245,6 +2258,7 @@ Phase 7C is complete only if all applicable items are true.
 - [ ] bounded resources
 
 ### Delivery
+
 - [ ] clean tree
 - [ ] exact final HEAD locally validated
 - [ ] branch pushed
