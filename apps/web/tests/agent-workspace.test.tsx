@@ -22,7 +22,13 @@ class Stream {
   ) {
     this.listeners.set(type, listener);
   }
-  emit(type: string, sequence: number, data: object = {}, run_id = "run-1") {
+  emit(
+    type: string,
+    sequence: number,
+    data: object = {},
+    run_id = "run-1",
+    schema_version = "1.0",
+  ) {
     this.listeners.get(type)?.(
       new MessageEvent("message", {
         data: JSON.stringify({
@@ -30,7 +36,7 @@ class Stream {
           sequence,
           data,
           run_id,
-          schema_version: "1.0",
+          schema_version,
         }),
       }),
     );
@@ -103,6 +109,92 @@ async function start() {
   await waitFor(() => expect(Stream.instances).toHaveLength(1));
   return Stream.instances[0];
 }
+
+test("accepts versioned specialist progress and retains replay and scope guards", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(json(run()));
+  render(<AgentWorkspace vehicleId="vehicle-1" />);
+  const source = await start();
+  act(() => source.emit("routing_completed", 1, {}, "run-1", "1.1"));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Especialistas selecionados",
+  );
+  act(() =>
+    source.emit(
+      "specialist_started",
+      2,
+      { specialist: "thermal" },
+      "run-1",
+      "1.1",
+    ),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Comportamento térmico: em análise",
+  );
+  act(() =>
+    source.emit(
+      "specialist_completed",
+      3,
+      { specialist: "thermal" },
+      "run-1",
+      "1.1",
+    ),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Comportamento térmico: concluído",
+  );
+  act(() =>
+    source.emit(
+      "specialist_failed",
+      4,
+      { specialist: "performance" },
+      "run-1",
+      "1.1",
+    ),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Desempenho: indisponível",
+  );
+  act(() =>
+    source.emit(
+      "specialist_started",
+      5,
+      { specialist: "impersonated_supervisor" },
+      "run-1",
+      "1.1",
+    ),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Desempenho: indisponível",
+  );
+  act(() => source.emit("conflict_detected", 6, {}, "run-1", "1.1"));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Interpretações concorrentes",
+  );
+  act(() => source.emit("investigation_proposed", 7, {}, "run-1", "1.1"));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Investigação recomendada",
+  );
+  act(() => {
+    source.emit(
+      "specialist_started",
+      7,
+      { specialist: "thermal" },
+      "run-1",
+      "1.1",
+    );
+    source.emit(
+      "specialist_started",
+      8,
+      { specialist: "thermal" },
+      "another-run",
+      "1.1",
+    );
+    source.emit("routing_completed", 8, {}, "run-1", "2.0");
+  });
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Investigação recomendada",
+  );
+});
 
 test("streams grounded results, deduplicates replay and renders untrusted data as text", async () => {
   const fetch = vi
