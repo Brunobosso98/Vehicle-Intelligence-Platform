@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
@@ -13,6 +14,42 @@ from agent_runtime import ask, runtime
 from evaluate_investigation import finalized_fixture
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+from supervisor_fixtures import recording_csv
+from vehicle_platform.events.synthetic import anomaly_scenario
+
+
+async def seed_performance_recording(api: httpx.AsyncClient, fixture: dict) -> None:
+    """Reliable repeated pulls with a real missing fuel measurement, not a quality fault."""
+    start = datetime.fromisoformat(fixture["as_of"]) + timedelta(days=1)
+    created = await api.post(
+        "/api/v1/sessions",
+        json={
+            "vehicle_id": fixture["vehicle"],
+            "configuration_id": fixture["configurations"][1],
+            "source_type": "csv",
+            "started_at": start.isoformat(),
+        },
+    )
+    assert created.status_code == 201, created.text
+    session = created.json()["id"]
+    recording = recording_csv(
+        anomaly_scenario("phase7b-benchmark", ()), start, "benchmark"
+    )
+    # The source can capture fuel pressure, but this recording did not capture it.
+    # This leaves a measurement gap while RPM/speed/throttle/temperature stay reliable.
+    recording = "\n".join(
+        row for row in recording.splitlines() if ",fuel.high_pressure," not in row
+    )
+    for path, kwargs in (
+        (
+            f"/api/v1/sessions/{session}/imports/csv",
+            {"files": {"file": ("benchmark.csv", recording, "text/csv")}},
+        ),
+        (f"/api/v1/sessions/{session}/analysis", {"json": {"profile": "generic-v1"}}),
+        (f"/api/v1/sessions/{session}/events/analyze", {"json": {}}),
+    ):
+        response = await api.post(path, **kwargs)
+        assert response.status_code in {200, 201}, (path, response.text)
 
 
 async def main() -> None:
@@ -30,6 +67,7 @@ async def main() -> None:
             vehicle = fixture["vehicle"]
             base = f"/api/v1/vehicles/{vehicle}/investigations"
             headers = {"X-Investigation-Token": stack["token"]}
+            await seed_performance_recording(api, fixture)
 
             async def db_counters() -> dict[str, int]:
                 async with engine.connect() as connection:
