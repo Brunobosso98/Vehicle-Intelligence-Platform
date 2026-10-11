@@ -201,6 +201,7 @@ class OpenAIProvider:
             "vehicle_context": request.context,
             "current_run_evidence": request.evidence,
             "missing_evidence": request.missing_evidence,
+            "supervisor": request.supervisor,
         }
         encoded = json.dumps(payload)
         if len(encoded.encode()) > self.settings.max_input_bytes:

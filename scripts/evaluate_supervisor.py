@@ -262,6 +262,10 @@ async def evaluate(url: str) -> dict[str, Any]:
                     and plan["vehicle_id"] == fixture["vehicle"]
                 )
                 assert plan["gaps"] and plan["approval"]["status"] != "APPROVED"
+                assert {"THERMAL", "FUELING"} <= {
+                    h["category"] for h in plan["hypotheses"]
+                }
+                assert any(n["role"] == "timing_behavior" for n in plan["signal_needs"])
                 counters["escalation_correct"] += 1
                 assert await domain_fingerprint(url) == fingerprint
                 scenarios.append(

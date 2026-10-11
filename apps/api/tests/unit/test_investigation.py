@@ -1105,8 +1105,23 @@ async def test_registered_source_snapshot_preserves_preflight_provenance() -> No
     assert current.signals["engine.rpm"] is Support.SUPPORTED
 
 
-async def test_create_closes_provider_after_invalid_semantic_output() -> None:
+@pytest.mark.parametrize("supervised", [True, False])
+async def test_create_closes_provider_after_invalid_semantic_output(supervised) -> None:
+    from vehicle_platform.agents.schemas import Intent, RoutingDecision, SupervisorReport
+
     run = insufficient_run("Why is timing missing?")
+    if supervised:
+        run.supervisor = SupervisorReport(
+            routing=RoutingDecision(
+                intent=Intent.MULTI_MECHANISM,
+                considered=[],
+                selected=[],
+                skipped=[],
+                data_quality_gate=False,
+                hints=[],
+                reason="Bounded planning fixture",
+            )
+        )
     agents = MagicMock()
     agents.repository.get = AsyncMock(return_value=run)
     agents.settings = AgentSettings(
@@ -1126,6 +1141,8 @@ async def test_create_closes_provider_after_invalid_semantic_output() -> None:
     with pytest.raises(AgentError, match="invalid_investigation_proposal"):
         await service.create(run.vehicle_id, run.id, "synthetic", "source")
     provider.close.assert_awaited_once()
+    planning = provider.propose.await_args.args[0]
+    assert planning.supervisor == (run.supervisor.model_dump(mode="json") if supervised else None)
     assert service.active == 0
 
 

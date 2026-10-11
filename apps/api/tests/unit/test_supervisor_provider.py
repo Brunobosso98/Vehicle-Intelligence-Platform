@@ -11,6 +11,12 @@ from test_agents import draft, insufficient, registry
 from test_agents import fixture as fixture
 from test_supervisor_contracts import request_for
 
+from vehicle_platform.agents.investigation.domain import GapType
+from vehicle_platform.agents.investigation.proposal import (
+    InvestigationInput,
+    InvestigationProposal,
+    ProposedGap,
+)
 from vehicle_platform.agents.provider import AgentError, ModelInput, RoutingInput
 from vehicle_platform.agents.schemas import Intent, RoutingProposal, Specialist
 from vehicle_platform.agents.scripted_provider import DeterministicProvider
@@ -181,3 +187,40 @@ async def test_supervisor_synthesis_retains_grounding_policy(provider):
     await provider.turn(model_input)
     instructions = provider.client.responses.create.call_args.kwargs["instructions"]
     assert "grounded-v1" in instructions and "supervisor-v1" in instructions
+
+
+async def test_real_planning_adapter_receives_structured_supervisor_report(provider):
+    report = {
+        "specialists": [],
+        "conflicts": [{"type": "competing_hypotheses"}],
+        "sufficiency": "INSUFFICIENT",
+    }
+    provider.client.responses.create.return_value = SimpleNamespace(
+        output_text=InvestigationProposal(
+            gaps=[ProposedGap(category=GapType.COMPARABLE_HISTORY)]
+        ).model_dump_json()
+    )
+    await provider.propose(
+        InvestigationInput(
+            question="Why did performance degrade?",
+            context={},
+            evidence=[],
+            missing_evidence=["signal_or_measurement"],
+            supervisor=report,
+        )
+    )
+    content = provider.client.responses.create.call_args.kwargs["input"][0]["content"]
+    assert json.loads(content.split("\n", 1)[1])["supervisor"] == report
+
+
+async def test_repeated_pull_planning_preserves_competing_mechanisms():
+    result = await DeterministicProvider().propose(
+        InvestigationInput(
+            question="Why did performance degrade after repeated pulls?",
+            context={},
+            evidence=[],
+            missing_evidence=["signal_or_measurement"],
+            supervisor={"conflicts": []},
+        )
+    )
+    assert {"THERMAL", "FUELING"} <= {h.category.value for h in result.hypotheses}

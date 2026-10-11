@@ -110,7 +110,9 @@ class DeterministicProvider:
                     )
                 ],
             )
-        if any(word in question for word in ("intercooler", "modifica", "before", "after")):
+        if any(
+            word in question for word in ("intercooler", "modifica", "configuration", "configura")
+        ):
             return InvestigationProposal(
                 hypotheses=[
                     ProposedHypothesis(category=HypothesisCategory.CONFIGURATION_ASSOCIATION)

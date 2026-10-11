@@ -153,6 +153,11 @@ class InvestigationService:
                                 self.agents.settings,
                             ),
                             missing_evidence=run.result.missing_evidence,
+                            supervisor=redact_data(
+                                run.supervisor.model_dump(mode="json"), self.agents.settings
+                            )
+                            if run.supervisor
+                            else None,
                         )
                     )
                     try:
