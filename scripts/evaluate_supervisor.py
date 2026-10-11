@@ -181,8 +181,10 @@ async def evaluate(url: str) -> dict[str, Any]:
                 )
             if name == "consensus":
                 assert (
-                    not report["conflicts"] and report["sufficiency"] == "SUFFICIENT"
+                    not report["conflicts"]
+                    and report["sufficiency"] == "PARTIALLY_SUFFICIENT"
                 ), report
+                assert report["investigation_recommended"]
                 assert any(
                     f["template"] == "thermal_hypothesis"
                     for f in run["result"]["findings"]

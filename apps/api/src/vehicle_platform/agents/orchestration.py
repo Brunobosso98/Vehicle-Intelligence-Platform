@@ -425,6 +425,16 @@ class Orchestrator:
                         else Sufficiency.SUFFICIENT
                     )
                     report.investigation_recommended = bool(state.final.missing_evidence)
+                elif (
+                    report and state.final.missing_evidence and not report.investigation_recommended
+                ):
+                    from vehicle_platform.agents.schemas import Sufficiency
+                    from vehicle_platform.agents.specialists.runtime import Supervisor
+
+                    # Reliable measurements do not close a question's remaining evidence gaps.
+                    report.sufficiency = Sufficiency.PARTIALLY_SUFFICIENT
+                    report.investigation_recommended = True
+                    await Supervisor(self, state).evaluate()
                 if state.run.supervisor:
                     state.final.limitations = list(
                         dict.fromkeys(

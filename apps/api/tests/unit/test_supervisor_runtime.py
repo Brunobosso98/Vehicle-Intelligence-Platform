@@ -12,7 +12,7 @@ from vehicle_platform.agents.config import AgentSettings
 from vehicle_platform.agents.instrumentation import AgentInstrumentation
 from vehicle_platform.agents.orchestration import Orchestrator
 from vehicle_platform.agents.provider import AgentError, ModelTurn, ToolRequest
-from vehicle_platform.agents.schemas import Specialist, Sufficiency
+from vehicle_platform.agents.schemas import Claim, Draft, Specialist, Sufficiency
 from vehicle_platform.agents.scripted_provider import DeterministicProvider
 from vehicle_platform.agents.specialists.runtime import Supervisor
 from vehicle_platform.mcp.schemas import Envelope
@@ -99,6 +99,38 @@ async def test_quality_gate_checks_historical_comparison_capabilities(fixture, t
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
     assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
     assert "engine_speed_dropout" in report.specialists[0].data_quality_warnings
+
+
+@pytest.mark.parametrize("missing", [True, False])
+async def test_final_synthesis_preserves_remaining_question_gaps(fixture, telemetry, missing):
+    state, _, engine = runtime(fixture, telemetry, "Did performance change?")
+    await Supervisor(engine, state).run()
+    report = state.run.supervisor
+    assert report.sufficiency is Sufficiency.SUFFICIENT
+    finding = report.specialists[-1].findings[0]
+    state.turn = ModelTurn(
+        draft=Draft(
+            confidence="moderate",
+            claims=[
+                Claim.model_validate(
+                    finding.model_dump(
+                        include={"classification", "template", "bindings", "evidence_ids"}
+                    )
+                )
+            ],
+            missing_evidence=["mechanical_cause"] if missing else [],
+        )
+    )
+    state.emit = AsyncMock()
+    await engine.grounding_node({"execution": state})
+    assert report.sufficiency is (
+        Sufficiency.PARTIALLY_SUFFICIENT if missing else Sufficiency.SUFFICIENT
+    )
+    assert report.investigation_recommended is missing
+    if missing:
+        assert any(call.args[0] == "investigation_proposed" for call in state.emit.await_args_list)
+    else:
+        state.emit.assert_not_awaited()
 
 
 async def test_repeated_degradation_dispatches_only_relevant_specialists(fixture, telemetry):
