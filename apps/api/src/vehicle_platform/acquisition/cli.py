@@ -1,11 +1,14 @@
 import asyncio
 import json
+import os
 from collections.abc import Awaitable
 from dataclasses import asdict
 from enum import StrEnum
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
 
+import httpx
 import typer
 from prometheus_client import start_http_server
 
@@ -29,7 +32,7 @@ def execute[T](operation: Awaitable[T]) -> T:
 
     try:
         return asyncio.run(invoke())
-    except (OSError, TimeoutError, ValueError):
+    except (OSError, TimeoutError, ValueError, httpx.HTTPError):
         typer.echo(
             "Collector input or dependency unavailable; inspect readiness and spool.", err=True
         )
@@ -99,6 +102,59 @@ def preflight_command(
     typer.echo(
         json.dumps(result, default=str) if json_output else f"readiness: {result['readiness']}"
     )
+
+
+@app.command("report-capabilities")
+def report_capabilities(
+    vehicle_id: UUID = typer.Option(..., "--vehicle-id"),
+    configuration_id: UUID = typer.Option(..., "--configuration-id"),
+    source_id: str = typer.Option(..., "--source-id"),
+    obd_host: str = typer.Option(..., "--obd-host"),
+    obd_port: int = typer.Option(35000, "--obd-port", min=1, max=65535),
+    gateway: str = typer.Option("http://127.0.0.1:8000", "--gateway"),
+) -> None:
+    """Read standard Mode 01 support locally and register an operator-attested snapshot."""
+    token = os.environ.get("VIP_AGENT_INVESTIGATION_TOKEN", "")
+    parsed = urlparse(gateway)
+    if (
+        not 1 <= len(source_id) <= 80
+        or not token
+        or len(token) > 256
+        or parsed.scheme not in {"http", "https"}
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+        or (parsed.scheme == "http" and parsed.hostname not in {"localhost", "127.0.0.1", "::1"})
+    ):
+        raise typer.BadParameter("set an operator token and use a local or HTTPS gateway")
+
+    async def publish() -> str:
+        adapter = adapter_for(AdapterKind.OBD, obd_host, obd_port)
+        try:
+            await adapter.connect()
+            capabilities = await adapter.capabilities()
+        finally:
+            await adapter.close()
+        payload = {
+            "configuration_id": str(configuration_id),
+            "adapter": "obd",
+            "source_id": source_id,
+            "capability_snapshot": asdict(capabilities),
+        }
+        async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
+            response = await client.post(
+                gateway.rstrip("/")
+                + f"/api/v1/vehicles/{vehicle_id}/investigations/source-preflight",
+                json=payload,
+                headers={"X-Investigation-Token": token},
+            )
+            response.raise_for_status()
+            return str(response.json()["observed_at"])
+
+    observed_at = execute(publish())
+    typer.echo(f"Read-only source capabilities registered at {observed_at}")
 
 
 @app.command()

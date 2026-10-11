@@ -14,5 +14,13 @@ TypeScript own HTTP contract synchronization; stream messages carry explicit ver
 ADRs 0011–0017 record these boundaries and delivery identities. Extraction requires demonstrated
 scaling, process isolation, security or deployment needs. MCP is a read-only adapter over application services with a shared protocol registry and separate
 process runtime. Its nonpersistent analytics/capability paths cannot change stored evidence.
-Agents, RAG, ML, diagnosis and production identity/infrastructure remain deferred.
+Phase 7A owns grounded agent runs, MCP audit and public answer events. Phase 7B owns only
+investigation plans, replay events, source capability reports and links to canonical sessions.
+Phase 4 still owns hardware adapters, recipe hashes, sampling preflight and the collector;
+Phase 6 remains read-only. The agent provider proposes semantic needs but cannot create a PID,
+change a sampling rate, start a collector or mutate canonical telemetry. An operator token gates
+every investigation route, while approval and session linkage use version/hash/context checks.
+See [Phase 7B](phase-7b-investigation-adaptive-logging.md) and [ADR 0020](../adr/0020-investigation-recipe-and-approval-boundary.md).
+
+Specialist agents, RAG, ML, diagnosis and production identity/infrastructure remain deferred.
 See [Phase 6](phase-6-mcp-tool-platform.md).

@@ -108,6 +108,10 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "agent_runs",
             "agent_tool_calls",
             "agent_stream_events",
+            "investigation_plans",
+            "investigation_session_links",
+            "investigation_events",
+            "acquisition_source_capabilities",
         }
         assert await connection.scalar(
             text(
@@ -211,6 +215,24 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             await connection.scalar(text("SELECT to_regclass('acquisition_sessions')"))
             == "acquisition_sessions"
         )
+    phase7b_downgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "downgrade", "0009", cwd=api, env=env
+    )
+    assert await phase7b_downgrade.wait() == 0
+    async with engine.connect() as connection:
+        assert await connection.scalar(text("SELECT to_regclass('investigation_plans')")) is None
+        assert await connection.scalar(text("SELECT to_regclass('agent_runs')")) == "agent_runs"
+        assert (
+            await connection.scalar(
+                text("SELECT numeric_value FROM telemetry_samples WHERE sample_id=:sample"),
+                {"sample": "f" * 64},
+            )
+            == 900
+        )
+    phase7b_reupgrade = await asyncio.create_subprocess_exec(
+        str(api / ".venv/bin/alembic"), "upgrade", expected_head, cwd=api, env=env
+    )
+    assert await phase7b_reupgrade.wait() == 0
     app = create_app(Settings(database_url=url, environment="test"))
     async with (
         app.router.lifespan_context(app),

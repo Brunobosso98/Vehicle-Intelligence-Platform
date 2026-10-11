@@ -5,15 +5,30 @@ from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
+from vehicle_platform.agents.investigation.domain import (
+    GapType,
+    HypothesisCategory,
+    Resolution,
+    SignalRole,
+)
+from vehicle_platform.agents.investigation.proposal import (
+    InvestigationInput,
+    InvestigationProposal,
+    ProposedGap,
+    ProposedHypothesis,
+)
 from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, ToolRequest
 from vehicle_platform.agents.schemas import Binding, Claim, Classification, Draft, Usage
 
 
 class ScriptedProvider:
     def __init__(
-        self, turns: list[ModelTurn | AgentError | Callable[[ModelInput], ModelTurn]]
+        self,
+        turns: list[ModelTurn | AgentError | Callable[[ModelInput], ModelTurn]],
+        proposal: InvestigationProposal | None = None,
     ) -> None:
         self.turns = iter(turns)
+        self.proposal = proposal
 
     async def turn(self, request: ModelInput) -> ModelTurn:
         try:
@@ -27,12 +42,104 @@ class ScriptedProvider:
     async def close(self) -> None:
         return None
 
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        if self.proposal is None:
+            raise AgentError("script_exhausted")
+        return self.proposal
+
 
 class DeterministicProvider:
     """Small reproducible local provider with natural-language scenarios, never the default."""
 
     def __init__(self) -> None:
         self.index = 0
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        question = request.question.casefold()
+        missing = set(request.missing_evidence)
+        if missing == {"technical_documentation"} or any(
+            word in question for word in ("manual", "factory specification", "especificação bmw")
+        ):
+            return InvestigationProposal(
+                hypotheses=[],
+                gaps=[ProposedGap(category=GapType.TECHNICAL_DOCUMENTATION)],
+            )
+        if "data_quality" in missing or any(
+            word in question for word in ("dropout", "timestamp", "amostragem", "qualidade")
+        ):
+            return InvestigationProposal(
+                hypotheses=[ProposedHypothesis(category=HypothesisCategory.DATA_QUALITY)],
+                gaps=[
+                    ProposedGap(
+                        category=GapType.DATA_QUALITY,
+                        hypothesis_indexes=[0],
+                        signal_roles=[SignalRole.DATA_QUALITY, SignalRole.ENGINE_SPEED],
+                    )
+                ],
+            )
+        if any(word in question for word in ("intercooler", "modifica", "before", "after")):
+            return InvestigationProposal(
+                hypotheses=[
+                    ProposedHypothesis(category=HypothesisCategory.CONFIGURATION_ASSOCIATION)
+                ],
+                gaps=[
+                    ProposedGap(category=GapType.COMPARABLE_HISTORY, hypothesis_indexes=[0]),
+                    ProposedGap(
+                        category=GapType.SIGNAL_OR_MEASUREMENT,
+                        hypothesis_indexes=[0],
+                        signal_roles=[SignalRole.INTAKE_TEMPERATURE, SignalRole.ENGINE_SPEED],
+                    ),
+                ],
+            )
+        if any(word in question for word in ("fuel", "combust", "hpfp", "pressão")):
+            return InvestigationProposal(
+                hypotheses=[ProposedHypothesis(category=HypothesisCategory.FUELING)],
+                gaps=[
+                    ProposedGap(
+                        category=GapType.SIGNAL_OR_MEASUREMENT,
+                        hypothesis_indexes=[0],
+                        signal_roles=[SignalRole.HIGH_FUEL_PRESSURE, SignalRole.ENGINE_SPEED],
+                        resolution=Resolution.HIGH,
+                    )
+                ],
+            )
+        if any(word in question for word in ("pull", "puxada", "iat", "slower", "lento")):
+            return InvestigationProposal(
+                hypotheses=[
+                    ProposedHypothesis(category=HypothesisCategory.THERMAL),
+                    ProposedHypothesis(category=HypothesisCategory.FUELING),
+                    ProposedHypothesis(category=HypothesisCategory.THROTTLE_TORQUE_INTERVENTION),
+                ],
+                gaps=[
+                    ProposedGap(
+                        category=GapType.SIGNAL_OR_MEASUREMENT,
+                        hypothesis_indexes=[0, 1, 2],
+                        signal_roles=[
+                            SignalRole.INTAKE_TEMPERATURE,
+                            SignalRole.HIGH_FUEL_PRESSURE,
+                            SignalRole.THROTTLE,
+                        ],
+                        resolution=Resolution.HIGH,
+                    ),
+                    ProposedGap(
+                        category=GapType.SIGNAL_OR_MEASUREMENT,
+                        hypothesis_indexes=[0, 2],
+                        required=False,
+                        signal_roles=[SignalRole.TIMING],
+                    ),
+                ],
+            )
+        return InvestigationProposal(
+            hypotheses=[ProposedHypothesis(category=HypothesisCategory.PERFORMANCE_VARIATION)],
+            gaps=[
+                ProposedGap(category=GapType.COMPARABLE_HISTORY, hypothesis_indexes=[0]),
+                ProposedGap(
+                    category=GapType.SIGNAL_OR_MEASUREMENT,
+                    hypothesis_indexes=[0],
+                    signal_roles=[SignalRole.ENGINE_SPEED, SignalRole.VEHICLE_SPEED],
+                ),
+            ],
+        )
 
     async def turn(self, request: ModelInput) -> ModelTurn:
         self.index += 1
@@ -42,6 +149,11 @@ class DeterministicProvider:
         sessions = context["sessions"]
         calls: list[tuple[str, dict[str, Any]]] = []
         executed = {m.get("name") for m in request.messages if m.get("type") == "function_call"}
+        investigation_follow_up = any(
+            isinstance(message.get("content"), str)
+            and message["content"].startswith("Investigation follow-up context")
+            for message in request.messages
+        )
         insufficient = any(
             word in question
             for word in (
@@ -53,6 +165,9 @@ class DeterministicProvider:
                 "pid",
                 "manual",
                 "sinal indispon",
+                "why",
+                "por que",
+                "porque",
             )
         )
         unsafe = bool(re.search(r"\b(flash|ecu|shell|sql|ignore)\b", question))
@@ -62,7 +177,9 @@ class DeterministicProvider:
         events = any(word in question for word in ("boost drop", "estranho", "evento"))
         repeated = any(word in question for word in ("puxada", "pull", "consecut", "iat"))
         if sessions and not unsafe:
-            if comparison and "compare_configurations" not in executed:
+            if investigation_follow_up and "list_session_events" not in executed:
+                calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 20})]
+            elif comparison and "compare_configurations" not in executed:
                 records = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
                 represented = {e.get("session_id") for e in records}
                 missing = [s for s in sessions[:6] if s["id"] not in represented]
@@ -216,7 +333,17 @@ class DeterministicProvider:
                     if "manual" in question
                     else "signal_or_measurement"
                     if quality_insufficient
-                    or any(word in question for word in ("timing", "pid", "sinal indispon"))
+                    or any(
+                        word in question
+                        for word in (
+                            "timing",
+                            "pid",
+                            "sinal indispon",
+                            "why",
+                            "por que",
+                            "porque",
+                        )
+                    )
                     else "comparable_history"
                     if comparison and not sources
                     else "mechanical_cause"

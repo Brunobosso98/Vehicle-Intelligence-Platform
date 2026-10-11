@@ -6,8 +6,12 @@ from sqlalchemy.pool import NullPool
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
+from vehicle_platform.acquisition.capabilities import AcquisitionCapabilitySource
 from vehicle_platform.acquisition.service import AcquisitionPublisher
 from vehicle_platform.agents.config import AgentSettings
+from vehicle_platform.agents.investigation.repository import InvestigationRepository
+from vehicle_platform.agents.investigation.routes import investigation_router
+from vehicle_platform.agents.investigation.service import InvestigationService
 from vehicle_platform.agents.provider import Provider
 from vehicle_platform.agents.repository import AgentRepository
 from vehicle_platform.agents.routes import agent_router
@@ -56,12 +60,18 @@ def create_app(
     agent_service = AgentService(
         AgentRepository(agent_database), agent_config, signals, provider_factory
     )
+    investigation_service = InvestigationService(
+        agent_service,
+        InvestigationRepository(agent_service.repository, signals),
+        AcquisitionCapabilitySource(database or agent_database),
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
+            await investigation_service.close()
             await agent_service.close()
             await publisher.close()
             if database is not None:
@@ -81,7 +91,9 @@ def create_app(
     app.add_middleware(AgentRequestBudgetMiddleware)
     app.include_router(router(config, dependency, signals))
     app.state.agent_service = agent_service
+    app.state.investigation_service = investigation_service
     app.include_router(agent_router(agent_service))
+    app.include_router(investigation_router(investigation_service))
     register_errors(app, signals)
 
     @app.get("/metrics", include_in_schema=False)

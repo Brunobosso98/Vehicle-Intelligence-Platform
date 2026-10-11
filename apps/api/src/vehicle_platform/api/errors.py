@@ -26,11 +26,24 @@ def register_errors(app: FastAPI, telemetry: Telemetry) -> None:
         )
         status = (
             404
-            if exc.category in {"run_not_found", "vehicle_not_found"}
+            if exc.category
+            in {
+                "run_not_found",
+                "vehicle_not_found",
+                "investigation_not_found",
+            }
+            else 409
+            if exc.category
+            in {
+                "stale_investigation_version",
+                "stale_recipe_hash",
+                "stale_source_capabilities",
+                "existing_evidence_sufficient",
+            }
             else 429
             if "concurrency" in exc.category
             else 503
-            if exc.category in {"agent_disabled", "database_unavailable"}
+            if exc.category in {"agent_disabled", "database_unavailable", "mcp_unavailable"}
             else 422
         )
         return response(

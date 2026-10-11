@@ -8,7 +8,7 @@
 - Phase 5 — Automotive Analytics (complete)
 - Phase 6 — MCP Tool Platform (complete; see Phase 6 acceptance evidence)
 - Phase 7A — Agent Core & Grounded Orchestration (implemented; see acceptance and PR-head receipts)
-- Phase 7B — Adaptive Investigation / Logging (planned)
+- Phase 7B — Investigation & Adaptive Logging (implemented on delivery branch; acceptance pending)
 - Phase 7C — Specialist Agent Orchestration (planned)
 - Phase 8 — Technical RAG (planned)
 - Phase 9 — ML / Predictive Models (planned)
@@ -17,7 +17,9 @@
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
 
-Phase 7A is implemented. Phase 7B/7C/8+ capabilities remain deferred.
+Phase 7A is implemented. Phase 7B adds a bounded, approved, read-only investigation and
+logging-recipe workflow; final acceptance and delivery receipts are tracked separately.
+Phase 7C/8+ capabilities remain deferred.
 
 # Current phase
 

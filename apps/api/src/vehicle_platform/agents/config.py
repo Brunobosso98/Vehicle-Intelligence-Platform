@@ -13,6 +13,7 @@ class AgentSettings(BaseSettings):
     api_key: SecretStr | None = None
     mcp_url: str = "http://127.0.0.1:8001/mcp"
     mcp_token: SecretStr | None = None
+    investigation_token: SecretStr | None = None
     max_steps: int = Field(default=16, ge=2, le=32)
     max_tool_calls: int = Field(default=32, ge=4, le=32)
     max_telemetry_calls: int = Field(default=1, ge=0, le=2)
@@ -56,7 +57,7 @@ class AgentSettings(BaseSettings):
 def redact_data(value: Any, settings: AgentSettings) -> Any:
     """Redact only strings, preserving numeric facts and JSON structure."""
     if isinstance(value, str):
-        for secret in (settings.api_key, settings.mcp_token):
+        for secret in (settings.api_key, settings.mcp_token, settings.investigation_token):
             if secret and secret.get_secret_value():
                 value = value.replace(secret.get_secret_value(), "[redacted]")
         return value

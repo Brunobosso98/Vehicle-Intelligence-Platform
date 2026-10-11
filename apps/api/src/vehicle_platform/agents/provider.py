@@ -1,9 +1,15 @@
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import Field
 
 from vehicle_platform.agents.schemas import Draft, StrictModel, Usage
+
+if TYPE_CHECKING:
+    from vehicle_platform.agents.investigation.proposal import (
+        InvestigationInput,
+        InvestigationProposal,
+    )
 
 
 class AgentError(Exception):
@@ -37,4 +43,5 @@ class ModelInput:
 
 class Provider(Protocol):
     async def turn(self, request: ModelInput) -> ModelTurn: ...
+    async def propose(self, request: "InvestigationInput") -> "InvestigationProposal": ...
     async def close(self) -> None: ...

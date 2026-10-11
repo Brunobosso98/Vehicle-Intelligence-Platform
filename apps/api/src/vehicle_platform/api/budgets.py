@@ -131,18 +131,23 @@ class AgentRequestBudgetMiddleware:
         if (
             scope["type"] != "http"
             or not path.startswith("/api/v1/vehicles/")
-            or "/agent-runs" not in path
+            or not any(segment in path for segment in ("/agent-runs", "/investigations"))
         ):
             await self.app(scope, receive, send)
             return
-        creation = scope.get("method") == "POST" and path.endswith("/agent-runs")
+        creation = scope.get("method") == "POST" and path.endswith(
+            ("/agent-runs", "/investigations")
+        )
+        bounded_body = scope.get("method") == "POST" and (
+            "/investigations" in path or path.endswith("/agent-runs")
+        )
         rate = self.creation_rate if creation else self.read_rate
         if self.requests >= self.request_limit or not rate.take():
             await self.reject(scope, receive, send, 429)
             return
         self.requests += 1
         try:
-            if not creation:
+            if not bounded_body:
                 await self.app(scope, receive, send)
                 return
             body = bytearray()

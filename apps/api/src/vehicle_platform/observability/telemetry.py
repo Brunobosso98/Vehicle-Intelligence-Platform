@@ -47,6 +47,19 @@ class JSONFormatter(logging.Formatter):
             "model",
             "input_tokens",
             "output_tokens",
+            "investigation_id",
+            "transition",
+            "hypothesis_count",
+            "gap_count",
+            "signal_need_count",
+            "recipe_version",
+            "recipe_hash",
+            "feasibility",
+            "approval_state",
+            "linked_session_count",
+            "planning_seconds",
+            "recipe_generation_seconds",
+            "mcp_calls",
         ):
             value = getattr(record, key, None)
             if value is not None:

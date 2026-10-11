@@ -650,6 +650,59 @@
         "title": "Answer",
         "type": "object"
       },
+      "Approval": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "anyOf": [
+              { "maxLength": 100, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Actor"
+          },
+          "approved_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Approved At"
+          },
+          "recipe_hash": {
+            "anyOf": [
+              { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Recipe Hash"
+          },
+          "status": {
+            "default": "PENDING",
+            "pattern": "^(PENDING|APPROVED|REJECTED|INVALIDATED)$",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "Approval",
+        "type": "object"
+      },
+      "ApprovalRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "recipe_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Recipe Hash",
+            "type": "string"
+          },
+          "version": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": ["version", "recipe_hash"],
+        "title": "ApprovalRequest",
+        "type": "object"
+      },
       "Ask": {
         "additionalProperties": false,
         "properties": {
@@ -677,6 +730,17 @@
         "required": ["question"],
         "title": "Ask",
         "type": "object"
+      },
+      "Availability": {
+        "enum": [
+          "AVAILABLE",
+          "AVAILABLE_DEGRADED",
+          "UNAVAILABLE",
+          "UNKNOWN",
+          "NOT_APPLICABLE"
+        ],
+        "title": "Availability",
+        "type": "string"
       },
       "Binding": {
         "additionalProperties": false,
@@ -889,6 +953,51 @@
         "title": "CSVSignalColumn",
         "type": "object"
       },
+      "CapabilitySnapshot": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": { "maxLength": 80, "title": "Adapter", "type": "string" },
+          "maximum_requests_per_second": {
+            "maximum": 1000,
+            "minimum": 0,
+            "title": "Maximum Requests Per Second",
+            "type": "number"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "signals": {
+            "additionalProperties": { "$ref": "#/components/schemas/Support" },
+            "maxProperties": 100,
+            "title": "Signals",
+            "type": "object"
+          },
+          "source_acquisition_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Acquisition Id"
+          },
+          "source_preflight_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Preflight Id"
+          }
+        },
+        "required": [
+          "adapter",
+          "signals",
+          "maximum_requests_per_second",
+          "observed_at"
+        ],
+        "title": "CapabilitySnapshot",
+        "type": "object"
+      },
       "Classification": {
         "enum": [
           "OBSERVATION",
@@ -1048,6 +1157,30 @@
         },
         "required": ["effective_at", "description", "provenance"],
         "title": "ConfigurationCreate",
+        "type": "object"
+      },
+      "CreateInvestigation": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "enum": ["synthetic", "replay", "obd"],
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_run_id": {
+            "format": "uuid",
+            "title": "Agent Run Id",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": ["agent_run_id", "adapter", "source_id"],
+        "title": "CreateInvestigation",
         "type": "object"
       },
       "DatasetCapabilityReport": {
@@ -1541,6 +1674,56 @@
         "title": "Evidence",
         "type": "object"
       },
+      "EvidenceGap": {
+        "additionalProperties": false,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/GapType" },
+          "description": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Description",
+            "type": "string"
+          },
+          "hypothesis_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 5,
+            "title": "Hypothesis Ids",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "resolution_source": {
+            "anyOf": [
+              { "maxLength": 160, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Resolution Source"
+          },
+          "signal_need_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 16,
+            "title": "Signal Need Ids",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GapStatus",
+            "default": "OPEN"
+          },
+          "why_it_matters": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Why It Matters",
+            "type": "string"
+          }
+        },
+        "required": ["id", "category", "description", "why_it_matters"],
+        "title": "EvidenceGap",
+        "type": "object"
+      },
       "Fact": {
         "additionalProperties": false,
         "properties": {
@@ -1566,6 +1749,16 @@
         "required": ["path", "value"],
         "title": "Fact",
         "type": "object"
+      },
+      "Feasibility": {
+        "enum": [
+          "FEASIBLE",
+          "FEASIBLE_WITH_DEGRADATION",
+          "PARTIALLY_FEASIBLE",
+          "NOT_FEASIBLE"
+        ],
+        "title": "Feasibility",
+        "type": "string"
       },
       "Finding": {
         "additionalProperties": false,
@@ -1610,6 +1803,30 @@
         "title": "Finding",
         "type": "object"
       },
+      "GapStatus": {
+        "enum": [
+          "OPEN",
+          "AVAILABLE_IN_EXISTING_DATA",
+          "NEEDS_NEW_CAPTURE",
+          "UNAVAILABLE_WITH_CURRENT_SOURCE",
+          "RESOLVED",
+          "WAIVED"
+        ],
+        "title": "GapStatus",
+        "type": "string"
+      },
+      "GapType": {
+        "enum": [
+          "signal_or_measurement",
+          "comparable_history",
+          "technical_documentation",
+          "data_quality",
+          "configuration_context",
+          "mechanical_cause"
+        ],
+        "title": "GapType",
+        "type": "string"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -1621,6 +1838,99 @@
         },
         "title": "Health",
         "type": "object"
+      },
+      "Hypothesis": {
+        "additionalProperties": false,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/HypothesisCategory" },
+          "created_by": {
+            "default": "agent",
+            "maxLength": 40,
+            "title": "Created By",
+            "type": "string"
+          },
+          "discriminating_goal": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Discriminating Goal",
+            "type": "string"
+          },
+          "evidence_against": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 8,
+            "title": "Evidence Against",
+            "type": "array"
+          },
+          "evidence_for": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 8,
+            "title": "Evidence For",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "limitations": {
+            "items": { "type": "string" },
+            "maxItems": 8,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "missing_gap_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 12,
+            "title": "Missing Gap Ids",
+            "type": "array"
+          },
+          "statement": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Statement",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HypothesisStatus",
+            "default": "CANDIDATE"
+          },
+          "support_level": {
+            "default": "unknown",
+            "maxLength": 80,
+            "title": "Support Level",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": ["id", "category", "statement", "discriminating_goal"],
+        "title": "Hypothesis",
+        "type": "object"
+      },
+      "HypothesisCategory": {
+        "enum": [
+          "THERMAL",
+          "AIRFLOW_BOOST",
+          "FUELING",
+          "THROTTLE_TORQUE_INTERVENTION",
+          "DATA_QUALITY",
+          "CONFIGURATION_ASSOCIATION",
+          "PERFORMANCE_VARIATION",
+          "UNKNOWN_OTHER"
+        ],
+        "title": "HypothesisCategory",
+        "type": "string"
+      },
+      "HypothesisStatus": {
+        "enum": [
+          "CANDIDATE",
+          "SUPPORTED",
+          "WEAKENED",
+          "NOT_SUPPORTED",
+          "UNRESOLVED",
+          "NOT_TESTABLE_WITH_CURRENT_CAPABILITIES"
+        ],
+        "title": "HypothesisStatus",
+        "type": "string"
       },
       "ImportResult": {
         "properties": {
@@ -1669,6 +1979,319 @@
           "end_observed_at"
         ],
         "title": "ImportResult",
+        "type": "object"
+      },
+      "InvestigationEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "at": { "format": "date-time", "title": "At", "type": "string" },
+          "detail": {
+            "anyOf": [
+              { "maxLength": 300, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Detail"
+          },
+          "investigation_id": {
+            "format": "uuid",
+            "title": "Investigation Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "default": "1.0",
+            "pattern": "^1\\.0$",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sequence": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "status": { "$ref": "#/components/schemas/InvestigationStatus" },
+          "type": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["investigation_id", "sequence", "type", "status"],
+        "title": "InvestigationEvent",
+        "type": "object"
+      },
+      "InvestigationOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "maxLength": 80,
+            "title": "Classification",
+            "type": "string"
+          },
+          "conclusion": {
+            "maxLength": 2000,
+            "title": "Conclusion",
+            "type": "string"
+          },
+          "confidence": {
+            "pattern": "^(low|moderate|high)$",
+            "title": "Confidence",
+            "type": "string"
+          },
+          "evidence_summary": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Evidence Summary",
+            "type": "array"
+          },
+          "follow_up": {
+            "anyOf": [
+              { "maxLength": 500, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Follow Up"
+          },
+          "limitations": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "resolved_gap_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 12,
+            "title": "Resolved Gap Ids",
+            "type": "array"
+          },
+          "supported_hypothesis_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 5,
+            "title": "Supported Hypothesis Ids",
+            "type": "array"
+          },
+          "unresolved_gap_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 12,
+            "title": "Unresolved Gap Ids",
+            "type": "array"
+          },
+          "weakened_hypothesis_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 5,
+            "title": "Weakened Hypothesis Ids",
+            "type": "array"
+          }
+        },
+        "required": ["conclusion", "classification", "confidence"],
+        "title": "InvestigationOutcome",
+        "type": "object"
+      },
+      "InvestigationPlan": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_run_id": {
+            "format": "uuid",
+            "title": "Agent Run Id",
+            "type": "string"
+          },
+          "approval": { "$ref": "#/components/schemas/Approval" },
+          "capability_snapshot": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/CapabilitySnapshot" },
+              { "type": "null" }
+            ]
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "cycle_count": {
+            "default": 0,
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Cycle Count",
+            "type": "integer"
+          },
+          "findings_summary": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Findings Summary",
+            "type": "string"
+          },
+          "gaps": {
+            "items": { "$ref": "#/components/schemas/EvidenceGap" },
+            "maxItems": 12,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "goal": {
+            "maxLength": 500,
+            "minLength": 8,
+            "title": "Goal",
+            "type": "string"
+          },
+          "hypotheses": {
+            "items": { "$ref": "#/components/schemas/Hypothesis" },
+            "maxItems": 5,
+            "title": "Hypotheses",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "linked_session_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 4,
+            "title": "Linked Session Ids",
+            "type": "array"
+          },
+          "outcome": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/InvestigationOutcome" },
+              { "type": "null" }
+            ]
+          },
+          "prompt_version": {
+            "default": "investigation-v1",
+            "maxLength": 40,
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "question": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "reanalysis_run_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Reanalysis Run Id"
+          },
+          "recipe": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/RecipeReference" },
+              { "type": "null" }
+            ]
+          },
+          "schema_version": {
+            "default": "1.0",
+            "pattern": "^1\\.0$",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "signal_needs": {
+            "items": { "$ref": "#/components/schemas/SignalNeed" },
+            "maxItems": 16,
+            "title": "Signal Needs",
+            "type": "array"
+          },
+          "source_adapter": {
+            "anyOf": [
+              { "enum": ["synthetic", "replay", "obd"], "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Adapter"
+          },
+          "source_id": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_session_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Session Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvestigationStatus",
+            "default": "DRAFT"
+          },
+          "trace_id": {
+            "anyOf": [
+              { "maxLength": 64, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Trace Id"
+          },
+          "transitions": {
+            "items": { "$ref": "#/components/schemas/Transition" },
+            "maxItems": 24,
+            "title": "Transitions",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": ["id", "agent_run_id", "vehicle_id", "question", "goal"],
+        "title": "InvestigationPlan",
+        "type": "object"
+      },
+      "InvestigationStatus": {
+        "enum": [
+          "DRAFT",
+          "EVIDENCE_GAPS_IDENTIFIED",
+          "CAPABILITIES_RESOLVED",
+          "RECIPE_PROPOSED",
+          "AWAITING_APPROVAL",
+          "APPROVED",
+          "ACQUISITION_READY",
+          "AWAITING_DATA",
+          "DATA_RECEIVED",
+          "REANALYZING",
+          "COMPLETED",
+          "INCONCLUSIVE",
+          "REJECTED",
+          "CANCELLED",
+          "FAILED"
+        ],
+        "title": "InvestigationStatus",
+        "type": "string"
+      },
+      "LinkSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "version": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": ["version", "session_id"],
+        "title": "LinkSessionRequest",
         "type": "object"
       },
       "LiveSignalQuality": {
@@ -2230,6 +2853,84 @@
         "title": "Ready",
         "type": "object"
       },
+      "RecipeReference": {
+        "additionalProperties": false,
+        "properties": {
+          "configuration_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Configuration Hash",
+            "type": "string"
+          },
+          "dropped_signals": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Dropped Signals",
+            "type": "array"
+          },
+          "feasibility": { "$ref": "#/components/schemas/Feasibility" },
+          "key": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "minimum_duration_seconds": {
+            "maximum": 86400,
+            "minimum": 1,
+            "title": "Minimum Duration Seconds",
+            "type": "integer"
+          },
+          "rate_compromises": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Rate Compromises",
+            "type": "array"
+          },
+          "rationale": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Rationale",
+            "type": "array"
+          },
+          "required_missing": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Required Missing",
+            "type": "array"
+          },
+          "sampling_algorithm_version": {
+            "maxLength": 20,
+            "title": "Sampling Algorithm Version",
+            "type": "string"
+          },
+          "source": { "maxLength": 80, "title": "Source", "type": "string" },
+          "supported_modes": {
+            "items": { "type": "string" },
+            "maxItems": 3,
+            "title": "Supported Modes",
+            "type": "array"
+          },
+          "vehicle_scope": {
+            "maxLength": 80,
+            "title": "Vehicle Scope",
+            "type": "string"
+          },
+          "version": { "minimum": 1, "title": "Version", "type": "integer" }
+        },
+        "required": [
+          "key",
+          "version",
+          "configuration_hash",
+          "minimum_duration_seconds",
+          "vehicle_scope",
+          "supported_modes",
+          "sampling_algorithm_version",
+          "feasibility",
+          "source"
+        ],
+        "title": "RecipeReference",
+        "type": "object"
+      },
       "RecipeSignal": {
         "properties": {
           "importance": {
@@ -2263,6 +2964,43 @@
         ],
         "title": "RecipeSignal",
         "type": "object"
+      },
+      "RegisterSourcePreflight": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "enum": ["obd", "replay"],
+            "title": "Adapter",
+            "type": "string"
+          },
+          "capability_snapshot": {
+            "$ref": "#/components/schemas/PreflightRequest"
+          },
+          "configuration_id": {
+            "format": "uuid",
+            "title": "Configuration Id",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "configuration_id",
+          "adapter",
+          "source_id",
+          "capability_snapshot"
+        ],
+        "title": "RegisterSourcePreflight",
+        "type": "object"
+      },
+      "Resolution": {
+        "enum": ["HIGH", "MEDIUM", "LOW", "EVENT_CONTEXT"],
+        "title": "Resolution",
+        "type": "string"
       },
       "RunAudit": {
         "additionalProperties": false,
@@ -2463,6 +3201,81 @@
         "title": "Signal",
         "type": "object"
       },
+      "SignalNeed": {
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/Availability",
+            "default": "UNKNOWN"
+          },
+          "canonical_signal": {
+            "anyOf": [
+              { "maxLength": 100, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Canonical Signal"
+          },
+          "gap_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Gap Ids",
+            "type": "array"
+          },
+          "hypothesis_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 5,
+            "title": "Hypothesis Ids",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "provenance": {
+            "default": "unresolved",
+            "maxLength": 160,
+            "title": "Provenance",
+            "type": "string"
+          },
+          "recorded_in_session": {
+            "anyOf": [{ "type": "boolean" }, { "type": "null" }],
+            "title": "Recorded In Session"
+          },
+          "required": { "title": "Required", "type": "boolean" },
+          "resolution": { "$ref": "#/components/schemas/Resolution" },
+          "role": { "$ref": "#/components/schemas/SignalRole" },
+          "source_support": {
+            "$ref": "#/components/schemas/Availability",
+            "default": "UNKNOWN"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              { "maxLength": 300, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": ["id", "role", "required", "resolution", "gap_ids"],
+        "title": "SignalNeed",
+        "type": "object"
+      },
+      "SignalRole": {
+        "enum": [
+          "engine_speed_context",
+          "vehicle_speed_context",
+          "throttle_opening_behavior",
+          "boost_pressure_behavior",
+          "intake_temperature_behavior",
+          "coolant_temperature_context",
+          "oil_temperature_context",
+          "high_fuel_pressure_behavior",
+          "low_fuel_pressure_behavior",
+          "lambda_behavior",
+          "timing_behavior",
+          "timestamp_sequence_quality"
+        ],
+        "title": "SignalRole",
+        "type": "string"
+      },
       "StreamEvent": {
         "additionalProperties": false,
         "properties": {
@@ -2552,6 +3365,17 @@
         ],
         "title": "StreamObservation",
         "type": "object"
+      },
+      "Support": {
+        "enum": [
+          "supported",
+          "unsupported",
+          "unavailable",
+          "unknown",
+          "adapter_does_not_support_discovery"
+        ],
+        "title": "Support",
+        "type": "string"
       },
       "TelemetryPoint": {
         "properties": {
@@ -2682,6 +3506,16 @@
           "argument_hash"
         ],
         "title": "ToolCall",
+        "type": "object"
+      },
+      "Transition": {
+        "additionalProperties": false,
+        "properties": {
+          "at": { "format": "date-time", "title": "At", "type": "string" },
+          "status": { "$ref": "#/components/schemas/InvestigationStatus" }
+        },
+        "required": ["status", "at"],
+        "title": "Transition",
         "type": "object"
       },
       "Usage": {
@@ -3011,6 +3845,20 @@
         },
         "required": ["version", "git_sha", "build_timestamp", "environment"],
         "title": "Version",
+        "type": "object"
+      },
+      "VersionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": ["version"],
+        "title": "VersionRequest",
         "type": "object"
       }
     }
@@ -6867,6 +7715,1034 @@
           }
         },
         "summary": "Build Vehicle Baseline"
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations": {
+      "get": {
+        "operationId": "recent_api_v1_vehicles__vehicle_id__investigations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/InvestigationPlan" },
+                  "title": "Response Recent Api V1 Vehicles  Vehicle Id  Investigations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Recent",
+        "tags": ["investigation"]
+      },
+      "post": {
+        "operationId": "create_api_v1_vehicles__vehicle_id__investigations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateInvestigation" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/source-preflight": {
+      "post": {
+        "operationId": "source_preflight_api_v1_vehicles__vehicle_id__investigations_source_preflight_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterSourcePreflight"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CapabilitySnapshot" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Source Preflight",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}": {
+      "get": {
+        "operationId": "get_api_v1_vehicles__vehicle_id__investigations__investigation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/approve": {
+      "post": {
+        "operationId": "approve_api_v1_vehicles__vehicle_id__investigations__investigation_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApprovalRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Approve",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/cancel": {
+      "post": {
+        "operationId": "cancel_api_v1_vehicles__vehicle_id__investigations__investigation_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VersionRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Cancel",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/events": {
+      "get": {
+        "operationId": "events_api_v1_vehicles__vehicle_id__investigations__investigation_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvestigationEvent"
+                  },
+                  "title": "Response Events Api V1 Vehicles  Vehicle Id  Investigations  Investigation Id  Events Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Events",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/reanalyze": {
+      "post": {
+        "operationId": "reanalyze_api_v1_vehicles__vehicle_id__investigations__investigation_id__reanalyze_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Reanalyze",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/refresh": {
+      "post": {
+        "operationId": "refresh_api_v1_vehicles__vehicle_id__investigations__investigation_id__refresh_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VersionRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Refresh",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/reject": {
+      "post": {
+        "operationId": "reject_api_v1_vehicles__vehicle_id__investigations__investigation_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VersionRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Reject",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/sessions": {
+      "post": {
+        "operationId": "link_session_api_v1_vehicles__vehicle_id__investigations__investigation_id__sessions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LinkSessionRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InvestigationPlan" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Link Session",
+        "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/investigations/{investigation_id}/stream": {
+      "get": {
+        "operationId": "stream_api_v1_vehicles__vehicle_id__investigations__investigation_id__stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "investigation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Investigation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-investigation-token",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "string" }, { "type": "null" }],
+              "title": "X-Investigation-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "application/json": { "schema": {} } },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Stream",
+        "tags": ["investigation"]
       }
     },
     "/api/v1/vehicles/{vehicle_id}/modifications": {

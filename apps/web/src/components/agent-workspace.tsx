@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { components } from "../../../../packages/contracts/generated/api";
+import { InvestigationWorkspace } from "./investigation-workspace";
 
 type AgentRun = components["schemas"]["AgentRun"];
 type Audit = components["schemas"]["RunAudit"];
@@ -327,6 +328,16 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
               <li key={index}>{item}</li>
             ))}
           </ul>
+          <InvestigationWorkspace
+            vehicleId={vehicleId}
+            run={run}
+            onFollowUp={(id) => {
+              stream.current?.close();
+              void loadRun(id).catch(() =>
+                setError("Acompanhamento indisponível."),
+              );
+            }}
+          />
         </div>
       )}
       {history.length > 0 && (

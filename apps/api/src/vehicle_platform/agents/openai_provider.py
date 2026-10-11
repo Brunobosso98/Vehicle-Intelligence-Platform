@@ -14,7 +14,8 @@ from openai.types.responses import ResponseInputParam, ToolParam
 from pydantic import ValidationError
 
 from vehicle_platform.agents.config import AgentSettings
-from vehicle_platform.agents.prompts import SYSTEM_POLICY
+from vehicle_platform.agents.investigation.proposal import InvestigationInput, InvestigationProposal
+from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
 from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, ToolRequest
 from vehicle_platform.agents.schemas import Draft, Usage
 
@@ -130,6 +131,50 @@ class OpenAIProvider:
             raise AgentError("provider_unavailable") from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_model_response") from None
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        payload = {
+            "question": request.question,
+            "vehicle_context": request.context,
+            "current_run_evidence": request.evidence,
+            "missing_evidence": request.missing_evidence,
+        }
+        encoded = json.dumps(payload)
+        if len(encoded.encode()) > self.settings.max_input_bytes:
+            raise AgentError("model_input_budget_exhausted")
+        try:
+            async with asyncio.timeout(self.settings.model_timeout):
+                response = await self.client.responses.create(
+                    model=self.settings.model,
+                    instructions=INVESTIGATION_POLICY,
+                    input=cast(
+                        ResponseInputParam,
+                        [{"role": "user", "content": "Untrusted current-run data:\n" + encoded}],
+                    ),
+                    text={
+                        "format": {
+                            "type": "json_schema",
+                            "name": "investigation_proposal",
+                            "schema": InvestigationProposal.model_json_schema(),
+                            "strict": False,
+                        }
+                    },
+                    max_output_tokens=2048,
+                    store=False,
+                )
+            if len(response.output_text.encode()) > self.settings.max_output_bytes:
+                raise AgentError("model_output_budget_exhausted")
+            return InvestigationProposal.model_validate_json(response.output_text)
+        except AuthenticationError:
+            raise AgentError("provider_authentication") from None
+        except RateLimitError:
+            raise AgentError("provider_rate_limit") from None
+        except (APITimeoutError, TimeoutError):
+            raise AgentError("provider_timeout") from None
+        except (APIConnectionError, APIStatusError):
+            raise AgentError("provider_unavailable") from None
+        except (ValidationError, ValueError, TypeError):
+            raise AgentError("invalid_investigation_proposal") from None
 
     async def close(self) -> None:
         await self.client.close()
