@@ -90,8 +90,12 @@ async def search_existing(
         recorded[identifier] = _good_signals(envelope.data)
     by_id = {need.id: need for need in needs}
     updated: list[EvidenceGap] = []
-    unresolved_mechanisms = bool(
-        run.supervisor and any(c.requires_investigation for c in run.supervisor.conflicts)
+    unreliable_measurements = bool(
+        run.supervisor
+        and (
+            run.supervisor.sufficiency.value == "UNRELIABLE_DATA"
+            or any(c.requires_investigation for c in run.supervisor.conflicts)
+        )
     )
     for gap in gaps:
         signals = {
@@ -116,9 +120,9 @@ async def search_existing(
                     }
                 )
             )
-        elif unresolved_mechanisms and gap.category is GapType.SIGNAL_OR_MEASUREMENT:
+        elif unreliable_measurements and gap.category is GapType.SIGNAL_OR_MEASUREMENT:
             # Availability establishes that a signal was captured, not that the existing
-            # windows discriminate coexisting mechanisms already examined by specialists.
+            # windows are reliable or discriminate mechanisms examined by specialists.
             updated.append(gap.model_copy(update={"status": GapStatus.NEEDS_NEW_CAPTURE}))
         elif signals and any(signals <= available for available in recorded.values()):
             updated.append(

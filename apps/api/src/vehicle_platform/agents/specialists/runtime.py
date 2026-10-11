@@ -203,7 +203,18 @@ class Supervisor:
         report.sufficiency = sufficiency_for(
             report.specialists, report.conflicts, quality_required=decision.data_quality_gate
         )
-        report.investigation_recommended = report.sufficiency is not Sufficiency.SUFFICIENT
+        report.investigation_recommended = report.sufficiency in {
+            Sufficiency.INSUFFICIENT,
+            Sufficiency.UNRELIABLE_DATA,
+        } or any(
+            r.status != "completed"
+            or r.evidence_gaps
+            or any(
+                f.classification in {Classification.INSUFFICIENT_EVIDENCE, Classification.UNKNOWN}
+                for f in r.findings
+            )
+            for r in report.specialists
+        )
         await self.evaluate()
         if report.sufficiency is Sufficiency.UNRELIABLE_DATA:
             self.synthesize_unreliable()
@@ -251,7 +262,7 @@ class Supervisor:
                     bindings=[],
                 )
             ],
-            missing_evidence=["data_quality"],
+            missing_evidence=["data_quality", "signal_or_measurement"],
         )
         self.state.final = validate(proposed, self.state.registry, self.state.context)
         self.state.final.limitations.append(

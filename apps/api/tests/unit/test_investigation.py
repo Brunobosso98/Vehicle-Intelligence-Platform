@@ -545,6 +545,28 @@ async def test_existing_search_respects_signal_quality_and_vehicle_context() -> 
     found = await search_existing(run, [gap], [signal_need], client)
     assert found.gaps[0].status is GapStatus.AVAILABLE_IN_EXISTING_DATA
     assert found.mcp_calls == 1
+    from vehicle_platform.agents.schemas import (
+        Intent,
+        RoutingDecision,
+        Sufficiency,
+        SupervisorReport,
+    )
+
+    run.supervisor = SupervisorReport(
+        routing=RoutingDecision(
+            intent=Intent.MULTI_MECHANISM,
+            considered=[],
+            selected=[],
+            skipped=[],
+            data_quality_gate=True,
+            hints=[],
+            reason="Quality gate blocked interpretation",
+        ),
+        sufficiency=Sufficiency.UNRELIABLE_DATA,
+    )
+    unreliable = await search_existing(run, [gap], [signal_need], client)
+    assert unreliable.gaps[0].status is GapStatus.NEEDS_NEW_CAPTURE
+    run.supervisor = None
     envelope.data["signal_quality"][0]["missing_ratio"] = 0.9
     degraded = await search_existing(run, [gap], [signal_need], client)
     assert degraded.gaps[0].status is GapStatus.NEEDS_NEW_CAPTURE

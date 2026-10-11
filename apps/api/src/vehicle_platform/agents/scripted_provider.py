@@ -100,16 +100,53 @@ class DeterministicProvider:
         if "data_quality" in missing or any(
             word in question for word in ("dropout", "timestamp", "amostragem", "qualidade")
         ):
-            return InvestigationProposal(
-                hypotheses=[ProposedHypothesis(category=HypothesisCategory.DATA_QUALITY)],
-                gaps=[
-                    ProposedGap(
-                        category=GapType.DATA_QUALITY,
-                        hypothesis_indexes=[0],
-                        signal_roles=[SignalRole.DATA_QUALITY, SignalRole.ENGINE_SPEED],
-                    )
-                ],
+            domain_requested = any(
+                word in question
+                for word in (
+                    "intercooler",
+                    "modifica",
+                    "configuration",
+                    "configura",
+                    "boost",
+                    "fuel",
+                    "combust",
+                    "hpfp",
+                    "pressão",
+                    "lambda",
+                    "pull",
+                    "puxada",
+                    "iat",
+                    "slower",
+                    "lento",
+                )
             )
+            if not domain_requested:
+                return InvestigationProposal(
+                    hypotheses=[ProposedHypothesis(category=HypothesisCategory.DATA_QUALITY)],
+                    gaps=[
+                        ProposedGap(
+                            category=GapType.DATA_QUALITY,
+                            hypothesis_indexes=[0],
+                            signal_roles=[SignalRole.DATA_QUALITY, SignalRole.ENGINE_SPEED],
+                        )
+                    ],
+                )
+            proposal = self.domain_investigation(question)
+            quality_index = len(proposal.hypotheses)
+            proposal.hypotheses.append(ProposedHypothesis(category=HypothesisCategory.DATA_QUALITY))
+            proposal.gaps.insert(
+                0,
+                ProposedGap(
+                    category=GapType.DATA_QUALITY,
+                    hypothesis_indexes=[quality_index],
+                    signal_roles=[SignalRole.DATA_QUALITY, SignalRole.ENGINE_SPEED],
+                ),
+            )
+            return proposal
+        return self.domain_investigation(question)
+
+    @staticmethod
+    def domain_investigation(question: str) -> InvestigationProposal:
         if any(
             word in question for word in ("intercooler", "modifica", "configuration", "configura")
         ):
@@ -160,31 +197,7 @@ class DeterministicProvider:
                 ],
             )
         if any(word in question for word in ("pull", "puxada", "iat", "slower", "lento")):
-            return InvestigationProposal(
-                hypotheses=[
-                    ProposedHypothesis(category=HypothesisCategory.THERMAL),
-                    ProposedHypothesis(category=HypothesisCategory.FUELING),
-                    ProposedHypothesis(category=HypothesisCategory.THROTTLE_TORQUE_INTERVENTION),
-                ],
-                gaps=[
-                    ProposedGap(
-                        category=GapType.SIGNAL_OR_MEASUREMENT,
-                        hypothesis_indexes=[0, 1, 2],
-                        signal_roles=[
-                            SignalRole.INTAKE_TEMPERATURE,
-                            SignalRole.HIGH_FUEL_PRESSURE,
-                            SignalRole.THROTTLE,
-                        ],
-                        resolution=Resolution.HIGH,
-                    ),
-                    ProposedGap(
-                        category=GapType.SIGNAL_OR_MEASUREMENT,
-                        hypothesis_indexes=[0, 2],
-                        required=False,
-                        signal_roles=[SignalRole.TIMING],
-                    ),
-                ],
-            )
+            return DeterministicProvider.repeated_investigation()
         return InvestigationProposal(
             hypotheses=[ProposedHypothesis(category=HypothesisCategory.PERFORMANCE_VARIATION)],
             gaps=[
@@ -193,6 +206,34 @@ class DeterministicProvider:
                     category=GapType.SIGNAL_OR_MEASUREMENT,
                     hypothesis_indexes=[0],
                     signal_roles=[SignalRole.ENGINE_SPEED, SignalRole.VEHICLE_SPEED],
+                ),
+            ],
+        )
+
+    @staticmethod
+    def repeated_investigation() -> InvestigationProposal:
+        return InvestigationProposal(
+            hypotheses=[
+                ProposedHypothesis(category=HypothesisCategory.THERMAL),
+                ProposedHypothesis(category=HypothesisCategory.FUELING),
+                ProposedHypothesis(category=HypothesisCategory.THROTTLE_TORQUE_INTERVENTION),
+            ],
+            gaps=[
+                ProposedGap(
+                    category=GapType.SIGNAL_OR_MEASUREMENT,
+                    hypothesis_indexes=[0, 1, 2],
+                    signal_roles=[
+                        SignalRole.INTAKE_TEMPERATURE,
+                        SignalRole.HIGH_FUEL_PRESSURE,
+                        SignalRole.THROTTLE,
+                    ],
+                    resolution=Resolution.HIGH,
+                ),
+                ProposedGap(
+                    category=GapType.SIGNAL_OR_MEASUREMENT,
+                    hypothesis_indexes=[0, 2],
+                    required=False,
+                    signal_roles=[SignalRole.TIMING],
                 ),
             ],
         )

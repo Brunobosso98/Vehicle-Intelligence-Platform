@@ -23,6 +23,14 @@ than inferring a failed component. A failed domain specialist must not supply fi
 evidence is proposed to the existing Phase 7B investigation section; source resolution, recipe
 selection and explicit approval remain there. Approved logging remains manual and read-only.
 
+A noncritical sampling warning can make the report partially sufficient without requiring a new
+capture when the recorded evidence answers the question. Missing measurements, unknown findings,
+failed specialists and unresolved conflicts still require investigation. Critical quality failures
+retain both quality and measurement gaps: a recorded signal name alone cannot close a gap when
+its measurements are unreliable. A finalized acquisition with no recorded samples is not evidence
+of sufficient quality. Repeated-pull investigations preserve the competing thermal, fueling and
+intervention hypotheses alongside the quality prerequisite; none is a confirmed diagnosis.
+
 Commands are `make test-supervisor`, `make phase7c-acceptance`, `make test-supervisor-e2e`,
 `make benchmark-supervisor` and `make supervisor-observability`. Performance allows eight scoped
 MCP requests for configuration comparison; other roles allow six. Three compatible sessions per

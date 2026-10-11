@@ -213,14 +213,55 @@ async def test_real_planning_adapter_receives_structured_supervisor_report(provi
     assert json.loads(content.split("\n", 1)[1])["supervisor"] == report
 
 
-async def test_repeated_pull_planning_preserves_competing_mechanisms():
+@pytest.mark.parametrize("poor_quality", [True, False])
+async def test_repeated_pull_planning_preserves_competing_mechanisms(poor_quality):
     result = await DeterministicProvider().propose(
         InvestigationInput(
             question="Why did performance degrade after repeated pulls?",
             context={},
             evidence=[],
-            missing_evidence=["signal_or_measurement"],
+            missing_evidence=["signal_or_measurement", "data_quality"]
+            if poor_quality
+            else ["signal_or_measurement"],
             supervisor={"conflicts": []},
         )
     )
     assert {"THERMAL", "FUELING"} <= {h.category.value for h in result.hypotheses}
+    assert any(g.category is GapType.DATA_QUALITY for g in result.gaps) is poor_quality
+
+
+@pytest.mark.parametrize(
+    ("question", "category"),
+    [
+        ("Why did performance change after intercooler?", "CONFIGURATION_ASSOCIATION"),
+        ("Why did boost change?", "AIRFLOW_BOOST"),
+        ("Why is fuel pressure missing during a pull?", "FUELING"),
+    ],
+)
+async def test_quality_prerequisite_preserves_domain_investigation(question, category):
+    result = await DeterministicProvider().propose(
+        InvestigationInput(
+            question=question,
+            context={},
+            evidence=[],
+            missing_evidence=["data_quality", "signal_or_measurement"],
+        )
+    )
+    assert {category, "DATA_QUALITY"} == {h.category.value for h in result.hypotheses}
+    assert result.gaps[0].category is GapType.DATA_QUALITY
+    assert result.gaps[0].hypothesis_indexes == [1]
+    assert any(g.category is GapType.SIGNAL_OR_MEASUREMENT for g in result.gaps)
+
+
+async def test_quality_only_investigation_has_a_valid_discriminating_gap():
+    result = await DeterministicProvider().propose(
+        InvestigationInput(
+            question="Why is data quality low after dropout?",
+            context={},
+            evidence=[],
+            missing_evidence=["data_quality", "signal_or_measurement"],
+        )
+    )
+    assert [h.category.value for h in result.hypotheses] == ["DATA_QUALITY"]
+    assert result.gaps[0].hypothesis_indexes == [0]
+    assert InvestigationProposal.model_validate(result.model_dump()) == result

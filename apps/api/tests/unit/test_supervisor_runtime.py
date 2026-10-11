@@ -129,6 +129,8 @@ async def test_final_synthesis_preserves_remaining_question_gaps(fixture, teleme
     assert report.investigation_recommended is missing
     if missing:
         assert any(call.args[0] == "investigation_proposed" for call in state.emit.await_args_list)
+        assert state.final.confidence == "low"
+        assert any(f.classification.value == "INSUFFICIENT_EVIDENCE" for f in state.final.findings)
     else:
         state.emit.assert_not_awaited()
 
@@ -162,7 +164,7 @@ async def test_quality_dropout_blocks_deeper_interpretation(fixture, telemetry):
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
     assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
     assert report.investigation_recommended
-    assert state.final.missing_evidence == ["data_quality"]
+    assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
     assert client.call.await_count == 2
 
 
@@ -322,6 +324,7 @@ async def test_regular_five_hz_recording_is_downgraded_not_mislabeled_as_dropout
     quality = state.run.supervisor.specialists[0]
     assert quality.data_quality_warnings == ["recorded_sampling_below_recipe_target"]
     assert not quality.blocks_interpretation
+    assert not state.run.supervisor.investigation_recommended
     assert [r.specialist for r in state.run.supervisor.specialists] == [
         Specialist.DATA_QUALITY,
         Specialist.THERMAL,
