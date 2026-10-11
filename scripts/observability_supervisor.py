@@ -54,6 +54,23 @@ async def main() -> None:
         mapped = (await command("port", service, str(port))).strip().rsplit(":", 1)[1]
         return f"http://127.0.0.1:{mapped}"
 
+    async def wait_for_telemetry_backends() -> None:
+        probe = (
+            "import socket, urllib.request; "
+            "urllib.request.urlopen('http://otel-collector:13133/', timeout=3); "
+            "socket.create_connection(('otel-collector', 4318), timeout=3).close(); "
+            "urllib.request.urlopen('http://tempo:3200/ready', timeout=3)"
+        )
+        deadline = monotonic() + 90
+        while monotonic() < deadline:
+            try:
+                await command("exec", "-T", "agent-api", "python", "-c", probe)
+            except AssertionError:
+                await asyncio.sleep(1)
+            else:
+                return
+        raise AssertionError("OTel receiver and Tempo did not become ready")
+
     try:
         await command(
             "up", "-d", "--no-build", "--wait", "agent-api", "prometheus", "tempo"
@@ -63,6 +80,7 @@ async def main() -> None:
             await address("tempo", 3200),
             await address("prometheus", 9090),
         )
+        await wait_for_telemetry_backends()
         ARTIFACTS.mkdir(parents=True, exist_ok=True)
         async with httpx.AsyncClient(
             base_url=api_url, timeout=100, trust_env=False
