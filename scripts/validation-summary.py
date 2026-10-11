@@ -16,6 +16,7 @@ labels = {
     "Phase 6 MCP": "MCP",
     "Phase 7A grounded agent": "AGENT",
     "Phase 7B investigation": "INVESTIGATION",
+    "Phase 7C supervisor": "SUPERVISOR",
 }
 outcome_status = {
     "success": "PASS",

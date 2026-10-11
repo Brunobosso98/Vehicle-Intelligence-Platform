@@ -126,7 +126,21 @@ async def evaluate(url: str) -> dict:
                 assert answer["missing_evidence"] == ["signal_or_measurement"]
             calls = (await api.get(f"{path}/{run_id}/audit")).json()["tool_calls"]
             names = {c["tool_name"] for c in calls}
-            assert not required_tool or required_tool in names, (question, names)
+            assert not required_tool or required_tool in names, (
+                question,
+                names,
+                [
+                    (
+                        result["specialist"],
+                        result["status"],
+                        result["data_quality_warnings"],
+                    )
+                    for result in (run.get("supervisor") or {}).get("specialists", [])
+                ],
+                answer["context"]["capabilities"]
+                .get(fixture["latest_session"], {})
+                .get("signal_quality", []),
+            )
             assert classification in {
                 f["classification"] for f in answer["findings"]
             }, (question, answer)
