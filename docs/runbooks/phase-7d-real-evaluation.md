@@ -1,0 +1,76 @@
+# Phase 7D real evaluation
+
+Use a dedicated OpenAI API project/key. Configure its provider-side ceiling at USD 5 separately;
+the repository never changes billing settings. Supply the key through the local environment or
+an already ignored `.env` file. Never paste it into prompts, reports or PR text. `.env` and
+`.env.*` are ignored; `.env.example` contains names and safe defaults only.
+
+Required configuration:
+
+```text
+VIP_AGENT_API_KEY=<local secret>
+VIP_AGENT_MODEL=gpt-6-luna
+VIP_AGENT_SERVICE_TIER=flex
+VIP_AGENT_REASONING_EFFORT=low
+VIP_7D_MAX_SPEND_USD=2.00
+```
+
+Verify current official [model documentation](https://developers.openai.com/api/docs/models/gpt-6-luna)
+and [pricing](https://developers.openai.com/api/docs/pricing) before running. The 2026-10-12
+short-context Flex assumptions per million tokens are USD 0.05 input, USD 0.005 cached input
+and USD 0.25 output. Long context is rejected by the harness. Reverify/update the rate provenance
+if older than seven days. Estimates are not provider billing truth. Flex never falls back to
+Standard or a different model automatically.
+
+Run deterministic tests and security scanning first:
+
+```sh
+make test-phase7d-harness
+make check-api
+make verify
+```
+
+Paid execution requires a clean committed SHA and explicit operator confirmation:
+
+```sh
+make phase7d-smoke PHASE7D_ARGS=--confirm-paid-eval
+make phase7d-real-eval PHASE7D_ARGS=--confirm-paid-eval
+make phase7d-report
+```
+
+The suite command starts a disposable `vehicle_test*` database and runs canonical migrations.
+The preflight displays model, tier, reasoning, case count, provider-call cap, spend limit and SHA.
+The smoke is one controlled test with function calling and structured output; it is checkpointed
+and reused by the suite. A failed/interrupted smoke stops execution. Before bulk spending,
+free deterministic production-graph samples measure fixture prompt sizes and combine them with
+observed smoke usage to forecast the suite cost. Projection above the limit stops bulk calls.
+Normal `make verify` and GitHub push/PR CI do not invoke these paid targets.
+
+Default limits: 120 end-to-end observations, 18 provider requests per case, 16 production model
+steps, three domain specialists plus the Data Quality gate, 32 parent MCP calls plus eleven bounded Phase 7B reads (43 total), one telemetry window,
+one infrastructure retry, one grounding correction and bounded model/run/case deadlines.
+The default spend threshold is USD 2; values above USD 5 or nonfinite values are rejected.
+Per-call reservations prevent starting requests without remaining budget. Remaining cases are
+budget-skipped when that threshold blocks execution. Skipped cases are never passes.
+
+Raw artifacts and the ledger live in ignored `.validation/phase7d/`. Retain the entire directory
+for resume. An operator lock prevents concurrent spenders. Invoke the same command to resume:
+completed cases keep their results; interrupted cases keep their charged bound and are not
+replayed automatically. Changed SHA/dataset/profile/rates are rejected. Interrupted observations
+prevent verification; inspect their durable run handle and artifact before deciding on a bounded
+operator rerun. Do not delete the checkpoint to force another full suite.
+
+After a genuine general policy/architecture fix, one confirmation suite can be explicitly selected:
+
+```sh
+make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite'
+```
+
+Both suites share spend. A third full suite is rejected. Do not tune repeatedly against exact
+questions. Separate infrastructure failures from semantic failures. Retain uncertainty, unsupported
+signals and Phase 8 documentary gaps. Never approve/acquire data automatically for these fixtures.
+
+Generate the JSON report, inspect failures and the human-review shortlist, and commit a sanitized
+summary in `docs/validation/phase-7d-real-evaluation.md`. Include exact GitHub final-head gate links.
+Only declare VERIFIED after the mandatory real suite, zero-tolerance metrics, quality thresholds
+and all deterministic gates pass. Leave the PR open and unmerged.

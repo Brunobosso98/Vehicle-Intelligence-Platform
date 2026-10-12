@@ -245,21 +245,21 @@ Preferred safe approaches:
 
 Linux / WSL / macOS:
 
-~~~bash
+```bash
 export VIP_AGENT_API_KEY='...'
 export VIP_AGENT_MODEL='gpt-6-luna'
 export VIP_AGENT_SERVICE_TIER='flex'
 export VIP_AGENT_REASONING_EFFORT='low'
-~~~
+```
 
 PowerShell:
 
-~~~powershell
+```powershell
 $env:VIP_AGENT_API_KEY='...'
 $env:VIP_AGENT_MODEL='gpt-6-luna'
 $env:VIP_AGENT_SERVICE_TIER='flex'
 $env:VIP_AGENT_REASONING_EFFORT='low'
-~~~
+```
 
 The real value must never be pasted into Codex prompts or committed files.
 

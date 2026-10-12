@@ -111,7 +111,7 @@ claim a mechanical diagnosis or automatically repeat capture. See the
 The bounded Supervisor selects Data Quality, Performance, Thermal and Fuel/Air/Boost through
 typed routing, immutable MCP permissions and existing Phase 7A grounding. Factual lookups can use
 zero specialists. Unreliable telemetry blocks deeper interpretation; unresolved competing mechanisms
-use the existing Phase 7B approval and follow-up workflow. Implementation validation is in progress.
+use the existing Phase 7B approval and follow-up workflow. Phase 7C is VERIFIED on the canonical GitHub gates for PR #35; see the current roadmap.
 See [architecture](docs/architecture/phase-7c-specialist-agents-supervisor.md),
 [runbook](docs/runbooks/supervisor-specialists.md),
 [acceptance](docs/validation/phase-7c-acceptance.md) and
@@ -121,3 +121,13 @@ See [architecture](docs/architecture/phase-7c-specialist-agents-supervisor.md),
 `make benchmark-supervisor` and `make supervisor-observability` are the dedicated gates.
 Deterministic CI needs no paid provider credentials. Phase 7D owns comprehensive real-model
 routing, quality, latency, token and cost evaluation; Phase 8 owns RAG.
+
+## Phase 7D real-model reliability evaluation
+
+The versioned evaluation covers 80 unique questions and 40 critical repeats with GPT-6 Luna,
+Flex and low reasoning. Paid execution requires explicit confirmation, a clean committed SHA
+and local credentials. Normal CI tests the harness deterministically. See the
+[runbook](docs/runbooks/phase-7d-real-evaluation.md),
+[architecture](docs/architecture/phase-7d-real-model-validation.md) and
+[current evaluation report](docs/validation/phase-7d-real-evaluation.md).
+Phase 7D remains NOT VERIFIED until the mandatory real suite and final gates pass.

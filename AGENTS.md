@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0–5 and the Phase 6 read-only MCP adapters passed local and canonical full-stack acceptance. Phase 7A implements one grounded MCP agent with bounded run persistence and public streaming; see docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts. Diagnosis, Phase 7B adaptive investigation, Phase 7C specialists and Phase 8+ infrastructure are not implemented.
+Phases 0–7C passed canonical full-stack acceptance. Phase 7C is VERIFIED on final PR #35 head `1a07ced07b85393b22b68da62dbcca357ba6d501`, merged at `9b2b2a621d0a903262e4a15a75ea4f102740d60a`. Phase 7D real-model validation is in progress; see docs/prompts/phase-7d-real-model-validation.md and docs/validation/phase-7d-real-evaluation.md. Definitive diagnosis and Phase 8+ infrastructure remain deferred.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and

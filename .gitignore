@@ -19,3 +19,5 @@ test-results/
 .DS_Store
 .validation/
 .cache/
+graphify-out/cache/
+graphify-out/20??-??-??/

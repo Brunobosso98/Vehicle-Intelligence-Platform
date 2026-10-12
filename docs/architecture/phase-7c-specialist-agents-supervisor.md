@@ -1,6 +1,7 @@
 # Phase 7C specialist agents and supervisor
 
-Implementation and validation are in progress. The authoritative execution specification is
+Phase 7C is VERIFIED on the exact PR #35 head; the [current roadmap](../roadmap/README.md)
+links canonical GitHub evidence. The authoritative execution specification is
 [Phase 7C](../prompts/phase-7c-specialist-agents-supervisor.md); the
 [ledger](../validation/phase-7c-traceability-ledger.md) tracks its complete scope.
 The architectural decision is [ADR 0021](../adr/0021-bounded-supervisor-specialists.md).

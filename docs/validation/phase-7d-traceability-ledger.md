@@ -1,0 +1,149 @@
+# Phase 7D traceability ledger
+
+All 143 numbered specification sections are retained. Implementation evidence is provisional until the completion audit verifies the full requirement. Paid evaluation is NOT RUN; final local/remote gates are pending.
+
+| Section | Requirement                                        | Evidence / remaining work                                                                                                               |
+| ------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | Repository / branch / baseline                     | Branch ancestry and PR #35 exact-head GitHub evidence checked; current roadmap updated.                                                 |
+| 2       | Phase 7C closure status                            | Branch ancestry and PR #35 exact-head GitHub evidence checked; current roadmap updated.                                                 |
+| 3       | Phase 7D purpose                                   | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 4       | Primary model choice                               | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 5       | Credentials                                        | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 6       | Manual credential setup                            | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 7       | Spend-control philosophy                           | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 8       | Provider-side recommended budget                   | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 9       | Pricing source-of-truth                            | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 10      | No hidden real calls in normal CI                  | Normal CI retains deterministic checks only; Phase 7D harness acceptance target; final regression/remote checks pending.                |
+| 11      | Evaluation dataset design                          | evaluation/phase7d.py; deterministic dataset/budget/resume tests executed; final coverage/gates pending.                                |
+| 12      | Suite size                                         | evaluation/phase7d.py; deterministic dataset/budget/resume tests executed; final coverage/gates pending.                                |
+| 13      | Category distribution                              | evaluation/phase7d.py; deterministic dataset/budget/resume tests executed; final coverage/gates pending.                                |
+| 14      | A01 — last session                                 | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 15      | A02 — active configuration                         | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 16      | A03 — installed modifications                      | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 17      | A04 — last pull count                              | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 18      | A05 — strongest pull                               | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 19      | A06 — session capabilities                         | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 20      | A07 — event lookup                                 | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 21      | A08 — current vs historical configuration identity | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 22      | A09 — modification timeline                        | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 23      | A10 — available data, not documentation            | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 24      | B01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 25      | B02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 26      | B03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 27      | B04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 28      | B05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 29      | B06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 30      | B07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 31      | B08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 32      | B09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 33      | B10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 34      | C01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 35      | C02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 36      | C03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 37      | C04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 38      | C05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 39      | C06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 40      | C07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 41      | C08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 42      | C09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 43      | C10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 44      | D01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 45      | D02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 46      | D03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 47      | D04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 48      | D05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 49      | D06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 50      | D07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 51      | D08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 52      | D09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 53      | D10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 54      | E01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 55      | E02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 56      | E03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 57      | E04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 58      | E05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 59      | E06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 60      | E07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 61      | E08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 62      | E09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 63      | E10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 64      | F01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 65      | F02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 66      | F03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 67      | F04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 68      | F05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 69      | F06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 70      | F07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 71      | F08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 72      | F09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 73      | F10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 74      | G01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 75      | G02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 76      | G03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 77      | G04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 78      | G05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 79      | G06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 80      | G07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 81      | G08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 82      | G09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 83      | G10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 84      | H01                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 85      | H02                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 86      | H03                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 87      | H04                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 88      | H05                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 89      | H06                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 90      | H07                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 91      | H08                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 92      | H09                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 93      | H10                                                | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 94      | Critical repeat subset                             | evals/phase7d/suite-v1.json; exact questions/critical membership validated; real execution and fixture-specific semantic audit pending. |
+| 95      | No automatic prompt tuning on the same test set    | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 96      | Maximum full real-suite executions                 | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 97      | Provider-call cap                                  | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 98      | Retry policy                                       | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 99      | Reasoning-effort policy                            | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 100     | Optional Sol comparison                            | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 101     | Real-model grading                                 | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 102     | Hard blockers / zero-tolerance metrics             | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 103     | Routing quality                                    | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 104     | Tool efficiency                                    | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 105     | Grounding                                          | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 106     | Causal restraint                                   | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 107     | Diagnosis restraint                                | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 108     | Missing-evidence quality                           | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 109     | Adaptive logging quality                           | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 110     | Stability                                          | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 111     | Latency                                            | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 112     | Token usage                                        | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 113     | Prompt caching                                     | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 114     | Cost estimation                                    | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 115     | Budget preflight                                   | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 116     | Smoke test                                         | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 117     | Pre-suite cost estimate                            | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 118     | Resume/checkpoint                                  | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 119     | Evaluation reproducibility                         | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 120     | Evaluation artifacts                               | Ignored .validation artifacts; redaction tests; safe progress events; full secret/security scans and real receipts pending.             |
+| 121     | Chain-of-thought                                   | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 122     | Safety question behavior                           | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 123     | Production calibration output                      | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 124     | Pass/fail thresholds                               | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 125     | Human review                                       | evaluation/grading.py; independent grader/report tests; fixture-specific semantic coverage and real observations pending.               |
+| 126     | Phase 8 boundary                                   | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 127     | Architecture changes                               | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 128     | No overfitting                                     | Existing read-only policies and Phase 7B reused; production calibration and final review pending.                                       |
+| 129     | Deterministic harness tests                        | evaluation/phase7d.py; deterministic dataset/budget/resume tests executed; final coverage/gates pending.                                |
+| 130     | Make targets                                       | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 131     | CLI safety                                         | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 132     | Provider credential absence                        | evaluation/phase7d.py; phase7d_eval.py / phase7d_preflight.py; bounded ledger and explicit commands; integration review pending.        |
+| 133     | API/provider errors                                | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 134     | Flex behavior                                      | agents/config.py, openai_provider.py, receipts.py; per-call observer and CLI smoke tests; real provider evidence pending.               |
+| 135     | Observability                                      | Ignored .validation artifacts; redaction tests; safe progress events; full secret/security scans and real receipts pending.             |
+| 136     | Security                                           | Ignored .validation artifacts; redaction tests; safe progress events; full secret/security scans and real receipts pending.             |
+| 137     | GitHub Actions                                     | Normal CI retains deterministic checks only; Phase 7D harness acceptance target; final regression/remote checks pending.                |
+| 138     | Regression                                         | Normal CI retains deterministic checks only; Phase 7D harness acceptance target; final regression/remote checks pending.                |
+| 139     | Final workflow                                     | Delivery plan, architecture/runbook/report/this ledger; every final gate and real baseline must be verified before closure.             |
+| 140     | Documentation                                      | Delivery plan, architecture/runbook/report/this ledger; every final gate and real baseline must be verified before closure.             |
+| 141     | Final report requirements                          | Delivery plan, architecture/runbook/report/this ledger; every final gate and real baseline must be verified before closure.             |
+| 142     | Definition of Done                                 | Delivery plan, architecture/runbook/report/this ledger; every final gate and real baseline must be verified before closure.             |
+| 143     | Final status line                                  | Delivery plan, architecture/runbook/report/this ledger; every final gate and real baseline must be verified before closure.             |

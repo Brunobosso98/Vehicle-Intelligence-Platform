@@ -10,6 +10,9 @@ class AgentSettings(BaseSettings):
     enabled: bool = False
     provider: Literal["openai", "deterministic"] = "openai"
     model: str = Field(default="", max_length=100)
+    service_tier: Literal["auto", "default", "flex"] = "auto"
+    reasoning_effort: Literal["none", "low", "medium", "high"] | None = None
+    max_output_tokens: int = Field(default=4096, ge=512, le=4096)
     api_key: SecretStr | None = None
     mcp_url: str = "http://127.0.0.1:8001/mcp"
     mcp_token: SecretStr | None = None

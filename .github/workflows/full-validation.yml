@@ -108,6 +108,11 @@ jobs:
           make phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
           make phase7c-acceptance test-supervisor-e2e
 
+      - name: Validate Phase 7D harness without paid providers
+        id: phase7d
+        continue-on-error: true
+        run: make phase7d-harness-acceptance
+
       - name: Capture stack logs
         if: always()
         run: |
@@ -132,6 +137,7 @@ jobs:
           test ! -d .validation/agent || cp -r .validation/agent/. validation-artifacts/agent/
           test ! -d .validation/investigation || cp -r .validation/investigation/. validation-artifacts/investigation/
           test ! -d .validation/supervisor || cp -r .validation/supervisor validation-artifacts/
+          test ! -d .validation/phase7d-deterministic || cp -r .validation/phase7d-deterministic validation-artifacts/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -149,6 +155,7 @@ jobs:
           AGENT: ${{ steps.agent.outcome }}
           INVESTIGATION: ${{ steps.investigation.outcome }}
           SUPERVISOR: ${{ steps.supervisor.outcome }}
+          PHASE7D: ${{ steps.phase7d.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -172,13 +179,15 @@ jobs:
           AGENT: ${{ steps.agent.outcome }}
           INVESTIGATION: ${{ steps.investigation.outcome }}
           SUPERVISOR: ${{ steps.supervisor.outcome }}
+          PHASE7D: ${{ steps.phase7d.outcome }}
         run: |
           failed=0
           for entry in \
             "cloud:$CLOUD" "containers:$CONTAINERS" "database:$DATABASE" \
             "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
             "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" \
-            "agent:$AGENT" "investigation:$INVESTIGATION" "supervisor:$SUPERVISOR"; do
+            "agent:$AGENT" "investigation:$INVESTIGATION" "supervisor:$SUPERVISOR" \
+            "phase7d:$PHASE7D"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

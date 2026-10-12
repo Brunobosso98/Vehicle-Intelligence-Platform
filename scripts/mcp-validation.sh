@@ -34,4 +34,4 @@ case "$entrypoint" in
 esac
 mkdir -p "$evidence"
 git rev-parse HEAD > "$evidence/commit.txt"
-apps/api/.venv/bin/python "$entrypoint" | tee "$evidence/$(basename "$entrypoint" .py).log"
+apps/api/.venv/bin/python "$entrypoint" "${@:2}" | tee "$evidence/$(basename "$entrypoint" .py).log"
