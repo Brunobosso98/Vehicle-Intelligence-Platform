@@ -229,6 +229,12 @@ async def test_existing_real_adapter_explicit_config_and_safe_receipts(provider,
     else:
         await action
     args = provider.client.responses.create.call_args.kwargs
+    if mode in {"route", "invalid_json", "wire_failure"}:
+        schema = args["text"]["format"]["schema"]
+        assert args["text"]["format"]["strict"] is True
+        assert set(schema["required"]) == {"intent", "specialists"}
+        assert "usage" not in schema["properties"]
+        assert schema["additionalProperties"] is False
     assert args["service_tier"] == "flex" and args["store"] is False
     assert (
         ("reasoning" not in args) if mode == "no_effort" else args["reasoning"] == {"effort": "low"}

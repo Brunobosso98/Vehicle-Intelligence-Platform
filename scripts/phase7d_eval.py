@@ -38,6 +38,43 @@ from vehicle_platform.main import create_app
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / ".validation/phase7d"
 INFRASTRUCTURE = {"provider_timeout", "provider_unavailable", "provider_rate_limit"}
+FATAL_PROVIDER = {
+    "provider_authentication",
+    "provider_configuration",
+    "provider_configuration_mismatch",
+    "provider_usage_unavailable",
+}
+
+
+def failure_kind(errors):
+    if "SKIPPED_BUDGET_LIMIT" in errors:
+        return "SKIPPED_BUDGET_LIMIT"
+    if "BUDGET_VIOLATION" in errors or "invalid_usage_or_long_context" in errors:
+        return "HARNESS_FAILURE"
+    if any(error in INFRASTRUCTURE | FATAL_PROVIDER for error in errors):
+        return "PROVIDER_FAILURE"
+    if any(
+        error
+        in {
+            "run_timeout",
+            "investigation_timeout",
+            "specialist_timeout",
+            "tool_timeout",
+            "provider_retry_budget_exhausted",
+        }
+        for error in errors
+    ):
+        return "RUNTIME_FAILURE"
+    return None
+
+
+def stop_suite(result, provider_streak):
+    errors = result.get("provider_categories", [])
+    return (
+        result["status"] in {"HARNESS_FAILURE", "SKIPPED_BUDGET_LIMIT"}
+        or any(error in FATAL_PROVIDER for error in errors)
+        or provider_streak >= 3
+    )
 
 
 def identity(settings, digest, suite):
@@ -247,6 +284,7 @@ async def evaluate(settings, budget, suite, output):
                         discovery_supported=False,
                     ),
                 )
+        provider_streak = 0
         for case, repeat in suite.schedule():
             key = budget.key(case, repeat)
             if not budget.start_case(key):
@@ -280,6 +318,7 @@ async def evaluate(settings, budget, suite, output):
                     )
                     created.raise_for_status()
                     run_id = created.json()["id"]
+                    result["run_id"] = run_id
                     # Save the durable run handle before waiting for streamed completion.
                     budget.state["active_run_id"] = run_id
                     budget.save()
@@ -356,26 +395,17 @@ async def evaluate(settings, budget, suite, output):
                         item.get("error_category")
                         for item in (run.get("supervisor") or {}).get("specialists", [])
                     ]
-                    if "SKIPPED_BUDGET_LIMIT" in errors:
-                        result.update(status="SKIPPED_BUDGET_LIMIT")
-                    elif any(
-                        error
-                        and (
-                            error.startswith("provider_")
-                            or error
-                            in {
-                                "run_timeout",
-                                "investigation_timeout",
-                                "specialist_timeout",
-                                "tool_timeout",
-                            }
+                    kind = failure_kind(errors)
+                    if kind:
+                        result["status"] = kind
+                        category_field = (
+                            "provider_categories"
+                            if kind == "PROVIDER_FAILURE"
+                            else "runtime_categories"
+                            if kind == "RUNTIME_FAILURE"
+                            else "harness_categories"
                         )
-                        for error in errors
-                    ):
-                        result.update(
-                            status="PROVIDER_FAILURE",
-                            provider_categories=[e for e in errors if e],
-                        )
+                        result[category_field] = [e for e in errors if e]
                     atomic_json(
                         output / f"{key.replace(':', '-')}.json",
                         redact_data(
@@ -401,8 +431,14 @@ async def evaluate(settings, budget, suite, output):
                 )
             except (TimeoutError, httpx.HTTPError):
                 result.update(
-                    status="PROVIDER_FAILURE",
-                    provider_category="evaluation_timeout_or_transport",
+                    status="RUNTIME_FAILURE",
+                    infrastructure_category="evaluation_timeout_or_transport",
+                )
+            except RuntimeError as error:
+                if not isinstance(error.__cause__, AgentError):
+                    raise
+                result.update(
+                    status="HARNESS_FAILURE", error_category=error.__cause__.category
                 )
             result["latency_seconds"] = perf_counter() - started
             budget.finish_case(key, redact_data(result, settings))
@@ -417,15 +453,12 @@ async def evaluate(settings, budget, suite, output):
                 ),
                 flush=True,
             )
-            # Systemic provider/configuration failures and budget exhaustion stop spending.
-            calls = [c for c in budget.state["calls"].values() if c["case_key"] == key]
-            failures = sum(c["status"] == "failed" for c in calls)
-            if (
-                budget.spend() >= budget.limit
-                or result["status"]
-                in {"PROVIDER_FAILURE", "HARNESS_FAILURE", "SKIPPED_BUDGET_LIMIT"}
-                or failures > 1
-            ):
+            # Individual bounded failures are observations. Repeated provider outages
+            # and configuration/harness failures stop additional paid requests.
+            provider_streak = (
+                provider_streak + 1 if result["status"] == "PROVIDER_FAILURE" else 0
+            )
+            if budget.spend() >= budget.limit or stop_suite(result, provider_streak):
                 for remaining, r in suite.schedule():
                     remaining_key = budget.key(remaining, r)
                     if remaining_key not in budget.state["results"]:

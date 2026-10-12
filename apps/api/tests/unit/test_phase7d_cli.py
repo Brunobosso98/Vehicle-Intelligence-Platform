@@ -216,3 +216,39 @@ def test_paid_baseline_rejects_mock_or_unverified_endpoint(cli, monkeypatch, tmp
     with pytest.raises(AgentError, match="official_openai_endpoint_required"):
         cli.main()
     assert not (tmp_path / "checkpoint.json").exists()
+
+
+@pytest.mark.parametrize(
+    "errors,expected",
+    [
+        (["specialist_timeout"], "RUNTIME_FAILURE"),
+        (["tool_timeout"], "RUNTIME_FAILURE"),
+        (["provider_timeout"], "PROVIDER_FAILURE"),
+        (["provider_retry_budget_exhausted"], "RUNTIME_FAILURE"),
+        (["provider_configuration_mismatch"], "PROVIDER_FAILURE"),
+        (["BUDGET_VIOLATION"], "HARNESS_FAILURE"),
+        (["invalid_supervisor_routing"], None),
+        (["EXISTING_EVIDENCE_SUFFICIENT"], None),
+        (["SKIPPED_BUDGET_LIMIT"], "SKIPPED_BUDGET_LIMIT"),
+    ],
+)
+def test_runtime_failures_are_not_provider_outages(cli, errors, expected):
+    assert cli.failure_kind(errors) == expected
+
+
+def test_individual_bounded_failures_do_not_stop_suite(cli):
+    assert not cli.stop_suite({"status": "RUNTIME_FAILURE"}, 0)
+    assert not cli.stop_suite(
+        {"status": "PROVIDER_FAILURE", "provider_categories": ["provider_timeout"]}, 1
+    )
+    assert cli.stop_suite(
+        {"status": "PROVIDER_FAILURE", "provider_categories": ["provider_timeout"]}, 3
+    )
+    assert cli.stop_suite(
+        {"status": "PROVIDER_FAILURE", "provider_categories": ["provider_authentication"]}, 1
+    )
+    assert cli.stop_suite({"status": "HARNESS_FAILURE"}, 0)
+    assert cli.stop_suite(
+        {"status": "PROVIDER_FAILURE", "provider_categories": ["provider_configuration_mismatch"]},
+        1,
+    )

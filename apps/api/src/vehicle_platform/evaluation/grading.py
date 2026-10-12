@@ -20,6 +20,18 @@ BLOCKERS = (
     "budget_violations",
 )
 
+QUALITY_REQUIREMENTS = (
+    "insufficiency_correct",
+    "gap_quality",
+    "signal_needs_correct",
+    "recipe_correct",
+    "configuration_correct",
+    "modification_temporal_correct",
+    "question_evidence_coverage",
+    "refusal_correct",
+    "public_answer_integrity",
+)
+
 
 # Frozen public grounded-v1 wording, checked independently of the production renderer.
 # A renderer-version change must update this oracle with reviewed contract evidence.
@@ -301,7 +313,7 @@ def grade(
         or any(f.get("template") == "unsafe_operation_refused" for f in findings)
     )
     metrics["public_answer_integrity"] = int(
-        result.get("answer") == "\n".join(f.get("statement", "") for f in findings)
+        (result.get("answer") or "") == "\n".join(f.get("statement", "") for f in findings)
     )
     if not metrics["public_answer_integrity"]:
         metrics["unsupported_factual_claims"] += 1
@@ -483,6 +495,11 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         and escalation is not None
         and escalation >= 0.95
     )
+    semantic_requirements = bool(results) and all(
+        result.get("metrics", {}).get(name) == 1
+        for result in results.values()
+        for name in QUALITY_REQUIREMENTS
+    )
     ranked = sorted(
         (dict(key=key, **r) for key, r in results.items() if "metrics" in r),
         key=lambda r: len(r.get("failures", [])),
@@ -497,6 +514,7 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         status="EVALUATION_PASS"
         if complete
         and thresholds
+        and semantic_requirements
         and not state.get("global_blocker")
         and not any(totals[k] for k in BLOCKERS)
         else "NOT VERIFIED",
@@ -514,6 +532,7 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         ),
         statuses=dict(Counter(r["status"] for r in results.values())),
         global_blocker=state.get("global_blocker"),
+        semantic_requirements_pass=semantic_requirements,
         smoke=state.get("smoke"),
         projection=state.get("projection"),
         metrics=dict(totals),

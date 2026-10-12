@@ -66,8 +66,8 @@ After a genuine general policy/architecture fix, one confirmation suite can be e
 make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite'
 ```
 
-Both suites share spend. A third full suite is rejected. Do not tune repeatedly against exact
-questions. Separate infrastructure failures from semantic failures. Retain uncertainty, unsupported
+Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected. Do not tune repeatedly against exact
+questions. Separate infrastructure failures from semantic failures. Individual bounded provider/runtime failures are recorded and the suite continues; three consecutive provider failures, authentication/configuration errors, harness failures or budget exhaustion stop spending. Internal specialist/tool deadlines are runtime failures, not OpenAI outages. Retain uncertainty, unsupported
 signals and Phase 8 documentary gaps. Never approve/acquire data automatically for these fixtures.
 
 Generate the JSON report, inspect failures and the human-review shortlist, and commit a sanitized

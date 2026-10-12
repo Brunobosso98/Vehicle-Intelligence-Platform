@@ -233,6 +233,7 @@ test.each([false, true])(
     await waitFor(() =>
       expect(screen.getByText(/Acquisition: active/i)).toBeInTheDocument(),
     );
+    await waitFor(() => expect(streams).toHaveLength(1));
     const interruptedTelemetry = telemetry;
     fireEvent(window, new Event("offline"));
     expect(streams[0].close).toHaveBeenCalled();

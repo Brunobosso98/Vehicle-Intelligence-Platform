@@ -223,6 +223,11 @@ class OpenAIProvider:
         encoded = json.dumps(request.__dict__)
         if len(encoded.encode()) > self.settings.max_input_bytes:
             raise AgentError("model_input_budget_exhausted")
+        # Usage is provider metadata, never a field for the model to invent.
+        schema = RoutingProposal.model_json_schema()
+        schema["properties"].pop("usage")
+        schema["$defs"].pop("Usage")
+        schema["required"] = ["intent", "specialists"]
         receipt: str | None = None
         try:
             async with asyncio.timeout(self.settings.model_timeout):
@@ -238,8 +243,8 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "supervisor_routing",
-                            "schema": RoutingProposal.model_json_schema(),
-                            "strict": False,
+                            "schema": schema,
+                            "strict": True,
                         }
                     },
                     max_output_tokens=512,

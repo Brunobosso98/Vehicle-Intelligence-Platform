@@ -302,7 +302,7 @@ def test_skipped_observations_are_not_counted_as_real_executions():
 
 
 def test_report_applies_the_specified_thresholds_without_requiring_perfect_routes():
-    from vehicle_platform.evaluation.grading import BLOCKERS
+    from vehicle_platform.evaluation.grading import BLOCKERS, QUALITY_REQUIREMENTS
 
     results = {}
     calls = {}
@@ -315,6 +315,7 @@ def test_report_applies_the_specified_thresholds_without_requiring_perfect_route
             "category": question.category,
             "critical": question.critical,
             "metrics": dict.fromkeys(BLOCKERS, 0)
+            | dict.fromkeys(QUALITY_REQUIREMENTS, 1)
             | {
                 "routing_correct": int(index >= 4),
                 "required_specialists": 2,
@@ -362,8 +363,24 @@ def test_report_applies_the_specified_thresholds_without_requiring_perfect_route
     report = summarize(state)
     assert report["status"] == "EVALUATION_PASS"
     assert report["routing_accuracy"] == pytest.approx(116 / 120)
+    results["1:A01:0"]["metrics"]["signal_needs_correct"] = 0
+    assert summarize(state)["status"] == "NOT VERIFIED"
+    results["1:A01:0"]["metrics"]["signal_needs_correct"] = 1
     state["global_blocker"] = "canonical_data_mutated"
     assert summarize(state)["status"] == "NOT VERIFIED"
     state.pop("global_blocker")
     state["calls"].pop(next(iter(calls)))
     assert summarize(state)["status"] == "NOT VERIFIED"
+
+
+def test_absent_failed_answer_does_not_fabricate_a_factual_violation():
+    run = {
+        "id": "r",
+        "vehicle_id": "v",
+        "status": "failed",
+        "error_category": "invalid_supervisor_routing",
+    }
+    result = grade(case("A01"), run, {"tool_calls": []}, None, [])
+    assert result["status"] == "SEMANTIC_FAILURE"
+    assert result["metrics"]["unsupported_factual_claims"] == 0
+    assert "invalid_supervisor_routing" in result["failures"]
