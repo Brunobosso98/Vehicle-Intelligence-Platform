@@ -164,7 +164,7 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
         answer="\n".join(f.statement for f in findings),
         confidence="low" if insufficient or warnings else draft.confidence,
         findings=findings,
-        evidence=list(registry.items.values()),
+        evidence=registry.ordered(),
         context=context,
         uncertainties=[
             "Causalidade e diagnóstico mecânico não demonstrados pelos dados disponíveis."

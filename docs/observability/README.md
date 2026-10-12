@@ -115,3 +115,24 @@ The API also logs bounded `investigation.planning.completed`,
 investigation identifiers, elapsed seconds and bounded counts; questions, credentials and
 provider text are excluded. The deterministic benchmark reads these process-local events to
 separate provider planning and Phase 4 recipe selection from total HTTP latency.
+
+## Phase 7C supervisor
+
+Spans add `agent.supervisor`, `supervisor.routing`, sibling `supervisor.specialist` and nested
+`specialist.model_turn`. Actual MCP requests continue propagating the same trace into deterministic
+domain reads and SQL. Public role results retain the trace ID, version, duration and nullable usage.
+The final Phase 7A synthesis has its own usage subtotal; parent usage sums routing, specialists and
+synthesis. Deterministic known token counts are zero; unknown monetary cost stays null.
+
+Counters add `supervisor.runs`, `supervisor.routing`, `specialist.runs`, `specialist.failures`,
+`specialist.tool.calls`, `supervisor.conflicts`, `supervisor.insufficient`,
+`supervisor.phase7b.proposals`, `supervisor.evidence.cache.hits` and
+`specialist.tool.policy.rejections`. Histograms add `supervisor.specialists.selected` and
+`specialist.duration`. Labels are bounded role, intent, status, sufficiency and error values.
+Identifiers, tool arguments and questions never become metric labels.
+
+Structured routing, sufficiency and specialist completion records contain run/trace IDs, selected
+and skipped roles, state, counts, outcome, duration and the Phase 7B recommendation. They omit
+raw telemetry, credentials and private reasoning. `make supervisor-observability` queries actual
+Tempo/Prometheus delivery and checks sibling trace parents plus redaction; artifacts belong to
+`.validation/supervisor/observability`. Delivery is not verified until the command succeeds.

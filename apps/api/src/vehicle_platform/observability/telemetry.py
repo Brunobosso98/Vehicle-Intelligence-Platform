@@ -60,6 +60,14 @@ class JSONFormatter(logging.Formatter):
             "planning_seconds",
             "recipe_generation_seconds",
             "mcp_calls",
+            "supervisor_state",
+            "specialist",
+            "selected",
+            "skipped",
+            "tool_call_count",
+            "conflict_count",
+            "sufficiency",
+            "phase7b_proposed",
         ):
             value = getattr(record, key, None)
             if value is not None:

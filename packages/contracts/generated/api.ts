@@ -1305,6 +1305,7 @@ export interface components {
        * @enum {string}
        */
       status: "running" | "completed" | "failed" | "cancelled";
+      supervisor?: components["schemas"]["SupervisorReport"] | null;
       /**
        * Tool Call Count
        * @default 0
@@ -1688,6 +1689,33 @@ export interface components {
       };
       /** Provenance */
       provenance: string;
+    };
+    /** Conflict */
+    Conflict: {
+      /**
+       * Conflict Id
+       * Format: uuid
+       */
+      conflict_id: string;
+      /** Explanation */
+      explanation: string;
+      /** Finding Ids */
+      finding_ids: string[];
+      /** Requires Investigation */
+      requires_investigation: boolean;
+      /** Resolvable With Existing Evidence */
+      resolvable_with_existing_evidence: boolean;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "warning" | "critical";
+      /**
+       * Type
+       * @enum {string}
+       */
+      type:
+        "factual" | "temporal_scope" | "sufficiency" | "competing_hypotheses";
     };
     /** CreateInvestigation */
     CreateInvestigation: {
@@ -2187,6 +2215,21 @@ export interface components {
       /** Unknown Signals */
       unknown_signals: number;
     };
+    /**
+     * Intent
+     * @enum {string}
+     */
+    Intent:
+      | "factual"
+      | "performance"
+      | "thermal"
+      | "fuel_air_boost"
+      | "repeated_degradation"
+      | "multi_mechanism"
+      | "configuration_comparison"
+      | "data_quality"
+      | "technical_documentation"
+      | "unsafe";
     /** InvestigationEvent */
     InvestigationEvent: {
       /**
@@ -2723,6 +2766,22 @@ export interface components {
      * @enum {string}
      */
     Resolution: "HIGH" | "MEDIUM" | "LOW" | "EVENT_CONTEXT";
+    /** RoutingDecision */
+    RoutingDecision: {
+      /** Considered */
+      considered: components["schemas"]["Specialist"][];
+      /** Data Quality Gate */
+      data_quality_gate: boolean;
+      /** Hints */
+      hints: string[];
+      intent: components["schemas"]["Intent"];
+      /** Reason */
+      reason: string;
+      /** Selected */
+      selected: components["schemas"]["Specialist"][];
+      /** Skipped */
+      skipped: components["schemas"]["Specialist"][];
+    };
     /** RunAudit */
     RunAudit: {
       /** Evidence */
@@ -2897,6 +2956,165 @@ export interface components {
       | "lambda_behavior"
       | "timing_behavior"
       | "timestamp_sequence_quality";
+    /**
+     * Specialist
+     * @enum {string}
+     */
+    Specialist: "data_quality" | "performance" | "thermal" | "fuel_air_boost";
+    /** SpecialistBudget */
+    SpecialistBudget: {
+      /**
+       * Evidence Items
+       * @default 32
+       */
+      evidence_items: number;
+      /**
+       * Mcp Calls
+       * @default 6
+       */
+      mcp_calls: number;
+      /**
+       * Model Turns
+       * @default 4
+       */
+      model_turns: number;
+      /**
+       * Result Bytes
+       * @default 16384
+       */
+      result_bytes: number;
+      /**
+       * Telemetry Windows
+       * @default 0
+       */
+      telemetry_windows: number;
+      /**
+       * Timeout Seconds
+       * @default 25
+       */
+      timeout_seconds: number;
+    };
+    /** SpecialistFinding */
+    SpecialistFinding: {
+      /** Bindings */
+      bindings: components["schemas"]["Binding"][];
+      classification: components["schemas"]["Classification"];
+      /** Configuration Ids */
+      configuration_ids?: string[];
+      /** Evidence Ids */
+      evidence_ids: string[];
+      /**
+       * Finding Id
+       * Format: uuid
+       */
+      finding_id: string;
+      /** Limitations */
+      limitations?: string[];
+      /** Session Ids */
+      session_ids?: string[];
+      specialist: components["schemas"]["Specialist"];
+      /** Statement */
+      statement: string;
+      /**
+       * Strength
+       * @enum {string}
+       */
+      strength: "low" | "moderate" | "high";
+      /**
+       * Template
+       * @enum {string}
+       */
+      template:
+        | "recorded_fact"
+        | "temporal_association"
+        | "insufficient_evidence"
+        | "thermal_hypothesis"
+        | "unsafe_operation_refused";
+    };
+    /** SpecialistResult */
+    SpecialistResult: {
+      /**
+       * Blocks Interpretation
+       * @default false
+       */
+      blocks_interpretation: boolean;
+      budget?: components["schemas"]["SpecialistBudget"] | null;
+      /**
+       * Cache Hits
+       * @default 0
+       */
+      cache_hits: number;
+      /**
+       * Confidence
+       * @default low
+       * @enum {string}
+       */
+      confidence: "low" | "moderate" | "high";
+      /** Data Quality Warnings */
+      data_quality_warnings?: string[];
+      /**
+       * Duration Seconds
+       * @default 0
+       */
+      duration_seconds: number;
+      /** Error Category */
+      error_category?: string | null;
+      /** Evidence Gaps */
+      evidence_gaps?: (
+        | "mechanical_cause"
+        | "signal_or_measurement"
+        | "comparable_history"
+        | "technical_documentation"
+        | "data_quality"
+        | "configuration_context"
+      )[];
+      /** Evidence Ids */
+      evidence_ids?: string[];
+      /** Findings */
+      findings?: components["schemas"]["SpecialistFinding"][];
+      /**
+       * Model Turn Count
+       * @default 0
+       */
+      model_turn_count: number;
+      /** Prompt Version */
+      prompt_version: string;
+      /**
+       * Schema Version
+       * @default 1.0
+       * @constant
+       */
+      schema_version: "1.0";
+      specialist: components["schemas"]["Specialist"];
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "completed" | "failed" | "timed_out" | "cancelled" | "skipped";
+      /**
+       * Supervisor Run Id
+       * Format: uuid
+       */
+      supervisor_run_id: string;
+      /**
+       * Telemetry Call Count
+       * @default 0
+       */
+      telemetry_call_count: number;
+      /**
+       * Tool Call Count
+       * @default 0
+       */
+      tool_call_count: number;
+      /** Trace Id */
+      trace_id?: string | null;
+      usage?: components["schemas"]["Usage"];
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
     /** StreamEvent */
     StreamEvent: {
       /** Data */
@@ -2911,9 +3129,9 @@ export interface components {
       /**
        * Schema Version
        * @default 1.0
-       * @constant
+       * @enum {string}
        */
-      schema_version: "1.0";
+      schema_version: "1.0" | "1.1";
       /** Sequence */
       sequence: number;
       /**
@@ -2929,7 +3147,18 @@ export interface components {
         | "answer_chunk"
         | "run_completed"
         | "run_failed"
-        | "run_cancelled";
+        | "run_cancelled"
+        | "supervisor_started"
+        | "routing_completed"
+        | "specialist_started"
+        | "specialist_tool_started"
+        | "specialist_tool_completed"
+        | "specialist_completed"
+        | "specialist_failed"
+        | "conflict_detected"
+        | "sufficiency_evaluated"
+        | "investigation_proposed"
+        | "synthesis_started";
     };
     /** StreamObservation */
     StreamObservation: {
@@ -2953,6 +3182,96 @@ export interface components {
       unit: string;
       /** Value */
       value: number;
+    };
+    /**
+     * Sufficiency
+     * @enum {string}
+     */
+    Sufficiency:
+      | "SUFFICIENT"
+      | "PARTIALLY_SUFFICIENT"
+      | "INSUFFICIENT"
+      | "UNRELIABLE_DATA";
+    /** SupervisorLimits */
+    SupervisorLimits: {
+      /** Concurrent Specialists */
+      concurrent_specialists: number;
+      /** Evidence Items */
+      evidence_items: number;
+      /** Input Bytes */
+      input_bytes: number;
+      /** Mcp Calls */
+      mcp_calls: number;
+      /** Model Turns */
+      model_turns: number;
+      /** Retries */
+      retries: number;
+      /** Specialists */
+      specialists: number;
+      /** Telemetry Windows */
+      telemetry_windows: number;
+      /** Timeout Seconds */
+      timeout_seconds: number;
+      /** Tool Result Bytes */
+      tool_result_bytes: number;
+    };
+    /** SupervisorReport */
+    SupervisorReport: {
+      /**
+       * Cache Hits
+       * @default 0
+       */
+      cache_hits: number;
+      /** Configuration Hash */
+      configuration_hash?: string | null;
+      /** Conflicts */
+      conflicts?: components["schemas"]["Conflict"][];
+      /** Evidence Consumers */
+      evidence_consumers?: {
+        [key: string]: components["schemas"]["Specialist"][];
+      };
+      /** Investigation Id */
+      investigation_id?: string | null;
+      /**
+       * Investigation Recommended
+       * @default false
+       */
+      investigation_recommended: boolean;
+      limits?: components["schemas"]["SupervisorLimits"] | null;
+      /**
+       * Model Turn Count
+       * @default 0
+       */
+      model_turn_count: number;
+      /**
+       * Prompt Version
+       * @default supervisor-v1
+       * @constant
+       */
+      prompt_version: "supervisor-v1";
+      /**
+       * Retry Count
+       * @default 0
+       */
+      retry_count: number;
+      routing: components["schemas"]["RoutingDecision"];
+      /**
+       * Routing Seconds
+       * @default 0
+       */
+      routing_seconds: number;
+      routing_usage?: components["schemas"]["Usage"];
+      /**
+       * Schema Version
+       * @default 1.0
+       * @constant
+       */
+      schema_version: "1.0";
+      /** Specialists */
+      specialists?: components["schemas"]["SpecialistResult"][];
+      /** @default INSUFFICIENT */
+      sufficiency: components["schemas"]["Sufficiency"];
+      synthesis_usage?: components["schemas"]["Usage"];
     };
     /**
      * Support

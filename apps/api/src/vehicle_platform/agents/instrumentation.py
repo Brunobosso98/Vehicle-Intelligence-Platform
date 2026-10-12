@@ -17,8 +17,56 @@ class AgentInstrumentation:
         self.input_tokens = meter.create_counter("agent.input.tokens")
         self.output_tokens = meter.create_counter("agent.output.tokens")
         self.active = meter.create_up_down_counter("agent.active.runs")
+        self.supervisors = meter.create_counter("supervisor.runs")
+        self.routing = meter.create_counter("supervisor.routing")
+        self.selected = meter.create_histogram("supervisor.specialists.selected")
+        self.specialists = meter.create_counter("specialist.runs")
+        self.specialist_failures = meter.create_counter("specialist.failures")
+        self.specialist_duration = meter.create_histogram("specialist.duration", unit="s")
+        self.specialist_tools = meter.create_counter("specialist.tool.calls")
+        self.conflicts = meter.create_counter("supervisor.conflicts")
+        self.insufficient = meter.create_counter("supervisor.insufficient")
+        self.escalations = meter.create_counter("supervisor.phase7b.proposals")
+        self.cache_hits = meter.create_counter("supervisor.evidence.cache.hits")
+        self.policy_rejections = meter.create_counter("specialist.tool.policy.rejections")
 
     def completed(self, run: AgentRun) -> None:
+        if run.supervisor:
+            report = run.supervisor
+            self.specialist_failures.add(0, {})
+            self.policy_rejections.add(0, {})
+            self.supervisors.add(1, {"status": run.status})
+            self.routing.add(1, {"intent": report.routing.intent.value})
+            self.selected.record(len(report.routing.selected))
+            self.conflicts.add(len(report.conflicts))
+            self.cache_hits.add(report.cache_hits)
+            if report.investigation_recommended:
+                self.insufficient.add(1, {"sufficiency": report.sufficiency.value})
+                self.escalations.add(1)
+            for result in report.specialists:
+                attributes = {"specialist": result.specialist.value, "status": result.status}
+                self.specialists.add(1, attributes)
+                self.specialist_duration.record(result.duration_seconds, attributes)
+                self.specialist_tools.add(result.tool_call_count, attributes)
+                if result.status not in {"completed", "skipped"}:
+                    self.specialist_failures.add(1, attributes)
+                if result.error_category == "specialist_tool_policy_violation":
+                    self.policy_rejections.add(1, attributes)
+                if result.error_category and "budget" in result.error_category:
+                    self.budgets.add(1, {"scope": result.specialist.value})
+                self.telemetry.log(
+                    "supervisor.specialist.completed",
+                    str(run.id),
+                    agent_run_id=str(run.id),
+                    specialist=result.specialist.value,
+                    status=result.status,
+                    tool_call_count=result.tool_call_count,
+                    duration_seconds=result.duration_seconds,
+                    error_code=result.error_category,
+                    conflict_count=len(report.conflicts),
+                    sufficiency=report.sufficiency.value,
+                    phase7b_proposed=report.investigation_recommended,
+                )
         self.runs.add(1, {"status": run.status, "provider": run.provider})
         self.duration.record(run.duration_seconds or 0, {"provider": run.provider})
         if run.error_category:

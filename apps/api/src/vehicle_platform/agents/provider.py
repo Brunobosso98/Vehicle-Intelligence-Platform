@@ -3,7 +3,13 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import Field
 
-from vehicle_platform.agents.schemas import Draft, StrictModel, Usage
+from vehicle_platform.agents.schemas import (
+    Draft,
+    RoutingProposal,
+    SpecialistRequest,
+    StrictModel,
+    Usage,
+)
 
 if TYPE_CHECKING:
     from vehicle_platform.agents.investigation.proposal import (
@@ -39,9 +45,21 @@ class ModelInput:
     evidence: list[dict[str, Any]]
     messages: list[dict[str, Any]]
     correction: str | None = None
+    specialist: SpecialistRequest | None = None
+    supervisor: dict[str, Any] | None = None
+
+
+@dataclass
+class RoutingInput:
+    question: str
+    context: dict[str, Any]
+    evidence: list[dict[str, Any]]
+    candidates: list[str]
+    hints: list[str]
 
 
 class Provider(Protocol):
     async def turn(self, request: ModelInput) -> ModelTurn: ...
+    async def route(self, request: RoutingInput) -> RoutingProposal: ...
     async def propose(self, request: "InvestigationInput") -> "InvestigationProposal": ...
     async def close(self) -> None: ...

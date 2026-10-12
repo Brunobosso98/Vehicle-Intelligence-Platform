@@ -533,3 +533,31 @@ async def test_deterministic_missing_categories_match_the_question(question, mis
     )
     assert turn.draft is not None and turn.draft.missing_evidence == missing
     assert all(c.classification == "INSUFFICIENT_EVIDENCE" for c in turn.draft.claims)
+
+
+@pytest.mark.parametrize("committed", [True, False])
+async def test_cancellation_reconciles_allocated_stream_sequence(fixture, telemetry, committed):
+    service, _, events, _ = service_fixture(fixture, telemetry)
+    entered, release = asyncio.Event(), asyncio.Event()
+    original = service.repository.event.side_effect
+
+    async def persist(value):
+        if value.type == "run_started":
+            if committed:
+                await original(value)
+            entered.set()
+            await release.wait()
+        await original(value)
+
+    service.repository.event.side_effect = persist
+    vehicle = UUID(fixture["vehicle"]["id"])
+    run = await service.start(vehicle, Ask(question="What was my last session?"))
+    task = service.tasks[run.id]
+    await entered.wait()
+    task.cancel()
+    await task
+    stored = await service.repository.get(vehicle, run.id)
+    assert stored.status == "cancelled"
+    assert [(e.sequence, e.type) for e in events] == (
+        [(1, "run_started"), (2, "run_cancelled")] if committed else [(1, "run_cancelled")]
+    )

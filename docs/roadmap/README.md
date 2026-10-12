@@ -27,3 +27,11 @@ Phases 0–6 passed canonical acceptance. The Phase 7A agent consumes MCP facts 
 structured claims. The [Phase 7A gate](../validation/phase-7a-acceptance.md) records executed
 checkpoint evidence and identifies the exact-head delivery receipts.
 Unsupported diagnosis, proven root-cause interpretation, RAG, ML and future infrastructure remain deferred.
+
+## Phase 7C implementation
+
+Bounded specialist orchestration is being implemented over the validated Phase 6/7A/7B
+boundaries. [The execution specification](../prompts/phase-7c-specialist-agents-supervisor.md)
+and [traceability ledger](../validation/phase-7c-traceability-ledger.md) define the full gate.
+Completion remains pending local, clean-state and exact PR-head remote validation.
+Comprehensive real-model evaluation is Phase 7D; documentary retrieval and RAG remain Phase 8.

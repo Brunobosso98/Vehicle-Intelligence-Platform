@@ -116,8 +116,10 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) phase7a-acceptance test-agent-e2e benchmark-agent agent-observability
 	$(MAKE) phase7b-acceptance
 	$(MAKE) test-investigation-e2e benchmark-investigation investigation-observability
+	$(MAKE) phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
+	$(MAKE) stack-check
 	$(MAKE) test-e2e
 	$(MAKE) live-stream-benchmark
 	$(MAKE) security
@@ -165,3 +167,15 @@ benchmark-investigation:
 	bash scripts/mcp-validation.sh scripts/benchmark_investigation.py
 investigation-observability: containers
 	bash scripts/mcp-validation.sh scripts/observability_investigation.py
+
+.PHONY: test-supervisor phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
+test-supervisor:
+	$(API)/pytest apps/api/tests/unit/test_supervisor*.py
+phase7c-acceptance:
+	bash scripts/mcp-validation.sh scripts/evaluate_supervisor.py
+test-supervisor-e2e: build
+	bash scripts/mcp-validation.sh scripts/supervisor_browser_e2e.py
+benchmark-supervisor:
+	bash scripts/mcp-validation.sh scripts/benchmark_supervisor.py
+supervisor-observability: containers
+	bash scripts/mcp-validation.sh scripts/observability_supervisor.py

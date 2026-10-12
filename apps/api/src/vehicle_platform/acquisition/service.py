@@ -106,7 +106,6 @@ class AcquisitionService:
         if recipe is None:
             raise AcquisitionError("unknown logging recipe")
         token = secrets.token_urlsafe(32)
-        expires = datetime.now(UTC) + timedelta(seconds=self.settings.acquisition_token_ttl_seconds)
         async with self.database.session() as db:
             configuration_id = payload.configuration_id
             if configuration_id is None:
@@ -160,7 +159,7 @@ class AcquisitionService:
                 (
                     await db.execute(
                         text(
-                            """INSERT INTO acquisition_sessions(driving_session_id,recipe_key,recipe_version,recipe_configuration_hash,adapter,state,token_hash,token_expires_at,quality) VALUES(:driving,:key,:version,:hash,:adapter,'active',:token_hash,:expires,'{}') RETURNING id,started_at"""
+                            """INSERT INTO acquisition_sessions(driving_session_id,recipe_key,recipe_version,recipe_configuration_hash,adapter,state,token_hash,token_expires_at,quality) VALUES(:driving,:key,:version,:hash,:adapter,'active',:token_hash,clock_timestamp()+(:ttl * interval '1 second'),'{}') RETURNING id,started_at,token_expires_at"""
                         ),
                         {
                             "driving": driving,
@@ -169,7 +168,7 @@ class AcquisitionService:
                             "hash": recipe.configuration_hash,
                             "adapter": payload.adapter,
                             "token_hash": token_hash(token),
-                            "expires": expires,
+                            "ttl": self.settings.acquisition_token_ttl_seconds,
                         },
                     )
                 )
@@ -183,7 +182,7 @@ class AcquisitionService:
             driving_session_id=driving,
             state="active",
             ingestion_token=token,
-            token_expires_at=expires,
+            token_expires_at=row["token_expires_at"],
         )
 
     async def _authorized(
@@ -194,7 +193,7 @@ class AcquisitionService:
                 (
                     await db.execute(
                         text(
-                            "SELECT a.*,s.vehicle_id,s.configuration_id FROM acquisition_sessions a "
+                            "SELECT a.*,s.vehicle_id,s.configuration_id,clock_timestamp() AS database_now FROM acquisition_sessions a "
                             "JOIN driving_sessions s ON s.id=a.driving_session_id WHERE a.id=:id"
                         ),
                         {"id": acquisition_id},
@@ -205,7 +204,7 @@ class AcquisitionService:
             )
         if row is None or not secrets.compare_digest(str(row["token_hash"]), token_hash(token)):
             raise AcquisitionAuthError("invalid acquisition credential")
-        if row["token_expires_at"] <= datetime.now(UTC):
+        if row["token_expires_at"] <= row["database_now"]:
             raise AcquisitionAuthError("expired acquisition credential")
         if active and row["state"] != "active":
             raise AcquisitionAuthError("acquisition session is not active")

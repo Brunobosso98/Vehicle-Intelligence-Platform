@@ -25,6 +25,7 @@ class InvestigationInput:
     context: dict[str, Any]
     evidence: list[dict[str, Any]]
     missing_evidence: list[str]
+    supervisor: dict[str, Any] | None = None
 
 
 class ProposedHypothesis(StrictModel):

@@ -54,11 +54,15 @@ class Orchestrator:
             "vehicle_platform.agents"
         ).create_counter("agent.grounding.failures")
         graph.add_node("context", RunnableLambda(self.context_node))
+        graph.add_node("supervisor", RunnableLambda(self.supervisor_node))
         graph.add_node("model", RunnableLambda(self.model_node))
         graph.add_node("tools", RunnableLambda(self.tools_node))
         graph.add_node("grounding", RunnableLambda(self.grounding_node))
         graph.add_edge(START, "context")
-        graph.add_edge("context", "model")
+        graph.add_edge("context", "supervisor")
+        graph.add_conditional_edges(
+            "supervisor", self.after_grounding, {"model": "model", "end": END}
+        )
         graph.add_conditional_edges(
             "model", self.after_model, {"tools": "tools", "grounding": "grounding"}
         )
@@ -77,7 +81,22 @@ class Orchestrator:
             raise AgentError("invalid_model_response")
         return execution.final
 
+    async def supervisor_node(self, graph: GraphState) -> dict[str, Any]:
+        from vehicle_platform.agents.specialists.runtime import Supervisor
+
+        with self.telemetry.tracer.start_as_current_span(
+            "agent.supervisor", record_exception=False, set_status_on_exception=False
+        ):
+            await Supervisor(self, graph["execution"]).run()
+        return {}
+
     async def call(self, state: Execution, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        async with state.tool_lock:
+            return await self.call_locked(state, name, arguments)
+
+    async def call_locked(
+        self, state: Execution, name: str, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         names = {t["name"] for t in state.tools}
         if name not in names or str(arguments.get("vehicle_id")) != str(state.run.vehicle_id):
             raise AgentError("tool_policy_violation")
@@ -221,22 +240,30 @@ class Orchestrator:
         if state.steps >= self.settings.max_steps or state.context is None:
             raise AgentError("step_budget_exhausted")
         state.steps += 1
+        state.synthesis_turns += 1
+        if state.run.supervisor:
+            state.run.supervisor.model_turn_count = state.steps
         request = ModelInput(
             question=redact_data(state.ask.question, self.settings),
             tools=state.tools,
             context=redact_data(state.context.model_dump(mode="json"), self.settings),
             evidence=redact_data(
-                [e.model_dump(mode="json") for e in state.registry.items.values()], self.settings
+                [e.model_dump(mode="json") for e in state.registry.ordered()], self.settings
             ),
             messages=redact_data(state.messages, self.settings),
             correction=state.correction,
+            supervisor=(
+                state.run.supervisor.model_dump(mode="json")
+                if state.run.supervisor and state.run.supervisor.routing.selected
+                else None
+            ),
         )
-        if len(json.dumps(request.__dict__).encode()) > self.settings.max_input_bytes:
+        if len(json.dumps(request.__dict__, default=str).encode()) > self.settings.max_input_bytes:
             raise AgentError("model_input_budget_exhausted")
         with self.telemetry.tracer.start_as_current_span(
             "agent.model_turn", record_exception=False, set_status_on_exception=False
         ):
-            for attempt in range(self.settings.max_provider_retries + 1):
+            while True:
                 try:
                     async with asyncio.timeout(self.settings.model_timeout):
                         state.turn = await self.provider.turn(request)
@@ -244,9 +271,12 @@ class Orchestrator:
                 except AgentError as exc:
                     if (
                         exc.category not in {"provider_rate_limit", "provider_unavailable"}
-                        or attempt == self.settings.max_provider_retries
+                        or state.provider_retries >= self.settings.max_provider_retries
                     ):
                         raise
+                    state.provider_retries += 1
+                    if state.run.supervisor:
+                        state.run.supervisor.retry_count = state.provider_retries
                 except TimeoutError:
                     raise AgentError("provider_timeout") from None
         if state.turn is None:
@@ -254,6 +284,12 @@ class Orchestrator:
         if len(state.turn.tool_calls) > 4 or (state.turn.tool_calls and state.turn.draft):
             raise AgentError("invalid_model_response")
         state.run.usage = accumulate(state.run.usage, state.turn.usage, state.steps == 1)
+        if state.run.supervisor:
+            state.run.supervisor.synthesis_usage = accumulate(
+                state.run.supervisor.synthesis_usage,
+                state.turn.usage,
+                state.synthesis_turns == 1,
+            )
         return {}
 
     @staticmethod
@@ -348,11 +384,72 @@ class Orchestrator:
         state = graph["execution"]
         if not state.turn or not state.turn.draft or not state.context:
             raise AgentError("invalid_model_response")
+        report = state.run.supervisor
+        if (
+            report
+            and (report.routing.data_quality_gate or report.routing.selected)
+            and state.turn.draft.missing_evidence
+            and not report.investigation_recommended
+        ):
+            from vehicle_platform.agents.schemas import Sufficiency
+            from vehicle_platform.agents.specialists.runtime import Supervisor
+
+            report.sufficiency = Sufficiency.PARTIALLY_SUFFICIENT
+            report.investigation_recommended = True
+            await Supervisor(self, state).evaluate()
+        if report and report.investigation_recommended:
+            from vehicle_platform.agents.schemas import Claim, Classification
+
+            proposed = state.turn.draft.model_copy(deep=True)
+            if not any(
+                c.classification == Classification.INSUFFICIENT_EVIDENCE for c in proposed.claims
+            ):
+                proposed.claims = proposed.claims[:15] + [
+                    Claim(
+                        classification=Classification.INSUFFICIENT_EVIDENCE,
+                        template="insufficient_evidence",
+                        bindings=[],
+                        evidence_ids=[],
+                    )
+                ]
+            proposed.missing_evidence = list(
+                dict.fromkeys(
+                    [
+                        *proposed.missing_evidence,
+                        *(gap for r in report.specialists for gap in r.evidence_gaps),
+                        "signal_or_measurement",
+                    ]
+                )
+            )[:4]
+            proposed.confidence = "low"
+            state.turn.draft = proposed
         with self.telemetry.tracer.start_as_current_span(
             "agent.grounding", record_exception=False, set_status_on_exception=False
         ):
             try:
                 state.final = validate(state.turn.draft, state.registry, state.context)
+                if report and not report.routing.data_quality_gate and not report.routing.selected:
+                    from vehicle_platform.agents.schemas import Sufficiency
+
+                    report.sufficiency = (
+                        Sufficiency.INSUFFICIENT
+                        if state.final.missing_evidence
+                        else Sufficiency.SUFFICIENT
+                    )
+                    report.investigation_recommended = bool(state.final.missing_evidence)
+                if state.run.supervisor:
+                    state.final.limitations = list(
+                        dict.fromkeys(
+                            [
+                                *state.final.limitations,
+                                *(
+                                    w
+                                    for r in state.run.supervisor.specialists
+                                    for w in r.data_quality_warnings
+                                ),
+                            ]
+                        )
+                    )[:32]
             except AgentError as exc:
                 self.grounding_failures.add(1, {"category": exc.category})
                 self.telemetry.log(

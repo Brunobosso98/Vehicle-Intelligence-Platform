@@ -25,7 +25,9 @@ test "$(docker compose ps stream-consumer --status running --quiet | wc -l)" = 1
 docker compose restart broker
 docker compose up -d --wait broker
 docker compose run --rm broker-init
-docker compose restart stream-consumer
+docker compose restart api stream-consumer
+wait_http_status http://127.0.0.1:8000/health/ready 200 \
+  .validation/summary/api-ready-after-broker-restart.json 60 2
 test "$(docker compose ps stream-consumer --status running --quiet | wc -l)" = 1
 
 # Existing contract: liveness remains available while readiness reports a DB dependency failure.

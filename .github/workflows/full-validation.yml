@@ -101,6 +101,13 @@ jobs:
           make phase7b-acceptance test-investigation-e2e benchmark-investigation investigation-observability
           make phase7b-acceptance test-investigation-e2e
 
+      - name: Validate Phase 7C supervisor, faults, browser, benchmark and observability
+        id: supervisor
+        continue-on-error: true
+        run: |
+          make phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
+          make phase7c-acceptance test-supervisor-e2e
+
       - name: Capture stack logs
         if: always()
         run: |
@@ -124,6 +131,7 @@ jobs:
           test ! -d .validation/mcp || cp -r .validation/mcp/. validation-artifacts/mcp/
           test ! -d .validation/agent || cp -r .validation/agent/. validation-artifacts/agent/
           test ! -d .validation/investigation || cp -r .validation/investigation/. validation-artifacts/investigation/
+          test ! -d .validation/supervisor || cp -r .validation/supervisor validation-artifacts/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -140,6 +148,7 @@ jobs:
           MCP: ${{ steps.mcp.outcome }}
           AGENT: ${{ steps.agent.outcome }}
           INVESTIGATION: ${{ steps.investigation.outcome }}
+          SUPERVISOR: ${{ steps.supervisor.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -162,13 +171,14 @@ jobs:
           MCP: ${{ steps.mcp.outcome }}
           AGENT: ${{ steps.agent.outcome }}
           INVESTIGATION: ${{ steps.investigation.outcome }}
+          SUPERVISOR: ${{ steps.supervisor.outcome }}
         run: |
           failed=0
           for entry in \
             "cloud:$CLOUD" "containers:$CONTAINERS" "database:$DATABASE" \
             "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
             "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" \
-            "agent:$AGENT" "investigation:$INVESTIGATION"; do
+            "agent:$AGENT" "investigation:$INVESTIGATION" "supervisor:$SUPERVISOR"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

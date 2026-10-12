@@ -28,8 +28,10 @@ class AgentSettings(BaseSettings):
     max_evidence: int = Field(default=80, ge=4, le=100)
     max_provider_retries: int = Field(default=1, ge=0, le=2)
     max_grounding_retries: int = Field(default=1, ge=0, le=2)
-    agent_version: str = "phase7a-v1"
-    prompt_version: str = "grounded-v1"
+    max_specialists: int = Field(default=3, ge=1, le=3)
+    max_concurrent_specialists: int = Field(default=2, ge=1, le=3)
+    agent_version: str = "phase7c-v1"
+    prompt_version: str = "supervisor-v1"
 
     @model_validator(mode="after")
     def valid_runtime(self) -> "AgentSettings":

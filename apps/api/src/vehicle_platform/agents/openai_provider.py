@@ -16,8 +16,15 @@ from pydantic import ValidationError
 from vehicle_platform.agents.config import AgentSettings
 from vehicle_platform.agents.investigation.proposal import InvestigationInput, InvestigationProposal
 from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
-from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, ToolRequest
-from vehicle_platform.agents.schemas import Draft, Usage
+from vehicle_platform.agents.provider import (
+    AgentError,
+    ModelInput,
+    ModelTurn,
+    RoutingInput,
+    ToolRequest,
+)
+from vehicle_platform.agents.schemas import Draft, RoutingProposal, Usage
+from vehicle_platform.agents.specialists.policy import SUPERVISOR_POLICY, specialist_policy
 
 
 class OpenAIProvider:
@@ -46,6 +53,10 @@ class OpenAIProvider:
             "vehicle_context": request.context,
             "evidence": request.evidence,
             "correction": request.correction,
+            "specialist_scope": (
+                request.specialist.model_dump(mode="json") if request.specialist else None
+            ),
+            "supervisor": request.supervisor,
         }
         messages: list[dict[str, Any]] = [
             {"role": "user", "content": request.question},
@@ -61,7 +72,13 @@ class OpenAIProvider:
             async with asyncio.timeout(self.settings.model_timeout):
                 stream = await self.client.responses.create(
                     model=self.settings.model,
-                    instructions=SYSTEM_POLICY,
+                    instructions=(
+                        SYSTEM_POLICY + specialist_policy(request.specialist.specialist)
+                        if request.specialist
+                        else SYSTEM_POLICY + SUPERVISOR_POLICY
+                        if request.supervisor
+                        else SYSTEM_POLICY
+                    ),
                     input=cast(ResponseInputParam, messages),
                     tools=cast(list[ToolParam], tools),
                     text={
@@ -132,12 +149,59 @@ class OpenAIProvider:
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_model_response") from None
 
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        encoded = json.dumps(request.__dict__)
+        if len(encoded.encode()) > self.settings.max_input_bytes:
+            raise AgentError("model_input_budget_exhausted")
+        try:
+            async with asyncio.timeout(self.settings.model_timeout):
+                response = await self.client.responses.create(
+                    model=self.settings.model,
+                    instructions=SUPERVISOR_POLICY,
+                    input=cast(
+                        ResponseInputParam,
+                        [{"role": "user", "content": "Untrusted routing data:\n" + encoded}],
+                    ),
+                    text={
+                        "format": {
+                            "type": "json_schema",
+                            "name": "supervisor_routing",
+                            "schema": RoutingProposal.model_json_schema(),
+                            "strict": False,
+                        }
+                    },
+                    max_output_tokens=512,
+                    store=False,
+                )
+            if len(response.output_text.encode()) > self.settings.max_output_bytes:
+                raise AgentError("model_output_budget_exhausted")
+            proposal = RoutingProposal.model_validate_json(response.output_text)
+            usage = response.usage
+            proposal.usage = Usage(
+                input_tokens=usage.input_tokens if usage else None,
+                output_tokens=usage.output_tokens if usage else None,
+                total_tokens=usage.total_tokens if usage else None,
+                cached_input_tokens=usage.input_tokens_details.cached_tokens if usage else None,
+            )
+            return proposal
+        except AuthenticationError:
+            raise AgentError("provider_authentication") from None
+        except RateLimitError:
+            raise AgentError("provider_rate_limit") from None
+        except (APITimeoutError, TimeoutError):
+            raise AgentError("provider_timeout") from None
+        except (APIConnectionError, APIStatusError):
+            raise AgentError("provider_unavailable") from None
+        except (ValidationError, ValueError, TypeError):
+            raise AgentError("invalid_supervisor_routing") from None
+
     async def propose(self, request: InvestigationInput) -> InvestigationProposal:
         payload = {
             "question": request.question,
             "vehicle_context": request.context,
             "current_run_evidence": request.evidence,
             "missing_evidence": request.missing_evidence,
+            "supervisor": request.supervisor,
         }
         encoded = json.dumps(payload)
         if len(encoded.encode()) > self.settings.max_input_bytes:

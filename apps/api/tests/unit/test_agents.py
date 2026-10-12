@@ -372,7 +372,8 @@ async def test_real_protocol_graph_with_duplicate_call(fixture, telemetry):
     assert len(state.tool_calls) == 4  # repeated read served from deterministic cache
     assert emitted.count("tool_started") == 4
     assert "context_resolved" in emitted and "evidence_added" in emitted
-    assert state.steps == 3
+    assert state.steps == 4  # one bounded routing turn plus the three existing model turns
+    assert state.run.supervisor.routing.selected == []
     assert not any("ignore" in b.path for f in result.findings for b in f.bindings)
 
 

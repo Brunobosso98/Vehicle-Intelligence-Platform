@@ -17,6 +17,12 @@ re-upgrade/idempotent head and real API readiness. Contract tests inspect OpenAP
 Playwright uses the real stack to validate readiness display, keyboard navigation and axe accessibility;
 a browser transport failure validates recovery. Do not replace the happy path API with mocks in E2E.
 
+The persistent development database publishes host port 5432 by default. Set
+`POSTGRES_HOST_PORT` to another available host port when that port is occupied; API and worker
+containers continue using the internal `db:5432` address. The API image allows up to 60 seconds for
+initial process startup before Docker marks its liveness check unhealthy, covering measured slow
+Docker Desktop startup without changing the readiness endpoint.
+
 Run make check-api/check-web during development, make verify for Phase 1 delivery. CI preserves
 coverage and browser reports/traces on failures. No private API or production fixture is needed.
 
@@ -142,3 +148,21 @@ The canonical `full-validation` job runs Phase 7B acceptance, real capture brows
 benchmark and observability, then repeats acceptance and browser E2E on fresh disposable stacks.
 Its commit-tied summary and final enforcement include the Phase 7B result; a green Phase 7A or
 security check alone cannot certify this phase.
+
+## Phase 7C acceptance
+
+`make test-supervisor` executes contract, routing, grounding, allowlist, shared cache, budgets,
+Data Quality, cancellation, conflict and provider wire tests. `make test-integration` also checks
+legacy snapshots without a supervisor field, durable new artifacts and versioned SSE over actual
+MCP and disposable PostgreSQL. `make phase7c-acceptance` runs an independent canonical-recording
+suite through real HTTP MCP/API, plus adversarial provider output at the production provider seam.
+No alternate supervisor, paid key, routing classifier trained on fixtures or bypass of MCP is used.
+
+`make test-supervisor-e2e` exercises the existing workspace, live routing/progress, structured
+findings, evidence, ambiguity, investigation recommendation and axe accessibility in Chromium.
+`make benchmark-supervisor` measures zero/one/two/three specialist paths, conflict escalation,
+four concurrent runs, process RSS snapshots and result bytes. `make supervisor-observability`
+requires delivered role spans and actual Prometheus series. These gates are part of `make verify`
+and the canonical `full-validation` workflow, which repeats acceptance/browser gates in fresh
+state and includes supervisor outcome in final enforcement. The traceability ledger and acceptance
+report distinguish development evidence from exact final committed-head verification.

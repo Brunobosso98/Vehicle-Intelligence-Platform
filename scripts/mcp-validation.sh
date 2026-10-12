@@ -28,6 +28,7 @@ export ENVIRONMENT=test
 entrypoint="${1:-scripts/evaluate_mcp.py}"
 evidence=.validation/mcp
 case "$entrypoint" in
+  scripts/*supervisor*) evidence=.validation/supervisor ;;
   scripts/*agent*|scripts/*grounding*) evidence=.validation/agent ;;
   scripts/*investigation*) evidence=.validation/investigation ;;
 esac

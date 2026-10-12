@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, TypedDict
@@ -29,6 +30,9 @@ class Execution:
     telemetry_calls: int = 0
     comparisons: int = 0
     correction: str | None = None
+    tool_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    provider_retries: int = 0
+    synthesis_turns: int = 0
 
 
 class GraphState(TypedDict):

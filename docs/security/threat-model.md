@@ -101,3 +101,22 @@ ACLs. The MCP reader token retains its documented repository-wide scope. See the
 The Phase 7B acceptance suite checks the token, stale version/hash, source mutation, cross-vehicle
 read/link, duplicate linkage, unknown OBD channel and bounded follow-up. A production Internet
 deployment still requires user identity, per-vehicle ACLs, TLS, managed secrets and retention policy.
+
+## Phase 7C supervisor and specialists
+
+| Threat                                            | Application boundary                                                                                                                                                                                                                  |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Specialist impersonation or permission escalation | Application assigns run, vehicle, role and version; immutable registry filters tool schemas and checks every requested name before MCP execution. Provider output cannot choose another role or extend permissions.                   |
+| Malicious metadata or tool instructions           | Routing and role policies are application instructions; vehicle, configuration, modification and tool content remain JSON data. Fixed grounded templates render public findings.                                                      |
+| Cross-run, vehicle or configuration injection     | Current-run evidence ownership, nested MCP identity, session/pull scope and Phase 7A temporal configuration validation apply before findings or synthesis. Each run owns its cache.                                                   |
+| Sibling evidence leakage                          | Domain tasks receive one frozen shared evidence snapshot plus their own tool results. They never receive sibling messages or later sibling findings. Only the Supervisor aggregates validated results.                                |
+| Forged conflicts or arbitrary diagnosis           | Conflict IDs must reference validated findings from different specialists; factual disagreement and competing mechanisms must satisfy code predicates. Conflicting mechanisms preserve ambiguity and the existing investigation path. |
+| Resource exhaustion and cancellation races        | Parent and per-role turns, calls, telemetry, bytes, time, concurrency and retries remain bounded. Siblings are cancelled and drained. A writer lock and durable cursor reconciliation protect SSE sequence allocation.                |
+| Unreliable telemetry interpreted as a cause       | Data Quality runs first; missing RPM, unreliable relevant sampling, dropout, stuck signals and unavailable quality fail closed. Regular sub-target sampling and unrelated quality events remain explicit limitations.                 |
+| Unapproved acquisition                            | Supervisor recommendations use the existing Phase 7B operator token, version/hash approval, source checks and one capture cycle. They never start acquisition or send vehicle commands.                                               |
+
+Deterministic fault scenarios inject provider failures and hostile output through the existing provider
+seam while using the production graph, actual MCP and disposable PostgreSQL. Internet deployment
+still has the same Phase 7A/7B identity and tenant ACL limitations. See
+[supervisor architecture](../architecture/phase-7c-specialist-agents-supervisor.md) and
+[runbook](../runbooks/supervisor-specialists.md). Phase 7D owns real-model adversarial evaluation.

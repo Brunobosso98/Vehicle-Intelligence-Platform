@@ -15,6 +15,7 @@ from agent_runtime import ask, runtime
 from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+from supervisor_fixtures import seed_supervisor
 from vehicle_platform.acquisition.recipes import BY_KEY
 from vehicle_platform.agents.investigation.proposal import InvestigationProposal
 from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
@@ -82,6 +83,31 @@ async def main() -> None:
         unanswered = await ask(
             api, vehicle, "Why did the third pull get slower with timing missing?"
         )
+        if unanswered["status"] != "completed" or "signal_or_measurement" not in (
+            unanswered.get("result") or {}
+        ).get("missing_evidence", []):
+            print(
+                json.dumps(
+                    {
+                        "failed_case": "material-insufficiency",
+                        "run_status": unanswered["status"],
+                        "error_category": unanswered.get("error_category"),
+                        "missing_evidence": (unanswered.get("result") or {}).get(
+                            "missing_evidence"
+                        ),
+                        "specialist_errors": [
+                            {
+                                "specialist": s["specialist"],
+                                "error_category": s["error_category"],
+                                "quality_warnings": s["data_quality_warnings"],
+                            }
+                            for s in (unanswered.get("supervisor") or {}).get(
+                                "specialists", []
+                            )
+                        ],
+                    }
+                )
+            )
         require(
             "material-insufficiency",
             unanswered["status"] == "completed"
@@ -349,9 +375,14 @@ async def main() -> None:
             observations,
         )
 
-        normal = await ask(api, vehicle, "A IAT piorou nas puxadas consecutivas?")
+        # Finalized link fixtures above intentionally have no samples. A sufficient
+        # answer requires a separate recording with actual canonical quality evidence.
+        sufficient_vehicle = (await seed_supervisor(url))["vehicle"]
+        normal = await ask(
+            api, sufficient_vehicle, "A IAT piorou nas puxadas consecutivas?"
+        )
         no_need = await api.post(
-            base,
+            f"/api/v1/vehicles/{sufficient_vehicle}/investigations",
             headers=headers,
             json={
                 "agent_run_id": normal["id"],
@@ -359,6 +390,29 @@ async def main() -> None:
                 "source_id": "golden",
             },
         )
+        if no_need.status_code not in {409, 422}:
+            print(
+                json.dumps(
+                    {
+                        "failed_case": "sufficient-evidence-no-plan",
+                        "status": normal["status"],
+                        "missing_evidence": (normal.get("result") or {}).get(
+                            "missing_evidence"
+                        ),
+                        "sufficiency": (normal.get("supervisor") or {}).get(
+                            "sufficiency"
+                        ),
+                        "quality_warnings": [
+                            warning
+                            for specialist in (normal.get("supervisor") or {}).get(
+                                "specialists", []
+                            )
+                            for warning in specialist.get("data_quality_warnings", [])
+                        ],
+                    }
+                ),
+                flush=True,
+            )
         require(
             "sufficient-evidence-no-plan",
             no_need.status_code in {409, 422},

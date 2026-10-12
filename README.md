@@ -10,8 +10,9 @@ Fases 0–5 passaram pela auditoria retrospectiva. A Fase 6 expõe ferramentas e
 somente leitura; a evidência de entrega está no [relatório de aceitação](docs/validation/phase-6-acceptance.md).
 A Fase 5 fornece analytics determinísticos e versionados sobre telemetria, sessões, pulls,
 eventos factuais e configurações históricas. A Fase 4 fornece aquisição somente leitura,
-receitas, preflight e streaming durável. Diagnóstico/root cause, agentes, RAG e ML
-permanecem planejados. Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
+receitas, preflight e streaming durável. As Fases 7A/7B fornecem agentes fundamentados
+e investigação com aprovação explícita. A Fase 7C está em implementação e validação.
+Diagnóstico/root cause, RAG e ML permanecem planejados. Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
 Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
 [desenho de análise da Fase 2](docs/architecture/phase-2-session-analysis.md) e o
 [desenho de eventos da Fase 3](docs/architecture/phase-3-event-anomaly-engine.md), o
@@ -104,3 +105,19 @@ claim a mechanical diagnosis or automatically repeat capture. See the
 [architecture](docs/architecture/phase-7b-investigation-adaptive-logging.md),
 [runbook](docs/runbooks/investigation-workflow.md) and
 [acceptance ledger](docs/validation/phase-7b-acceptance.md).
+
+## Phase 7C supervisor and specialists
+
+The bounded Supervisor selects Data Quality, Performance, Thermal and Fuel/Air/Boost through
+typed routing, immutable MCP permissions and existing Phase 7A grounding. Factual lookups can use
+zero specialists. Unreliable telemetry blocks deeper interpretation; unresolved competing mechanisms
+use the existing Phase 7B approval and follow-up workflow. Implementation validation is in progress.
+See [architecture](docs/architecture/phase-7c-specialist-agents-supervisor.md),
+[runbook](docs/runbooks/supervisor-specialists.md),
+[acceptance](docs/validation/phase-7c-acceptance.md) and
+[traceability ledger](docs/validation/phase-7c-traceability-ledger.md).
+
+`make test-supervisor`, `make phase7c-acceptance`, `make test-supervisor-e2e`,
+`make benchmark-supervisor` and `make supervisor-observability` are the dedicated gates.
+Deterministic CI needs no paid provider credentials. Phase 7D owns comprehensive real-model
+routing, quality, latency, token and cost evaluation; Phase 8 owns RAG.

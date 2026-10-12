@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { components } from "../../../../packages/contracts/generated/api";
 import { InvestigationWorkspace } from "./investigation-workspace";
+import { SpecialistResults, specialistLabels } from "./specialist-results";
 
 type AgentRun = components["schemas"]["AgentRun"];
 type Audit = components["schemas"]["RunAudit"];
@@ -72,6 +73,17 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
       "run_completed",
       "run_failed",
       "run_cancelled",
+      "supervisor_started",
+      "routing_completed",
+      "specialist_started",
+      "specialist_tool_started",
+      "specialist_tool_completed",
+      "specialist_completed",
+      "specialist_failed",
+      "conflict_detected",
+      "sufficiency_evaluated",
+      "investigation_proposed",
+      "synthesis_started",
     ];
     for (const type of types) {
       source.addEventListener(type, (message: MessageEvent<string>) => {
@@ -79,7 +91,7 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
           const event = JSON.parse(message.data) as AgentEvent;
           if (!mounted.current) return;
           if (
-            event.schema_version !== "1.0" ||
+            !["1.0", "1.1"].includes(event.schema_version) ||
             event.run_id !== id ||
             !Number.isInteger(event.sequence) ||
             event.sequence < 1 ||
@@ -89,6 +101,39 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
             return;
           cursor.current = event.sequence;
           const data = event.data ?? {};
+          if (event.type === "routing_completed") {
+            setStatus("Especialistas selecionados para a pergunta.");
+            if (Array.isArray(data.selected)) {
+              const selected = data.selected;
+              const labels = Object.entries(specialistLabels)
+                .filter(([key]) => selected.includes(key))
+                .map(([, label]) => label);
+              setProgress((items) => [
+                ...items.slice(-31),
+                labels.length > 0
+                  ? `Especialistas selecionados: ${labels.join(", ")}.`
+                  : "Consulta sem especialistas.",
+              ]);
+            }
+          }
+          if (
+            event.type === "specialist_started" ||
+            event.type === "specialist_completed" ||
+            event.type === "specialist_failed"
+          ) {
+            const label = Object.entries(specialistLabels).find(
+              ([key]) => key === data.specialist,
+            )?.[1];
+            if (label) {
+              const text = `${label}: ${event.type === "specialist_started" ? "em análise" : event.type === "specialist_completed" ? "concluído" : "indisponível"}.`;
+              setProgress((items) => [...items.slice(-31), text]);
+              setStatus(text);
+            }
+          }
+          if (event.type === "conflict_detected")
+            setStatus("Interpretações concorrentes encontradas.");
+          if (event.type === "investigation_proposed")
+            setStatus("Investigação recomendada para as lacunas de evidência.");
           if (
             event.type === "tool_started" &&
             typeof data.tool_name === "string"
@@ -253,6 +298,7 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
             Confiança: <strong>{result.confidence}</strong>
           </p>
           <p style={{ whiteSpace: "pre-wrap" }}>{result.answer}</p>
+          {run.supervisor && <SpecialistResults report={run.supervisor} />}
           <h3>Achados</h3>
           <ul>
             {result.findings.map((finding, index) => (
