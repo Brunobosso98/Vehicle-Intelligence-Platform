@@ -119,6 +119,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
+	$(MAKE) stack-check
 	$(MAKE) test-e2e
 	$(MAKE) live-stream-benchmark
 	$(MAKE) security
