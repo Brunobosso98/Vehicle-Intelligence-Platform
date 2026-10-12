@@ -17,6 +17,12 @@ re-upgrade/idempotent head and real API readiness. Contract tests inspect OpenAP
 Playwright uses the real stack to validate readiness display, keyboard navigation and axe accessibility;
 a browser transport failure validates recovery. Do not replace the happy path API with mocks in E2E.
 
+The persistent development database publishes host port 5432 by default. Set
+`POSTGRES_HOST_PORT` to another available host port when that port is occupied; API and worker
+containers continue using the internal `db:5432` address. The API image allows up to 60 seconds for
+initial process startup before Docker marks its liveness check unhealthy, covering measured slow
+Docker Desktop startup without changing the readiness endpoint.
+
 Run make check-api/check-web during development, make verify for Phase 1 delivery. CI preserves
 coverage and browser reports/traces on failures. No private API or production fixture is needed.
 
