@@ -415,8 +415,10 @@ class Supervisor:
             evidence_ids=list(self.shared_ids or tuple(state.registry.items)[:50]),
             session_ids=[UUID(str(s["id"])) for s in state.context.sessions],
             allowed_tools=sorted(policy.allowed_tools),
-            budget=policy.budget(),
-            deadline=datetime.now(UTC) + timedelta(seconds=policy.budget().timeout_seconds),
+            budget=policy.budget().model_copy(
+                update={"timeout_seconds": self.settings.specialist_timeout}
+            ),
+            deadline=datetime.now(UTC) + timedelta(seconds=self.settings.specialist_timeout),
             prompt_version=policy.prompt_version,
         )
         result = SpecialistResult(
@@ -601,6 +603,12 @@ class Supervisor:
                             result.evidence_gaps = ["data_quality"]
                         elif "requested_signal_unavailable" in result.data_quality_warnings:
                             result.evidence_gaps = ["signal_or_measurement"]
+                        else:
+                            # The application owns the blocking quality decision.
+                            # An unsupported model category cannot contradict verified metadata.
+                            result.evidence_gaps = [
+                                gap for gap in result.evidence_gaps if gap != "data_quality"
+                            ]
                     validate_result(result, request, state.registry)
             except asyncio.CancelledError:
                 result.status, result.error_category = "cancelled", "cancelled"

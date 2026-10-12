@@ -43,3 +43,9 @@ from billing truth. Unknown or interrupted usage and incomplete repeats prevent 
 Model quality and realistic latency require real calls; deterministic tests cannot establish them.
 The operator must retain checkpoints and use a dedicated provider project/key with a separate
 provider-side USD 5 limit. Pricing must be reverified against official documentation before use.
+
+## Evidence-driven hardening
+
+Two partial real attempts exposed local stream/database failure and model quality-gap tags overriding verified quality metadata. The implementation now keeps quality blocking application-owned, preserves durable interrupted run handles, and permits one read-only reconnect to the same run. Role task instructions are versioned v2; factual measurements remain usable when causes are unresolved.
+
+Specification sections 95–96 permit an explicit operator request beyond two automatic schedules. The default limit stays two; a separately confirmed exception admits one extra bounded schedule with shared spend, and no fourth schedule. This exception requires operator approval and is never a default CI or automatic tuning action.

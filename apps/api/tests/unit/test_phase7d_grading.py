@@ -318,6 +318,8 @@ def test_report_applies_the_specified_thresholds_without_requiring_perfect_route
             | dict.fromkeys(QUALITY_REQUIREMENTS, 1)
             | {
                 "routing_correct": int(index >= 4),
+                "strict_routing_correct": int(index >= 4),
+                "strict_routing_designated": 1,
                 "required_specialists": 2,
                 "recalled_specialists": 2,
                 "selected_specialists": 2,
@@ -384,3 +386,41 @@ def test_absent_failed_answer_does_not_fabricate_a_factual_violation():
     assert result["status"] == "SEMANTIC_FAILURE"
     assert result["metrics"]["unsupported_factual_claims"] == 0
     assert "invalid_supervisor_routing" in result["failures"]
+
+
+def test_strict_selection_and_required_participation_are_distinct():
+    run = public_run()
+    run["supervisor"] = {
+        "routing": {
+            "intent": "performance",
+            "selected": ["performance"],
+            "data_quality_gate": True,
+        },
+        "specialists": [{"specialist": "data_quality"}],
+    }
+    result = grade(case("B01"), run, {"tool_calls": []}, None, [])
+    assert result["metrics"]["strict_routing_correct"] == 1
+    assert result["metrics"]["routing_correct"] == 0
+    assert result["metrics"]["recalled_specialists"] == 1
+    assert result["metrics"]["required_specialists"] == 2
+
+
+def test_unrun_cases_do_not_change_observed_quality_rates():
+    state = {
+        "round": 1,
+        "identities": [],
+        "rates": {},
+        "calls": {},
+        "results": {
+            "1:A01:0": {
+                "status": "PASS",
+                "metrics": {"routing_correct": 1, "selected_specialists": 2},
+            },
+            "1:A02:0": {"status": "NOT_RUN_EXTERNAL_BLOCKER"},
+        },
+    }
+    report = summarize(state)
+    assert report["quality_observations_measured"] == 1
+    assert report["routing_accuracy"] == 1
+    assert report["average_specialists_per_case"] == 2
+    assert report["status"] == "NOT VERIFIED"

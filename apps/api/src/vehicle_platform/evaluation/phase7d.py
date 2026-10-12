@@ -148,6 +148,7 @@ class Ledger:
         rates: Rates,
         *,
         confirmation: bool = False,
+        operator_extra: bool = False,
     ) -> None:
         if not limit.is_finite() or not Decimal(0) < limit <= Decimal(5):
             raise AgentError("invalid_spend_limit")
@@ -155,16 +156,25 @@ class Ledger:
         self.started: dict[str, float] = {}
         self.case_key = "smoke"
         self.state: dict[str, Any]
+        if operator_extra and not confirmation:
+            raise AgentError("operator_extra_requires_confirmation")
         if path.exists():
             self.state = json.loads(path.read_text())
             if self.state["rates"] != rates.model_dump(mode="json"):
                 raise AgentError("checkpoint_pricing_mismatch")
             if confirmation:
-                if self.state["round"] >= 2:
+                if self.state["round"] >= 2 and not (operator_extra and self.state["round"] == 2):
                     raise AgentError("full_suite_limit")
+                if operator_extra and self.state["round"] != 2:
+                    raise AgentError("operator_extra_requires_two_previous_rounds")
                 self.state["round"] += 1
                 self.state["identities"].append(identity)
                 self.state.pop("projection", None)
+                if operator_extra:
+                    self.state["operator_extra_confirmation"] = {
+                        "round": self.state["round"],
+                        "requested_at": datetime.now(UTC).isoformat(),
+                    }
             elif self.state["identities"][-1] != identity:
                 raise AgentError("checkpoint_identity_mismatch")
         elif confirmation:
@@ -183,7 +193,14 @@ class Ledger:
             }
         if self.state["active"]:
             key = self.state["active"]
-            self.state["results"].setdefault(key, {"status": "INTERRUPTED", "case_key": key})
+            self.state["results"].setdefault(
+                key,
+                {
+                    "status": "INTERRUPTED",
+                    "case_key": key,
+                    "run_id": self.state.get("active_run_id"),
+                },
+            )
             self.state["active"] = None
         self.save()
 
@@ -205,12 +222,14 @@ class Ledger:
             return False
         self.case_key = key
         self.state["active"] = key
+        self.state.pop("active_run_id", None)
         self.save()
         return True
 
     def finish_case(self, key: str, result: dict[str, Any]) -> None:
         self.state["results"][key] = result
         self.state["active"] = None
+        self.state.pop("active_run_id", None)
         self.save()
 
     def begin(self, role: str, input_bytes: int, max_output_tokens: int) -> str:

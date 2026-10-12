@@ -63,6 +63,17 @@ class OpenAIProvider:
                 if isinstance(error, (APIConnectionError, APIStatusError))
                 else "invalid_model_response"
             )
+            if isinstance(error, APIStatusError) and error.status_code in {400, 402, 403, 404, 422}:
+                body = error.body if isinstance(error.body, dict) else {}
+                details = body.get("error", body)
+                param = details.get("param") if isinstance(details, dict) else None
+                category = (
+                    "provider_service_tier_unavailable"
+                    if param == "service_tier"
+                    else "provider_authentication"
+                    if error.status_code == 403
+                    else "provider_configuration"
+                )
             if self.observer and ticket:
                 self.observer.failed(ticket, category)
             if not isinstance(error, Exception):

@@ -48,7 +48,7 @@ Normal `make verify` and GitHub push/PR CI do not invoke these paid targets.
 
 Default limits: 120 end-to-end observations, 18 provider requests per case, 16 production model
 steps, three domain specialists plus the Data Quality gate, 32 parent MCP calls plus eleven bounded Phase 7B reads (43 total), one telemetry window,
-one infrastructure retry, one grounding correction and bounded model/run/case deadlines.
+one infrastructure retry, one grounding correction and bounded model/run/case deadlines. The evaluation specialist deadline is 45 seconds; application defaults remain 25 seconds. One local read-only SSE reconnect targets the same durable run and never creates a new paid run.
 The default spend threshold is USD 2; values above USD 5 or nonfinite values are rejected.
 Per-call reservations prevent starting requests without remaining budget. Remaining cases are
 budget-skipped when that threshold blocks execution. Skipped cases are never passes.
@@ -66,7 +66,7 @@ After a genuine general policy/architecture fix, one confirmation suite can be e
 make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite'
 ```
 
-Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected. Do not tune repeatedly against exact
+Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected by default. Sections 95–96 require an explicit operator request for anything beyond two schedules. After concrete hardening and operator approval, exactly one extra round can be started with `--confirm-paid-eval --confirmation-suite --operator-extra-suite`; spending remains shared and the USD 2 configuration is not raised. A fourth round is rejected. Omit both round-start flags when resuming an already started extra round. Do not tune repeatedly against exact
 questions. Separate infrastructure failures from semantic failures. Individual bounded provider/runtime failures are recorded and the suite continues; three consecutive provider failures, authentication/configuration errors, harness failures or budget exhaustion stop spending. Internal specialist/tool deadlines are runtime failures, not OpenAI outages. Retain uncertainty, unsupported
 signals and Phase 8 documentary gaps. Never approve/acquire data automatically for these fixtures.
 

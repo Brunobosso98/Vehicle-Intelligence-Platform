@@ -43,6 +43,7 @@ FATAL_PROVIDER = {
     "provider_configuration",
     "provider_configuration_mismatch",
     "provider_usage_unavailable",
+    "provider_service_tier_unavailable",
 }
 
 
@@ -77,6 +78,23 @@ def stop_suite(result, provider_streak):
     )
 
 
+async def read_public_stream(api, path):
+    """One read-only reconnect to the same durable run; never create another run."""
+    for attempt in range(2):
+        try:
+            response = await api.get(path)
+            response.raise_for_status()
+            return attempt
+        except RuntimeError as error:
+            if (
+                attempt
+                or not isinstance(error.__cause__, AgentError)
+                or error.__cause__.category != "database_unavailable"
+            ):
+                raise
+            await asyncio.sleep(0.1)
+
+
 def identity(settings, digest, suite):
     sha = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
@@ -102,6 +120,7 @@ def identity(settings, digest, suite):
         "max_steps": settings.max_steps,
         "max_tool_calls": settings.max_tool_calls,
         "max_specialists": settings.max_specialists,
+        "specialist_timeout": settings.specialist_timeout,
         "model_timeout": settings.model_timeout,
         "run_timeout": settings.run_timeout,
         "max_provider_retries": settings.max_provider_retries,
@@ -205,7 +224,10 @@ async def stack(url, settings, budget):
         "VIP_MCP_PORT": str(port),
         "VIP_MCP_RESOURCE_URL": base + "/mcp",
         "VIP_MCP_ISSUER_URL": base,
+        "VIP_AGENT_ENABLED": "false",
     }
+    env.pop("VIP_AGENT_API_KEY", None)
+    env.pop("OPENAI_API_KEY", None)
     process = Process(
         [str(ROOT / "apps/api/.venv/bin/python"), "-m", "vehicle_platform.mcp.cli"],
         env,
@@ -219,7 +241,9 @@ async def stack(url, settings, budget):
             "investigation_token": SecretStr(token),
         }
     )
-    app = create_app(Settings(database_url=url, environment="test"))
+    app = create_app(
+        Settings(database_url=url, environment="test", readiness_timeout=5)
+    )
     agents = app.state.agent_service
     agents.settings = local
     app.state.eval_tool_meter = ToolMeter()
@@ -296,6 +320,7 @@ async def evaluate(settings, budget, suite, output):
                 "critical": case.critical,
                 "repeat": repeat,
                 "case_key": key,
+                "artifact_path": f"{key.replace(':', '-')}.json",
             }
             print(
                 json.dumps(
@@ -322,8 +347,9 @@ async def evaluate(settings, budget, suite, output):
                     # Save the durable run handle before waiting for streamed completion.
                     budget.state["active_run_id"] = run_id
                     budget.save()
-                    stream = await api.get(f"{path}/{run_id}/stream")
-                    stream.raise_for_status()
+                    result["stream_reconnections"] = await read_public_stream(
+                        api, f"{path}/{run_id}/stream"
+                    )
                     run = (await api.get(f"{path}/{run_id}")).json()
                     audit = (await api.get(f"{path}/{run_id}/audit")).json()
                     plan = None
@@ -441,6 +467,23 @@ async def evaluate(settings, budget, suite, output):
                     status="HARNESS_FAILURE", error_category=error.__cause__.category
                 )
             result["latency_seconds"] = perf_counter() - started
+            artifact = output / result["artifact_path"]
+            if not artifact.exists():
+                atomic_json(
+                    artifact,
+                    redact_data(
+                        {
+                            "artifact_incomplete": True,
+                            "result": result,
+                            "provider_receipts": [
+                                c
+                                for c in budget.state["calls"].values()
+                                if c["case_key"] == key
+                            ],
+                        },
+                        settings,
+                    ),
+                )
             budget.finish_case(key, redact_data(result, settings))
             print(
                 json.dumps(
@@ -486,6 +529,7 @@ def main():
     parser.add_argument("mode", choices=["smoke", "eval", "report"])
     parser.add_argument("--confirm-paid-eval", action="store_true")
     parser.add_argument("--confirmation-suite", action="store_true")
+    parser.add_argument("--operator-extra-suite", action="store_true")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -508,6 +552,10 @@ def main():
             return
         if not args.confirm_paid_eval:
             raise AgentError("explicit_paid_confirmation_required")
+        if args.operator_extra_suite and (
+            args.mode != "eval" or not args.confirmation_suite
+        ):
+            raise AgentError("operator_extra_requires_confirmed_eval")
         if not os.getenv("VIP_AGENT_API_KEY"):
             raise AgentError("VIP_AGENT_API_KEY_missing_no_request_sent")
         for name, expected in [
@@ -534,6 +582,7 @@ def main():
             max_concurrent_runs=1,
             max_output_tokens=4096,
             model_timeout=60,
+            specialist_timeout=45,
             run_timeout=180,
         )
         limit = Decimal(os.getenv("VIP_7D_MAX_SPEND_USD", "2.00"))
@@ -543,7 +592,12 @@ def main():
             raise AgentError("official_pricing_reverification_required")
         config = identity(settings, digest, suite)
         budget = Ledger(
-            checkpoint, config, limit, rates, confirmation=args.confirmation_suite
+            checkpoint,
+            config,
+            limit,
+            rates,
+            confirmation=args.confirmation_suite,
+            operator_extra=args.operator_extra_suite,
         )
         print(
             json.dumps(

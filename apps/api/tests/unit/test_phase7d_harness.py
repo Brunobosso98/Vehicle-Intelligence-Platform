@@ -117,6 +117,8 @@ def test_resume_keeps_completed_cases_and_charges_interruption(tmp_path):
     budget.finish_case("1:A01:0", {"status": "PASS"})
     assert budget.start_case("1:A02:0")
     budget.begin("agent", 100, 512)
+    budget.state["active_run_id"] = "durable-run-id"
+    budget.save()
     spend = budget.spend()
     resumed = ledger(tmp_path)
     assert resumed.spend() == spend
@@ -124,6 +126,7 @@ def test_resume_keeps_completed_cases_and_charges_interruption(tmp_path):
     assert not resumed.start_case("1:A02:0")
     assert resumed.state["results"]["1:A02:0"]["status"] == "INTERRUPTED"
     assert resumed.state["active"] is None
+    assert resumed.state["results"]["1:A02:0"]["run_id"] == "durable-run-id"
 
 
 def test_resume_rejects_changed_commit_or_prices(tmp_path):
@@ -264,3 +267,67 @@ def test_versioned_questions_match_the_authoritative_specification():
     assert (
         next(case for case in suite.cases if case.case_id == "G06").fixture == "sparse_comparison"
     )
+
+
+@pytest.mark.parametrize(
+    "status,param,category",
+    [
+        (400, None, "provider_configuration"),
+        (400, "service_tier", "provider_service_tier_unavailable"),
+        (403, None, "provider_authentication"),
+        (404, None, "provider_configuration"),
+        (500, None, "provider_unavailable"),
+    ],
+)
+async def test_nonretryable_provider_errors_are_safe_and_specific(
+    provider, status, param, category
+):
+    import httpx
+    from openai import APIStatusError
+
+    wire = httpx.Response(
+        status, request=httpx.Request("POST", "https://api.openai.com/v1/responses")
+    )
+    provider.client.responses.create.side_effect = APIStatusError(
+        "private-key-fragment", response=wire, body={"error": {"param": param}}
+    )
+    with pytest.raises(AgentError) as failure:
+        await provider.route(routing_input())
+    assert failure.value.category == category
+    assert "private-key-fragment" not in str(failure.value)
+
+
+def test_new_interrupted_case_never_inherits_previous_run_handle(tmp_path):
+    budget = ledger(tmp_path)
+    budget.start_case("1:A01:0")
+    budget.state["active_run_id"] = "previous-run"
+    budget.finish_case("1:A01:0", {"status": "PASS", "run_id": "previous-run"})
+    budget.start_case("1:A02:0")
+    resumed = ledger(tmp_path)
+    assert resumed.state["results"]["1:A01:0"]["run_id"] == "previous-run"
+    assert resumed.state["results"]["1:A02:0"]["run_id"] is None
+
+
+def test_operator_extra_round_is_explicit_once_and_shares_spend(tmp_path):
+    first = ledger(tmp_path)
+    ticket = first.begin("smoke", 100, 512)
+    first.complete(ticket, receipt())
+    second = ledger(tmp_path, confirmation=True)
+    spend = second.spend()
+    with pytest.raises(AgentError, match="full_suite_limit"):
+        ledger(tmp_path, confirmation=True)
+    third = ledger(tmp_path, confirmation=True, operator_extra=True)
+    assert third.state["round"] == 3
+    assert third.spend() == spend
+    assert third.state["operator_extra_confirmation"]["round"] == 3
+    assert ledger(tmp_path).state["round"] == 3
+    with pytest.raises(AgentError, match="full_suite_limit"):
+        ledger(tmp_path, confirmation=True, operator_extra=True)
+
+
+def test_operator_extra_cannot_bypass_initial_rounds(tmp_path):
+    ledger(tmp_path)
+    with pytest.raises(AgentError, match="operator_extra_requires_confirmation"):
+        ledger(tmp_path, operator_extra=True)
+    with pytest.raises(AgentError, match="operator_extra_requires_two_previous_rounds"):
+        ledger(tmp_path, confirmation=True, operator_extra=True)

@@ -972,9 +972,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/config.py": {
-    "mtime": 1791827048.1404138,
-    "seen": 1791828543.5417013,
-    "ast_hash": "c117646d0f3ba7df015f6ac3015cc419",
+    "mtime": 1791848523.3864813,
+    "seen": 1791849157.4380224,
+    "ast_hash": "34e816ea497501fe8966cbb3d0d2e868",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/context.py": {
@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/openai_provider.py": {
-    "mtime": 1791833812.697011,
-    "seen": 1791834084.6145318,
-    "ast_hash": "02302bd7933e9162ebf968941ed8a30a",
+    "mtime": 1791847525.4746788,
+    "seen": 1791847701.8680696,
+    "ast_hash": "49186f3edde9557ce0cf5e2d48f57ba9",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/orchestration.py": {
@@ -1020,9 +1020,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/prompts.py": {
-    "mtime": 1791680651.2097597,
-    "seen": 1791756965.9508853,
-    "ast_hash": "835d23b339cce1de1dfba42d53559bfc",
+    "mtime": 1791848432.771564,
+    "seen": 1791849157.4380476,
+    "ast_hash": "19611ea5d455d47030b57686586e05b5",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/provider.py": {
@@ -1956,9 +1956,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/policy.py": {
-    "mtime": 1791683160.7713616,
-    "seen": 1791756965.9508946,
-    "ast_hash": "2388100be359a810697d21496761b5e7",
+    "mtime": 1791849089.3128603,
+    "seen": 1791849157.4380612,
+    "ast_hash": "5c82e00e4f5ccfa4aeeadc7c3a800b44",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/routing.py": {
@@ -1968,9 +1968,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/runtime.py": {
-    "mtime": 1791724749.6004088,
-    "seen": 1791756965.950896,
-    "ast_hash": "2627c6f0bb8ba94c40c511d6dd44b5e0",
+    "mtime": 1791848523.3966606,
+    "seen": 1791849157.4380639,
+    "ast_hash": "c78afbaf9ade1769c8502ee3c0762c69",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/validation.py": {
@@ -1986,15 +1986,15 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_supervisor_provider.py": {
-    "mtime": 1791725825.751425,
-    "seen": 1791756965.9509616,
-    "ast_hash": "2a9eba169ff5d616d56cb5210c9b0254",
+    "mtime": 1791848432.771564,
+    "seen": 1791849157.4381733,
+    "ast_hash": "5b917bbe5439426c65fedf4427da6e5c",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_supervisor_runtime.py": {
-    "mtime": 1791724837.0750139,
-    "seen": 1791756965.9509625,
-    "ast_hash": "3f73340467db8328f3bd00ae15ce3e25",
+    "mtime": 1791848523.5086305,
+    "seen": 1791849157.4381742,
+    "ast_hash": "92d9067fb5ae561af3848de5bf05559f",
     "semantic_hash": ""
   },
   "apps/web/src/components/specialist-results.tsx": {
@@ -2112,33 +2112,33 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/grading.py": {
-    "mtime": 1791833886.9479778,
-    "seen": 1791834084.614584,
-    "ast_hash": "e3f9edc0c66e1ac526479340a9913e2c",
+    "mtime": 1791848470.2079813,
+    "seen": 1791849157.438095,
+    "ast_hash": "7de6921203a2f78aa8ff75b05ecc84b4",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/phase7d.py": {
-    "mtime": 1791829594.2738016,
-    "seen": 1791829666.273406,
-    "ast_hash": "c9b4d7f4d062edf83da66cfb9f3a2d47",
+    "mtime": 1791848216.2449877,
+    "seen": 1791849157.4380984,
+    "ast_hash": "ba1965dedda5a3cdd41c1157026ed59f",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase7d_cli.py": {
-    "mtime": 1791834346.8962681,
-    "seen": 1791834392.1572597,
-    "ast_hash": "4f2502ce6972f19536ffb18fd704bbaf",
+    "mtime": 1791848432.8835073,
+    "seen": 1791849157.4381657,
+    "ast_hash": "b78f02c927e2cbdb8e45ed5b70609b7b",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase7d_grading.py": {
-    "mtime": 1791833914.136082,
-    "seen": 1791834084.6146598,
-    "ast_hash": "9cbc87428362bd169d319db1341ac4b4",
+    "mtime": 1791848343.9667733,
+    "seen": 1791849157.438167,
+    "ast_hash": "c41a399138d510e20a9d718ecafa1b7a",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase7d_harness.py": {
-    "mtime": 1791833886.9479778,
-    "seen": 1791834084.6146612,
-    "ast_hash": "a614329216d55c26c453025bcbb5d1d5",
+    "mtime": 1791848216.2449877,
+    "seen": 1791849157.4381683,
+    "ast_hash": "a89a483f635fc123ed7129ed943a46ae",
     "semantic_hash": ""
   },
   "evals/phase7d/suite-v1.json": {
@@ -2148,9 +2148,9 @@
     "semantic_hash": ""
   },
   "scripts/phase7d_eval.py": {
-    "mtime": 1791834368.241919,
-    "seen": 1791834392.1574152,
-    "ast_hash": "93f80f1a5ed29a0c49264524dd1314c3",
+    "mtime": 1791848614.8155854,
+    "seen": 1791849157.4382915,
+    "ast_hash": "2f032db73bf1fa6eab78aba3250338af",
     "semantic_hash": ""
   },
   "scripts/phase7d_harness_acceptance.py": {
@@ -2166,15 +2166,15 @@
     "semantic_hash": ""
   },
   "docs/adr/0022-bounded-real-model-evaluation.md": {
-    "mtime": 1791828046.4961536,
-    "seen": 1791828543.5420172,
-    "ast_hash": "77697664e26d4b90d9073f83d96d8972",
+    "mtime": 1791849218.9273114,
+    "seen": 1791849481.6987894,
+    "ast_hash": "96095a30dd4602d4eae710ebbf5ee1aa",
     "semantic_hash": ""
   },
   "docs/architecture/phase-7d-real-model-validation.md": {
-    "mtime": 1791828046.5064285,
-    "seen": 1791828543.5420318,
-    "ast_hash": "a985147c56f6d375bf58d2f4c5723e2f",
+    "mtime": 1791849218.9273114,
+    "seen": 1791849481.6988115,
+    "ast_hash": "be9d0f7ef3c48725fb2a050afad60a69",
     "semantic_hash": ""
   },
   "docs/prompts/phase-7d-real-model-validation.md": {
@@ -2184,27 +2184,27 @@
     "semantic_hash": ""
   },
   "docs/runbooks/phase-7d-real-evaluation.md": {
-    "mtime": 1791834224.613906,
-    "seen": 1791834392.1575606,
-    "ast_hash": "29505b52015824a794da0984327964fe",
+    "mtime": 1791849090.0993667,
+    "seen": 1791849157.4384377,
+    "ast_hash": "78e13967f34991d4ba2fd6ba162dd93c",
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-real-evaluation.md": {
-    "mtime": 1791833962.5280929,
-    "seen": 1791834084.6149619,
-    "ast_hash": "63aae135c9618a0f965c28cc6d0d7ec5",
+    "mtime": 1791849466.703186,
+    "seen": 1791849481.6988943,
+    "ast_hash": "c92cc216d04a672b8111263d5793d7b5",
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-traceability-ledger.md": {
-    "mtime": 1791828519.3108764,
-    "seen": 1791828543.5420966,
-    "ast_hash": "6cc60f79f7b2a804e4f99ef7b6672cca",
+    "mtime": 1791849220.1772666,
+    "seen": 1791849481.6988957,
+    "ast_hash": "4d5c65ffb676201bd348ffc052adceb2",
     "semantic_hash": ""
   },
   "phase-7d-delivery.md": {
-    "mtime": 1791832892.6508644,
-    "seen": 1791834084.614996,
-    "ast_hash": "3f726f30f7795626ffd40d86e8e4a6ee",
+    "mtime": 1791849457.1850965,
+    "seen": 1791849481.6989198,
+    "ast_hash": "464f89f3b50ad5ce46cd04c49a270fec",
     "semantic_hash": ""
   },
   "scripts/phase7d_fixtures.py": {
@@ -2223,6 +2223,12 @@
     "mtime": 1791831904.3587847,
     "seen": 1791832379.1220453,
     "ast_hash": "a9f2eff688df3f617aeffd5528c7a27d",
+    "semantic_hash": ""
+  },
+  "docs/validation/phase-7d-partial-response-review.md": {
+    "mtime": 1791849466.7953656,
+    "seen": 1791849481.6988924,
+    "ast_hash": "37968be890ab962f0def92f60a4897ac",
     "semantic_hash": ""
   }
 }

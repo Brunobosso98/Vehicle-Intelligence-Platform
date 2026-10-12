@@ -153,8 +153,16 @@ def grade(
     participants = {r["specialist"] for r in report.get("specialists", [])}
     required, optional = set(case.required_specialists), set(case.allowed_optional_specialists)
     selected = participants - {"data_quality"}
+    routing_decision = report.get("routing") or {}
+    intended = set(routing_decision.get("selected", []))
+    if routing_decision.get("data_quality_gate"):
+        intended.add("data_quality")
+    strict = not optional
     metrics.update(
         routing_correct=int(required <= participants <= required | optional),
+        routing_selection_correct=int(required <= intended <= required | optional),
+        strict_routing_designated=int(strict),
+        strict_routing_correct=int(strict and bool(routing_decision) and intended == required),
         required_specialists=len(required),
         recalled_specialists=len(required & participants),
         necessary_specialists=len(participants & (required | optional)),
@@ -443,7 +451,9 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
     def ratio(a: str, b: str) -> float | None:
         return totals[a] / totals[b] if totals[b] else None
 
-    routing = totals["routing_correct"] / len(results) if results else None
+    measured_count = sum(bool(result.get("metrics")) for result in results.values())
+    routing = totals["routing_correct"] / measured_count if measured_count else None
+    strict_routing = ratio("strict_routing_correct", "strict_routing_designated")
     recall = ratio("recalled_specialists", "required_specialists")
     unnecessary = ratio("unnecessary_specialists", "selected_specialists")
     refs = ratio("valid_references", "references")
@@ -487,6 +497,8 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
     thresholds = bool(
         routing is not None
         and routing >= 0.9
+        and strict_routing is not None
+        and strict_routing >= 0.9
         and recall is not None
         and recall >= 0.95
         and unnecessary is not None
@@ -537,6 +549,10 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         projection=state.get("projection"),
         metrics=dict(totals),
         routing_accuracy=routing,
+        strict_routing_accuracy=strict_routing,
+        routing_selection_accuracy=totals["routing_selection_correct"] / measured_count
+        if measured_count
+        else None,
         specialist_precision=ratio("necessary_specialists", "selected_specialists"),
         specialist_recall=recall,
         unnecessary_specialist_rate=unnecessary,
@@ -566,8 +582,9 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         ),
         provider_failure_cases=sum(r.get("status") == "PROVIDER_FAILURE" for r in results.values()),
         infrastructure_retries=retries,
-        average_specialists_per_case=totals["selected_specialists"] / len(results)
-        if results
+        quality_observations_measured=measured_count,
+        average_specialists_per_case=totals["selected_specialists"] / measured_count
+        if measured_count
         else None,
         unknown_usage_calls=sum(c.get("usage") is None for c in calls),
         pricing=state["rates"],

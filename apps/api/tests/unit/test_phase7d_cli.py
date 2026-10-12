@@ -252,3 +252,47 @@ def test_individual_bounded_failures_do_not_stop_suite(cli):
         {"status": "PROVIDER_FAILURE", "provider_categories": ["provider_configuration_mismatch"]},
         1,
     )
+
+
+@pytest.mark.parametrize("failure_count", [0, 1, 2])
+async def test_stream_reconnect_is_bounded_read_only_same_run(cli, failure_count):
+    import httpx
+
+    errors = []
+    for _ in range(failure_count):
+        wrapped = RuntimeError("response already started")
+        wrapped.__cause__ = AgentError("database_unavailable")
+        errors.append(wrapped)
+    response = httpx.Response(200, request=httpx.Request("GET", "http://test/stream"))
+    api = SimpleNamespace(get=AsyncMock(side_effect=errors + [response]))
+    if failure_count == 2:
+        with pytest.raises(RuntimeError):
+            await cli.read_public_stream(api, "/runs/durable-run/stream")
+    else:
+        assert await cli.read_public_stream(api, "/runs/durable-run/stream") == failure_count
+    assert api.get.await_count == min(failure_count + 1, 2)
+    assert all(call.args == ("/runs/durable-run/stream",) for call in api.get.await_args_list)
+
+
+async def test_stream_reconnect_does_not_retry_unrelated_runtime_error(cli):
+    api = SimpleNamespace(get=AsyncMock(side_effect=RuntimeError("unrelated failure")))
+    with pytest.raises(RuntimeError):
+        await cli.read_public_stream(api, "/runs/durable-run/stream")
+    assert api.get.await_count == 1
+
+
+def test_operator_extra_requires_explicit_confirmed_eval_mode(cli, monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "phase7d_eval.py",
+            "eval",
+            "--confirm-paid-eval",
+            "--operator-extra-suite",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    with pytest.raises(AgentError, match="operator_extra_requires_confirmed_eval"):
+        cli.main()
+    assert not (tmp_path / "checkpoint.json").exists()

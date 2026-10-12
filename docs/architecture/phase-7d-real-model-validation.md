@@ -38,3 +38,11 @@ null metrics and NOT VERIFIED. Real-evaluation success is separate from final re
 acceptance. Production profile calibration remains pending real observations.
 
 Phase 8 owns documentary gaps and retrieval. Phase 7D adds no RAG, vehicle control or ECU writes.
+
+## Hardening from partial real observations
+
+Role policies v2 separate the delegated objective from the parent question and keep factual measurements alongside unresolved causes. The recorded-quality gate remains application-owned: poor, absent or truncated quality and failed/timed-out quality roles block interpretation; an unsupported model data_quality category cannot contradict verified reliable metadata. Other uncertainty remains visible.
+
+The evaluation uses a bounded 45-second specialist profile (application default 25), 60-second provider timeout, 180-second run timeout and 230-second case timeout. One local read-only public-stream reconnect targets the same persisted run; it never creates another paid run. Provider infrastructure retry remains capped at one.
+
+Two automatic schedules remain the default maximum. A separately confirmed operator exception permits one additional bounded schedule and records that opt-in in the ledger, with all spending shared. A fourth schedule is rejected. The exception is not invoked automatically.

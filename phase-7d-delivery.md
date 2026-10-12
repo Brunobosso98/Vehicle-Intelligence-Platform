@@ -13,4 +13,4 @@ Branch: `codex/phase-7d-real-model-validation`; baseline: `9b2b2a6`.
 - [ ] Run exactly one real smoke and the mandatory 120-case suite if credentials permit; inspect failures and perform only bounded general fixes.
 - [ ] Complete architecture/runbook/report/traceability documentation; push, open an unmerged PR and verify exact-head GitHub gates.
 
-Completion requires the real suite and every mandatory gate. Credentials supplied through an external local file on 2026-10-12; real execution is pending the committed evaluation checkpoint.
+Completion requires the real suite and every mandatory gate. Credentials supplied through an external local file on 2026-10-12. Real smoke passed; two paid schedules stopped partially, with 43/80 unique cases attempted in the confirmation and no critical repeats. PR #36 is draft, open and unmerged. The evaluated d86af6d head passed canonical CI. General hardening passed 686 local API tests; its final head and real reliability remain pending. Specification sections 95–96 require an explicit operator request for an additional paid schedule. No extra paid calls have been started.

@@ -607,3 +607,50 @@ async def test_interrupted_paid_turn_preserves_unknown_usage_in_parent(fixture, 
     )
     assert thermal.usage.total_tokens is None
     assert state.run.usage.total_tokens is None and state.run.usage.estimated_cost is None
+
+
+@pytest.mark.parametrize("poor", [False, True])
+async def test_recorded_quality_owns_blocking_not_model_gap_category(fixture, telemetry, poor):
+    class MisScopedQuality(DeterministicProvider):
+        async def turn(self, model_input):
+            turn = await super().turn(model_input)
+            if (
+                model_input.specialist
+                and model_input.specialist.specialist is Specialist.DATA_QUALITY
+                and turn.draft
+            ):
+                turn.draft.missing_evidence = ["data_quality", "comparable_history"]
+            return turn
+
+    state, _, engine = runtime(
+        fixture, telemetry, "Did performance change after configuration?", MisScopedQuality()
+    )
+    session = str(state.context.sessions[0]["id"])
+    if poor:
+        state.context.capabilities[session]["signal_quality"][0].update(
+            actual_hz=0, missing_ratio=0.9
+        )
+    await Supervisor(engine, state).run()
+    report = state.run.supervisor
+    quality = report.specialists[0]
+    assert quality.blocks_interpretation is poor
+    if poor:
+        assert quality.evidence_gaps == ["data_quality"]
+        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
+        assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+    else:
+        assert quality.evidence_gaps == ["comparable_history"]
+        assert Specialist.PERFORMANCE in {r.specialist for r in report.specialists}
+        assert report.sufficiency is not Sufficiency.UNRELIABLE_DATA
+
+
+async def test_specialist_deadline_uses_bounded_operator_profile(fixture, telemetry):
+    state, _, engine = runtime(fixture, telemetry, "Did performance change after configuration?")
+    engine.settings.specialist_timeout = 45
+    await Supervisor(engine, state).run()
+    assert all(r.budget.timeout_seconds == 45 for r in state.run.supervisor.specialists)
+    assert AgentSettings().specialist_timeout == 25
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        AgentSettings(specialist_timeout=46)
