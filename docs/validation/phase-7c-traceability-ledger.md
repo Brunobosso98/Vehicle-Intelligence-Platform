@@ -1,10 +1,13 @@
 # Phase 7C traceability ledger
 
 This ledger maps all 98 numbered requirements in the authoritative [specification](../prompts/phase-7c-specialist-agents-supervisor.md).
-All 98 requirements map to implementation and executed acceptance evidence. The complete
-canonical workflow and local `make verify` both passed on `bd7f5dfda0ec03932f97b66fa66205b4b559c49e`;
-the receipts are in [acceptance](phase-7c-acceptance.md). Repository, clean-state, GitHub, and
-final-report requirements are bound to the exact delivered HEAD and its generated workflow summary.
+Requirements 1–88 map to implementation and executed acceptance evidence. The recorded local
+Phase 7A–7C acceptance and recovery results are on source commit
+`a429856e329123f292bb83d04718c63a9e3542d6`; the combined `make verify` attempt was incomplete after
+a transient disposable-Postgres port-forwarding failure. Earlier complete canonical and local gates
+passed on `bd7f5dfda0ec03932f97b66fa66205b4b559c49e`. Requirements 89–98 remain pending the exact
+delivered HEAD, its full canonical workflow, repository/PR checks, and final report summary. See
+[acceptance](phase-7c-acceptance.md) for the detailed receipts.
 
 ## Evidence references
 

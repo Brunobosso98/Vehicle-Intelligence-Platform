@@ -2,16 +2,18 @@
 
 ## Result
 
-The Phase 7C implementation passed canonical full-stack validation on source commit
-`a0b8987a7f1cc9f038d225112a36c3d6e6c6ca5d` in [GitHub Actions run 38153299504](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/38153299504).
-The job completed with `FULL GATE: PASS` after the complete Phase 0–7C stack, browser, database,
-security, observability, clean-state, and acceptance checks. The run took 44m28s. Its uploaded
-`phase-0-full-validation-a0b8987a7f1cc9f038d225112a36c3d6e6c6ca5d` artifact contains the
-commit-tied receipts, including the supervisor acceptance, benchmark, browser, and observability
-logs. The later agent-observability readiness fix is included in the current branch, and its exact-
-HEAD canonical rerun remains required before delivery. PR
+Phase 7C local acceptance passed on source commit `a429856e329123f292bb83d04718c63a9e3542d6`.
+The canonical workflow and required checks have passed on earlier PR heads, but the current source
+commits and this report still require the exact-head GitHub Actions rerun before delivery. PR
 [#35](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/35) remains open and
 unmerged.
+
+Earlier canonical evidence remains available: source commit
+`a0b8987a7f1cc9f038d225112a36c3d6e6c6ca5d` passed [run 38153299504](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/38153299504)
+(`FULL GATE: PASS`, 44m28s), and `bd7f5dfda0ec03932f97b66fa66205b4b559c49e` passed [run
+38179771780](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/38179771780)
+(`FULL GATE: PASS`, 38m07s). Their uploaded artifacts contain commit-tied receipts for those
+specific heads.
 
 The readiness-fix commit `bd7f5dfda0ec03932f97b66fa66205b4b559c49e` also passed the complete
 canonical workflow in [run 38179771780](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/38179771780)
@@ -57,6 +59,21 @@ the exact commit SHA and each gate result.
 
 ## Local and canonical validation
 
+- On source commit `a429856e329123f292bb83d04718c63a9e3542d6`, local Phase 7A, 7B, and 7C
+  acceptance, all three browser E2Es, all three deterministic benchmarks, all three observability
+  checks, and the stream recovery plus final stack-check passed. Phase 7B scored 61 scenarios with
+  zero invented signals, cross-vehicle leaks, approval bypasses, unsupported diagnoses, or budget
+  violations. Phase 7C scored 23 executions and 196 HTTP MCP calls: routing 12/12, evidence
+  references 121/121, and zero unsupported factual claims, cross-vehicle leaks, tool-policy
+  violations, budget violations, or unsafe action calls. Recovery persisted 100/100 records with
+  zero loss and zero duplicate canonical rows.
+- The complete `make verify` invocation on that source commit did not exit successfully. Its first
+  run stopped at `benchmark-agent` when a freshly published disposable Postgres port refused the
+  migration connection; rerunning `make benchmark-agent` passed all four benchmark scenarios. The
+  remaining later-phase targets passed individually. The first subsequent `stack-check` hit an API
+  readiness 503 during the service restart; rerunning it in isolation passed, followed by the 100
+  record recovery acceptance and a second passing `stack-check`. Treat the combined local command as
+  **incomplete**, not PASS. The full exact-head canonical workflow remains required.
 - `make verify` on `bd7f5dfda0ec03932f97b66fa66205b4b559c49e`: **PASS**. This full local Docker
   validation included 580 API tests, 45 web tests, API coverage
   of 96.00% lines / 90.61% branches, web coverage of 93.57% statements / 85.43% branches /
