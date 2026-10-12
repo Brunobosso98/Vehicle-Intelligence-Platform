@@ -23671,7 +23671,7 @@
       "node_kind": "heading",
       "norm_label": "local and canonical validation",
       "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L46"
+      "source_location": "L58"
     },
     {
       "id": "docs_validation_phase_7c_acceptance_phase_7c_acceptance",
@@ -23695,7 +23695,7 @@
       "node_kind": "heading",
       "norm_label": "phase 7c receipts",
       "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L18"
+      "source_location": "L30"
     },
     {
       "id": "docs_validation_phase_7c_acceptance_result",
@@ -24565,7 +24565,7 @@
       "node_kind": "heading",
       "norm_label": "evidence references",
       "source_file": "docs/validation/phase-7c-traceability-ledger.md",
-      "source_location": "L6"
+      "source_location": "L9"
     },
     {
       "id": "docs_validation_phase_7c_traceability_ledger_phase_7c_traceability_ledger",
@@ -24589,7 +24589,7 @@
       "node_kind": "heading",
       "norm_label": "requirement matrix",
       "source_file": "docs/validation/phase-7c-traceability-ledger.md",
-      "source_location": "L42"
+      "source_location": "L45"
     },
     {
       "id": "apps_api_src_vehicle_platform_acquisition_worker_py_uuid",
@@ -116510,17 +116510,6 @@
     },
     {
       "source": "docs_validation_phase_7c_acceptance_phase_7c_acceptance",
-      "target": "docs_validation_phase_7c_acceptance_phase_7c_receipts",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L18",
-      "weight": 1.0
-    },
-    {
-      "source": "docs_validation_phase_7c_acceptance_phase_7c_acceptance",
       "target": "docs_validation_phase_7c_acceptance_result",
       "relation": "contains",
       "_origin": "ast",
@@ -116532,13 +116521,24 @@
     },
     {
       "source": "docs_validation_phase_7c_acceptance_phase_7c_acceptance",
+      "target": "docs_validation_phase_7c_acceptance_phase_7c_receipts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/validation/phase-7c-acceptance.md",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_validation_phase_7c_acceptance_phase_7c_acceptance",
       "target": "docs_validation_phase_7c_acceptance_local_and_canonical_validation",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L46",
+      "source_location": "L58",
       "weight": 1.0
     },
     {
@@ -116560,7 +116560,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-7c-traceability-ledger.md",
-      "source_location": "L42",
+      "source_location": "L45",
       "weight": 1.0
     },
     {
@@ -116571,7 +116571,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-7c-traceability-ledger.md",
-      "source_location": "L6",
+      "source_location": "L9",
       "weight": 1.0
     },
     {
@@ -125963,7 +125963,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L68",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -125974,7 +125974,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-7c-acceptance.md",
-      "source_location": "L69",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -143950,5 +143950,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a0b8987a7f1cc9f038d225112a36c3d6e6c6ca5d"
+  "built_at_commit": "5e5c7ee7f756fc92259a36920bfb354ebc5ad1e6"
 }
