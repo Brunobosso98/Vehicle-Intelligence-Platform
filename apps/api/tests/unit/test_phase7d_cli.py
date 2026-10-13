@@ -404,3 +404,18 @@ def test_projection_uses_measured_domain_free_scope_without_lowering_domain_boun
     assert sampled_input_size(samples, "synthesis", False) == 100000
     assert sampled_input_size(samples, "investigation", False) == 60000
     assert sampled_input_size(samples, "unseen_role", False) == 100000
+
+
+def test_projection_prefers_current_case_and_preserves_unseen_role_fallback(cli):
+    from phase7d_preflight import sampled_input_size
+
+    samples = [
+        {"case_id": "A01", "role": "synthesis", "input_bytes": 40000},
+        {"case_id": "B01", "role": "synthesis", "input_bytes": 100000},
+        {"case_id": "B01", "role": "investigation", "input_bytes": 60000},
+    ]
+    assert sampled_input_size(samples, "synthesis", False, "A01") == 40000
+    assert sampled_input_size(samples, "agent", False, "A01") == 40000
+    assert sampled_input_size(samples, "synthesis", False, "B01") == 100000
+    assert sampled_input_size(samples, "investigation", False, "A01") == 60000
+    assert sampled_input_size(samples, "unseen_role", False, "A01") == 100000

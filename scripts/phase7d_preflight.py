@@ -8,6 +8,7 @@ from math import ceil
 from statistics import median
 
 from openai.lib._pydantic import to_strict_json_schema
+from phase7d_fixtures import vehicle_for
 from vehicle_platform.agents.investigation.proposal import InvestigationInput
 from vehicle_platform.agents.investigation.service import investigable
 from vehicle_platform.agents.openai_provider import draft_schema, turn_data
@@ -22,9 +23,10 @@ from vehicle_platform.agents.specialists.policy import (
 
 
 class CaptureProvider(DeterministicProvider):
-    def __init__(self, samples):
+    def __init__(self, samples, case_id=None):
         super().__init__()
         self.samples = samples
+        self.case_id = case_id
 
     def sample(self, role, request, response, policy, schema):
         # Match the adapter's public payload and schema. Byte counts are safe upper
@@ -34,6 +36,7 @@ class CaptureProvider(DeterministicProvider):
         self.samples.append(
             {
                 "role": role,
+                "case_id": self.case_id,
                 "input_bytes": len(encoded.encode()) + 2048,
                 "output_bytes": len(public.encode()),
             }
@@ -72,6 +75,7 @@ class CaptureProvider(DeterministicProvider):
         self.samples.append(
             {
                 "role": role,
+                "case_id": self.case_id,
                 "input_bytes": len(encoded.encode()) + 2048,
                 "output_bytes": len(result.draft.model_dump_json().encode())
                 if result.draft is not None
@@ -138,7 +142,21 @@ def observed_role_turns(budget, suite):
     return {}, None
 
 
-def sampled_input_size(samples, role, domain_free):
+def sampled_input_size(samples, role, domain_free, case_id=None):
+    if case_id is not None:
+        matched = [
+            s["input_bytes"]
+            for s in samples
+            if s.get("case_id") == case_id and s["role"] == role
+        ]
+        if not matched and role == "agent":
+            matched = [
+                s["input_bytes"]
+                for s in samples
+                if s.get("case_id") == case_id and s["role"] == "synthesis"
+            ]
+        if matched:
+            return max(matched)
     candidates = [s["input_bytes"] for s in samples if s["role"] == role]
     if domain_free and role in {"agent", "synthesis"}:
         scoped = [
@@ -162,16 +180,13 @@ async def project(api, app, fixture, suite, budget, settings, case_ids=None):
             "investigation_token": app.state.agent_service.settings.investigation_token,
         }
     )
-    app.state.agent_service.provider_factory = lambda: CaptureProvider(samples)
-    identifiers = {"A01", "B01", "C01", "D01", "E01", "F01", "G03", "H03"}
     for case in suite.cases:
-        if case.case_id not in identifiers:
+        if case_ids is not None and case.case_id not in case_ids:
             continue
-        vehicle = (
-            fixture["comparison_vehicle"]
-            if case.fixture == "comparison"
-            else fixture["vehicle"]
+        app.state.agent_service.provider_factory = lambda case_id=case.case_id: (
+            CaptureProvider(samples, case_id)
         )
+        vehicle = vehicle_for(fixture, case)
         path = f"/api/v1/vehicles/{vehicle}/agent-runs"
         response = await api.post(
             path,
@@ -190,7 +205,7 @@ async def project(api, app, fixture, suite, budget, settings, case_ids=None):
         if investigable(typed_run) and typed_run.result is not None:
             # Match the production proposal input with a deterministic provider only.
             # No OpenAI client or receipt is constructed for this free size sample.
-            await CaptureProvider(samples).propose(
+            await CaptureProvider(samples, case.case_id).propose(
                 InvestigationInput(
                     question=typed_run.user_question,
                     context=typed_run.result.context.model_dump(mode="json"),
@@ -237,7 +252,9 @@ async def project(api, app, fixture, suite, budget, settings, case_ids=None):
         if case.expect_phase7b:
             topology.append("investigation")
         for role in topology:
-            size = sampled_input_size(samples, role, domain_free=not roles)
+            size = sampled_input_size(
+                samples, role, domain_free=not roles, case_id=case.case_id
+            )
             # Use observed controlled fixture bytes, no caching discount, and public
             # output sizes plus smoke reasoning. Per-call reservations remain stricter.
             estimated += Decimal(
@@ -250,6 +267,7 @@ async def project(api, app, fixture, suite, budget, settings, case_ids=None):
     budget.state["projection"] = {
         "method": "controlled_fixture_bytes_and_observed_smoke_usage",
         "samples": samples,
+        "sampled_case_ids": sorted({s["case_id"] for s in samples}),
         "parent_prompt_scope": "Domain-free parent calls use actual domain-free samples; domain and unseen roles retain the largest matching/fallback sample",
         "observed_or_conservative_tokens_per_byte": str(token_fraction),
         "estimated_output_tokens": typical_output,
