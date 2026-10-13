@@ -308,7 +308,7 @@ def test_new_interrupted_case_never_inherits_previous_run_handle(tmp_path):
     assert resumed.state["results"]["1:A02:0"]["run_id"] is None
 
 
-def test_operator_extra_round_is_explicit_once_and_shares_spend(tmp_path):
+def test_each_operator_extra_round_requires_confirmation_and_shares_spend(tmp_path):
     first = ledger(tmp_path)
     ticket = first.begin("smoke", 100, 512)
     first.complete(ticket, receipt())
@@ -322,7 +322,12 @@ def test_operator_extra_round_is_explicit_once_and_shares_spend(tmp_path):
     assert third.state["operator_extra_confirmation"]["round"] == 3
     assert ledger(tmp_path).state["round"] == 3
     with pytest.raises(AgentError, match="full_suite_limit"):
-        ledger(tmp_path, confirmation=True, operator_extra=True)
+        ledger(tmp_path, confirmation=True)
+    fourth = ledger(tmp_path, confirmation=True, operator_extra=True)
+    assert fourth.state["round"] == 4
+    assert fourth.spend() == spend
+    assert [c["round"] for c in fourth.state["operator_extra_confirmations"]] == [3, 4]
+    assert fourth.limit == Decimal("2")
 
 
 def test_operator_extra_cannot_bypass_initial_rounds(tmp_path):
@@ -331,3 +336,22 @@ def test_operator_extra_cannot_bypass_initial_rounds(tmp_path):
         ledger(tmp_path, operator_extra=True)
     with pytest.raises(AgentError, match="operator_extra_requires_two_previous_rounds"):
         ledger(tmp_path, confirmation=True, operator_extra=True)
+
+
+def test_operator_extra_rounds_cannot_reset_spend_or_retained_reservations(tmp_path):
+    first = ledger(tmp_path, limit="0.00025")
+    first.begin("smoke", 100, 512)
+    spend = first.spend()
+    assert 0 < spend < first.limit
+    ledger(tmp_path, limit="0.00025", confirmation=True)
+    third = ledger(tmp_path, limit="0.00025", confirmation=True, operator_extra=True)
+    # Existing checkpoints may contain only the last explicit confirmation.
+    third.state.pop("operator_extra_confirmations")
+    third.save()
+    fourth = ledger(tmp_path, limit="0.00025", confirmation=True, operator_extra=True)
+    assert fourth.spend() == spend
+    assert [c["round"] for c in fourth.state["operator_extra_confirmations"]] == [3, 4]
+    fourth.start_case("4:A01:0")
+    with pytest.raises(AgentError, match="SKIPPED_BUDGET_LIMIT"):
+        fourth.begin("agent", 100, 512)
+    assert len(fourth.state["calls"]) == 1 and fourth.spend() == spend

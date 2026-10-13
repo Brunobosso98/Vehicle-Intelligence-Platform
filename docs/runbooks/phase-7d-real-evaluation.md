@@ -66,7 +66,7 @@ After a genuine general policy/architecture fix, one confirmation suite can be e
 make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite'
 ```
 
-Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected by default. Sections 95–96 require an explicit operator request for anything beyond two schedules. After concrete hardening and operator approval, exactly one extra round can be started with `--confirm-paid-eval --confirmation-suite --operator-extra-suite`; spending remains shared and the USD 2 configuration is not raised. A fourth round is rejected. Omit both round-start flags when resuming an already started extra round. Do not tune repeatedly against exact
+Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected by default. Sections 95–96 require an explicit operator request for anything beyond two schedules. After concrete hardening and operator approval, an extra round can be started with `--confirm-paid-eval --confirmation-suite --operator-extra-suite`; spending remains shared and the USD 2 configuration is not raised. Further rounds require the same explicit round-start confirmation and operator authorization; every invocation remains limited to 120 observations and the accumulated spend ceiling. Omit both round-start flags when resuming an already started extra round. Do not tune repeatedly against exact
 questions. Separate infrastructure failures from semantic failures. Individual bounded provider/runtime failures are recorded and the suite continues; three consecutive provider failures, authentication/configuration errors, harness failures or budget exhaustion stop spending. Internal specialist/tool deadlines are runtime failures, not OpenAI outages. Retain uncertainty, unsupported
 signals and Phase 8 documentary gaps. Never approve/acquire data automatically for these fixtures.
 
@@ -74,3 +74,5 @@ Generate the JSON report, inspect failures and the human-review shortlist, and c
 summary in `docs/validation/phase-7d-real-evaluation.md`. Include exact GitHub final-head gate links.
 Only declare VERIFIED after the mandatory real suite, zero-tolerance metrics, quality thresholds
 and all deterministic gates pass. Leave the PR open and unmerged.
+
+Operator authorization on 2026-10-12 permits the additional rounds needed to finish validation while retaining a strict accumulated USD 2 ceiling. The default two-round limit remains for callers without explicit operator confirmation. Each invocation is bounded; no automatic evaluate/tune loop or model/tier fallback is added. Resume omits round-start flags and preserves all prior observations and cost reservations.

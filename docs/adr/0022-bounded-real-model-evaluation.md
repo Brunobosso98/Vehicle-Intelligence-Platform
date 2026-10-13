@@ -48,4 +48,6 @@ provider-side USD 5 limit. Pricing must be reverified against official documenta
 
 Two partial real attempts exposed local stream/database failure and model quality-gap tags overriding verified quality metadata. The implementation now keeps quality blocking application-owned, preserves durable interrupted run handles, and permits one read-only reconnect to the same run. Role task instructions are versioned v2; factual measurements remain usable when causes are unresolved.
 
-Specification sections 95–96 permit an explicit operator request beyond two automatic schedules. The default limit stays two; a separately confirmed exception admits one extra bounded schedule with shared spend, and no fourth schedule. This exception requires operator approval and is never a default CI or automatic tuning action.
+Specification sections 95–96 permit an explicit operator request beyond two automatic schedules. The default limit stays two; a separately confirmed exception admits each operator-authorized additional bounded schedule with shared spend. This exception requires operator approval and is never a default CI or automatic tuning action.
+
+Operator authorization on 2026-10-12 permits the additional rounds needed to finish validation while retaining a strict accumulated USD 2 ceiling. The default two-round limit remains for callers without explicit operator confirmation. Each invocation is bounded; no automatic evaluate/tune loop or model/tier fallback is added. Resume omits round-start flags and preserves all prior observations and cost reservations.

@@ -163,18 +163,24 @@ class Ledger:
             if self.state["rates"] != rates.model_dump(mode="json"):
                 raise AgentError("checkpoint_pricing_mismatch")
             if confirmation:
-                if self.state["round"] >= 2 and not (operator_extra and self.state["round"] == 2):
+                if self.state["round"] >= 2 and not operator_extra:
                     raise AgentError("full_suite_limit")
-                if operator_extra and self.state["round"] != 2:
+                if operator_extra and self.state["round"] < 2:
                     raise AgentError("operator_extra_requires_two_previous_rounds")
                 self.state["round"] += 1
                 self.state["identities"].append(identity)
                 self.state.pop("projection", None)
                 if operator_extra:
-                    self.state["operator_extra_confirmation"] = {
+                    history = self.state.setdefault("operator_extra_confirmations", [])
+                    previous = self.state.get("operator_extra_confirmation")
+                    if previous and previous not in history:
+                        history.append(previous)
+                    confirmation_record = {
                         "round": self.state["round"],
                         "requested_at": datetime.now(UTC).isoformat(),
                     }
+                    history.append(confirmation_record)
+                    self.state["operator_extra_confirmation"] = confirmation_record
             elif self.state["identities"][-1] != identity:
                 raise AgentError("checkpoint_identity_mismatch")
         elif confirmation:
