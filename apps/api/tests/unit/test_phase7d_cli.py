@@ -379,6 +379,7 @@ def test_projection_calibration_requires_full_attempted_schedule(cli):
     }
     budget = SimpleNamespace(state={"results": results, "calls": calls})
     assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
+
     # One outlier does not redefine the median; every actual call remains accounted.
     calls["extra"] = {"case_key": keys[0], "role": "data_quality"}
     assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
@@ -388,3 +389,18 @@ def test_projection_calibration_requires_full_attempted_schedule(cli):
     assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
     results["2:A04:0"] = {"status": "PASS"}
     assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
+
+
+def test_projection_uses_measured_domain_free_scope_without_lowering_domain_bounds(cli):
+    from phase7d_preflight import sampled_input_size
+
+    samples = [
+        {"role": "synthesis", "input_bytes": 40000, "domain_free": True},
+        {"role": "synthesis", "input_bytes": 100000, "domain_free": False},
+        {"role": "investigation", "input_bytes": 60000},
+    ]
+    assert sampled_input_size(samples, "synthesis", True) == 40000
+    assert sampled_input_size(samples, "agent", True) == 40000
+    assert sampled_input_size(samples, "synthesis", False) == 100000
+    assert sampled_input_size(samples, "investigation", False) == 60000
+    assert sampled_input_size(samples, "unseen_role", False) == 100000
