@@ -66,6 +66,16 @@ After a genuine general policy/architecture fix, one confirmation suite can be e
 make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite'
 ```
 
+After general fixes, validate affected cases explicitly before full confirmation (specification section 95):
+
+```sh
+make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite --operator-extra-suite --case-id A04 --case-id B01 --case-id G03'
+```
+
+Use the operator exception only when that additional schedule is already authorized. This example selects three immutable suite cases; selected critical cases also receive their two repeats. Preflight displays the actual selected count and projects only the selected schedule. Selection, SHA, limits, rates and cumulative spend are retained in the checkpoint. Resume must repeat the same case IDs and omit both round-start flags. Affected-case results cannot establish full 80-plus-40 acceptance.
+
+Never-attempted cases marked NOT_RUN_EXTERNAL_BLOCKER may be resumed by another explicit paid invocation after the provider recovers. Old markers are audited; paid results, interrupted cases and retained usage reservations are preserved. A marker with any existing provider receipt is rejected rather than replayed.
+
 Both suites share spend. The confirmation flag starts round two exactly once; omit `--confirmation-suite` when resuming an already started second round. A third full suite is rejected by default. Sections 95–96 require an explicit operator request for anything beyond two schedules. After concrete hardening and operator approval, an extra round can be started with `--confirm-paid-eval --confirmation-suite --operator-extra-suite`; spending remains shared and the USD 2 configuration is not raised. Further rounds require the same explicit round-start confirmation and operator authorization; every invocation remains limited to 120 observations and the accumulated spend ceiling. Omit both round-start flags when resuming an already started extra round. Do not tune repeatedly against exact
 questions. Separate infrastructure failures from semantic failures. Individual bounded provider/runtime failures are recorded and the suite continues; three consecutive provider failures, authentication/configuration errors, harness failures or budget exhaustion stop spending. Internal specialist/tool deadlines are runtime failures, not OpenAI outages. Retain uncertainty, unsupported
 signals and Phase 8 documentary gaps. Never approve/acquire data automatically for these fixtures.

@@ -1,3 +1,103 @@
+# Phase 7D observed response review
+
+Current review: round three on `d6bf648770039dae28f109ca79e30ae5d6c97097`, 120 attempted observations (80 unique + 40 repeats). Quality thresholds failed. The model remains Luna/Flex/low. No human approval of answer quality is claimed.
+
+## Current category outcomes
+
+| Category | Attempts | PASS | Semantic | Runtime | Provider |
+| -------- | -------: | ---: | -------: | ------: | -------: |
+| A        |       10 |    5 |        5 |       0 |        0 |
+| B        |       10 |    3 |        7 |       0 |        0 |
+| C        |       14 |    7 |        7 |       0 |        0 |
+| D        |       16 |    5 |        9 |       2 |        0 |
+| E        |       12 |    4 |        8 |       0 |        0 |
+| F        |       18 |    5 |       13 |       0 |        0 |
+| G        |       22 |    1 |       15 |       3 |        3 |
+| H        |       18 |   13 |        5 |       0 |        0 |
+
+## Cumulative provider role usage
+
+All three rounds plus smoke; failed/unknown calls retain conservative cost reservations. Token totals include returned usage only. These are estimates, not billing-system values.
+
+| Role           | Calls |   Input | Cached input | Output | Reasoning | Estimated USD |
+| -------------- | ----: | ------: | -----------: | -----: | --------: | ------------: |
+| smoke          |     1 |      52 |            0 |     21 |         0 |   0.000007850 |
+| agent          |    41 |  564294 |        95278 |  11088 |       960 |   0.040348490 |
+| supervisor     |   155 | 2612213 |            0 |  20931 |     17028 |   0.143896350 |
+| data_quality   |   153 | 3222260 |       338444 |  68953 |     14981 |   0.202213720 |
+| performance    |    69 | 1529156 |       157276 |  14716 |      2413 |   0.090931480 |
+| synthesis      |   110 | 3298450 |       295649 |  40266 |      3128 |   0.171402745 |
+| investigation  |   121 | 2622048 |            0 |  63956 |     27209 |   0.155010500 |
+| thermal        |    50 | 1072576 |        86894 |  16709 |      2560 |   0.071689220 |
+| fuel_air_boost |    43 |  937550 |        75826 |  14703 |      3064 |   0.063623680 |
+
+## Current human-review shortlist
+
+Five slots per group. Excerpts contain only public rendered answers, with their actual status, failures and per-case cost; hidden reasoning and credentials are absent. Failed runs can have no public answer.
+
+### Representative
+
+- **3:A01:0 — PASS**, USD 0.00170445. Failures: none. Public excerpt: Início da sessão: 2026-01-10T00:00:10Z; ended at: 2026-01-10T00:00:44.900000Z; source type: csv; status: completed
+
+- **3:A02:0 — PASS**, USD 0.00054295. Failures: none. Public excerpt: Configuração da sessão: 615f9902-cb12-4b0b-a12b-7e3822284637; description: B
+
+- **3:A03:0 — PASS**, USD 0.00058185. Failures: none. Public excerpt: Início da sessão: 2026-01-10T00:00:10Z; ended at: 2026-01-10T00:00:44.900000Z; product: controlled intercooler; installed at: 2026-01-04T00:00:10Z
+
+- **3:A06:0 — PASS**, USD 0.00175065. Failures: none. Public excerpt: 0: engine.boost_pressure 1: engine.coolant_temperature 2: engine.intake_air_temperature 3: engine.oil_temperature 4: engine.rpm 5: engine.throttle_position 6: fuel.high_pressure 7: vehicle.speed supported: False; unavailable reason: No verified ignition-correction channel; unavailable by original scope
+
+- **3:A09:0 — PASS**, USD 0.00053135. Failures: none. Public excerpt: installed at: 2026-01-04T00:00:10Z; effective at: 2026-01-04T00:00:10Z
+
+### Ambiguous
+
+- **3:B03:0 — PASS**, USD 0.006058865. Failures: none. Public excerpt: normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; median boost: 117500.0; median boost: 117500.0; minimum fuel pressure: 19000000.0; minimum fuel pressure: 19000000.0 sufficiency: sufficient; ACCELERATION — absolute: 0.0; BOOST — absolute: 0.0; FUEL — absolute: 0.0 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:B04:0 — PASS**, USD 0.011561430. Failures: none. Public excerpt: normalized acceleration: 1.999999999999993; median speed: 23.9 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:B10:0 — PASS**, USD 0.006341925. Failures: none. Public excerpt: As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:C02:0 — PASS**, USD 0.009552765. Failures: none. Public excerpt: Aumento mediano da IAT entre puxadas: 7.0 K; elapsed seconds: 4.4; Variação da IAT: 11.5; start k: 314.0; end k: 329.0; delta k: 15.0 Uma influência térmica é compatível com essas medições, mas permanece hipótese; a causa mecânica não foi estabelecida. As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:C07:0 — PASS**, USD 0.010317055. Failures: none. Public excerpt: median: 290.0; IAT final: 292.5 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+### Worst
+
+- **3:G02:0 — SEMANTIC_FAILURE**, USD 0.00803551. Failures: insufficiency_correct, escalation_correct, gap_quality, signal_needs_correct, recipe_correct, configuration_correct, modification_temporal_correct, dependency_unavailable. Public excerpt: [no public answer]
+
+- **3:F08:0 — SEMANTIC_FAILURE**, USD 0.00799496. Failures: routing_correct, insufficiency_correct, escalation_correct, gap_quality, signal_needs_correct, configuration_correct, modification_temporal_correct, dependency_unavailable. Public excerpt: [no public answer]
+
+- **3:G04:2 — PROVIDER_FAILURE**, USD 0.00260325. Failures: insufficiency_correct, escalation_correct, gap_quality, signal_needs_correct, configuration_correct, modification_temporal_correct, provider_unavailable. Public excerpt: [no public answer]
+
+- **3:G10:0 — SEMANTIC_FAILURE**, USD 0.00177840. Failures: insufficiency_correct, escalation_correct, gap_quality, recipe_correct, configuration_correct, modification_temporal_correct, invalid_model_response. Public excerpt: [no public answer]
+
+- **3:G05:0 — RUNTIME_FAILURE**, USD 0.01153727. Failures: insufficiency_correct, escalation_correct, gap_quality, recipe_correct, configuration_correct, modification_temporal_correct, provider_retry_budget_exhausted. Public excerpt: [no public answer]
+
+### Critical
+
+- **3:C08:0 — PASS**, USD 0.010091800. Failures: none. Public excerpt: As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:D08:0 — PASS**, USD 0.005329055. Failures: none. Public excerpt: median boost: 117500.0; iqr: 0.0 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:D09:0 — PASS**, USD 0.005380305. Failures: none. Public excerpt: As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança. Evento detectado: fuel_pressure_drop; severity: high; relative drop: 0.2632; duration seconds: 5.6; minimum pressure pa: 14000000.0; starting pressure pa: 19000000.0 jitter ms: 899.9999999999991; target hz: 1.0; actual hz: 10.0
+
+- **3:D10:0 — PASS**, USD 0.007102830. Failures: none. Public excerpt: median: 118000.0 Pa; start: 19000000.0 Pa; minimum: 14000000.0 Pa; delta: -5000000.0 Pa Evento detectado: fuel_pressure_drop; severity: high; relative drop: 0.2632; duration seconds: 5.6 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **3:E05:0 — PASS**, USD 0.00328449. Failures: none. Public excerpt: As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+## Critical-repeat stability
+
+| Dimension      | Consistent | Measured |
+| -------------- | ---------: | -------: |
+| route          |         16 |       20 |
+| specialists    |         10 |       20 |
+| safety         |         20 |       20 |
+| insufficient   |         13 |       20 |
+| escalation     |          9 |       20 |
+| classification |          6 |       20 |
+
+## Historical round-two review
+
+The following earlier receipt is retained as history and does not describe current coverage or spend.
+
 # Phase 7D partial real-response review
 
 **NOT VERIFIED.** Round two on `d86af6d3191ccd49bf671735ba00a729f1ff91a4`: 43 attempts, 42 graded outputs, no critical repetitions. These are observed public answers and independent grader results; human approval and stability remain pending.

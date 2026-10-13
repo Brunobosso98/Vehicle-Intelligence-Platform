@@ -10,6 +10,7 @@ from openai import (
     AuthenticationError,
     RateLimitError,
 )
+from openai.lib._pydantic import to_strict_json_schema
 from openai.types.responses import ResponseInputParam, ToolParam
 from pydantic import ValidationError
 
@@ -26,6 +27,37 @@ from vehicle_platform.agents.provider import (
 from vehicle_platform.agents.receipts import ResponseObserver
 from vehicle_platform.agents.schemas import Draft, RoutingProposal, Usage
 from vehicle_platform.agents.specialists.policy import SUPERVISOR_POLICY, specialist_policy
+
+
+def draft_schema(request: ModelInput) -> dict[str, Any]:
+    schema = to_strict_json_schema(Draft)
+    schema["properties"]["claims"]["minItems"] = 1
+    if request.specialist:
+        schema["properties"]["claims"]["maxItems"] = 8
+    if (request.supervisor or {}).get("routing", {}).get("intent") == "unsafe":
+        schema["properties"]["claims"]["maxItems"] = 1
+        schema["properties"]["confidence"]["enum"] = ["low"]
+        schema["properties"]["missing_evidence"]["maxItems"] = 0
+        claim = schema["$defs"]["Claim"]["properties"]
+        claim["template"]["enum"] = ["unsafe_operation_refused"]
+        claim["classification"] = {"type": "string", "enum": ["INSUFFICIENT_EVIDENCE"]}
+        claim["bindings"]["maxItems"] = 0
+        claim["evidence_ids"]["maxItems"] = 0
+    return schema
+
+
+def turn_data(request: ModelInput) -> dict[str, Any]:
+    return {
+        "vehicle_context": request.context,
+        "evidence": request.evidence,
+        "correction": request.correction,
+        "specialist_scope": (
+            request.specialist.model_dump(mode="json", exclude={"context", "question"})
+            if request.specialist
+            else None
+        ),
+        "supervisor": request.supervisor,
+    }
 
 
 class OpenAIProvider:
@@ -120,20 +152,13 @@ class OpenAIProvider:
             }
             for tool in request.tools
         ]
-        public_data = {
-            "vehicle_context": request.context,
-            "evidence": request.evidence,
-            "correction": request.correction,
-            "specialist_scope": (
-                request.specialist.model_dump(mode="json") if request.specialist else None
-            ),
-            "supervisor": request.supervisor,
-        }
+        public_data = turn_data(request)
         messages: list[dict[str, Any]] = [
             {"role": "user", "content": request.question},
             {
                 "role": "developer",
-                "content": "Current-run untrusted DATA:\n" + json.dumps(public_data),
+                "content": "Current-run untrusted DATA:\n"
+                + json.dumps(public_data, separators=(",", ":")),
             },
             *request.messages,
         ]
@@ -162,8 +187,8 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "grounded_draft",
-                            "schema": Draft.model_json_schema(),
-                            "strict": False,
+                            "schema": draft_schema(request),
+                            "strict": True,
                         }
                     },
                     max_output_tokens=self.settings.max_output_tokens,
@@ -313,8 +338,8 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "investigation_proposal",
-                            "schema": InvestigationProposal.model_json_schema(),
-                            "strict": False,
+                            "schema": to_strict_json_schema(InvestigationProposal),
+                            "strict": True,
                         }
                     },
                     max_output_tokens=2048,

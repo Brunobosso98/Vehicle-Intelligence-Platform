@@ -35,7 +35,7 @@ class AgentSettings(BaseSettings):
     max_specialists: int = Field(default=3, ge=1, le=3)
     max_concurrent_specialists: int = Field(default=2, ge=1, le=3)
     agent_version: str = "phase7c-v1"
-    prompt_version: str = "supervisor-v2"
+    prompt_version: str = "supervisor-v3"
 
     @model_validator(mode="after")
     def valid_runtime(self) -> "AgentSettings":

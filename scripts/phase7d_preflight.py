@@ -1,12 +1,16 @@
 """Free prompt-size sampling through the production graph, before any bulk paid run."""
 
 import json
+from collections import Counter, defaultdict
 from dataclasses import asdict
 from decimal import Decimal
+from math import ceil
+from statistics import median
 
+from vehicle_platform.agents.openai_provider import draft_schema, turn_data
 from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
 from vehicle_platform.agents.provider import AgentError
-from vehicle_platform.agents.schemas import Draft, RoutingProposal
+from vehicle_platform.agents.schemas import RoutingProposal
 from vehicle_platform.agents.scripted_provider import DeterministicProvider
 from vehicle_platform.agents.specialists.policy import (
     SUPERVISOR_POLICY,
@@ -48,7 +52,28 @@ class CaptureProvider(DeterministicProvider):
             if request.supervisor
             else ""
         )
-        self.sample(role, request, result.draft, policy, Draft.model_json_schema())
+        # Match the compact wire payload; scoped context/question duplicates are
+        # omitted by the real adapter while all recorded evidence remains present.
+        public_request = {
+            "question": request.question,
+            "tools": request.tools,
+            "data": turn_data(request),
+            "messages": request.messages,
+        }
+        encoded = (
+            json.dumps(public_request, separators=(",", ":"))
+            + policy
+            + json.dumps(draft_schema(request))
+        )
+        self.samples.append(
+            {
+                "role": role,
+                "input_bytes": len(encoded.encode()) + 2048,
+                "output_bytes": len(result.draft.model_dump_json().encode())
+                if result.draft is not None
+                else 2,
+            }
+        )
         return result
 
     async def route(self, request):
@@ -74,7 +99,38 @@ class CaptureProvider(DeterministicProvider):
         return result
 
 
-async def project(api, app, fixture, suite, budget, settings):
+def observed_role_turns(budget, suite):
+    """Calibrate typical turns only from an entirely attempted prior full schedule."""
+    unattempted = {
+        "NOT_RUN_EXTERNAL_BLOCKER",
+        "SKIPPED_BUDGET_LIMIT",
+        "INTERRUPTED",
+        "HARNESS_FAILURE",
+    }
+    rounds = sorted(
+        {int(key.split(":")[0]) for key in budget.state["results"]}, reverse=True
+    )
+    for round_id in rounds:
+        keys = {
+            f"{round_id}:{case.case_id}:{repeat}" for case, repeat in suite.schedule()
+        }
+        if not all(
+            key in budget.state["results"]
+            and budget.state["results"][key]["status"] not in unattempted
+            for key in keys
+        ):
+            continue
+        counts = defaultdict(Counter)
+        for call in budget.state["calls"].values():
+            if call["case_key"] in keys:
+                counts[call["role"]][call["case_key"]] += 1
+        return {
+            role: max(1, ceil(median(cases.values()))) for role, cases in counts.items()
+        }, round_id
+    return {}, None
+
+
+async def project(api, app, fixture, suite, budget, settings, case_ids=None):
     samples = []
     app.state.agent_service.settings = settings.model_copy(
         update={
@@ -135,10 +191,13 @@ async def project(api, app, fixture, suite, budget, settings):
         max(sample["output_bytes"] // 3 + 128 for sample in samples),
     )
     estimated = Decimal(0)
+    role_turns, calibration_round = observed_role_turns(budget, suite)
     for case, _ in suite.schedule():
+        if case_ids is not None and case.case_id not in case_ids:
+            continue
         roles = set(case.required_specialists) | set(case.allowed_optional_specialists)
         topology = ["supervisor", "synthesis", "agent"] + [
-            role for role in roles for _ in range(2)
+            role for role in roles for _ in range(role_turns.get(role, 2))
         ]
         if case.expect_phase7b:
             topology.append("investigation")
@@ -162,6 +221,10 @@ async def project(api, app, fixture, suite, budget, settings):
         "observed_or_conservative_tokens_per_byte": str(token_fraction),
         "estimated_output_tokens": typical_output,
         "estimated_suite_cost_usd": str(estimated),
+        "scheduled_case_ids": sorted(case_ids) if case_ids is not None else None,
+        "calibration_round": calibration_round,
+        "observed_median_role_turns": role_turns,
+        "contingency": "One extra agent turn per case; per-call hard reservations still enforce the accumulated ceiling",
     }
     budget.save()
     if budget.spend() + estimated > budget.limit:

@@ -266,17 +266,24 @@ async def stack(url, settings, budget):
         process.close()
 
 
-async def evaluate(settings, budget, suite, output):
+async def evaluate(settings, budget, suite, output, case_ids=None):
     url = os.environ.get("TEST_DATABASE_URL", "")
     if not url:
         raise AgentError("disposable_database_required")
     # Reseeding on resume changes only controlled fixture IDs, never completed results.
     fixture = await seed_phase7d(url)
+    schedule = [
+        (case, repeat)
+        for case, repeat in suite.schedule()
+        if case_ids is None or case.case_id in case_ids
+    ]
     fingerprint = await domain_fingerprint(url)
     async with stack(url, settings, budget) as (api, app, token):
         real_settings = app.state.agent_service.settings
         if budget.state.get("projection") is None:
-            projected = await project(api, app, fixture, suite, budget, settings)
+            projected = await project(
+                api, app, fixture, suite, budget, settings, case_ids=case_ids
+            )
             print(json.dumps({"projected_suite_cost_usd": str(projected)}), flush=True)
         agents = app.state.agent_service
         agents.settings = real_settings
@@ -309,7 +316,7 @@ async def evaluate(settings, budget, suite, output):
                     ),
                 )
         provider_streak = 0
-        for case, repeat in suite.schedule():
+        for case, repeat in schedule:
             key = budget.key(case, repeat)
             if not budget.start_case(key):
                 continue
@@ -502,7 +509,7 @@ async def evaluate(settings, budget, suite, output):
                 provider_streak + 1 if result["status"] == "PROVIDER_FAILURE" else 0
             )
             if budget.spend() >= budget.limit or stop_suite(result, provider_streak):
-                for remaining, r in suite.schedule():
+                for remaining, r in schedule:
                     remaining_key = budget.key(remaining, r)
                     if remaining_key not in budget.state["results"]:
                         budget.finish_case(
@@ -530,8 +537,15 @@ def main():
     parser.add_argument("--confirm-paid-eval", action="store_true")
     parser.add_argument("--confirmation-suite", action="store_true")
     parser.add_argument("--operator-extra-suite", action="store_true")
+    parser.add_argument(
+        "--case-id",
+        action="append",
+        help="Explicit affected-case validation; never substitutes for the full acceptance suite",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
+    if args.case_id and args.mode != "eval":
+        raise AgentError("affected_cases_require_eval")
     args.output.mkdir(parents=True, exist_ok=True)
     with (args.output / "operator.lock").open("a") as lock:
         try:
@@ -587,10 +601,18 @@ def main():
         )
         limit = Decimal(os.getenv("VIP_7D_MAX_SPEND_USD", "2.00"))
         suite, digest = load_suite(ROOT / "evals/phase7d/suite-v1.json")
+        case_ids = set(args.case_id) if args.case_id else None
+        if case_ids is not None and (
+            len(case_ids) != len(args.case_id)
+            or not case_ids <= {case.case_id for case in suite.cases}
+        ):
+            raise AgentError("invalid_affected_case_selection")
         rates = Rates()
         if (datetime.now(UTC).date() - date.fromisoformat(rates.verified_on)).days > 7:
             raise AgentError("official_pricing_reverification_required")
         config = identity(settings, digest, suite)
+        if case_ids is not None:
+            config["scheduled_case_ids"] = sorted(case_ids)
         budget = Ledger(
             checkpoint,
             config,
@@ -605,10 +627,23 @@ def main():
                     "model": settings.model,
                     "service_tier": settings.service_tier,
                     "reasoning_effort": settings.reasoning_effort,
-                    "unique_cases": 80,
-                    "max_runs": 120,
+                    "unique_cases": len(case_ids) if case_ids is not None else 80,
+                    "max_runs": sum(
+                        1
+                        for case, _ in suite.schedule()
+                        if case_ids is None or case.case_id in case_ids
+                    ),
                     "max_provider_calls_per_case": 18,
-                    "max_calls": 2163,
+                    "max_calls": 3
+                    + 18
+                    * sum(
+                        1
+                        for case, _ in suite.schedule()
+                        if case_ids is None or case.case_id in case_ids
+                    ),
+                    "scope": "affected_cases"
+                    if case_ids is not None
+                    else "full_acceptance_suite",
                     "max_spend_usd": str(limit),
                     "repository_sha": config["repository_sha"],
                     "round": budget.state["round"],
@@ -618,7 +653,12 @@ def main():
         )
         asyncio.run(smoke(settings, budget))
         if args.mode == "eval":
-            asyncio.run(evaluate(settings, budget, suite, args.output))
+            if case_ids is None:
+                asyncio.run(evaluate(settings, budget, suite, args.output))
+            else:
+                asyncio.run(
+                    evaluate(settings, budget, suite, args.output, case_ids=case_ids)
+                )
         atomic_json(args.output / "report.json", summarize(budget.state))
 
 

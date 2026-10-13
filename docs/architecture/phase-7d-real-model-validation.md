@@ -1,6 +1,6 @@
 # Phase 7D real-model validation
 
-Status: implementation in progress; real evaluation NOT RUN. The authoritative scope is
+Status: real round three completed 80 unique plus 40 repeated attempts; quality thresholds failed. Current hardening awaits real validation. The authoritative scope is
 [the complete execution specification](../prompts/phase-7d-real-model-validation.md).
 [ADR 0022](../adr/0022-bounded-real-model-evaluation.md) records evaluation ownership and accounting.
 
@@ -21,7 +21,7 @@ validators using numeric/unit bindings, evidence ownership, routes, gaps, capabi
 The existing `OpenAIProvider` sends explicit service tier/reasoning settings and `store=false`.
 Its SDK retries remain disabled. Optional internal receipts measure routing, specialists,
 synthesis and investigation calls, including usage from malformed structured output. Public API
-and SSE schemas remain unchanged. Reasoning token counts are usage metadata only; reasoning
+and SSE event sequencing remains unchanged. Supervisor report metadata version 1.1 records the actual v3 prompt; report 1.0 and prompt v1/v2 remain readable. Reasoning token counts are usage metadata only; reasoning
 content is neither requested nor stored.
 
 The checkpoint reserves estimated cost before each network call. Completed response usage
@@ -50,3 +50,15 @@ Two automatic schedules remain the default maximum. A separately confirmed opera
 The report includes exact Decimal cost and token aggregation per case key across all paid rounds and smoke, retaining unknown-usage reservations. Aggregation scope fields distinguish current-round quality/category metrics from cumulative usage and spend. Historical raw results are not regraded or replaced by these reporting fields.
 
 Operator authorization on 2026-10-12 permits the additional rounds needed to finish validation while retaining a strict accumulated USD 2 ceiling. The default two-round limit remains for callers without explicit operator confirmation. Each invocation is bounded; no automatic evaluate/tune loop or model/tier fallback is added. Resume omits round-start flags and preserves all prior observations and cost reservations.
+
+## Strict outputs and affected-case verification
+
+Completed round-three receipts exposed invalid specialist/investigation output and routing precedence errors. Draft and investigation outputs now use the pinned OpenAI SDK strict-schema normalizer. Nullable fields remain required and nullable; completed usage is recorded before application parsing. Exact units, values, identity, evidence ownership, temporal context and semantic proposal validation remain enforced. Known unsafe intent constrains the typed draft to an explicit fixed refusal with no fact bindings.
+
+The compact specialist wire payload keeps the entire resolved context and every supplied evidence fact while omitting the duplicate context and question inside the scope object. Identity, budget, allowlist, evidence/session IDs and the untrusted-data boundary remain present. Free projection samples use that same payload and normalized draft schema; per-call reservations retain their stricter bound.
+
+Repeated `--case-id` flags select an explicit affected-case schedule from the immutable suite. Selected critical cases retain both repeats. The selection is recorded in the committed evaluation identity and cost projection, and cannot change on resume. Partial validation never satisfies full-suite acceptance. A later full candidate suite remains required.
+
+Explicit paid resume may retry only NOT_RUN_EXTERNAL_BLOCKER markers with no call receipts. Prior markers remain audited. Completed, failed, interrupted and budget-skipped paid observations remain preserved and are not automatically replayed. New prompt metadata and old snapshot deserialization are covered by contract tests; historical/new report variants render in the same web component. Durable event IDs, sequence and idempotent replay are covered by the existing regression gates.
+
+Cost projection keeps the original two-turn-per-role assumption until a prior full 120-observation schedule has actually been attempted. It can then use the rounded-up median number of recorded turns per role from that complete schedule, with one extra agent turn per case as a contingency. Partial schedules do not recalibrate this estimate. Free samples measure the current prompt payload, no caching discount is assumed, and pre-network reservations still enforce the hard cumulative limit independently of the likely-cost forecast.

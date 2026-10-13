@@ -52,7 +52,9 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         intent = Intent.UNSAFE
     elif any(word in q for word in ("manual", "factory specification", "documentação técnica")):
         intent = Intent.TECHNICAL_DOCUMENTATION
-    elif any(word in q for word in ("dropout", "data quality", "qualidade", "timestamp anomaly")):
+    elif any(
+        word in q for word in ("dropout", "data quality", "qualidade", "timestamp anomaly")
+    ) or re.search(r"\b(signal|sensor)\b.*\bstuck\b", q):
         intent = Intent.DATA_QUALITY
     elif q.startswith(("teve ", "what events", "which events", "show events")):
         intent = Intent.FACTUAL
@@ -60,34 +62,91 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         why = any(word in q for word in ("why", "por que", "porque", "cause", "causa"))
         repeated = any(word in q for word in ("repeated", "consecut", "repetid"))
         performance = any(
-            word in q for word in ("slower", "lento", "performance", "desempenho", "acelera")
+            word in q
+            for word in ("slower", "lento", "performance", "desempenho", "acelera", "acceler")
         )
         thermal = any(word in q for word in ("heat soak", "iat", "thermal", "térmic", "temperat"))
-        fuel = any(word in q for word in ("boost", "fuel", "hpfp", "lambda", "combust"))
+        fuel = any(
+            word in q for word in ("boost", "fuel", "hpfp", "lambda", "combust", "throttle", "afr")
+        )
         performance = performance or (
             any(word in q for word in ("pulls", "puxadas")) and not thermal and not fuel
         )
         comparison = any(word in q for word in ("before", "after", "antes", "depois")) and any(
             word in q for word in ("configur", "modific", "intercooler")
         )
-        if comparison:
+        lookup = bool(re.search(r"\b(how many|quantos|quantas|number of|count of)\b", q))
+        interpretation = why or any(
+            word in q for word in ("compare", "slower", "faster", "degrad", "consistent", "affect")
+        )
+        metadata_comparison = (
+            "configur" in q
+            and any(word in q for word in ("same", "igual", "mesma"))
+            and not (performance or thermal or fuel or interpretation)
+        )
+        overview = bool(re.search(r"^what.*\bknow\b.*\b(car|vehicle)\b", q)) and not (
+            performance or thermal or fuel or interpretation
+        )
+        if (lookup and not interpretation) or metadata_comparison or overview:
+            intent = Intent.FACTUAL
+        elif comparison:
             intent = Intent.CONFIGURATION
-            selected.add(Specialist.PERFORMANCE)
+            selected.update(
+                [Specialist.FUEL_AIR_BOOST]
+                if fuel
+                else [Specialist.THERMAL]
+                if thermal
+                else [Specialist.PERFORMANCE]
+            )
+        elif (
+            why
+            and (thermal or fuel)
+            and not any(word in q for word in ("why", "por que", "porque"))
+        ):
+            # A question about a named mechanism proving causation belongs to that
+            # mechanism; a slower outcome alone does not require another analyzer.
+            intent = Intent.THERMAL if thermal and not fuel else Intent.FUEL_AIR_BOOST
+            if thermal:
+                selected.add(Specialist.THERMAL)
+            if fuel:
+                selected.add(Specialist.FUEL_AIR_BOOST)
         elif performance and why:
             intent = Intent.REPEATED_DEGRADATION if repeated else Intent.MULTI_MECHANISM
             selected.update({Specialist.PERFORMANCE, Specialist.THERMAL})
             if fuel or events & FUEL_EVENTS:
                 selected.add(Specialist.FUEL_AIR_BOOST)
                 intent = Intent.MULTI_MECHANISM
+        elif (
+            performance
+            and (thermal or fuel)
+            and any(
+                word in q
+                for word in (
+                    "while",
+                    "same time",
+                    "correlat",
+                    "association",
+                    "relationship",
+                    "compare",
+                    "affect",
+                )
+            )
+        ):
+            intent = Intent.MULTI_MECHANISM
+            selected.add(Specialist.PERFORMANCE)
+            if thermal:
+                selected.add(Specialist.THERMAL)
+            if fuel:
+                selected.add(Specialist.FUEL_AIR_BOOST)
+        elif fuel:
+            intent = Intent.FUEL_AIR_BOOST
+            selected.add(Specialist.FUEL_AIR_BOOST)
         elif performance:
             intent = Intent.PERFORMANCE
             selected.add(Specialist.PERFORMANCE)
         elif thermal:
             intent = Intent.THERMAL
             selected.add(Specialist.THERMAL)
-        elif fuel:
-            intent = Intent.FUEL_AIR_BOOST
-            selected.add(Specialist.FUEL_AIR_BOOST)
         elif any(word in q for word in ("last session", "última sessão", "installed", "instalada")):
             intent = Intent.FACTUAL
     if intent:

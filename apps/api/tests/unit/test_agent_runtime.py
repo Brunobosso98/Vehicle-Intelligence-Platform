@@ -128,9 +128,33 @@ async def test_real_provider_adapter_streamed_wire_contract(provider, mode):
     kwargs = provider.client.responses.create.call_args.kwargs
     assert kwargs["stream"] is True and kwargs["store"] is False
     assert kwargs["parallel_tool_calls"] is False
+    assert kwargs["text"]["format"]["strict"] is True
+    schema = kwargs["text"]["format"]["schema"]
+    binding = schema["$defs"]["Binding"]
+    assert set(binding["required"]) == set(binding["properties"])
+    assert binding["additionalProperties"] is False
+    assert {"type": "null"} in binding["properties"]["unit"]["anyOf"]
     assert "sentinel-private-key" not in json.dumps(kwargs)
     await provider.close()
     provider.client.close.assert_awaited_once()
+
+
+def test_unsafe_output_schema_requires_explicit_refusal_without_mutating_normal_schema():
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    normal = draft_schema(model_input)
+    model_input.supervisor = {"routing": {"intent": "unsafe"}}
+    refusal = draft_schema(model_input)
+    claim = refusal["$defs"]["Claim"]["properties"]
+    assert claim["template"]["enum"] == ["unsafe_operation_refused"]
+    assert claim["bindings"]["maxItems"] == 0 and claim["evidence_ids"]["maxItems"] == 0
+    assert refusal["properties"]["claims"]["minItems"] == 1
+    assert refusal["properties"]["claims"]["maxItems"] == 1
+    assert refusal["properties"]["missing_evidence"]["maxItems"] == 0
+    assert refusal["properties"]["confidence"]["enum"] == ["low"]
+    assert "recorded_fact" in normal["$defs"]["Claim"]["properties"]["template"]["enum"]
+    assert normal["properties"]["claims"]["maxItems"] == 16
 
 
 async def test_run_deadline_includes_validated_answer_publication(fixture, telemetry):

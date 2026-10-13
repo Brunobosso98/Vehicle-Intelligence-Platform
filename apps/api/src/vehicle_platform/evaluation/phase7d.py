@@ -225,7 +225,19 @@ class Ledger:
 
     def start_case(self, key: str) -> bool:
         if key in self.state["results"]:
-            return False
+            previous = self.state["results"][key]
+            if previous["status"] != "NOT_RUN_EXTERNAL_BLOCKER":
+                return False
+            if any(call["case_key"] == key for call in self.state["calls"].values()):
+                raise AgentError("unrun_case_has_paid_receipts")
+            self.state.setdefault("unrun_resume_events", []).append(
+                {
+                    "case_key": key,
+                    "at": datetime.now(UTC).isoformat(),
+                    "prior_unrun_marker": previous,
+                }
+            )
+            del self.state["results"][key]
         self.case_key = key
         self.state["active"] = key
         self.state.pop("active_run_id", None)

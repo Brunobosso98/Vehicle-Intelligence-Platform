@@ -296,3 +296,95 @@ def test_operator_extra_requires_explicit_confirmed_eval_mode(cli, monkeypatch, 
     with pytest.raises(AgentError, match="operator_extra_requires_confirmed_eval"):
         cli.main()
     assert not (tmp_path / "checkpoint.json").exists()
+
+
+@pytest.mark.parametrize("mode", ["smoke", "report"])
+def test_affected_selection_cannot_change_smoke_or_report(cli, monkeypatch, tmp_path, mode):
+    monkeypatch.setattr(
+        "sys.argv", ["phase7d_eval.py", mode, "--case-id", "B01", "--output", str(tmp_path)]
+    )
+    with pytest.raises(AgentError, match="affected_cases_require_eval"):
+        cli.main()
+    assert not (tmp_path / "checkpoint.json").exists()
+
+
+@pytest.mark.parametrize("case_ids", [["Z99"], ["B01", "B01"]])
+def test_invalid_affected_selection_sends_no_paid_calls(cli, monkeypatch, tmp_path, case_ids):
+    args = ["phase7d_eval.py", "eval", "--confirm-paid-eval", "--output", str(tmp_path)]
+    for case_id in case_ids:
+        args.extend(["--case-id", case_id])
+    monkeypatch.setattr("sys.argv", args)
+    for key, value in {
+        "API_KEY": "unit-test-only-key",
+        "MODEL": "gpt-6-luna",
+        "SERVICE_TIER": "flex",
+        "REASONING_EFFORT": "low",
+    }.items():
+        monkeypatch.setenv("VIP_AGENT_" + key, value)
+    forbidden = AsyncMock(side_effect=AssertionError("No provider calls allowed"))
+    monkeypatch.setattr(cli, "OpenAIProvider", forbidden)
+    with pytest.raises(AgentError, match="invalid_affected_case_selection"):
+        cli.main()
+    forbidden.assert_not_called()
+    assert not (tmp_path / "checkpoint.json").exists()
+
+
+def test_affected_schedule_is_explicit_bounded_and_not_full_acceptance(
+    cli, monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "phase7d_eval.py",
+            "eval",
+            "--confirm-paid-eval",
+            "--case-id",
+            "A04",
+            "--case-id",
+            "C08",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    for key, value in {
+        "API_KEY": "unit-test-only-key",
+        "MODEL": "gpt-6-luna",
+        "SERVICE_TIER": "flex",
+        "REASONING_EFFORT": "low",
+    }.items():
+        monkeypatch.setenv("VIP_AGENT_" + key, value)
+    monkeypatch.setattr(cli, "identity", lambda *args: {"repository_sha": "unit-test-commit"})
+    monkeypatch.setattr(cli, "smoke", AsyncMock())
+    evaluate = AsyncMock()
+    monkeypatch.setattr(cli, "evaluate", evaluate)
+    cli.main()
+    assert evaluate.call_args.kwargs == {"case_ids": {"A04", "C08"}}
+    state = json.loads((tmp_path / "checkpoint.json").read_text())
+    assert state["identities"][-1]["scheduled_case_ids"] == ["A04", "C08"]
+    summary = json.loads((tmp_path / "report.json").read_text())
+    assert summary["status"] == "NOT VERIFIED" and summary["unique_cases_executed"] == 0
+    preflight = json.loads(capsys.readouterr().out.splitlines()[0])
+    assert preflight["scope"] == "affected_cases" and preflight["max_runs"] == 4
+    assert preflight["unique_cases"] == 2 and preflight["max_calls"] == 75
+
+
+def test_projection_calibration_requires_full_attempted_schedule(cli):
+    from phase7d_preflight import observed_role_turns
+
+    suite, _ = load_suite(cli.ROOT / "evals/phase7d/suite-v1.json")
+    keys = [f"1:{case.case_id}:{repeat}" for case, repeat in suite.schedule()]
+    results = {key: {"status": "PASS"} for key in keys}
+    calls = {
+        str(index): {"case_key": key, "role": "data_quality"} for index, key in enumerate(keys)
+    }
+    budget = SimpleNamespace(state={"results": results, "calls": calls})
+    assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
+    # One outlier does not redefine the median; every actual call remains accounted.
+    calls["extra"] = {"case_key": keys[0], "role": "data_quality"}
+    assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
+    results[keys[-1]] = {"status": "NOT_RUN_EXTERNAL_BLOCKER"}
+    assert observed_role_turns(budget, suite) == ({}, None)
+    results[keys[-1]] = {"status": "PROVIDER_FAILURE"}
+    assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)
+    results["2:A04:0"] = {"status": "PASS"}
+    assert observed_role_turns(budget, suite) == ({"data_quality": 1}, 1)

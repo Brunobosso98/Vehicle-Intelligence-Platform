@@ -28,12 +28,18 @@ function report(): Report {
 }
 
 describe("Specialist findings", () => {
-  it("keeps the zero specialist path readable for historical and simple results", () => {
-    render(<SpecialistResults report={report()} />);
-    expect(
-      screen.getByText("Consulta factual respondida sem especialistas."),
-    ).toBeInTheDocument();
-  });
+  it.each(["1.0", "1.1"] as const)(
+    "keeps the zero specialist path readable for report version %s",
+    (version) => {
+      const value = report();
+      value.schema_version = version;
+      if (version === "1.1") value.prompt_version = "supervisor-v3";
+      render(<SpecialistResults report={value} />);
+      expect(
+        screen.getByText("Consulta factual respondida sem especialistas."),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("renders findings as text and exposes warnings, conflicts and investigation", () => {
     const value = report();

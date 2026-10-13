@@ -3245,10 +3245,10 @@ export interface components {
       model_turn_count: number;
       /**
        * Prompt Version
-       * @default supervisor-v1
-       * @constant
+       * @default supervisor-v3
+       * @enum {string}
        */
-      prompt_version: "supervisor-v1";
+      prompt_version: "supervisor-v1" | "supervisor-v2" | "supervisor-v3";
       /**
        * Retry Count
        * @default 0
@@ -3263,10 +3263,10 @@ export interface components {
       routing_usage?: components["schemas"]["Usage"];
       /**
        * Schema Version
-       * @default 1.0
-       * @constant
+       * @default 1.1
+       * @enum {string}
        */
-      schema_version: "1.0";
+      schema_version: "1.0" | "1.1";
       /** Specialists */
       specialists?: components["schemas"]["SpecialistResult"][];
       /** @default INSUFFICIENT */

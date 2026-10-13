@@ -129,6 +129,33 @@ def test_resume_keeps_completed_cases_and_charges_interruption(tmp_path):
     assert resumed.state["results"]["1:A02:0"]["run_id"] == "durable-run-id"
 
 
+def test_resume_never_attempted_cases_preserves_marker_and_previous_spending(tmp_path):
+    budget = ledger(tmp_path)
+    budget.start_case("1:A01:0")
+    ticket = budget.begin("agent", 100, 512)
+    budget.complete(ticket, receipt())
+    budget.finish_case("1:A01:0", {"status": "PASS"})
+    marker = {"status": "NOT_RUN_EXTERNAL_BLOCKER", "case_id": "A02"}
+    budget.finish_case("1:A02:0", marker)
+    resumed = ledger(tmp_path)
+    spend = resumed.spend()
+    assert resumed.start_case("1:A02:0")
+    assert resumed.state["unrun_resume_events"][-1]["prior_unrun_marker"] == marker
+    assert resumed.spend() == spend and not resumed.start_case("1:A01:0")
+    interrupted = ledger(tmp_path)
+    assert interrupted.state["results"]["1:A02:0"]["status"] == "INTERRUPTED"
+    assert not interrupted.start_case("1:A02:0")
+
+
+def test_unrun_marker_cannot_replay_paid_case(tmp_path):
+    budget = ledger(tmp_path)
+    budget.start_case("1:A01:0")
+    budget.begin("agent", 100, 512)
+    budget.finish_case("1:A01:0", {"status": "NOT_RUN_EXTERNAL_BLOCKER"})
+    with pytest.raises(AgentError, match="unrun_case_has_paid_receipts"):
+        budget.start_case("1:A01:0")
+
+
 def test_resume_rejects_changed_commit_or_prices(tmp_path):
     ledger(tmp_path)
     with pytest.raises(AgentError, match="identity_mismatch"):

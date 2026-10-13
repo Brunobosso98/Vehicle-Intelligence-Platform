@@ -99,6 +99,77 @@ def test_minimal_question_routing(fixture, question, expected, intent):
     assert decision.data_quality_gate == bool(expected or intent is Intent.DATA_QUALITY)
 
 
+@pytest.mark.parametrize(
+    "question,expected,intent",
+    [
+        ("How many acceleration windows were recorded?", [], Intent.FACTUAL),
+        ("Quantas puxadas foram registradas?", [], Intent.FACTUAL),
+        ("Were both sessions in the same configuration?", [], Intent.FACTUAL),
+        ("What do we know about this vehicle?", [], Intent.FACTUAL),
+        ("Did a sensor remain stuck?", [], Intent.DATA_QUALITY),
+        (
+            "Did acceleration degrade at the same time as temperature increased?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+            Intent.MULTI_MECHANISM,
+        ),
+        (
+            "Was fuel pressure steady while performance changed?",
+            [Specialist.PERFORMANCE, Specialist.FUEL_AIR_BOOST],
+            Intent.MULTI_MECHANISM,
+        ),
+        (
+            "Did throttle close during acceleration?",
+            [Specialist.FUEL_AIR_BOOST],
+            Intent.FUEL_AIR_BOOST,
+        ),
+        (
+            "Did lambda change after a configuration modification?",
+            [Specialist.FUEL_AIR_BOOST],
+            Intent.CONFIGURATION,
+        ),
+        (
+            "Can temperature be said to cause slower acceleration?",
+            [Specialist.THERMAL],
+            Intent.THERMAL,
+        ),
+        (
+            "How many pulls became slower and why?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+            Intent.MULTI_MECHANISM,
+        ),
+        ("How many ECU flash operations should I execute?", [], Intent.UNSAFE),
+        (
+            "What do we know about vehicle performance degradation?",
+            [Specialist.PERFORMANCE],
+            Intent.PERFORMANCE,
+        ),
+    ],
+)
+def test_general_routing_focus_and_lookup_precedence(fixture, question, expected, intent):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=intent), context(fixture))
+    assert decision.intent is intent
+    assert decision.selected == expected
+    assert decision.data_quality_gate == bool(expected or intent is Intent.DATA_QUALITY)
+
+
+def test_supervisor_report_versions_preserve_old_snapshots(fixture):
+    from vehicle_platform.agents.schemas import SupervisorReport
+
+    routing = decide(
+        hints_for("What was my last session?", []),
+        RoutingProposal(intent=Intent.FACTUAL),
+        context(fixture),
+    )
+    report = SupervisorReport(routing=routing)
+    assert report.schema_version == "1.1" and report.prompt_version == "supervisor-v3"
+    old = report.model_dump(mode="json") | {
+        "schema_version": "1.0",
+        "prompt_version": "supervisor-v1",
+    }
+    assert SupervisorReport.model_validate(old).model_dump(mode="json") == old
+
+
 def test_typed_model_can_interpret_unrecognized_question(fixture):
     hints = hints_for("Assess the charge circuit behavior", [])
     assert hints.intent is None

@@ -95,7 +95,7 @@ class Supervisor:
         state = self.state
         if state.context is None:
             raise AgentError("context_missing")
-        await state.emit("supervisor_started", {"prompt_version": "supervisor-v1"})
+        await state.emit("supervisor_started", {"prompt_version": "supervisor-v3"})
         started = perf_counter()
         initial = hints_for(state.ask.question, list(state.registry.items.values()))
         if initial.candidates and state.context.sessions:

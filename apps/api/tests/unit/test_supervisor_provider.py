@@ -164,9 +164,19 @@ async def test_specialist_system_policy_is_assigned_by_application(provider, fix
         ]
     )
     await provider.turn(model_input)
-    instructions = provider.client.responses.create.call_args.kwargs["instructions"]
+    kwargs = provider.client.responses.create.call_args.kwargs
+    instructions = kwargs["instructions"]
     assert specialist_policy(Specialist.THERMAL) in instructions
-    assert "thermal-v2" in instructions and "No private reasoning" in instructions
+    assert "thermal-v3" in instructions and "No private reasoning" in instructions
+    assert kwargs["text"]["format"]["strict"] is True
+    assert kwargs["text"]["format"]["schema"]["properties"]["claims"]["maxItems"] == 8
+    data = json.loads(kwargs["input"][1]["content"].split("\n", 1)[1])
+    assert data["vehicle_context"] == scope.context.model_dump(mode="json")
+    assert "context" not in data["specialist_scope"] and "question" not in data["specialist_scope"]
+    assert data["specialist_scope"] == scope.model_dump(
+        mode="json", exclude={"context", "question"}
+    )
+    assert kwargs["input"][0]["content"] == model_input.question
 
 
 async def test_supervisor_synthesis_retains_grounding_policy(provider):
@@ -186,7 +196,7 @@ async def test_supervisor_synthesis_retains_grounding_policy(provider):
     )
     await provider.turn(model_input)
     instructions = provider.client.responses.create.call_args.kwargs["instructions"]
-    assert "grounded-v2" in instructions and "supervisor-v2" in instructions
+    assert "grounded-v3" in instructions and "supervisor-v3" in instructions
 
 
 async def test_real_planning_adapter_receives_structured_supervisor_report(provider):
@@ -211,6 +221,12 @@ async def test_real_planning_adapter_receives_structured_supervisor_report(provi
     )
     content = provider.client.responses.create.call_args.kwargs["input"][0]["content"]
     assert json.loads(content.split("\n", 1)[1])["supervisor"] == report
+    format_ = provider.client.responses.create.call_args.kwargs["text"]["format"]
+    assert format_["strict"] is True
+    for model in format_["schema"]["$defs"].values():
+        if model.get("type") == "object":
+            assert set(model["required"]) == set(model["properties"])
+            assert model["additionalProperties"] is False
 
 
 @pytest.mark.parametrize("poor_quality", [True, False])
