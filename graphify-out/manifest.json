@@ -2112,9 +2112,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/grading.py": {
-    "mtime": 1791848470.2079813,
-    "seen": 1791849157.438095,
-    "ast_hash": "7de6921203a2f78aa8ff75b05ecc84b4",
+    "mtime": 1791849710.2833474,
+    "seen": 1791849784.909736,
+    "ast_hash": "4a4c1c886f0f341789c21a285d27cd65",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/phase7d.py": {
@@ -2130,9 +2130,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase7d_grading.py": {
-    "mtime": 1791848343.9667733,
-    "seen": 1791849157.438167,
-    "ast_hash": "c41a399138d510e20a9d718ecafa1b7a",
+    "mtime": 1791849632.8282008,
+    "seen": 1791849784.9098098,
+    "ast_hash": "3f090b2f850ae369cf8d18d67f25f367",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase7d_harness.py": {
@@ -2172,9 +2172,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-7d-real-model-validation.md": {
-    "mtime": 1791849218.9273114,
-    "seen": 1791849481.6988115,
-    "ast_hash": "be9d0f7ef3c48725fb2a050afad60a69",
+    "mtime": 1791849744.2284958,
+    "seen": 1791849784.9100287,
+    "ast_hash": "b3d242d481868b7250c95167476923b3",
     "semantic_hash": ""
   },
   "docs/prompts/phase-7d-real-model-validation.md": {
@@ -2190,15 +2190,15 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-real-evaluation.md": {
-    "mtime": 1791849466.703186,
-    "seen": 1791849481.6988943,
-    "ast_hash": "c92cc216d04a672b8111263d5793d7b5",
+    "mtime": 1791849488.4173307,
+    "seen": 1791849784.910084,
+    "ast_hash": "09968cf2dbc275379317bfbc484f963d",
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-traceability-ledger.md": {
-    "mtime": 1791849220.1772666,
-    "seen": 1791849481.6988957,
-    "ast_hash": "4d5c65ffb676201bd348ffc052adceb2",
+    "mtime": 1791849745.4484773,
+    "seen": 1791849784.9100857,
+    "ast_hash": "0c5919e1d4c9bffbb481ecf7c5944493",
     "semantic_hash": ""
   },
   "phase-7d-delivery.md": {

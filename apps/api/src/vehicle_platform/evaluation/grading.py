@@ -3,6 +3,7 @@
 import math
 from collections import Counter
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from vehicle_platform.evaluation.phase7d import CRITICAL, Case
@@ -398,6 +399,19 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         for name in usage_names:
             role[name] += (call.get("usage") or {}).get(name) or 0
     per_category_usage: dict[str, Any] = {}
+    per_case_usage: dict[str, Any] = {}
+    for call in calls:
+        bucket = per_case_usage.setdefault(
+            call.get("case_key", "unassigned"),
+            dict(calls=0, cost_usd="0", unknown_usage_calls=0, **dict.fromkeys(usage_names, 0)),
+        )
+        bucket["calls"] += 1
+        bucket["cost_usd"] = format(
+            Decimal(bucket["cost_usd"]) + Decimal(call["cost"]["total"]), "f"
+        )
+        bucket["unknown_usage_calls"] += int(call.get("usage") is None)
+        for name in usage_names:
+            bucket[name] += (call.get("usage") or {}).get(name) or 0
     for call in calls:
         key = call.get("case_key", "")
         if not key.startswith(f"{round_id}:"):
@@ -566,6 +580,11 @@ def summarize(state: dict[str, Any]) -> dict[str, Any]:
         per_category={k: dict(v) for k, v in categories.items()},
         per_specialist_usage=by_role,
         per_category_usage=per_category_usage,
+        per_case_usage=per_case_usage,
+        aggregation_scopes={
+            "quality_and_category": "current_round",
+            "usage_role_case_and_spend": "all_rounds_including_smoke",
+        },
         provider_latency_by_role=latency_by_role,
         real_provider_receipts_complete=bool(real_receipts),
         stability=stability,

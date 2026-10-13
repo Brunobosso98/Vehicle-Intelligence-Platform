@@ -46,3 +46,5 @@ Role policies v2 separate the delegated objective from the parent question and k
 The evaluation uses a bounded 45-second specialist profile (application default 25), 60-second provider timeout, 180-second run timeout and 230-second case timeout. One local read-only public-stream reconnect targets the same persisted run; it never creates another paid run. Provider infrastructure retry remains capped at one.
 
 Two automatic schedules remain the default maximum. A separately confirmed operator exception permits one additional bounded schedule and records that opt-in in the ledger, with all spending shared. A fourth schedule is rejected. The exception is not invoked automatically.
+
+The report includes exact Decimal cost and token aggregation per case key across all paid rounds and smoke, retaining unknown-usage reservations. Aggregation scope fields distinguish current-round quality/category metrics from cumulative usage and spend. Historical raw results are not regraded or replaced by these reporting fields.

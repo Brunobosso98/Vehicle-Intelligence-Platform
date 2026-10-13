@@ -244,6 +244,37 @@ def test_aggregation_stability_unknown_usage_and_review_shortlist():
     assert report["status"] == "NOT VERIFIED"
 
 
+def test_per_case_cost_keeps_prior_rounds_smoke_and_unknown_reservations():
+    calls = {
+        str(index): {
+            "case_key": key,
+            "role": "agent",
+            "status": "completed",
+            "cost": {"total": cost},
+            "usage": usage,
+        }
+        for index, (key, cost, usage) in enumerate(
+            [
+                ("smoke", "0.00000001", {"input_tokens": 1}),
+                ("1:A01:0", "0.1", {"input_tokens": 10, "cached_input_tokens": 2}),
+                ("1:A01:0", "0.2", None),
+                ("2:A01:0", "0.05", {"input_tokens": 20, "output_tokens": 3}),
+            ]
+        )
+    }
+    report = summarize({"round": 2, "results": {}, "calls": calls, "rates": {}, "identities": []})
+    prior = report["per_case_usage"]["1:A01:0"]
+    assert prior["cost_usd"] == "0.3"
+    assert prior["calls"] == 2 and prior["unknown_usage_calls"] == 1
+    assert prior["input_tokens"] == 10 and prior["cached_input_tokens"] == 2
+    assert report["per_case_usage"]["smoke"]["cost_usd"] == "0.00000001"
+    assert report["per_case_usage"]["2:A01:0"]["output_tokens"] == 3
+    assert report["per_category_usage"]["A"]["calls"] == 1
+    assert report["aggregation_scopes"]["quality_and_category"] == "current_round"
+    assert report["aggregation_scopes"]["usage_role_case_and_spend"] == "all_rounds_including_smoke"
+    assert report["status"] == "NOT VERIFIED"
+
+
 def test_removed_modification_and_configuration_boundaries_are_independent():
     from vehicle_platform.evaluation.grading import temporal_checks
 
