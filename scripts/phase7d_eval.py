@@ -266,7 +266,9 @@ async def stack(url, settings, budget):
         process.close()
 
 
-async def evaluate(settings, budget, suite, output, case_ids=None):
+async def evaluate(
+    settings, budget, suite, output, case_ids=None, operator_budget_progress=False
+):
     url = os.environ.get("TEST_DATABASE_URL", "")
     if not url:
         raise AgentError("disposable_database_required")
@@ -282,7 +284,14 @@ async def evaluate(settings, budget, suite, output, case_ids=None):
         real_settings = app.state.agent_service.settings
         if budget.state.get("projection") is None:
             projected = await project(
-                api, app, fixture, suite, budget, settings, case_ids=case_ids
+                api,
+                app,
+                fixture,
+                suite,
+                budget,
+                settings,
+                case_ids=case_ids,
+                operator_budget_progress=operator_budget_progress,
             )
             print(json.dumps({"projected_suite_cost_usd": str(projected)}), flush=True)
         agents = app.state.agent_service
@@ -538,6 +547,11 @@ def main():
     parser.add_argument("--confirmation-suite", action="store_true")
     parser.add_argument("--operator-extra-suite", action="store_true")
     parser.add_argument(
+        "--operator-budget-progress",
+        action="store_true",
+        help="Operator-authorized attempt within the unchanged hard ledger ceiling; may finish budget-skipped",
+    )
+    parser.add_argument(
         "--case-id",
         action="append",
         help="Explicit affected-case validation; never substitutes for the full acceptance suite",
@@ -546,6 +560,8 @@ def main():
     args = parser.parse_args()
     if args.case_id and args.mode != "eval":
         raise AgentError("affected_cases_require_eval")
+    if args.operator_budget_progress and args.mode != "eval":
+        raise AgentError("operator_budget_progress_requires_eval")
     args.output.mkdir(parents=True, exist_ok=True)
     with (args.output / "operator.lock").open("a") as lock:
         try:
@@ -611,6 +627,8 @@ def main():
         if (datetime.now(UTC).date() - date.fromisoformat(rates.verified_on)).days > 7:
             raise AgentError("official_pricing_reverification_required")
         config = identity(settings, digest, suite)
+        if args.operator_budget_progress:
+            config["operator_budget_progress"] = True
         if case_ids is not None:
             config["scheduled_case_ids"] = sorted(case_ids)
         budget = Ledger(
@@ -647,18 +665,20 @@ def main():
                     "max_spend_usd": str(limit),
                     "repository_sha": config["repository_sha"],
                     "round": budget.state["round"],
+                    "operator_budget_progress": args.operator_budget_progress,
                 }
             ),
             flush=True,
         )
         asyncio.run(smoke(settings, budget))
         if args.mode == "eval":
-            if case_ids is None:
+            if case_ids is None and not args.operator_budget_progress:
                 asyncio.run(evaluate(settings, budget, suite, args.output))
             else:
-                asyncio.run(
-                    evaluate(settings, budget, suite, args.output, case_ids=case_ids)
-                )
+                options = {"case_ids": case_ids} if case_ids is not None else {}
+                if args.operator_budget_progress:
+                    options["operator_budget_progress"] = True
+                asyncio.run(evaluate(settings, budget, suite, args.output, **options))
         atomic_json(args.output / "report.json", summarize(budget.state))
 
 

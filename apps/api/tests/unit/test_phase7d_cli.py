@@ -419,3 +419,57 @@ def test_projection_prefers_current_case_and_preserves_unseen_role_fallback(cli)
     assert sampled_input_size(samples, "synthesis", False, "B01") == 100000
     assert sampled_input_size(samples, "investigation", False, "A01") == 60000
     assert sampled_input_size(samples, "unseen_role", False, "A01") == 100000
+
+
+@pytest.mark.parametrize("mode", ["smoke", "report"])
+def test_operator_budget_progress_is_eval_only(cli, monkeypatch, tmp_path, mode):
+    monkeypatch.setattr(
+        "sys.argv",
+        ["phase7d_eval.py", mode, "--operator-budget-progress", "--output", str(tmp_path)],
+    )
+    with pytest.raises(AgentError, match="operator_budget_progress_requires_eval"):
+        cli.main()
+    assert not (tmp_path / "checkpoint.json").exists()
+
+
+def test_operator_budget_progress_preserves_hard_limit_and_explicit_identity(
+    cli, monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "phase7d_eval.py",
+            "eval",
+            "--confirm-paid-eval",
+            "--operator-budget-progress",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    for key, value in {
+        "API_KEY": "unit-test-only-key",
+        "MODEL": "gpt-6-luna",
+        "SERVICE_TIER": "flex",
+        "REASONING_EFFORT": "low",
+    }.items():
+        monkeypatch.setenv("VIP_AGENT_" + key, value)
+    monkeypatch.setenv("VIP_7D_MAX_SPEND_USD", "2.00")
+    monkeypatch.setattr(cli, "identity", lambda *args: {"repository_sha": "unit-commit"})
+    monkeypatch.setattr(cli, "smoke", AsyncMock())
+    evaluate = AsyncMock()
+    monkeypatch.setattr(cli, "evaluate", evaluate)
+    cli.main()
+    assert evaluate.call_args.kwargs == {"operator_budget_progress": True}
+    budget = evaluate.call_args.args[1]
+    assert budget.limit == Decimal("2.00")
+    assert budget.state["identities"][-1]["operator_budget_progress"] is True
+    assert json.loads(capsys.readouterr().out.splitlines()[0])["operator_budget_progress"] is True
+    budget.state["calls"]["old-reservation"] = {
+        "case_key": "prior-round",
+        "status": "failed",
+        "cost": {"total": "1.9999"},
+    }
+    with pytest.raises(AgentError, match="SKIPPED_BUDGET_LIMIT"):
+        budget.begin("agent", 100, 512)
+    assert budget.spend() == Decimal("1.9999")
+    assert len(budget.state["calls"]) == 1

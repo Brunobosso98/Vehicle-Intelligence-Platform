@@ -169,7 +169,16 @@ def sampled_input_size(samples, role, domain_free, case_id=None):
     return max(candidates, default=max(s["input_bytes"] for s in samples))
 
 
-async def project(api, app, fixture, suite, budget, settings, case_ids=None):
+async def project(
+    api,
+    app,
+    fixture,
+    suite,
+    budget,
+    settings,
+    case_ids=None,
+    operator_budget_progress=False,
+):
     samples = []
     app.state.agent_service.settings = settings.model_copy(
         update={
@@ -276,8 +285,10 @@ async def project(api, app, fixture, suite, budget, settings, case_ids=None):
         "calibration_round": calibration_round,
         "observed_median_role_turns": role_turns,
         "contingency": "One extra agent turn per case; per-call hard reservations still enforce the accumulated ceiling",
+        "operator_budget_progress": operator_budget_progress,
+        "projected_full_schedule_fits": budget.spend() + estimated <= budget.limit,
     }
     budget.save()
-    if budget.spend() + estimated > budget.limit:
+    if budget.spend() + estimated > budget.limit and not operator_budget_progress:
         raise AgentError("projected_cost_exceeds_budget")
     return estimated

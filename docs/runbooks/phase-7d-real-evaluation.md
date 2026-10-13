@@ -86,3 +86,13 @@ Only declare VERIFIED after the mandatory real suite, zero-tolerance metrics, qu
 and all deterministic gates pass. Leave the PR open and unmerged.
 
 Operator authorization on 2026-10-12 permits the additional rounds needed to finish validation while retaining a strict accumulated USD 2 ceiling. The default two-round limit remains for callers without explicit operator confirmation. Each invocation is bounded; no automatic evaluate/tune loop or model/tier fallback is added. Resume omits round-start flags and preserves all prior observations and cost reservations.
+
+## Explicit attempt within the existing remaining budget
+
+The default preflight stops when the projected full schedule exceeds the remaining ledger balance. If the operator explicitly requests continued attempts until the existing hard ceiling is reached, `--operator-budget-progress` records that choice in the immutable invocation identity and projection. It does not raise the configured limit, release reservations, bypass per-call checks, change model/tier, or claim the full schedule can finish. Results can terminate with SKIPPED_BUDGET_LIMIT and remain NOT VERIFIED.
+
+```sh
+make phase7d-real-eval PHASE7D_ARGS='--confirm-paid-eval --confirmation-suite --operator-extra-suite --operator-budget-progress'
+```
+
+The user explicitly authorized continued necessary calls within the accumulated USD 2 ceiling. This opt-in honors that instruction while retaining the default projected-cost admission rule for other callers. Resume keeps `--confirm-paid-eval --operator-budget-progress` and omits round-start flags. Never infer permission to increase spending from this option.
