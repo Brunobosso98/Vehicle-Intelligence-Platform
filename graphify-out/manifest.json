@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/orchestration.py": {
-    "mtime": 1791724837.0750139,
-    "seen": 1791756965.9508846,
-    "ast_hash": "cb0dcd1080fae7e750fce6d2181db843",
+    "mtime": 1791888165.313003,
+    "seen": 1791888173.2921827,
+    "ast_hash": "14bfdf2c62daff21c7070ea5f90022e1",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/prompts.py": {
@@ -1050,9 +1050,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/scripted_provider.py": {
-    "mtime": 1791725825.740425,
-    "seen": 1791756965.95089,
-    "ast_hash": "c81f1cfd1365fdbbc018d6509a378dfd",
+    "mtime": 1791887702.409607,
+    "seen": 1791888056.3485966,
+    "ast_hash": "0f04ee3eca6b71d042505b0942b0f7e8",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/service.py": {
@@ -1956,9 +1956,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/policy.py": {
-    "mtime": 1791885598.9098668,
-    "seen": 1791886383.928929,
-    "ast_hash": "12f62af2ad717fd0f45b449bbb1ed0ff",
+    "mtime": 1791887702.409607,
+    "seen": 1791888056.348602,
+    "ast_hash": "015c424c213ea54cf7c9bc782e3d078a",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/routing.py": {
@@ -1968,9 +1968,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/runtime.py": {
-    "mtime": 1791885598.7888668,
-    "seen": 1791886383.9289312,
-    "ast_hash": "250861d4a37e7e9d0555d28f5fd9ce68",
+    "mtime": 1791888632.954227,
+    "seen": 1791888741.7010036,
+    "ast_hash": "97306d7d5ffae979e9d52a9adcd8dc43",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/validation.py": {
@@ -1992,9 +1992,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_supervisor_runtime.py": {
-    "mtime": 1791848523.5086305,
-    "seen": 1791849157.4381742,
-    "ast_hash": "92d9067fb5ae561af3848de5bf05559f",
+    "mtime": 1791888793.1464338,
+    "seen": 1791889005.0217826,
+    "ast_hash": "9d45c0724846c585c63e816ccb7ab581",
     "semantic_hash": ""
   },
   "apps/web/src/components/specialist-results.tsx": {
@@ -2166,15 +2166,15 @@
     "semantic_hash": ""
   },
   "docs/adr/0022-bounded-real-model-evaluation.md": {
-    "mtime": 1791886310.316218,
-    "seen": 1791886383.9292455,
-    "ast_hash": "220c2bcd7fe7c39a157f2f9504b993de",
+    "mtime": 1791888046.4745471,
+    "seen": 1791888056.3489332,
+    "ast_hash": "ce99d70fbb3821d6ceffc3ab5aa68f9d",
     "semantic_hash": ""
   },
   "docs/architecture/phase-7d-real-model-validation.md": {
-    "mtime": 1791886310.316218,
-    "seen": 1791886383.9292617,
-    "ast_hash": "b07cc7280d2725dd33f8a64507cdc0da",
+    "mtime": 1791888733.7857683,
+    "seen": 1791888741.7013242,
+    "ast_hash": "096a7644640b7bf249737629c1739b5c",
     "semantic_hash": ""
   },
   "docs/prompts/phase-7d-real-model-validation.md": {
@@ -2190,9 +2190,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-real-evaluation.md": {
-    "mtime": 1791886311.3172178,
-    "seen": 1791886383.9293196,
-    "ast_hash": "d0ca502e9e20adb05fa46586753f0b28",
+    "mtime": 1791888733.7857683,
+    "seen": 1791888741.7013805,
+    "ast_hash": "e8e335915984b361b3225b6c3315e3ec",
     "semantic_hash": ""
   },
   "docs/validation/phase-7d-traceability-ledger.md": {

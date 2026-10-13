@@ -323,7 +323,7 @@ class DeterministicProvider:
                 calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 10})]
             elif repeated and "get_repeated_pull_analysis" not in executed:
                 pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
-                if "list_session_pulls" not in executed:
+                if not pulls and "list_session_pulls" not in executed:
                     calls = [("list_session_pulls", {"session_id": sessions[0]["id"], "limit": 4})]
                 elif len(pulls) >= 2:
                     calls = [

@@ -253,9 +253,7 @@ class Orchestrator:
             messages=redact_data(state.messages, self.settings),
             correction=state.correction,
             supervisor=(
-                state.run.supervisor.model_dump(mode="json")
-                if state.run.supervisor and state.run.supervisor.routing.selected
-                else None
+                state.run.supervisor.model_dump(mode="json") if state.run.supervisor else None
             ),
         )
         if len(json.dumps(request.__dict__, default=str).encode()) > self.settings.max_input_bytes:

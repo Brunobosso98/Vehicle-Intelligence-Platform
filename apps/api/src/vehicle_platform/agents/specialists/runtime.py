@@ -91,6 +91,64 @@ class Supervisor:
         }:
             raise AgentError("incompatible_specialist_context")
 
+    async def discover_performance_pulls(
+        self, request: SpecialistRequest, result: SpecialistResult, owned_ids: set[UUID]
+    ) -> None:
+        """Resolve bounded, owned pull IDs before a performance model can compare them."""
+        if request.specialist is not Specialist.PERFORMANCE:
+            return
+        state = self.state
+        for session in request.context.sessions[:2]:
+            session_id = str(session["id"])
+            if any(
+                e.id in owned_ids
+                and e.source_tool == "list_session_pulls"
+                and str(e.session_id) == session_id
+                for e in state.registry.items.values()
+            ):
+                continue
+            arguments = {
+                "vehicle_id": str(request.vehicle_id),
+                "session_id": session_id,
+                "limit": 20,
+            }
+            enforce_tool(request.specialist, "list_session_pulls")
+            self.enforce_scope(request, arguments)
+            if result.tool_call_count >= request.budget.mcp_calls:
+                raise AgentError("specialist_tool_budget_exhausted")
+            result.tool_call_count += 1
+            identity = canonical_hash({"tool": "list_session_pulls", "arguments": arguments})
+            await state.emit(
+                "specialist_tool_started",
+                {"specialist": request.specialist.value, "tool": "list_session_pulls"},
+            )
+            async with state.tool_lock:
+                hit = identity in state.cache
+                await self.engine.call_locked(state, "list_session_pulls", arguments)
+                owned_ids.update(
+                    i
+                    for call in state.tool_calls
+                    if call.argument_hash == identity
+                    for i in call.evidence_ids
+                )
+            result.cache_hits += int(hit)
+            await state.emit(
+                "specialist_tool_completed",
+                {
+                    "specialist": request.specialist.value,
+                    "tool": "list_session_pulls",
+                    "cache_hit": hit,
+                },
+            )
+        sessions = set(request.session_ids)
+        request.pull_ids = list(
+            dict.fromkeys(
+                e.pull_id
+                for e in state.registry.items.values()
+                if e.id in owned_ids and e.pull_id and e.session_id in sessions
+            )
+        )[:20]
+
     async def run(self) -> None:
         state = self.state
         if state.context is None:
@@ -151,6 +209,7 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
+                "performance_pull_discovery": {"version": "1.0", "sessions": 2, "limit": 20},
                 "limits": report.limits.model_dump() if report.limits else {},
                 "roles": {
                     s.value: {
@@ -252,15 +311,53 @@ class Supervisor:
 
         if self.state.context is None:
             raise AgentError("context_missing")
+        quality_claims: list[Claim] = []
+        report = self.state.run.supervisor
+        for result in report.specialists if report else []:
+            if result.specialist is not Specialist.DATA_QUALITY or result.status != "completed":
+                continue
+            for finding in result.findings:
+                if (
+                    finding.template != "recorded_fact"
+                    or finding.classification is not Classification.OBSERVATION
+                ):
+                    continue
+                bindings = []
+                for binding in finding.bindings:
+                    source = self.state.registry.items[binding.evidence_id]
+                    quality_event = source.source_tool in {
+                        "list_session_events",
+                        "list_pull_events",
+                        "get_event",
+                    } and any(
+                        fact.path == "/event_type" and fact.value in QUALITY_EVENTS
+                        for fact in source.facts
+                    )
+                    if source.source_tool == "get_session_capabilities" or (
+                        quality_event
+                        and binding.path
+                        in {"/event_type", "/evidence/signal", "/duration_ms", "/severity"}
+                    ):
+                        bindings.append(binding)
+                if bindings and len(quality_claims) < 8:
+                    quality_claims.append(
+                        Claim(
+                            classification=Classification.OBSERVATION,
+                            template="recorded_fact",
+                            bindings=bindings,
+                            evidence_ids=list(dict.fromkeys(b.evidence_id for b in bindings)),
+                        )
+                    )
         proposed = Draft(
             confidence="low",
             claims=[
+                *quality_claims,
                 Claim(
                     classification=Classification.INSUFFICIENT_EVIDENCE,
                     template="insufficient_evidence",
                     evidence_ids=[],
                     bindings=[],
-                )
+                ),
             ],
             missing_evidence=["data_quality", "signal_or_measurement"],
         )
@@ -446,6 +543,7 @@ class Supervisor:
             result.trace_id = f"{span.get_span_context().trace_id:032x}"
             try:
                 async with asyncio.timeout(request.budget.timeout_seconds):
+                    await self.discover_performance_pulls(request, result, owned_ids)
                     for _ in range(request.budget.model_turns):
                         self.reserve_turn()
                         result.model_turn_count += 1

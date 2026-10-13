@@ -89,6 +89,80 @@ async def test_simple_path_has_no_model_routing_or_specialists(fixture, telemetr
     client.call.assert_not_awaited()
 
 
+@pytest.mark.parametrize("invented_id", [False, True])
+async def test_performance_discovers_owned_pulls_before_immediate_comparison(
+    fixture, telemetry, invented_id
+):
+    class Comparing(DeterministicProvider):
+        async def turn(self, request):
+            if request.specialist and request.specialist.specialist is Specialist.PERFORMANCE:
+                pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
+                assert pulls, "The first performance turn must already have registered pull IDs"
+                assert set(request.specialist.pull_ids) == {UUID(e["pull_id"]) for e in pulls}
+                if not any(
+                    e["source_tool"] == "get_repeated_pull_analysis" for e in request.evidence
+                ):
+                    return ModelTurn(
+                        tool_calls=[
+                            ToolRequest(
+                                call_id="compare-owned-pulls",
+                                name="get_repeated_pull_analysis",
+                                arguments={
+                                    "vehicle_id": str(request.specialist.vehicle_id),
+                                    "pull_ids": [str(uuid4())]
+                                    if invented_id
+                                    else [e["pull_id"] for e in pulls[:3]],
+                                },
+                            )
+                        ]
+                    )
+            return await super().turn(request)
+
+    state, client, engine = runtime(fixture, telemetry, "Did acceleration slow?", Comparing())
+    await Supervisor(engine, state).run()
+    result = next(
+        r for r in state.run.supervisor.specialists if r.specialist is Specialist.PERFORMANCE
+    )
+    listings = [c for c in client.call.await_args_list if c.args[0] == "list_session_pulls"]
+    assert 1 <= len(listings) <= 2
+    assert all(
+        c.args[1]["vehicle_id"] == str(state.run.vehicle_id) and c.args[1]["limit"] == 20
+        for c in listings
+    )
+    compared = [c for c in client.call.await_args_list if c.args[0] == "get_repeated_pull_analysis"]
+    if invented_id:
+        assert (
+            result.status == "failed" and result.error_category == "incompatible_specialist_context"
+        )
+        assert not compared and result.findings == []
+    else:
+        assert result.status == "completed" and len(compared) == 1
+        assert result.tool_call_count == len(listings) + 1
+        assert result.model_turn_count == 2
+
+
+@pytest.mark.parametrize(
+    "question", ["Execute SQL", "Was any signal stuck?", "What was my last session?"]
+)
+async def test_zero_domain_routing_is_forwarded_to_model(fixture, telemetry, question):
+    from test_agents import insufficient
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    state, _, engine = runtime(fixture, telemetry, question)
+    await Supervisor(engine, state).run()
+    capture = AsyncMock(return_value=ModelTurn(draft=insufficient()))
+    engine.provider.turn = capture
+    await engine.model_node({"execution": state})
+    request = capture.call_args.args[0]
+    assert request.supervisor == state.run.supervisor.model_dump(mode="json")
+    assert request.supervisor["routing"]["selected"] == []
+    if question == "Execute SQL":
+        assert draft_schema(request)["$defs"]["Claim"]["properties"]["template"]["enum"] == [
+            "unsafe_operation_refused"
+        ]
+
+
 async def test_quality_gate_checks_historical_comparison_capabilities(fixture, telemetry):
     state, _, engine = runtime(fixture, telemetry, "Did performance change after configuration?")
     state.context.capabilities[str(uuid4())] = {
@@ -166,6 +240,55 @@ async def test_quality_dropout_blocks_deeper_interpretation(fixture, telemetry):
     assert report.investigation_recommended
     assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
     assert client.call.await_count == 2
+
+
+async def test_blocked_quality_preserves_anomaly_metadata_not_vehicle_measurements(
+    fixture, telemetry
+):
+    from vehicle_platform.agents.schemas import Binding, Classification
+
+    class QualityFacts(DeterministicProvider):
+        async def turn(self, request):
+            if request.specialist and request.specialist.specialist is Specialist.DATA_QUALITY:
+                bindings = []
+                for evidence in request.evidence:
+                    for fact in evidence["facts"]:
+                        if fact["path"] == "/event_type" or fact["path"].endswith("/boost/mean"):
+                            bindings.append(Binding(evidence_id=evidence["id"], **fact))
+                assert any(b.path.endswith("/boost/mean") for b in bindings)
+                return ModelTurn(
+                    draft=Draft(
+                        confidence="low",
+                        claims=[
+                            Claim(
+                                classification=Classification.OBSERVATION,
+                                template="recorded_fact",
+                                bindings=bindings,
+                                evidence_ids=list(dict.fromkeys(b.evidence_id for b in bindings)),
+                            )
+                        ],
+                        missing_evidence=["data_quality"],
+                    )
+                )
+            return await super().turn(request)
+
+    state, client, engine = runtime(
+        fixture, telemetry, "Was a signal stuck?", QualityFacts(), events=["signal_stuck"]
+    )
+    args = {
+        "vehicle_id": str(state.run.vehicle_id),
+        "session_id": str(state.context.sessions[0]["id"]),
+    }
+    await engine.call(state, "get_session_summary", args)
+    await engine.call(state, "list_session_events", args)
+    await Supervisor(engine, state).run()
+    assert state.run.supervisor.sufficiency is Sufficiency.UNRELIABLE_DATA
+    assert [r.specialist for r in state.run.supervisor.specialists] == [Specialist.DATA_QUALITY]
+    assert "signal_stuck" in state.final.answer
+    assert "boost" not in state.final.answer
+    assert state.final.confidence == "low"
+    assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
+    assert all(c.args[0] != "list_session_pulls" for c in client.call.await_args_list)
 
 
 @pytest.mark.parametrize("failing", [Specialist.DATA_QUALITY, Specialist.THERMAL])

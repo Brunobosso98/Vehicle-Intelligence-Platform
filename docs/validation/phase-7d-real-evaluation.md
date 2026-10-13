@@ -117,3 +117,13 @@ The source defect is confirmed: normal Draft and investigation outputs used `str
 Known unsafe intent constrains the response schema to one explicit fixed refusal, without vehicle facts or measurements. It does not enable any forbidden tool. Prompts are grounded/supervisor/specialist v3 and investigation v2. Supervisor report version 1.1 records the actual v3 policy; versions 1.0 and supervisor-v1/v2 remain readable. The generated contracts retain older variants; public event IDs, sequence and replay semantics are unchanged.
 
 The operator authorized further necessary bounded calls within the accumulated USD 2 ceiling. Affected-case validation is explicitly selected with repeated `--case-id` flags and retains identity, calls, projection and spend checks. Its report cannot satisfy the full 80-plus-40 acceptance requirement. Production remains disabled pending real quality and exact final-head gates.
+
+## Affected-case round four
+
+On commit 400a38b2ef8b554efbb50fc47f9fa9dec7b2158b, fourteen affected questions and their four critical repeats produced 12 PASS and six SEMANTIC_FAILURE results, with no runtime/provider failures. Shared estimated spending is USD 1.007023035. The full round-three metrics above remain scoped to d6bf648; affected-case success does not establish full acceptance.
+
+Observed remaining general defects: Performance attempted compare_pulls without registered pull metadata; and zero-domain routes omitted the supervisor report from the model input, losing the typed unsafe/quality intent. The current fix performs bounded owned metadata discovery without weakening context checks and forwards that routing context. Positive/negative tests retain invented-ID rejection and zero-specialist semantics. Current hardening remains pending real confirmation; the configured accumulated ceiling stays USD 2.
+
+The E04 artifact also contained a validated signal_stuck observation that blocked-quality synthesis discarded. The current fix retains only capability/quality-event metadata, with low confidence and the original quality gaps; vehicle measurements and domain interpretation remain excluded. A negative test supplies a supported boost measurement alongside the anomaly and verifies that the final blocked-quality response excludes that measurement.
+
+Current discovery/routing/quality-retention hardening passed 717 API tests (line 96.17%, branch 91.17%), 61 focused supervisor tests, web 46 tests, contracts/docs and Gitleaks. Exact final-head remote checks and the real final-candidate suite remain pending. The prior malformed test setup failure is retained; its corrected setup supplies actual registered summary/event evidence and passes.
