@@ -178,6 +178,7 @@ async def project(
     settings,
     case_ids=None,
     operator_budget_progress=False,
+    case_slots=None,
 ):
     samples = []
     app.state.agent_service.settings = settings.model_copy(
@@ -251,8 +252,10 @@ async def project(
     )
     estimated = Decimal(0)
     role_turns, calibration_round = observed_role_turns(budget, suite)
-    for case, _ in suite.schedule():
+    for case, repeat in suite.schedule():
         if case_ids is not None and case.case_id not in case_ids:
+            continue
+        if case_slots is not None and f"{case.case_id}:{repeat}" not in case_slots:
             continue
         roles = set(case.required_specialists) | set(case.allowed_optional_specialists)
         topology = ["supervisor", "synthesis", "agent"] + [
@@ -282,6 +285,7 @@ async def project(
         "estimated_output_tokens": typical_output,
         "estimated_suite_cost_usd": str(estimated),
         "scheduled_case_ids": sorted(case_ids) if case_ids is not None else None,
+        "scheduled_case_slots": sorted(case_slots) if case_slots is not None else None,
         "calibration_round": calibration_round,
         "observed_median_role_turns": role_turns,
         "contingency": "One extra agent turn per case; per-call hard reservations still enforce the accumulated ceiling",

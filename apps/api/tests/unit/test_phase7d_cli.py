@@ -473,3 +473,59 @@ def test_operator_budget_progress_preserves_hard_limit_and_explicit_identity(
         budget.begin("agent", 100, 512)
     assert budget.spend() == Decimal("1.9999")
     assert len(budget.state["calls"]) == 1
+
+
+@pytest.mark.parametrize("slots", [["B01:1"], ["A04:3"], ["A04:0", "A04:0"], ["Z99:0"]])
+def test_invalid_exact_slots_send_no_paid_calls(cli, monkeypatch, tmp_path, slots):
+    args = ["phase7d_eval.py", "eval", "--confirm-paid-eval", "--output", str(tmp_path)]
+    for slot in slots:
+        args.extend(["--case-slot", slot])
+    monkeypatch.setattr("sys.argv", args)
+    for key, value in {
+        "API_KEY": "unit-test-only-key",
+        "MODEL": "gpt-6-luna",
+        "SERVICE_TIER": "flex",
+        "REASONING_EFFORT": "low",
+    }.items():
+        monkeypatch.setenv("VIP_AGENT_" + key, value)
+    forbidden = AsyncMock(side_effect=AssertionError("No provider calls allowed"))
+    monkeypatch.setattr(cli, "OpenAIProvider", forbidden)
+    with pytest.raises(AgentError, match="invalid_affected_slot_selection"):
+        cli.main()
+    forbidden.assert_not_called()
+    assert not (tmp_path / "checkpoint.json").exists()
+
+
+def test_exact_slots_preserve_passed_repeats(cli, monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "phase7d_eval.py",
+            "eval",
+            "--confirm-paid-eval",
+            "--case-slot",
+            "D08:0",
+            "--case-slot",
+            "D08:2",
+            "--output",
+            str(tmp_path),
+        ],
+    )
+    for key, value in {
+        "API_KEY": "unit-test-only-key",
+        "MODEL": "gpt-6-luna",
+        "SERVICE_TIER": "flex",
+        "REASONING_EFFORT": "low",
+    }.items():
+        monkeypatch.setenv("VIP_AGENT_" + key, value)
+    monkeypatch.setattr(cli, "identity", lambda *args: {"repository_sha": "unit-test-commit"})
+    monkeypatch.setattr(cli, "smoke", AsyncMock())
+    evaluate = AsyncMock()
+    monkeypatch.setattr(cli, "evaluate", evaluate)
+    cli.main()
+    assert evaluate.call_args.kwargs == {"case_ids": {"D08"}, "case_slots": {"D08:0", "D08:2"}}
+    state = json.loads((tmp_path / "checkpoint.json").read_text())
+    assert state["identities"][-1]["scheduled_case_slots"] == ["D08:0", "D08:2"]
+    preflight = json.loads(capsys.readouterr().out.splitlines()[0])
+    assert preflight["max_runs"] == 2 and preflight["max_calls"] == 39
+    assert preflight["scope"] == "affected_cases" and preflight["unique_cases"] == 1

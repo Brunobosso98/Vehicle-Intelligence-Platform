@@ -267,7 +267,13 @@ async def stack(url, settings, budget):
 
 
 async def evaluate(
-    settings, budget, suite, output, case_ids=None, operator_budget_progress=False
+    settings,
+    budget,
+    suite,
+    output,
+    case_ids=None,
+    operator_budget_progress=False,
+    case_slots=None,
 ):
     url = os.environ.get("TEST_DATABASE_URL", "")
     if not url:
@@ -277,12 +283,16 @@ async def evaluate(
     schedule = [
         (case, repeat)
         for case, repeat in suite.schedule()
-        if case_ids is None or case.case_id in case_ids
+        if (case_ids is None or case.case_id in case_ids)
+        and (case_slots is None or f"{case.case_id}:{repeat}" in case_slots)
     ]
     fingerprint = await domain_fingerprint(url)
     async with stack(url, settings, budget) as (api, app, token):
         real_settings = app.state.agent_service.settings
         if budget.state.get("projection") is None:
+            projection_options = (
+                {"case_slots": case_slots} if case_slots is not None else {}
+            )
             projected = await project(
                 api,
                 app,
@@ -292,6 +302,7 @@ async def evaluate(
                 settings,
                 case_ids=case_ids,
                 operator_budget_progress=operator_budget_progress,
+                **projection_options,
             )
             print(json.dumps({"projected_suite_cost_usd": str(projected)}), flush=True)
         agents = app.state.agent_service
@@ -556,9 +567,14 @@ def main():
         action="append",
         help="Explicit affected-case validation; never substitutes for the full acceptance suite",
     )
+    parser.add_argument(
+        "--case-slot",
+        action="append",
+        help="Exact affected CASE_ID:repeat slot; preserves passed repetitions",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
-    if args.case_id and args.mode != "eval":
+    if (args.case_id or args.case_slot) and args.mode != "eval":
         raise AgentError("affected_cases_require_eval")
     if args.operator_budget_progress and args.mode != "eval":
         raise AgentError("operator_budget_progress_requires_eval")
@@ -617,12 +633,32 @@ def main():
         )
         limit = Decimal(os.getenv("VIP_7D_MAX_SPEND_USD", "2.00"))
         suite, digest = load_suite(ROOT / "evals/phase7d/suite-v2.json")
-        case_ids = set(args.case_id) if args.case_id else None
+        case_slots = set(args.case_slot) if args.case_slot else None
+        valid_slots = {f"{case.case_id}:{repeat}" for case, repeat in suite.schedule()}
+        if case_slots is not None and (
+            args.case_id
+            or len(case_slots) != len(args.case_slot)
+            or not case_slots <= valid_slots
+        ):
+            raise AgentError("invalid_affected_slot_selection")
+        case_ids = (
+            {slot.split(":")[0] for slot in case_slots}
+            if case_slots is not None
+            else set(args.case_id)
+            if args.case_id
+            else None
+        )
         if case_ids is not None and (
-            len(case_ids) != len(args.case_id)
+            (args.case_id is not None and len(case_ids) != len(args.case_id))
             or not case_ids <= {case.case_id for case in suite.cases}
         ):
             raise AgentError("invalid_affected_case_selection")
+        selected_schedule = [
+            (case, repeat)
+            for case, repeat in suite.schedule()
+            if (case_ids is None or case.case_id in case_ids)
+            and (case_slots is None or f"{case.case_id}:{repeat}" in case_slots)
+        ]
         rates = Rates()
         if (datetime.now(UTC).date() - date.fromisoformat(rates.verified_on)).days > 7:
             raise AgentError("official_pricing_reverification_required")
@@ -631,6 +667,8 @@ def main():
             config["operator_budget_progress"] = True
         if case_ids is not None:
             config["scheduled_case_ids"] = sorted(case_ids)
+        if case_slots is not None:
+            config["scheduled_case_slots"] = sorted(case_slots)
         budget = Ledger(
             checkpoint,
             config,
@@ -646,19 +684,9 @@ def main():
                     "service_tier": settings.service_tier,
                     "reasoning_effort": settings.reasoning_effort,
                     "unique_cases": len(case_ids) if case_ids is not None else 80,
-                    "max_runs": sum(
-                        1
-                        for case, _ in suite.schedule()
-                        if case_ids is None or case.case_id in case_ids
-                    ),
+                    "max_runs": len(selected_schedule),
                     "max_provider_calls_per_case": 18,
-                    "max_calls": 3
-                    + 18
-                    * sum(
-                        1
-                        for case, _ in suite.schedule()
-                        if case_ids is None or case.case_id in case_ids
-                    ),
+                    "max_calls": 3 + 18 * len(selected_schedule),
                     "scope": "affected_cases"
                     if case_ids is not None
                     else "full_acceptance_suite",
@@ -676,6 +704,8 @@ def main():
                 asyncio.run(evaluate(settings, budget, suite, args.output))
             else:
                 options = {"case_ids": case_ids} if case_ids is not None else {}
+                if case_slots is not None:
+                    options["case_slots"] = case_slots
                 if args.operator_budget_progress:
                     options["operator_budget_progress"] = True
                 asyncio.run(evaluate(settings, budget, suite, args.output, **options))
