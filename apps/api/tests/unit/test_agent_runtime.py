@@ -10,7 +10,13 @@ from uuid import UUID, uuid4
 
 import httpx
 import pytest
-from openai import APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError
+from openai import (
+    APIConnectionError,
+    APIError,
+    APITimeoutError,
+    AuthenticationError,
+    RateLimitError,
+)
 from pydantic import SecretStr
 from sqlalchemy.exc import SQLAlchemyError
 from test_agents import fixture as fixture
@@ -585,3 +591,35 @@ async def test_cancellation_reconciles_allocated_stream_sequence(fixture, teleme
     assert [(e.sequence, e.type) for e in events] == (
         [(1, "run_started"), (2, "run_cancelled")] if committed else [(1, "run_cancelled")]
     )
+
+
+@pytest.mark.parametrize(
+    "mode,category",
+    [
+        ("server_error", "provider_unavailable"),
+        ("rate_limit_exceeded", "provider_rate_limit"),
+        ("insufficient_quota", "provider_configuration"),
+        ("read_error", "provider_unavailable"),
+    ],
+)
+async def test_stream_transport_errors_after_headers_are_normalized_without_private_text(
+    provider, mode, category
+):
+    class FaultStream(ResponseStream):
+        async def generate(self):
+            if False:
+                yield None
+            request = httpx.Request("POST", "https://example.invalid")
+            if mode == "read_error":
+                raise httpx.ReadError("sentinel-private-stream-message", request=request)
+            raise APIError("sentinel-private-stream-message", request=request, body={"code": mode})
+
+    provider.observer = MagicMock()
+    provider.observer.begin.return_value = "stream-ticket"
+    provider.client.responses.create.return_value = FaultStream([])
+    with pytest.raises(AgentError, match=category) as caught:
+        await provider.turn(request())
+    assert "sentinel-private-stream-message" not in str(caught.value)
+    provider.observer.failed.assert_any_call("stream-ticket", category)
+    provider.observer.complete.assert_not_called()
+    assert provider.client.responses.create.call_count == 1

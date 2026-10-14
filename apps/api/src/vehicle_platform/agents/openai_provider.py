@@ -2,8 +2,9 @@ import asyncio
 import json
 from typing import Any, cast
 
+import httpx
 from openai import (
-    APIConnectionError,
+    APIError,
     APIStatusError,
     APITimeoutError,
     AsyncOpenAI,
@@ -60,6 +61,26 @@ def turn_data(request: ModelInput) -> dict[str, Any]:
     }
 
 
+def provider_error_category(error: APIError | httpx.HTTPError) -> str:
+    codes = (
+        {value for value in (error.code, error.type) if isinstance(value, str)}
+        if isinstance(error, APIError)
+        else set()
+    )
+    if codes & {"invalid_api_key", "authentication_error"}:
+        return "provider_authentication"
+    if "rate_limit_exceeded" in codes:
+        return "provider_rate_limit"
+    if codes & {
+        "insufficient_quota",
+        "context_length_exceeded",
+        "invalid_request_error",
+        "model_not_found",
+    }:
+        return "provider_configuration"
+    return "provider_unavailable"
+
+
 class OpenAIProvider:
     def __init__(self, settings: AgentSettings, observer: ResponseObserver | None = None) -> None:
         if not settings.api_key or not settings.model:
@@ -91,8 +112,8 @@ class OpenAIProvider:
                 if isinstance(error, RateLimitError)
                 else "provider_timeout"
                 if isinstance(error, (APITimeoutError, TimeoutError))
-                else "provider_unavailable"
-                if isinstance(error, (APIConnectionError, APIStatusError))
+                else provider_error_category(error)
+                if isinstance(error, (APIError, httpx.HTTPError))
                 else "invalid_model_response"
             )
             if isinstance(error, APIStatusError) and error.status_code in {400, 402, 403, 404, 422}:
@@ -111,6 +132,10 @@ class OpenAIProvider:
             if not isinstance(error, Exception):
                 raise
             raise AgentError(category) from None
+
+    def _record_failure(self, ticket: str | None, category: str) -> None:
+        if self.observer and ticket:
+            self.observer.failed(ticket, category)
 
     def _record(self, response: Any, ticket: str | None) -> None:
         if not self.observer or not ticket:
@@ -242,13 +267,18 @@ class OpenAIProvider:
                 ),
             )
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_model_response") from None
         finally:
@@ -299,13 +329,18 @@ class OpenAIProvider:
             )
             return proposal
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_supervisor_routing") from None
         finally:
@@ -350,13 +385,18 @@ class OpenAIProvider:
                 raise AgentError("model_output_budget_exhausted")
             return InvestigationProposal.model_validate_json(response.output_text)
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_investigation_proposal") from None
         finally:
