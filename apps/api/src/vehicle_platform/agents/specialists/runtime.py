@@ -9,6 +9,7 @@ from uuid import UUID
 
 from vehicle_platform.agents.config import redact_data
 from vehicle_platform.agents.evidence import EvidenceRegistry, canonical_hash
+from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS
 from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, RoutingInput
 from vehicle_platform.agents.schemas import (
     Binding,
@@ -283,8 +284,9 @@ class Supervisor:
             {
                 "version": report.prompt_version,
                 "grounded_synthesis": "grounded-v5",
-                "routing_hints": "1.3",
+                "routing_hints": "1.4",
                 "mcp_context_instructions": "1.0",
+                "tool_error_feedback": "1.0",
                 "quality_observation_projection": "1.1",
                 "evidence_collection_projection": "agent-collection-v1",
                 "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},
@@ -717,15 +719,27 @@ class Supervisor:
                                 "specialist_tool_started",
                                 {"specialist": specialist.value, "tool": tool.name},
                             )
+                            output: dict[str, Any]
                             async with state.tool_lock:
                                 hit = identity in state.cache
-                                await self.engine.call_locked(state, tool.name, tool.arguments)
-                                ids = [
-                                    i
-                                    for call in state.tool_calls
-                                    if call.argument_hash == identity
-                                    for i in call.evidence_ids
-                                ]
+                                try:
+                                    await self.engine.call_locked(state, tool.name, tool.arguments)
+                                except AgentError as exc:
+                                    if exc.category not in RECOVERABLE_TOOL_ERRORS:
+                                        raise
+                                    ids = []
+                                    output = {"status": "failed", "error_category": exc.category}
+                                else:
+                                    ids = [
+                                        i
+                                        for call in state.tool_calls
+                                        if call.argument_hash == identity
+                                        for i in call.evidence_ids
+                                    ]
+                                    output = {
+                                        "status": "completed",
+                                        "evidence_ids": [str(i) for i in ids],
+                                    }
                             result.cache_hits += int(hit)
                             owned_ids.update(ids)
                             messages.extend(
@@ -739,9 +753,7 @@ class Supervisor:
                                     {
                                         "type": "function_call_output",
                                         "call_id": tool.call_id,
-                                        "output": json.dumps(
-                                            {"evidence_ids": [str(i) for i in ids]}
-                                        ),
+                                        "output": json.dumps(output),
                                     },
                                 ]
                             )

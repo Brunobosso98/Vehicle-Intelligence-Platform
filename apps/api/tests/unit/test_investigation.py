@@ -156,6 +156,39 @@ def test_unverified_and_uncollectable_needs_never_become_ready() -> None:
     assert timing.needs[0].availability.value == "UNAVAILABLE"
 
 
+@pytest.mark.parametrize("optional", [True, False])
+def test_optional_unknown_channel_does_not_block_supported_alternative_recipe(optional):
+    from vehicle_platform.acquisition.domain import Support
+    from vehicle_platform.agents.investigation.domain import Availability
+
+    source = DeviceCapabilities(
+        "trusted-alternatives",
+        {r.signal: Support.SUPPORTED for r in BY_KEY["performance-pull"].requirements},
+        100,
+    )
+    proposed = plan_recipe(
+        [
+            need(SignalRole.BOOST),
+            need(SignalRole.INTAKE_TEMPERATURE),
+            need(SignalRole.HIGH_FUEL_PRESSURE),
+            need(SignalRole.LAMBDA, required=not optional),
+            need(SignalRole.TIMING, required=False),
+        ],
+        source,
+    )
+    assert proposed.needs[3].availability is Availability.UNKNOWN
+    assert proposed.needs[4].availability is Availability.UNAVAILABLE
+    if optional:
+        assert proposed.recipe is BY_KEY["performance-pull"]
+        assert proposed.reference is not None
+        assert proposed.reference.feasibility is Feasibility.FEASIBLE_WITH_DEGRADATION
+        assert "fuel.equivalence_ratio" in proposed.reference.dropped_signals
+        assert "engine.ignition_timing" in proposed.reference.dropped_signals
+    else:
+        assert proposed.recipe is None
+        assert proposed.reference is None
+
+
 def test_source_preflight_accepts_only_read_only_adapter_channels() -> None:
     allowed = PreflightRequest(
         adapter="elm327-standard-read-only-v1",

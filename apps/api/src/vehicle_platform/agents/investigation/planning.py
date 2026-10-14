@@ -120,6 +120,11 @@ def choose_recipe(needs: tuple[SignalNeed, ...]) -> LoggingRecipe | None:
         for need in needs
         if need.canonical_signal in CATALOG_SIGNALS
         and need.availability is not Availability.NOT_APPLICABLE
+        and (
+            need.required
+            or need.availability not in {Availability.UNKNOWN, Availability.UNAVAILABLE}
+            or need.provenance == "source_not_preflighted"
+        )
     }
     if not wanted:
         return (

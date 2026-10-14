@@ -13,7 +13,7 @@ from vehicle_platform.agents.config import AgentSettings, redact_data
 from vehicle_platform.agents.context import resolve_context
 from vehicle_platform.agents.evidence import canonical_hash
 from vehicle_platform.agents.grounding import validate
-from vehicle_platform.agents.mcp_client import EvidenceClient
+from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
 from vehicle_platform.agents.state import Execution, GraphState
@@ -358,7 +358,7 @@ class Orchestrator:
                     ],
                 }
             except AgentError as exc:
-                if exc.category != "mcp_tool_error":
+                if exc.category not in RECOVERABLE_TOOL_ERRORS:
                     raise
                 output = {"status": "failed", "error_category": exc.category}
             state.messages.extend(

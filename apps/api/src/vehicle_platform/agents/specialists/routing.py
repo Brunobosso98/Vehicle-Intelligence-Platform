@@ -167,8 +167,20 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         overview = bool(re.search(r"^what.*\bknow\b.*\b(car|vehicle)\b", q)) and not (
             performance or thermal or fuel or interpretation
         )
+        hypothesis_review = bool(
+            re.search(r"\b(hypothesis|hypotheses|hipótese|hipóteses)\b", q)
+            and re.search(r"\b(evidence|evidências)\b", q)
+            and re.search(r"\b(against|competing|contra|concorrentes)\b", q)
+        )
         if (lookup and not interpretation) or metadata_comparison or overview:
             intent = Intent.FACTUAL
+        elif hypothesis_review:
+            intent = Intent.MULTI_MECHANISM
+            selected.add(Specialist.PERFORMANCE)
+            if events & THERMAL_EVENTS:
+                selected.add(Specialist.THERMAL)
+            if events & FUEL_EVENTS:
+                selected.add(Specialist.FUEL_AIR_BOOST)
         elif comparison:
             intent = Intent.CONFIGURATION
             selected.update(

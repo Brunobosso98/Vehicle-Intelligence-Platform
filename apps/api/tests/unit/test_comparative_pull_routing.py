@@ -44,6 +44,19 @@ def test_comparing_a_logger_does_not_imply_comparing_pull_performance():
     assert Specialist.PERFORMANCE not in hints.required
 
 
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Summarize the strongest evidence for and against each current hypothesis.",
+        "Compare evidence for competing hypotheses.",
+    ],
+)
+def test_competing_hypotheses_include_measured_performance_context(question):
+    hints = hints_for(question, [])
+    assert hints.intent is Intent.MULTI_MECHANISM
+    assert Specialist.PERFORMANCE in hints.required
+
+
 def test_comparative_pull_keeps_scoped_intent_when_model_proposes_multiple_mechanisms():
     hints = hints_for("The closing pull was worse.", [])
     context = VehicleContext(vehicle_id=uuid4(), as_of=datetime.now(UTC))
