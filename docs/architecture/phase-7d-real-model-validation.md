@@ -1,6 +1,6 @@
 # Phase 7D real-model validation
 
-Status: full round twelve completed 120 observations without meeting all quality targets. Affected round fourteen completed 23 observations (14 PASS, nine semantic failures, zero provider failures). Accumulated spending is USD 3.081113650 / USD 4.00. Suite v2 and final general corrections require a complete real confirmation and exact-final-head gates. The authoritative scope is
+Status: round fifteen remains NOT VERIFIED after resume. Its 120 slots contain 93 PASS, ten semantic, nine runtime and six provider failures, one interrupted marker and one budget-skipped observation. The unchanged USD 4 ceiling blocked further funding at USD 3.996470140. Strict routing and reported-role recall pass; designated escalation is 91.67%, below 95%. All thirteen canonical checks passed on evaluated source 52f8267423697a9e0894f06a0afdbafe65951326. The authoritative scope is
 [the complete execution specification](../prompts/phase-7d-real-model-validation.md).
 [ADR 0022](../adr/0022-bounded-real-model-evaluation.md) records evaluation ownership and accounting.
 

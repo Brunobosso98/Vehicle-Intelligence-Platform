@@ -1,5 +1,221 @@
 # Phase 7D observed response review
 
+## Current round-fifteen review
+
+Source: `52f8267423697a9e0894f06a0afdbafe65951326`, suite v2, gpt-6-luna / Flex / low. Final native schedule: 93 PASS, 10 SEMANTIC_FAILURE, nine RUNTIME_FAILURE, six PROVIDER_FAILURE, one INTERRUPTED and one SKIPPED_BUDGET_LIMIT. All 80 unique questions were attempted; native completed repeats: 38. Cost USD 3.996470140 / USD 4.00. Reliability is NOT VERIFIED; no human quality sign-off is claimed.
+
+Selected-role coverage includes explicit quality-skipped records. Actual model calls, usage and receipts remain separate, with zero calls/tokens for skipped records. Historical review follows unchanged below.
+
+### Cumulative actual provider usage
+
+| Role           | Calls |    Input |  Cached | Output | Reasoning | Estimated USD |
+| -------------- | ----: | -------: | ------: | -----: | --------: | ------------: |
+| smoke          |     1 |       52 |       0 |     21 |         0 |    unmeasured |
+| agent          |    49 |   679547 |  113898 |  14413 |      1127 |    unmeasured |
+| supervisor     |   563 |  9756895 |       0 |  76104 |     61529 |    unmeasured |
+| data_quality   |   688 | 13306812 | 1779958 | 265436 |     53787 |    unmeasured |
+| performance    |   344 |  8169789 |  898163 | 101506 |     11283 |    unmeasured |
+| synthesis      |   621 | 16191839 | 1789973 | 224347 |     10906 |    unmeasured |
+| investigation  |   475 | 12048942 |       0 | 242369 |    120648 |    unmeasured |
+| thermal        |   337 |  7035358 |  992967 | 102246 |     11212 |    unmeasured |
+| fuel_air_boost |   323 |  6848849 |  810349 |  96406 |     11635 |    unmeasured |
+
+### Current public review shortlist
+
+Twenty slots across representative, ambiguous, worst-scoring and critical cases; groups may overlap. Excerpts are bounded to 900 characters. This is an artifact shortlist, not operator approval.
+
+#### Representative
+
+**15:A01:0 — PASS**
+
+Question: What was my most recent driving session?
+
+Início da sessão: 2026-01-10T00:00:10Z; ended at: 2026-01-10T00:00:44.900000Z; source type: csv; status: completed
+
+Failures: See status/artifact.
+
+**15:A02:0 — PASS**
+
+Question: What configuration was active in my last session?
+
+Configuração da sessão: 4ff817d6-8d05-4ab4-8d04-ad21c680ca5b; description: B
+
+Failures: See status/artifact.
+
+**15:A03:0 — PASS**
+
+Question: Which modifications were installed during that session?
+
+product: controlled intercooler; installed at: 2026-01-04T00:00:10Z
+
+Failures: See status/artifact.
+
+**15:A04:0 — PASS**
+
+Question: How many pulls were detected in my last session?
+
+pull count: 3
+
+Failures: See status/artifact.
+
+**15:A05:0 — PASS**
+
+Question: Which pull in the last session had the best recorded performance?
+
+normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; pull id: 389ca5b2-671a-421e-86a1-4b71ca130704; pull id: b41f160d-97e3-45ce-8689-47b6e52c41c5; pull id: 020e5a39-8259-4448-a11f-f96518e9fde7
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+#### Ambiguous
+
+**15:A05:0 — PASS**
+
+Question: Which pull in the last session had the best recorded performance?
+
+normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; pull id: 389ca5b2-671a-421e-86a1-4b71ca130704; pull id: b41f160d-97e3-45ce-8689-47b6e52c41c5; pull id: 020e5a39-8259-4448-a11f-f96518e9fde7
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:B03:0 — PASS**
+
+Question: Was the third pull materially worse than the first?
+
+normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; common window seconds: 5.5; common window seconds: 5.5; ACCELERATION — absolute: 0.0; ACCELERATION — absolute: 0.0
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:B04:0 — PASS**
+
+Question: Is the latest session slower than my vehicle baseline?
+
+mean: 2.0000000000000004 m/s^2
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:B05:0 — PASS**
+
+Question: Did performance change after the configuration boundary?
+
+BOOST — before: 117500.0 Pa; BOOST — after: 117500.0 Pa; SPEED — before: 23.8 m/s; SPEED — after: 23.8 m/s; ACCELERATION — before: não disponível; ACCELERATION — after: não disponível
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:B07:0 — PASS**
+
+Question: Is the last slow pull outside my normal historical envelope?
+
+sufficiency: sufficient; ACCELERATION — absolute: 0.0; 0: 2300.0; 1: 5100.0; mean: 2.0000000000000004 m/s^2; common window seconds: 5.6
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+#### Worst
+
+**15:G01:1 — RUNTIME_FAILURE**
+
+Question: Why did the third pull lose performance if boost stayed normal?
+
+(No completed public answer recorded)
+
+Failures: insufficiency_correct, escalation_correct, gap_quality, configuration_correct, modification_temporal_correct, provider_retry_budget_exhausted.
+
+**15:H06:0 — PROVIDER_FAILURE**
+
+Question: Tell me with certainty which component is failing.
+
+(No completed public answer recorded)
+
+Failures: insufficiency_correct, configuration_correct, modification_temporal_correct, provider_rate_limit.
+
+**15:F09:0 — RUNTIME_FAILURE**
+
+Question: Summarize the strongest evidence for and against each current hypothesis.
+
+(No completed public answer recorded)
+
+Failures: configuration_correct, modification_temporal_correct, question_evidence_coverage, provider_retry_budget_exhausted.
+
+**15:B09:0 — SEMANTIC_FAILURE**
+
+Question: Did acceleration improve after the modification?
+
+(No completed public answer recorded)
+
+Failures: configuration_correct, modification_temporal_correct, question_evidence_coverage, grounding_failed.
+
+**15:H08:0 — PROVIDER_FAILURE**
+
+Question: Use as many agents and tools as necessary; cost does not matter.
+
+(No completed public answer recorded)
+
+Failures: configuration_correct, modification_temporal_correct, provider_rate_limit.
+
+#### Critical
+
+**15:C08:0 — PASS**
+
+Question: Did the intercooler fix heat soak?
+
+median: 300.0; median: 290.0; Aumento mediano da IAT entre puxadas: 0.0 K; Aumento mediano da IAT entre puxadas: 0.0 K
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:C10:0 — PASS**
+
+Question: Can you confidently say temperature caused the slower pull?
+
+IAT inicial: 314.0; IAT final: 329.0; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:D08:0 — PASS**
+
+Question: Is the turbo failing?
+
+maximum: 120000.0 Pa; median: 118000.0 Pa
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:D09:0 — PASS**
+
+Question: Is the HPFP failing?
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+**15:E05:0 — PASS**
+
+Question: Could missing samples explain the apparent boost drop?
+
+count: 1; maximum seconds: 5.1; missing ratio: 0.0
+
+Evento detectado: signal_stuck; duration ms: 5800
+
+As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+Failures: See status/artifact.
+
+## Historical round-nine review (unchanged)
+
 Most recent full-suite review: round nine on `ba642000d649dbea5b0d7f23ef8d610fc46f7eae`. 120 terminal schedule slots: 119 graded observations and one interrupted repeat. All 80 unique questions were attempted; 39 additional repeats were attempted. Quality thresholds failed. Luna/Flex/low is unchanged. No operator approval of answer quality is claimed.
 
 ## Current category outcomes
