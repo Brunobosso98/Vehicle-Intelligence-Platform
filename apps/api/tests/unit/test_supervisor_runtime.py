@@ -80,6 +80,18 @@ def runtime(fixture, telemetry, question, provider=None, events=None):
     return state, client, engine
 
 
+def assert_quality_only_executed(report):
+    executed = [r for r in report.specialists if r.status != "skipped"]
+    assert [r.specialist for r in executed] == [Specialist.DATA_QUALITY]
+    skipped = [r for r in report.specialists if r.status == "skipped"]
+    assert [r.specialist for r in skipped] == report.routing.selected
+    for result in skipped:
+        assert result.error_category == "quality_gate_blocked"
+        assert result.model_turn_count == result.tool_call_count == result.telemetry_call_count == 0
+        assert result.findings == result.evidence_ids == []
+        assert result.usage.total_tokens == 0
+
+
 async def test_simple_path_has_no_model_routing_or_specialists(fixture, telemetry):
     state, client, engine = runtime(fixture, telemetry, "What was my last session?")
     await Supervisor(engine, state).run()
@@ -179,7 +191,7 @@ async def test_quality_gate_checks_historical_comparison_capabilities(fixture, t
     await Supervisor(engine, state).run()
     report = state.run.supervisor
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
-    assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+    assert_quality_only_executed(report)
     assert "engine_speed_dropout" in report.specialists[0].data_quality_warnings
 
 
@@ -288,7 +300,7 @@ async def test_quality_dropout_blocks_deeper_interpretation(fixture, telemetry):
     await Supervisor(engine, state).run()
     report = state.run.supervisor
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
-    assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+    assert_quality_only_executed(report)
     assert report.investigation_recommended
     assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
     assert client.call.await_count == 2
@@ -335,7 +347,7 @@ async def test_blocked_quality_preserves_anomaly_metadata_not_vehicle_measuremen
     await engine.call(state, "list_session_events", args)
     await Supervisor(engine, state).run()
     assert state.run.supervisor.sufficiency is Sufficiency.UNRELIABLE_DATA
-    assert [r.specialist for r in state.run.supervisor.specialists] == [Specialist.DATA_QUALITY]
+    assert_quality_only_executed(state.run.supervisor)
     assert "signal_stuck" in state.final.answer
     assert "boost" not in state.final.answer
     assert state.final.confidence == "low"
@@ -359,7 +371,8 @@ async def test_specialist_failure_isolated_and_quality_fails_closed(fixture, tel
     result = next(r for r in report.specialists if r.specialist is failing)
     assert result.status == "failed" and not result.findings
     if failing is Specialist.DATA_QUALITY:
-        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA and len(report.specialists) == 1
+        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
+        assert_quality_only_executed(report)
     else:
         assert report.sufficiency is Sufficiency.PARTIALLY_SUFFICIENT
         assert (
@@ -812,7 +825,7 @@ async def test_recorded_quality_owns_blocking_not_model_gap_category(fixture, te
     if poor:
         assert quality.evidence_gaps == ["data_quality"]
         assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
-        assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+        assert_quality_only_executed(report)
     else:
         assert quality.evidence_gaps == ["comparable_history"]
         assert Specialist.PERFORMANCE in {r.specialist for r in report.specialists}

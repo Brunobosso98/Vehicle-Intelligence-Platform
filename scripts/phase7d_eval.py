@@ -616,7 +616,7 @@ def main():
             run_timeout=180,
         )
         limit = Decimal(os.getenv("VIP_7D_MAX_SPEND_USD", "2.00"))
-        suite, digest = load_suite(ROOT / "evals/phase7d/suite-v1.json")
+        suite, digest = load_suite(ROOT / "evals/phase7d/suite-v2.json")
         case_ids = set(args.case_id) if args.case_id else None
         if case_ids is not None and (
             len(case_ids) != len(args.case_id)

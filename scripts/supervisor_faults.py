@@ -204,8 +204,13 @@ async def fault_scenarios(url, stack, fixture, score, counters, execution_score)
                 assert not result["findings"]
             if mode == "quality_failure":
                 assert (
-                    len(results) == 1
+                    len([r for r in results if r["status"] != "skipped"]) == 1
                     and run["supervisor"]["sufficiency"] == "UNRELIABLE_DATA"
+                )
+                assert all(
+                    r["model_turn_count"] == r["tool_call_count"] == 0
+                    for r in results
+                    if r["status"] == "skipped"
                 )
             elif mode != "cancel":
                 assert (

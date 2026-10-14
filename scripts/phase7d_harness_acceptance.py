@@ -25,7 +25,7 @@ async def main():
     fixture = await seed_phase7d(url)
     assert len(fixture["sparse_comparison_sessions"]) == 2
     before = await domain_fingerprint(url)
-    suite, digest = load_suite(Path("evals/phase7d/suite-v1.json"))
+    suite, digest = load_suite(Path("evals/phase7d/suite-v2.json"))
     output = Path(".validation/phase7d-deterministic")
     # Unique acceptance ledger, containing no paid usage and never a real-suite receipt.
     output.mkdir(parents=True, exist_ok=True)

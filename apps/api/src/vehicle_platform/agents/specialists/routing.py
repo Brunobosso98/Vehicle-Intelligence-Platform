@@ -72,6 +72,12 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
             q,
         )
     )
+    channel_alternatives = bool(
+        re.search(r"\b(what|which|quais)\b", q)
+        and re.search(r"\b(signals?|channels?|sinais|canais)\b", q)
+        and re.search(r"\b(collect|capture|record|log|coletar|registrar)\b", q)
+        and re.search(r"\b(unavailable|instead|alternatives?|indisponível|alternativas?)\b", q)
+    )
     foreign_vehicle = bool(
         re.search(r"\b(use|read|query|compare|usar|consulte)\b", q)
         and re.search(r"\b(another|other|different|outro)\s+vehicle\b", q)
@@ -118,7 +124,7 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         or (reliability_query or missing_samples or abrupt_zero or telemetry_gaps)
     ):
         intent = Intent.DATA_QUALITY
-    elif source_capability_query:
+    elif source_capability_query or channel_alternatives:
         intent = Intent.FACTUAL
     elif q.startswith(("teve ", "what events", "which events", "show events")):
         intent = Intent.FACTUAL
@@ -256,6 +262,8 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
             intent = Intent.FACTUAL
     if intent:
         hints.append(f"question_intent:{intent.value}")
+    if collection_request and intent is Intent.FACTUAL:
+        hints.append("capture_requires_approval")
     if events & FUEL_EVENTS:
         hints.append("recorded_fuel_air_boost_events")
     if events & THERMAL_EVENTS:

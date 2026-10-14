@@ -14,6 +14,7 @@ from vehicle_platform.agents.context import resolve_context
 from vehicle_platform.agents.evidence import canonical_hash
 from vehicle_platform.agents.grounding import validate
 from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
+from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
 from vehicle_platform.agents.state import Execution, GraphState
@@ -444,6 +445,10 @@ class Orchestrator:
         ):
             try:
                 state.final = validate(state.turn.draft, state.registry, state.context)
+                if report and "capture_requires_approval" in report.routing.hints:
+                    state.final.limitations = list(
+                        dict.fromkeys([CAPTURE_APPROVAL_LIMITATION, *state.final.limitations])
+                    )[:32]
                 if report and not report.routing.data_quality_gate and not report.routing.selected:
                     from vehicle_platform.agents.schemas import Sufficiency
 

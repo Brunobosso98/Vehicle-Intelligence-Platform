@@ -58,7 +58,7 @@ class Case(StrictModel):
 
 
 class Suite(StrictModel):
-    version: Literal["phase7d-v1"]
+    version: Literal["phase7d-v1", "phase7d-v2"]
     fixture_version: Literal["phase7d-canonical-v1"]
     cases: list[Case]
 

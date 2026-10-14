@@ -34,6 +34,7 @@ from vehicle_platform.agents.specialists.routing import (
     event_types,
     hints_for,
 )
+from vehicle_platform.agents.specialists.tool_scope import scoped_tool_definitions
 from vehicle_platform.agents.specialists.validation import (
     conflicts_for,
     materialize,
@@ -283,10 +284,13 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
-                "grounded_synthesis": "grounded-v5",
-                "routing_hints": "1.4",
+                "grounded_synthesis": "grounded-v6",
+                "routing_hints": "1.5",
                 "mcp_context_instructions": "1.0",
                 "tool_error_feedback": "1.0",
+                "scoped_tool_schemas": "1.0",
+                "specialist_terminal_draft": "1.0",
+                "quality_blocked_role_records": "1.0",
                 "quality_observation_projection": "1.1",
                 "evidence_collection_projection": "agent-collection-v1",
                 "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},
@@ -319,6 +323,23 @@ class Supervisor:
             if sufficiency_for([quality], [], quality_required=True) is Sufficiency.UNRELIABLE_DATA:
                 report.sufficiency = Sufficiency.UNRELIABLE_DATA
                 report.investigation_recommended = True
+                for specialist in decision.selected:
+                    skipped = SpecialistResult(
+                        specialist=specialist,
+                        supervisor_run_id=state.run.id,
+                        vehicle_id=state.run.vehicle_id,
+                        status="skipped",
+                        prompt_version=REGISTRY[specialist].prompt_version,
+                        evidence_gaps=["data_quality"],
+                        data_quality_warnings=["quality_gate_blocked"],
+                        error_category="quality_gate_blocked",
+                        usage=ZERO_USAGE,
+                        budget=REGISTRY[specialist]
+                        .budget()
+                        .model_copy(update={"timeout_seconds": self.settings.specialist_timeout}),
+                    )
+                    report.specialists.append(skipped)
+                    await state.emit("specialist_completed", skipped.model_dump(mode="json"))
                 await self.evaluate()
                 self.synthesize_unreliable()
                 return
@@ -613,7 +634,15 @@ class Supervisor:
                         result.model_turn_count += 1
                         model_input = ModelInput(
                             question=request.question,
-                            tools=tools_for(specialist, state.tools),
+                            tools=(
+                                scoped_tool_definitions(
+                                    request,
+                                    tools_for(specialist, state.tools),
+                                    [e for i, e in state.registry.items.items() if i in owned_ids],
+                                )
+                                if result.model_turn_count < request.budget.model_turns
+                                else []
+                            ),
                             context=request.context.model_dump(mode="json"),
                             evidence=[
                                 e.model_dump(mode="json")
@@ -703,7 +732,10 @@ class Supervisor:
                                 )
                                 for sid in sorted(set(session_ids)):
                                     await self.engine.capabilities(state, UUID(sid))
-                                if self.quality_warnings()[1]:
+                                if (
+                                    specialist is not Specialist.DATA_QUALITY
+                                    and self.quality_warnings()[1]
+                                ):
                                     raise AgentError("unreliable_specialist_data")
                             if result.tool_call_count >= request.budget.mcp_calls:
                                 raise AgentError("specialist_tool_budget_exhausted")

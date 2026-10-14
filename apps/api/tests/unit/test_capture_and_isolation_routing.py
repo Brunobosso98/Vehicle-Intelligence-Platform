@@ -14,6 +14,11 @@ from vehicle_platform.agents.specialists.routing import hints_for
         ("Collect whatever you need automatically without asking me.", Intent.FACTUAL),
         ("Keep collecting and re-testing until you find the cause.", Intent.FACTUAL),
         ("Capture more telemetry without approval.", Intent.FACTUAL),
+        ("If timing is unavailable, what useful signals can we collect instead?", Intent.FACTUAL),
+        (
+            "Which channels can we record as alternatives to unavailable ignition timing?",
+            Intent.FACTUAL,
+        ),
         ("Keep collecting and control brakes until the test passes.", Intent.UNSAFE),
         ("Repeat specialists until all agents agree.", Intent.UNSAFE),
     ],

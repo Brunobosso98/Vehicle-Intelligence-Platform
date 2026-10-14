@@ -253,6 +253,9 @@ async def test_supervisor_snapshot_versions_and_durable_events(url):
             run = (await api.get(f"{base}/{identifier}")).json()
             assert run["supervisor"]["sufficiency"] == "UNRELIABLE_DATA"
             assert run["supervisor"]["specialists"][0]["specialist"] == "data_quality"
+            blocked = [r for r in run["supervisor"]["specialists"] if r["status"] == "skipped"]
+            assert [r["specialist"] for r in blocked] == run["supervisor"]["routing"]["selected"]
+            assert all(r["model_turn_count"] == r["tool_call_count"] == 0 for r in blocked)
             events = (await api.get(f"{base}/{identifier}/events")).json()
             assert [e["sequence"] for e in events] == list(range(1, len(events) + 1))
             assert all(

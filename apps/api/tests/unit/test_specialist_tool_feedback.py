@@ -85,3 +85,34 @@ async def test_specialist_unavailable_transport_still_fails(fixture, telemetry):
     assert result.error_category == "mcp_unavailable"
     assert result.model_turn_count == 1
     assert result.findings == []
+
+
+async def test_last_specialist_turn_reserves_a_draft_with_existing_budgets(fixture, telemetry):
+    state, client, engine = runtime(fixture, telemetry, "Compare intake temperatures.")
+    turns = []
+
+    def respond(request):
+        turns.append(request)
+        if request.tools:
+            return ModelTurn(
+                tool_calls=[
+                    ToolRequest(
+                        call_id=f"read-{len(turns)}",
+                        name="get_session_summary",
+                        arguments={"vehicle_id": str(state.run.vehicle_id)},
+                    )
+                ]
+            )
+        return ModelTurn(draft=insufficient())
+
+    engine.provider = ScriptedProvider([respond] * 4)
+    result = await Supervisor(engine, state).execute_specialist(Specialist.THERMAL)
+    assert result.status == "completed"
+    assert result.model_turn_count == result.budget.model_turns == 4
+    assert result.tool_call_count == 3
+    assert result.cache_hits == 2
+    assert len(state.tool_calls) == 1
+    assert client.call.await_count == 1
+    assert len(turns) == 4
+    assert all(t.tools for t in turns[:3])
+    assert turns[-1].tools == []

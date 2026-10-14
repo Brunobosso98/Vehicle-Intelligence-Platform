@@ -1,10 +1,10 @@
 # Phase 7D real-model validation
 
-Status: real round nine has 80 unique attempts, 39 repeated attempts and one interrupted repeat; quality thresholds failed. General hardening and exact final-head gates remain in progress. The authoritative scope is
+Status: full round twelve completed 120 observations without meeting all quality targets. Affected round fourteen completed 23 observations (14 PASS, nine semantic failures, zero provider failures). Accumulated spending is USD 3.081113650 / USD 4.00. Suite v2 and final general corrections require a complete real confirmation and exact-final-head gates. The authoritative scope is
 [the complete execution specification](../prompts/phase-7d-real-model-validation.md).
 [ADR 0022](../adr/0022-bounded-real-model-evaluation.md) records evaluation ownership and accounting.
 
-`evals/phase7d/suite-v1.json` contains exactly 80 unique questions, ten per category A–H.
+The current `evals/phase7d/suite-v2.json` and retained historical `suite-v1.json` each contain exactly 80 unique questions, ten per category A–H.
 The specified 20 critical questions receive two additional observations. The loader rejects
 identity, category, duplicate-question, specialist-partition and repeat-count inconsistencies.
 Questions and expected behavior come from the specification and controlled canonical fixtures,
@@ -88,3 +88,7 @@ Application-owned pull discovery also exposed a deterministic-provider regressio
 Real related-domain validation exposed remaining routing requests for signal reliability and source availability. Reliability interpretation, missing samples and abrupt sensor-zero questions now retain Data Quality scope; source capability lookup and simple recorded counts remain factual. Forced unbounded specialist agreement is rejected by the existing application refusal boundary. Mechanical reliability without a data-quality request retains domain analysis. No specialist recursion, new model, public schema or future infrastructure is introduced.
 
 Discovery strategy 1.1 keeps the existing maximum two owned session reads and twenty pulls per read. For questions about configuration/modification/replacement comparisons, it selects the newest session and an already resolved, temporally valid session from a different configuration when available. Otherwise it retains the newest two sessions. Selection filters the specialist session allowlist; an unowned or invalid temporal contrast never supplies registered IDs. The updated strategy version participates in the supervisor configuration hash. No result, diagnosis, missing measurement or answer is synthesized by metadata discovery.
+
+## Scoped tools, terminal drafts and optional capture planning
+
+ADR 0025 records per-turn entity-ID schemas, the reserved terminal draft, safe Data Quality summary reads, explicit zero-call quality-blocked role records and independent recognition of canonical numerical semantics. Suite v2 preserves the complete question/fixture/repeat set, aligns optional G09 planning with specification section 82, and strengthens public capture-approval notice checks. Historical receipts remain unchanged. No budget, retry or interpretation guard is expanded.
