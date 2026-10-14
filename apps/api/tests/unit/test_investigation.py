@@ -511,7 +511,8 @@ def test_semantic_proposal_rejects_duplicate_and_unsafe_gap() -> None:
         )
 
 
-async def test_existing_search_respects_signal_quality_and_vehicle_context() -> None:
+@pytest.mark.parametrize("category", [GapType.SIGNAL_OR_MEASUREMENT, GapType.DATA_QUALITY])
+async def test_existing_search_respects_signal_quality_and_vehicle_context(category) -> None:
     run = insufficient_run("Why is timing missing?")
     assert run.result is not None
     session_id, configuration_id = uuid4(), uuid4()
@@ -527,7 +528,7 @@ async def test_existing_search_respects_signal_quality_and_vehicle_context() -> 
     signal_need = need(SignalRole.BOOST)
     gap = EvidenceGap(
         id=signal_need.gap_ids[0],
-        category=GapType.SIGNAL_OR_MEASUREMENT,
+        category=category,
         description="Boost is missing in compatible windows",
         why_it_matters="Separates observed airflow associations",
         signal_need_ids=[signal_need.id],

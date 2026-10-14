@@ -24,3 +24,13 @@ Version affected prompts and include routing, quality projection, collection pro
 The existing public Evidence field structure supports the additional snapshots. Collection counts describe scoped responses, and partial lists expose a returned count rather than a total. Evidence, input, output, tool, specialist, retry and spending limits continue to apply.
 
 Positive and negative tests cover empty/nonempty/partial collections, ownership rejection before publication, evidence budgets, quality-event filtering, comparative pull routing, template instructions and factual gap consistency. The integrated API checks passed 790 tests, typing/lint, 96.07% line coverage and 91.39% branch coverage. The final real-model confirmation and exact-final-head canonical gates remain required.
+
+## Follow-up from affected real confirmation
+
+The independent round-thirteen review recognizes canonical acceleration mean/delta and coolant/oil start/end measurements as their existing semantic domains. Recognition requires an allowed canonical source tool, an exact unique fact, finite numeric value and matching source unit. Counts, nulls, unrelated tools and unsupported values do not qualify. Historical paid scores remain immutable; no acceptance threshold changes.
+
+Shared MCP instructions now expose the existing same-configuration, ownership and cardinality prerequisites to all roles. Routing distinguishes capture planning from control and rejects requests to use another vehicle. Signal availability cannot resolve a data-quality gap when the supervisor already established unreliable evidence. This preserves the existing quality gate and capture approval boundaries; it does not enable acquisition.
+
+The graph update is deferred until all checks pass under the user's explicit instruction.
+
+The quality-gap regression failed before the fix and passed afterward. Subsequent API validation passed 820 tests, typing/lint and coverage; 80 focused tests passed after the final measurement-identity instructions. The real confirmation remains pending.

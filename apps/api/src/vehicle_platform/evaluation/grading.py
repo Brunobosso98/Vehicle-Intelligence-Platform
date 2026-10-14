@@ -141,6 +141,75 @@ def temporal_checks(context: dict[str, Any]) -> tuple[bool, bool]:
         return False, False
 
 
+def semantic_binding_paths(binding: dict[str, Any], evidence: dict[str, Any]) -> list[str]:
+    path = str(binding.get("path", "")).casefold()
+    paths = [path]
+    identifier = binding.get("evidence_id")
+    if not isinstance(identifier, str):
+        return paths
+    source = evidence.get(identifier, {})
+    if source.get("source_tool") not in {
+        "get_pull_summary",
+        "get_session_summary",
+        "get_repeated_pull_analysis",
+        "compare_pulls",
+        "compare_configurations",
+        "get_cross_session_analytics",
+        "get_vehicle_baseline",
+    }:
+        return paths
+    matches = [fact for fact in source.get("facts", []) if fact.get("path") == binding.get("path")]
+    actual = binding.get("value")
+    if (
+        len(matches) != 1
+        or not isinstance(actual, (int, float))
+        or isinstance(actual, bool)
+        or type(matches[0].get("value")) not in {int, float}
+        or not math.isfinite(actual)
+        or not math.isclose(matches[0]["value"], actual, rel_tol=1e-6, abs_tol=1e-6)
+        or matches[0].get("unit") != binding.get("unit")
+    ):
+        return paths
+    statistic = path.rsplit("/", 1)[-1]
+    measured_statistics = {
+        "mean",
+        "median",
+        "minimum",
+        "maximum",
+        "min",
+        "max",
+        "start",
+        "end",
+        "before",
+        "after",
+        "absolute",
+        "delta",
+        "p10",
+        "p25",
+        "p75",
+        "p90",
+        "mad",
+    }
+    if statistic in measured_statistics and any(
+        segment in path
+        for segment in ("/result/metrics/acceleration/", "/result/metric_deltas/acceleration/")
+    ):
+        paths.append("normalized_acceleration")
+    if (
+        path.startswith("/result/sequence/")
+        and statistic in {"start_coolant", "end_coolant", "start_oil", "end_oil"}
+    ) or (
+        statistic in measured_statistics
+        and any(
+            f"/result/{collection}/{metric}/" in path
+            for collection in ("metrics", "metric_deltas", "envelopes")
+            for metric in ("coolant", "oil")
+        )
+    ):
+        paths.append("temperature")
+    return paths
+
+
 def grade(
     case: Case,
     run: dict[str, Any],
@@ -309,9 +378,10 @@ def grade(
     metrics["configuration_correct"] = int(configuration_ok)
     metrics["modification_temporal_correct"] = int(modification_ok)
     paths = [
-        binding.get("path", "").casefold()
+        path
         for finding in findings
         for binding in finding.get("bindings", [])
+        for path in semantic_binding_paths(binding, evidence)
     ]
     groups = case.grading_rules.get("required_fact_groups", [])
     metrics["question_evidence_coverage"] = int(

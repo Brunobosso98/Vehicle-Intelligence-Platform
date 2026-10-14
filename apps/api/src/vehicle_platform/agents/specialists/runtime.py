@@ -282,8 +282,9 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
-                "grounded_synthesis": "grounded-v4",
-                "routing_hints": "1.2",
+                "grounded_synthesis": "grounded-v5",
+                "routing_hints": "1.3",
+                "mcp_context_instructions": "1.0",
                 "quality_observation_projection": "1.1",
                 "evidence_collection_projection": "agent-collection-v1",
                 "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},

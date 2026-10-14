@@ -120,7 +120,10 @@ async def search_existing(
                     }
                 )
             )
-        elif unreliable_measurements and gap.category is GapType.SIGNAL_OR_MEASUREMENT:
+        elif unreliable_measurements and gap.category in {
+            GapType.SIGNAL_OR_MEASUREMENT,
+            GapType.DATA_QUALITY,
+        }:
             # Availability establishes that a signal was captured, not that the existing
             # windows are reliable or discriminate mechanisms examined by specialists.
             updated.append(gap.model_copy(update={"status": GapStatus.NEEDS_NEW_CAPTURE}))

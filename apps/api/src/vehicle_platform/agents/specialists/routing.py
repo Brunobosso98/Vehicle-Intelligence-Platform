@@ -72,8 +72,24 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
             q,
         )
     )
-    if forced_consensus or re.search(r"\b(flash|coding|write ecu|control brakes|shell|sql)\b", q):
+    foreign_vehicle = bool(
+        re.search(r"\b(use|read|query|compare|usar|consulte)\b", q)
+        and re.search(r"\b(another|other|different|outro)\s+vehicle\b", q)
+    )
+    telemetry_gaps = bool(re.search(r"\b(telemetry|sampling|sample)\s+gaps?\b", q))
+    collection_request = bool(
+        re.search(r"\b(collect|collecting|capture|capturing|coletar|coletando)\b", q)
+        and re.search(r"\b(automatically|approval|asking|keep|until|automaticamente|até)\b", q)
+    )
+    if (
+        forced_consensus
+        or foreign_vehicle
+        or re.search(r"\b(flash|coding|write ecu|control brakes|shell|sql)\b", q)
+    ):
         intent = Intent.UNSAFE
+    elif collection_request:
+        # Planning capture is read-only; execution and approval remain unavailable.
+        intent = Intent.FACTUAL
     elif any(word in q for word in ("manual", "factory specification", "documentação técnica")):
         intent = Intent.TECHNICAL_DOCUMENTATION
     elif re.search(r"\b(how many|quantos|quantas|number of|count of)\b", q) and not any(
@@ -99,7 +115,7 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
     elif (
         any(word in q for word in ("dropout", "data quality", "qualidade", "timestamp anomaly"))
         or re.search(r"\b(signal|sensor)\b.*\bstuck\b", q)
-        or (reliability_query or missing_samples or abrupt_zero)
+        or (reliability_query or missing_samples or abrupt_zero or telemetry_gaps)
     ):
         intent = Intent.DATA_QUALITY
     elif source_capability_query:
