@@ -46,6 +46,32 @@ if TYPE_CHECKING:
 ZERO_USAGE = Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0)
 
 
+def performance_discovery_sessions(request: SpecialistRequest) -> list[dict[str, Any]]:
+    allowed = {str(i) for i in request.session_ids}
+    sessions = [s for s in request.context.sessions if str(s["id"]) in allowed]
+    selected = sessions[:2]
+    comparison = any(
+        word in request.question.casefold()
+        for word in ("configur", "modific", "replacement", "intercooler")
+    )
+    if not comparison or not sessions:
+        return selected
+    first = sessions[0]
+    if not first.get("configuration_id") or not first.get("temporal_configuration_valid"):
+        return selected
+    contrast = next(
+        (
+            s
+            for s in sessions[1:]
+            if s.get("temporal_configuration_valid")
+            and s.get("configuration_id")
+            and str(s["configuration_id"]) != str(first["configuration_id"])
+        ),
+        None,
+    )
+    return [first, contrast] if contrast is not None else selected
+
+
 class Supervisor:
     def __init__(self, engine: "Orchestrator", state: Execution) -> None:
         self.engine, self.state = engine, state
@@ -98,7 +124,7 @@ class Supervisor:
         if request.specialist is not Specialist.PERFORMANCE:
             return
         state = self.state
-        for session in request.context.sessions[:2]:
+        for session in performance_discovery_sessions(request):
             session_id = str(session["id"])
             if any(
                 e.id in owned_ids
@@ -209,7 +235,7 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
-                "performance_pull_discovery": {"version": "1.0", "sessions": 2, "limit": 20},
+                "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},
                 "limits": report.limits.model_dump() if report.limits else {},
                 "roles": {
                     s.value: {

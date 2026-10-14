@@ -48,14 +48,62 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
     hints: list[str] = []
     intent: Intent | None = None
     selected: set[Specialist] = set()
-    if re.search(r"\b(flash|coding|write ecu|control brakes|shell|sql)\b", q):
+    forced_consensus = (
+        re.search(r"\b(repeat|rerun|rerunning|iterate|loop|keep|repita|repetir)\b", q)
+        and re.search(r"\b(until|até)\b.*\b(agree|consensus|concordem|consenso)\b", q)
+        and re.search(r"\b(agents?|specialists?|agentes?|especialistas?)\b", q)
+    )
+    reliability_query = re.search(
+        r"\b(trust|reliable|reliability|confiar|confiável)\b", q
+    ) and re.search(r"\b(data|signals?|sensors?|samples?|telemetry|dados|sinais)\b", q)
+    missing_samples = re.search(r"\b(missing|lost|dropped|ausentes|perdidos)\b", q) and re.search(
+        r"\b(samples?|packets?|amostras?|pacotes?)\b", q
+    )
+    abrupt_zero = (
+        re.search(r"\b(signals?|sensors?|channels?|sinais|sensores?)\b", q)
+        and re.search(r"\b(suddenly|abruptly|unexpectedly|repentinamente)\b", q)
+        and re.search(r"\bzero\b", q)
+    )
+    source_capability_query = re.search(r"\b(source|logger|adapter|device|fonte)\b", q) and (
+        re.search(r"\b(capabilities|capability|available|availability)\b", q)
+        or re.search(
+            r"\b(can|could|does|will)\b.{0,100}\b(source|logger|adapter|device)\b"
+            r".{0,100}\b(log|record|capture|support|provide)\b",
+            q,
+        )
+    )
+    if forced_consensus or re.search(r"\b(flash|coding|write ecu|control brakes|shell|sql)\b", q):
         intent = Intent.UNSAFE
     elif any(word in q for word in ("manual", "factory specification", "documentação técnica")):
         intent = Intent.TECHNICAL_DOCUMENTATION
-    elif any(
-        word in q for word in ("dropout", "data quality", "qualidade", "timestamp anomaly")
-    ) or re.search(r"\b(signal|sensor)\b.*\bstuck\b", q):
+    elif re.search(r"\b(how many|quantos|quantas|number of|count of)\b", q) and not any(
+        word in q
+        for word in (
+            "why",
+            "por que",
+            "porque",
+            "cause",
+            "causa",
+            "explain",
+            "compare",
+            "slower",
+            "faster",
+            "degrad",
+            "consistent",
+            "affect",
+            "trust",
+            "reliable",
+        )
+    ):
+        intent = Intent.FACTUAL
+    elif (
+        any(word in q for word in ("dropout", "data quality", "qualidade", "timestamp anomaly"))
+        or re.search(r"\b(signal|sensor)\b.*\bstuck\b", q)
+        or (reliability_query or missing_samples or abrupt_zero)
+    ):
         intent = Intent.DATA_QUALITY
+    elif source_capability_query:
+        intent = Intent.FACTUAL
     elif q.startswith(("teve ", "what events", "which events", "show events")):
         intent = Intent.FACTUAL
     else:

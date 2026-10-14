@@ -777,3 +777,85 @@ async def test_specialist_deadline_uses_bounded_operator_profile(fixture, teleme
 
     with pytest.raises(ValidationError):
         AgentSettings(specialist_timeout=46)
+
+
+@pytest.mark.parametrize("comparison", [False, True])
+@pytest.mark.parametrize("foreign_scope", [False, True])
+async def test_performance_discovery_represents_configuration_boundary_within_scope(
+    fixture, telemetry, comparison, foreign_scope
+):
+    from datetime import timedelta
+
+    from test_agents import NOW
+
+    from vehicle_platform.agents.schemas import SpecialistResult
+
+    previous = fixture["configurations"][0]
+    boundary = NOW - timedelta(days=5)
+    previous["ended_at"] = boundary.isoformat()
+    current = previous | {
+        "id": str(uuid4()),
+        "effective_at": boundary.isoformat(),
+        "ended_at": None,
+    }
+    fixture["configurations"].append(current)
+    first = fixture["sessions"][0]
+    first["configuration_id"] = current["id"]
+    second = first | {"id": str(uuid4()), "started_at": (NOW - timedelta(days=1)).isoformat()}
+    earlier = first | {
+        "id": str(uuid4()),
+        "configuration_id": previous["id"],
+        "started_at": (NOW - timedelta(days=10)).isoformat(),
+    }
+    fixture["sessions"] = [first, second, earlier]
+    question = (
+        "Did a setup modification improve measured pull behavior?"
+        if comparison
+        else "How do consecutive measured pulls compare?"
+    )
+    state, client, engine = runtime(fixture, telemetry, question)
+    request = request_for(fixture, state.registry, Specialist.PERFORMANCE)
+    request.question = question
+    request.session_ids = [UUID(s["id"]) for s in fixture["sessions"][: 2 if foreign_scope else 3]]
+    sessions = {s["id"]: s for s in fixture["sessions"]}
+
+    async def list_pulls(name, arguments):
+        assert name == "list_session_pulls"
+        session = sessions[arguments["session_id"]]
+        return Envelope(
+            data=[
+                {
+                    "id": str(uuid4()),
+                    "vehicle_id": str(state.run.vehicle_id),
+                    "session_id": session["id"],
+                    "configuration_id": session["configuration_id"],
+                }
+                for _ in range(3)
+            ],
+            context={"vehicle_id": state.run.vehicle_id, "session_id": UUID(session["id"])},
+        )
+
+    client.call.side_effect = list_pulls
+    result = SpecialistResult(
+        specialist=Specialist.PERFORMANCE,
+        supervisor_run_id=state.run.id,
+        vehicle_id=state.run.vehicle_id,
+        status="failed",
+        prompt_version=request.prompt_version,
+        budget=request.budget,
+    )
+    owned = set(request.evidence_ids)
+    await Supervisor(engine, state).discover_performance_pulls(request, result, owned)
+    selections = [c.args[1]["session_id"] for c in client.call.await_args_list]
+    expected = (
+        [first["id"], earlier["id"]]
+        if comparison and not foreign_scope
+        else [first["id"], second["id"]]
+    )
+    assert selections == expected
+    assert set(selections) <= {str(i) for i in request.session_ids}
+    assert result.tool_call_count == 2
+    assert len(request.pull_ids) == 6
+    assert {
+        state.registry.items[i].session_id for i in owned if state.registry.items[i].pull_id
+    } == {UUID(i) for i in expected}

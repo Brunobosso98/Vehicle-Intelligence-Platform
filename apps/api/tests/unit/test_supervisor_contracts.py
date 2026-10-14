@@ -504,3 +504,41 @@ def test_related_domain_routing_preserves_narrow_scope_and_metadata(fixture, que
     hints = hints_for(question, [])
     decision = decide(hints, RoutingProposal(intent=hints.intent), context(fixture))
     assert decision.selected == expected
+
+
+@pytest.mark.parametrize(
+    "question,intent,expected",
+    [
+        ("Are the recorded boost samples reliable enough to interpret?", Intent.DATA_QUALITY, []),
+        ("Can we trust these telemetry measurements?", Intent.DATA_QUALITY, []),
+        ("How many lost sample packets were recorded?", Intent.FACTUAL, []),
+        ("Could lost sample packets distort the apparent pressure event?", Intent.DATA_QUALITY, []),
+        ("Why did the sensor channel abruptly switch to zero?", Intent.DATA_QUALITY, []),
+        ("Can the installed logger capture ignition corrections?", Intent.FACTUAL, []),
+        ("What are the source capabilities for recorded signals?", Intent.FACTUAL, []),
+        ("Keep rerunning the specialists until they reach consensus.", Intent.UNSAFE, []),
+        ("Iterate the analysis until all agents agree.", Intent.UNSAFE, []),
+        (
+            "Does the HPFP appear mechanically reliable?",
+            Intent.FUEL_AIR_BOOST,
+            [Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "The logger recorded fuel pressure changes; interpret the pressure event.",
+            Intent.FUEL_AIR_BOOST,
+            [Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Can the source record the factory specification manual?",
+            Intent.TECHNICAL_DOCUMENTATION,
+            [],
+        ),
+    ],
+)
+def test_quality_capability_and_execution_policy_scope(fixture, question, intent, expected):
+    hints = hints_for(question, [])
+    assert hints.intent is intent
+    decision = decide(hints, RoutingProposal(intent=intent), context(fixture))
+    assert decision.intent is intent
+    assert decision.selected == expected
+    assert decision.data_quality_gate is (intent is Intent.DATA_QUALITY or bool(expected))
