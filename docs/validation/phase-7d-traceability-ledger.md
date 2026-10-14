@@ -1,8 +1,8 @@
 # Phase 7D traceability ledger
 
-All 143 numbered specification sections are retained. This is a current evidence audit, not a declaration of completion. Real round nine on `ba642000d649dbea5b0d7f23ef8d610fc46f7eae` has 80 unique attempts, 39 repeated attempts and one interrupted repeated slot. Quality thresholds failed. Accumulated estimated cost through affected round ten is USD 1.774582990 within the operator USD 2 ceiling. The current deterministic regression correction has not yet completed exact final-head acceptance.
+All 143 numbered specification sections are retained. This is an evidence audit, not a declaration of completion. Full round twelve on `140d21e2e718e23c3326a314cd8dae3923f3dbef` executed 80 unique questions and 40 critical repeats: 72 PASS, 46 SEMANTIC_FAILURE and two PROVIDER_FAILURE. Strict routing passed its target; specialist recall and designated Phase 7B escalation remain below their targets. Accumulated estimated cost is USD 2.470454055 within the explicitly authorized USD 4 ceiling. Current corrections passed 790 API tests; final real confirmation and exact-final-head acceptance remain pending.
 
-Case rows refer to the evaluated ba642 source and immutable raw receipts in ignored `.validation/phase7d/`. PASS for an individual observation does not establish whole-phase acceptance. The [current report](phase-7d-real-evaluation.md) and [response review](phase-7d-partial-response-review.md) distinguish round-nine quality from cumulative costs.
+The original case table below retains its historical round-nine source and immutable receipts. The round-twelve appendix supplies current per-case observations; observations from different sources are never combined for acceptance. Individual PASS results do not establish whole-phase acceptance. The [current report](phase-7d-real-evaluation.md) records current quality and cumulative spending.
 
 | Section | Requirement                                        | Evidence / remaining work                                                                                                                                                                                                                                                                                                                                                                |
 | ------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -157,3 +157,92 @@ Historical deterministic closure: dd98daf canonical run 38325444377 and d6bf648 
 Round ten on c6ec8063c4132237b1cf160e46927a1d47657774 attempted F02/F03/F04/F05/F06/F08 plus two additional F03/F04/F08 observations each: eleven PASS and one F05 SEMANTIC_FAILURE. These observations update evidence for sections 65–69 and 71; they do not replace the full round-nine failed baseline or complete all 20 critical triplets. All three observed triplets are consistent for route, specialists, safety, insufficiency and classification; escalation is consistent in two of three. Current returned cumulative usage is 31640486 input, 2245938 cached input, 527620 output and 139234 surfaced reasoning tokens. Accumulated estimated cost is USD 1.774582990, including 36 unknown-usage calls.
 
 Current uncommitted hardening distinguishes data reliability/source capabilities/forced unbounded consensus, preserves factual counts and prefers an owned valid contrasting setup for modification comparisons. It passed 175 focused tests, typing and 754 full API tests. Original guard assertions and failed observations remain preserved. Three c6ec806 Markdown formatting failures are corrected; final local/remote acceptance and the full final-source real suite remain pending.
+
+## Current full-source evidence: round twelve
+
+All 80 unique questions and 40 repeats completed on the evaluated source above. All published references and factual bindings were valid; observed hard safety/grounding blockers were zero. Two provider-unavailable cases lack completed usage receipts. Current corrections, API checks and [ADR 0023](../adr/0023-scoped-collection-evidence-and-gap-consistency.md) are implementation evidence, with real confirmation still pending.
+
+| Case | Round-twelve observations  | Remaining work                                                                                                                           |
+| ---- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| A01  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A02  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A03  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A04  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| A05  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A06  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A07  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| A08  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A09  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| A10  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| B01  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| B02  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| B03  | 1 SEMANTIC_FAILURE         | routing_correct                                                                                                                          |
+| B04  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| B05  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| B06  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| B07  | 1 SEMANTIC_FAILURE         | configuration_correct, modification_temporal_correct, question_evidence_coverage, tool_budget_exhausted                                  |
+| B08  | 1 PROVIDER_FAILURE         | configuration_correct, modification_temporal_correct, provider_unavailable, question_evidence_coverage, routing_correct                  |
+| B09  | 1 PROVIDER_FAILURE         | configuration_correct, modification_temporal_correct, provider_unavailable, question_evidence_coverage, routing_correct                  |
+| B10  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| C01  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| C02  | 1 SEMANTIC_FAILURE         | question_evidence_coverage, routing_correct                                                                                              |
+| C03  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| C04  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| C05  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| C06  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| C07  | 1 SEMANTIC_FAILURE         | configuration_correct, grounding_failed, modification_temporal_correct, question_evidence_coverage                                       |
+| C08  | 2 SEMANTIC_FAILURE, 1 PASS | configuration_correct, grounding_failed, insufficiency_correct, invalid_tool_arguments, modification_temporal_correct                    |
+| C09  | 1 SEMANTIC_FAILURE         | configuration_correct, grounding_failed, modification_temporal_correct, question_evidence_coverage                                       |
+| C10  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D01  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D02  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D03  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D04  | 1 SEMANTIC_FAILURE         | configuration_correct, invalid_supervisor_routing, modification_temporal_correct, question_evidence_coverage, routing_correct            |
+| D05  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| D06  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D07  | 1 SEMANTIC_FAILURE         | question_evidence_coverage, routing_correct                                                                                              |
+| D08  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D09  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| D10  | 1 PASS, 2 SEMANTIC_FAILURE | escalation_correct, gap_quality, routing_correct                                                                                         |
+| E01  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| E02  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| E03  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| E04  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| E05  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| E06  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| E07  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| E08  | 1 SEMANTIC_FAILURE         | configuration_correct, modification_temporal_correct, question_evidence_coverage, tool_result_budget_exhausted                           |
+| E09  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| E10  | 1 SEMANTIC_FAILURE         | escalation_correct, gap_quality                                                                                                          |
+| F01  | 1 PASS, 2 SEMANTIC_FAILURE | configuration_correct, grounding_failed, insufficiency_correct, modification_temporal_correct                                            |
+| F02  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| F03  | 2 PASS, 1 SEMANTIC_FAILURE | configuration_correct, insufficiency_correct, invalid_supervisor_routing, modification_temporal_correct, routing_correct                 |
+| F04  | 1 SEMANTIC_FAILURE, 2 PASS | configuration_correct, insufficiency_correct, invalid_supervisor_routing, modification_temporal_correct, routing_correct                 |
+| F05  | 1 SEMANTIC_FAILURE         | question_evidence_coverage, routing_correct                                                                                              |
+| F06  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| F07  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| F08  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| F09  | 1 SEMANTIC_FAILURE         | routing_correct                                                                                                                          |
+| F10  | 1 SEMANTIC_FAILURE         | question_evidence_coverage                                                                                                               |
+| G01  | 1 SEMANTIC_FAILURE, 2 PASS | configuration_correct, escalation_correct, gap_quality, insufficiency_correct, invalid_supervisor_routing, modification_temporal_correct |
+| G02  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| G03  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| G04  | 2 PASS, 1 SEMANTIC_FAILURE | escalation_correct, gap_quality, insufficiency_correct, signal_needs_correct                                                             |
+| G05  | 1 SEMANTIC_FAILURE         | escalation_correct, gap_quality, recipe_correct                                                                                          |
+| G06  | 3 SEMANTIC_FAILURE         | escalation_correct, gap_quality                                                                                                          |
+| G07  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| G08  | 2 PASS, 1 SEMANTIC_FAILURE | escalation_correct, gap_quality                                                                                                          |
+| G09  | 3 SEMANTIC_FAILURE         | escalation_correct, gap_quality, insufficiency_correct, recipe_correct                                                                   |
+| G10  | 1 SEMANTIC_FAILURE         | escalation_correct, gap_quality, recipe_correct                                                                                          |
+| H01  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H02  | 1 SEMANTIC_FAILURE         | routing_correct                                                                                                                          |
+| H03  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H04  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H05  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H06  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H07  | 3 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H08  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H09  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+| H10  | 1 PASS                     | Final-source confirmation and gates                                                                                                      |
+
+The numbered requirement table retains all 143 sections. Final-source evidence for every section, the 47 report fields, the 20-case response review and every local/remote gate must be reconciled before declaring VERIFIED. Current cost and budget information above supersede historical ceiling snapshots.

@@ -167,7 +167,7 @@ async def test_specialist_system_policy_is_assigned_by_application(provider, fix
     kwargs = provider.client.responses.create.call_args.kwargs
     instructions = kwargs["instructions"]
     assert specialist_policy(Specialist.THERMAL) in instructions
-    assert "thermal-v3" in instructions and "No private reasoning" in instructions
+    assert "thermal-v4" in instructions and "No private reasoning" in instructions
     assert kwargs["text"]["format"]["strict"] is True
     assert kwargs["text"]["format"]["schema"]["properties"]["claims"]["maxItems"] == 8
     data = json.loads(kwargs["input"][1]["content"].split("\n", 1)[1])
@@ -196,7 +196,7 @@ async def test_supervisor_synthesis_retains_grounding_policy(provider):
     )
     await provider.turn(model_input)
     instructions = provider.client.responses.create.call_args.kwargs["instructions"]
-    assert "grounded-v3" in instructions and "supervisor-v3" in instructions
+    assert "grounded-v4" in instructions and "supervisor-v3" in instructions
 
 
 async def test_real_planning_adapter_receives_structured_supervisor_report(provider):

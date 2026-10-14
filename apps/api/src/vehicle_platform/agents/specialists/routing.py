@@ -125,8 +125,16 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         fuel = any(
             word in q for word in ("boost", "fuel", "hpfp", "lambda", "combust", "throttle", "afr")
         )
+        pull_noun = r"(?:pulls?|puxadas?)"
+        performance_comparison = r"(?:better|worse|faster|slower|quicker|pior(?:es)?|melhor(?:es)?)"
+        comparative_pull = bool(
+            re.search(rf"\b{pull_noun}\b(?:\W+\w+){{0,3}}\W+{performance_comparison}\b", q)
+            or re.search(rf"\b{performance_comparison}\b(?:\W+\w+){{0,2}}\W+{pull_noun}\b", q)
+        )
         performance = performance or (
-            any(word in q for word in ("pulls", "puxadas")) and not thermal and not fuel
+            (any(word in q for word in ("pulls", "puxadas")) or comparative_pull)
+            and not thermal
+            and not fuel
         )
         comparison = any(word in q for word in ("before", "after", "antes", "depois")) and any(
             word in q for word in ("configur", "modific", "intercooler")

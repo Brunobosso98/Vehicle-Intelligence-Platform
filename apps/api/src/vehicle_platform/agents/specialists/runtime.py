@@ -8,12 +8,14 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from vehicle_platform.agents.config import redact_data
-from vehicle_platform.agents.evidence import canonical_hash
+from vehicle_platform.agents.evidence import EvidenceRegistry, canonical_hash
 from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, RoutingInput
 from vehicle_platform.agents.schemas import (
+    Binding,
     Claim,
     Classification,
     Draft,
+    Finding,
     RoutingProposal,
     Specialist,
     SpecialistDraft,
@@ -44,6 +46,51 @@ if TYPE_CHECKING:
 
 
 ZERO_USAGE = Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0)
+
+
+def quality_observation_bindings(finding: Finding, registry: EvidenceRegistry) -> list[Binding]:
+    bindings: dict[tuple[UUID, str], Binding] = {}
+    event_paths = {
+        "/event_type",
+        "/evidence/signal",
+        "/duration_ms",
+        "/severity",
+        "/started_at",
+        "/ended_at",
+        "/evidence/gap_seconds",
+        "/evidence/analysis_confidence_reduced",
+    }
+    for binding in finding.bindings:
+        source = registry.items[binding.evidence_id]
+        event_type = next(
+            (
+                fact
+                for fact in source.facts
+                if fact.path == "/event_type" and fact.value in QUALITY_EVENTS
+            ),
+            None,
+        )
+        quality_event = (
+            source.source_tool
+            in {
+                "list_session_events",
+                "list_pull_events",
+                "get_event",
+            }
+            and event_type is not None
+        )
+        if source.source_tool == "get_session_capabilities" or (
+            quality_event and binding.path in event_paths
+        ):
+            if quality_event and event_type is not None:
+                bindings[(source.id, event_type.path)] = Binding(
+                    evidence_id=source.id,
+                    path=event_type.path,
+                    value=event_type.value,
+                    unit=event_type.unit,
+                )
+            bindings[(binding.evidence_id, binding.path)] = binding
+    return list(bindings.values())[:8]
 
 
 def performance_discovery_sessions(request: SpecialistRequest) -> list[dict[str, Any]]:
@@ -235,6 +282,10 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
+                "grounded_synthesis": "grounded-v4",
+                "routing_hints": "1.2",
+                "quality_observation_projection": "1.1",
+                "evidence_collection_projection": "agent-collection-v1",
                 "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},
                 "limits": report.limits.model_dump() if report.limits else {},
                 "roles": {
@@ -348,23 +399,7 @@ class Supervisor:
                     or finding.classification is not Classification.OBSERVATION
                 ):
                     continue
-                bindings = []
-                for binding in finding.bindings:
-                    source = self.state.registry.items[binding.evidence_id]
-                    quality_event = source.source_tool in {
-                        "list_session_events",
-                        "list_pull_events",
-                        "get_event",
-                    } and any(
-                        fact.path == "/event_type" and fact.value in QUALITY_EVENTS
-                        for fact in source.facts
-                    )
-                    if source.source_tool == "get_session_capabilities" or (
-                        quality_event
-                        and binding.path
-                        in {"/event_type", "/evidence/signal", "/duration_ms", "/severity"}
-                    ):
-                        bindings.append(binding)
+                bindings = quality_observation_bindings(finding, self.state.registry)
                 if bindings and len(quality_claims) < 8:
                     quality_claims.append(
                         Claim(

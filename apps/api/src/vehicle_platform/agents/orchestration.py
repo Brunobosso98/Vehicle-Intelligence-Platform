@@ -382,6 +382,24 @@ class Orchestrator:
         state = graph["execution"]
         if not state.turn or not state.turn.draft or not state.context:
             raise AgentError("invalid_model_response")
+        if state.turn.draft.missing_evidence:
+            from vehicle_platform.agents.schemas import Claim, Classification
+
+            proposed = state.turn.draft.model_copy(deep=True)
+            if not any(
+                claim.classification is Classification.INSUFFICIENT_EVIDENCE
+                for claim in proposed.claims
+            ):
+                proposed.claims = proposed.claims[:15] + [
+                    Claim(
+                        classification=Classification.INSUFFICIENT_EVIDENCE,
+                        template="insufficient_evidence",
+                        bindings=[],
+                        evidence_ids=[],
+                    )
+                ]
+            proposed.confidence = "low"
+            state.turn.draft = proposed
         report = state.run.supervisor
         if (
             report

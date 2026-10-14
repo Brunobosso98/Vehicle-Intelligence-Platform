@@ -99,12 +99,14 @@ class EvidenceRegistry:
         if context.get("vehicle_id") != selected:
             raise AgentError("incompatible_context")
         records = envelope.data if isinstance(envelope.data, list) else [envelope.data]
-        if len(self.items) + len(records) > self.maximum:
+        collection = isinstance(envelope.data, list)
+        if len(self.items) + len(records) + int(collection) > self.maximum:
             raise AgentError("evidence_budget_exhausted")
+        for record in records:
+            self.check_ownership(record)
         added = []
         for record in records:
             # Validate nested identity too: an envelope alone is not evidence of ownership.
-            self.check_ownership(record)
             identifiers: dict[str, UUID | None] = {}
             for key in ("configuration_id", "session_id", "pull_id", "event_id", "analysis_run_id"):
                 value = record.get(key) or context.get(key)
@@ -191,6 +193,34 @@ class EvidenceRegistry:
             if len(extracted) > 160 or omissions:
                 item.truncated = True
                 item.warnings.append("evidence_facts_truncated")
+            self.items[item.id] = item
+            added.append(item)
+        if collection:
+            metadata: dict[str, int | bool] = {
+                "returned_count": len(records),
+                "complete": not envelope.truncated,
+            }
+            if not envelope.truncated:
+                metadata["total_count"] = len(records)
+            item = Evidence(
+                id=uuid4(),
+                run_id=self.run_id,
+                vehicle_id=self.vehicle_id,
+                evidence_type=f"{tool}_collection",
+                source_tool=tool,
+                tool_call_id=call_id,
+                source_fingerprint=canonical_hash(
+                    {"data": envelope.data, "context": context, "truncated": envelope.truncated}
+                ),
+                session_id=UUID(str(context["session_id"])) if context.get("session_id") else None,
+                pull_id=UUID(str(context["pull_id"])) if context.get("pull_id") else None,
+                summary=f"Coleção determinística: {tool}",
+                facts=facts({"collection": {tool: metadata}}),
+                provenance=envelope.provenance
+                | {"projection": "agent-collection-v1", "selection": context},
+                warnings=[warning.code for warning in envelope.warnings][:32],
+                truncated=envelope.truncated,
+            )
             self.items[item.id] = item
             added.append(item)
         return added

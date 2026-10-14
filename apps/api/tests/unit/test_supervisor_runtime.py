@@ -96,7 +96,15 @@ async def test_performance_discovers_owned_pulls_before_immediate_comparison(
     class Comparing(DeterministicProvider):
         async def turn(self, request):
             if request.specialist and request.specialist.specialist is Specialist.PERFORMANCE:
-                pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
+                pulls = [
+                    e
+                    for e in request.evidence
+                    if e["source_tool"] == "list_session_pulls" and e["pull_id"] is not None
+                ]
+                assert any(
+                    e["evidence_type"] == "list_session_pulls_collection" and e["pull_id"] is None
+                    for e in request.evidence
+                )
                 assert pulls, "The first performance turn must already have registered pull IDs"
                 assert set(request.specialist.pull_ids) == {UUID(e["pull_id"]) for e in pulls}
                 if not any(
@@ -207,6 +215,50 @@ async def test_final_synthesis_preserves_remaining_question_gaps(fixture, teleme
         assert any(f.classification.value == "INSUFFICIENT_EVIDENCE" for f in state.final.findings)
     else:
         state.emit.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("gaps", "eligible"),
+    [(["technical_documentation"], True), (["mechanical_cause"], False), ([], False)],
+)
+async def test_fast_path_structured_gaps_have_a_consistent_insufficiency_marker(
+    fixture, telemetry, gaps, eligible
+):
+    from vehicle_platform.agents.investigation.service import investigable
+
+    state, _, engine = runtime(
+        fixture, telemetry, "Show recorded facts and service manual requirements"
+    )
+    await Supervisor(engine, state).run()
+    assert state.run.supervisor.routing.selected == []
+    assert not state.run.supervisor.investigation_recommended
+    source = next(item for item in state.registry.items.values() if item.facts)
+    fact = source.facts[0]
+    state.turn = ModelTurn(
+        draft=Draft.model_validate(
+            {
+                "confidence": "high",
+                "claims": [
+                    {
+                        "classification": "OBSERVATION",
+                        "template": "recorded_fact",
+                        "evidence_ids": [source.id],
+                        "bindings": [{"evidence_id": source.id, **fact.model_dump()}],
+                    }
+                ],
+                "missing_evidence": gaps,
+            }
+        )
+    )
+    await engine.grounding_node({"execution": state})
+    assert state.final.missing_evidence == gaps
+    assert state.final.findings[0].bindings[0].value == fact.value
+    assert any(
+        f.classification.value == "INSUFFICIENT_EVIDENCE" for f in state.final.findings
+    ) is bool(gaps)
+    assert state.final.confidence == ("low" if gaps else "high")
+    completed = state.run.model_copy(update={"status": "completed", "result": state.final})
+    assert investigable(completed) is eligible
 
 
 async def test_repeated_degradation_dispatches_only_relevant_specialists(fixture, telemetry):
