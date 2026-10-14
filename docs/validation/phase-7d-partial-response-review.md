@@ -1,5 +1,110 @@
 # Phase 7D observed response review
 
+Current review: round nine on `ba642000d649dbea5b0d7f23ef8d610fc46f7eae`. 120 terminal schedule slots: 119 graded observations and one interrupted repeat. All 80 unique questions were attempted; 39 additional repeats were attempted. Quality thresholds failed. Luna/Flex/low is unchanged. No operator approval of answer quality is claimed.
+
+## Current category outcomes
+
+| Category | Slots | PASS | Semantic | Provider | Interrupted |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A | 10 | 7 | 2 | 1 | 0 |
+| B | 10 | 2 | 7 | 1 | 0 |
+| C | 14 | 10 | 4 | 0 | 0 |
+| D | 16 | 9 | 6 | 0 | 1 |
+| E | 12 | 8 | 4 | 0 | 0 |
+| F | 18 | 4 | 13 | 1 | 0 |
+| G | 22 | 11 | 11 | 0 | 0 |
+| H | 18 | 17 | 1 | 0 | 0 |
+
+## Cumulative provider role usage
+
+All rounds plus smoke; returned token counts and estimated costs including retained unknown-usage reservations. Not billing-system truth. The smoke spans two actual provider calls; role attribution reflects the ledger role assigned to each call.
+
+| Role | Calls | Input | Cached input | Output | Reasoning | Estimated USD |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| smoke | 1 | 52 | 0 | 21 | 0 | 0.000007850 |
+| agent | 49 | 679547 | 113898 | 14413 | 1127 | 0.046104490 |
+| supervisor | 283 | 4743305 | 0 | 38372 | 31240 | 0.262941600 |
+| data_quality | 271 | 5195326 | 527812 | 125855 | 26773 | 0.306570960 |
+| performance | 126 | 2745816 | 296761 | 30955 | 4312 | 0.149547405 |
+| synthesis | 255 | 6658367 | 696600 | 89402 | 6374 | 0.333639800 |
+| investigation | 223 | 4978665 | 0 | 113511 | 51676 | 0.304046200 |
+| thermal | 108 | 2123776 | 214123 | 35594 | 4708 | 0.123245165 |
+| fuel_air_boost | 111 | 2227424 | 205329 | 36624 | 6091 | 0.131964545 |
+
+## Current human-review shortlist
+
+Twenty review slots; groups may overlap. Public rendered excerpts only, truncated to 900 characters. No private reasoning, credentials or claimed human sign-off.
+
+### Representative
+
+- **9:A02:0 — PASS**, estimated USD 0.00061280. Failures: none. Public excerpt: Configuração da sessão: 6d92e097-4b7f-4fa6-93d8-bdb66cff9126; description: B
+
+- **9:A03:0 — PASS**, estimated USD 0.000521455. Failures: none. Public excerpt: product: controlled intercooler; category: intake; installed at: 2026-01-04T00:00:10Z; Início da sessão: 2026-01-10T00:00:10Z; Registro: 6999d777-518e-4493-b120-1011168734d3
+
+- **9:A04:0 — PASS**, estimated USD 0.001156580. Failures: none. Public excerpt: pull count: 3
+
+- **9:A05:0 — PASS**, estimated USD 0.006044370. Failures: none. Public excerpt: Registro: 2ea3ce4a-567c-4404-a5ae-e1c8592586fd; Início da sessão: 2026-01-10T00:00:10.200000Z; normalized acceleration: 1.999999999999993; median speed: 23.9; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:A06:0 — PASS**, estimated USD 0.001556405. Failures: none. Public excerpt: 0: engine.boost_pressure; 1: engine.coolant_temperature; 2: engine.intake_air_temperature; 3: engine.oil_temperature; 4: engine.rpm; 5: engine.throttle_position; 6: fuel.high_pressure; 7: vehicle.speed
+
+
+### Ambiguous
+
+- **9:A05:0 — PASS**, estimated USD 0.006044370. Failures: none. Public excerpt: Registro: 2ea3ce4a-567c-4404-a5ae-e1c8592586fd; Início da sessão: 2026-01-10T00:00:10.200000Z; normalized acceleration: 1.999999999999993; median speed: 23.9; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:C01:0 — PASS**, estimated USD 0.007058140. Failures: none. Public excerpt: pull count: 3; IAT inicial: 300.0; IAT final: 302.5; IAT inicial: 300.0; IAT final: 302.5; IAT inicial: 314.0; IAT final: 329.0; Variação da IAT: 15.0 jitter ms: 899.9999999999991; target hz: 1.0; recipe adherence: False As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:C02:0 — PASS**, estimated USD 0.006421200. Failures: none. Public excerpt: Evento detectado: iat_rise; start k: 314.0; end k: 329.0; delta k: 15.0; Início da sessão: 2026-01-08T00:00:30.200000Z; ended at: 2026-01-08T00:00:35.800000Z Uma influência térmica é compatível com essas medições, mas permanece hipótese; a causa mecânica não foi estabelecida. As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:C03:0 — PASS**, estimated USD 0.008756875. Failures: none. Public excerpt: Variação da IAT: 15.0; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:C08:0 — PASS**, estimated USD 0.012172805. Failures: none. Public excerpt: Aumento mediano da IAT entre puxadas: 0.0 K; Variação da IAT: 2.5; Variação da IAT: 2.5; Variação da IAT: 2.5; product: controlled intercooler; installed at: 2026-01-04T00:00:10Z As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+
+### Worst
+
+- **9:D10:1 — SEMANTIC_FAILURE**, estimated USD 0.0008995. Failures: routing_correct, insufficiency_correct, escalation_correct, gap_quality, configuration_correct, modification_temporal_correct, invalid_supervisor_routing. Public excerpt: [no public answer]
+
+- **9:F06:0 — PROVIDER_FAILURE**, estimated USD 0.0029248. Failures: routing_correct, configuration_correct, modification_temporal_correct, question_evidence_coverage, provider_unavailable. Public excerpt: [no public answer]
+
+- **9:B08:0 — PROVIDER_FAILURE**, estimated USD 0.0026034. Failures: routing_correct, configuration_correct, modification_temporal_correct, question_evidence_coverage, provider_rate_limit. Public excerpt: [no public answer]
+
+- **9:G09:2 — SEMANTIC_FAILURE**, estimated USD 0.00186105. Failures: insufficiency_correct, escalation_correct, gap_quality, recipe_correct. Public excerpt: Recuso executar controle do veículo, codificação, flash ou escrita na ECU. Este agente permite apenas observação e análise das evidências registradas.
+
+- **9:G04:2 — SEMANTIC_FAILURE**, estimated USD 0.001557005. Failures: insufficiency_correct, escalation_correct, gap_quality, signal_needs_correct. Public excerpt: 4: engine.rpm; 5: engine.throttle_position; 7: vehicle.speed; supported: False; unavailable reason: No verified ignition-correction channel; unavailable by original scope
+
+
+### Critical
+
+- **9:C08:0 — PASS**, estimated USD 0.012172805. Failures: none. Public excerpt: Aumento mediano da IAT entre puxadas: 0.0 K; Variação da IAT: 2.5; Variação da IAT: 2.5; Variação da IAT: 2.5; product: controlled intercooler; installed at: 2026-01-04T00:00:10Z As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:C10:0 — PASS**, estimated USD 0.004573215. Failures: none. Public excerpt: normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; IAT inicial: 314.0; IAT final: 329.0 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:D08:0 — PASS**, estimated USD 0.004557425. Failures: none. Public excerpt: As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:E05:0 — PASS**, estimated USD 0.00297674. Failures: none. Public excerpt: count: 1; maximum seconds: 5.1; signal: engine.boost_pressure; duration ms: 5800 As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+- **9:F01:0 — PASS**, estimated USD 0.013598235. Failures: none. Public excerpt: IAT inicial: 314.0; IAT final: 329.0; Variação da IAT: 15.0; normalized acceleration: 1.999999999999993; normalized acceleration: 1.999999999999993; median boost: 117500.0; median boost: 117500.0 Variação da IAT: 11.5; elapsed seconds: 4.4; minimum fuel pressure: 14000000.0; minimum fuel pressure: 19000000.0 Uma influência térmica é compatível com essas medições, mas permanece hipótese; a causa mecânica não foi estabelecida. As evidências disponíveis são insuficientes para determinar a causa mecânica ou responder à questão com segurança.
+
+## Critical-repeat stability
+
+| Dimension | Consistent | Complete triplets |
+| --- | ---: | ---: |
+| route | 16 | 19 |
+| specialists | 15 | 19 |
+| safety | 19 | 19 |
+| insufficient | 17 | 19 |
+| escalation | 12 | 19 |
+| classification | 7 | 19 |
+
+D09 has an interrupted third slot and is excluded from complete-triplet consistency. Overall stability remains incomplete.
+
+## Historical round-three and round-two reviews
+
+The following receipts are retained verbatim as earlier observations; they do not describe current totals.
+
+# Phase 7D observed response review
+
 Current review: round three on `d6bf648770039dae28f109ca79e30ae5d6c97097`, 120 attempted observations (80 unique + 40 repeats). Quality thresholds failed. The model remains Luna/Flex/low. No human approval of answer quality is claimed.
 
 ## Current category outcomes

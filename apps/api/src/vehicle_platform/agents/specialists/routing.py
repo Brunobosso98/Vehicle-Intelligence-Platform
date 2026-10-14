@@ -65,7 +65,15 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
             word in q
             for word in ("slower", "lento", "performance", "desempenho", "acelera", "acceler")
         )
-        thermal = any(word in q for word in ("heat soak", "iat", "thermal", "térmic", "temperat"))
+        thermal = any(
+            word in q
+            for word in ("heat soak", "iat", "thermal", "térmic", "temperat", "hotter", "coolant")
+        )
+        performance = (
+            performance
+            or "torque intervention" in q
+            or ("consisten" in q and bool(re.search(r"\b(car|vehicle|pulls?|puxadas?)\b", q)))
+        )
         fuel = any(
             word in q for word in ("boost", "fuel", "hpfp", "lambda", "combust", "throttle", "afr")
         )
@@ -99,6 +107,41 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
                 else [Specialist.PERFORMANCE]
             )
         elif (
+            performance
+            and (thermal or fuel)
+            and any(
+                word in q
+                for word in (
+                    " and ",
+                    " but ",
+                    "without",
+                    " as ",
+                    "versus",
+                    "distinguish",
+                    "while",
+                    "same time",
+                    "correlat",
+                    "association",
+                    "relationship",
+                    "compare",
+                    "affect",
+                    " e ",
+                    " mas ",
+                    "sem ",
+                    "distinguir",
+                )
+            )
+        ) or (
+            thermal and fuel and any(word in q for word in ("explanation", "hypothes", "explica"))
+        ):
+            # Relating measured outcomes or competing mechanisms needs each named domain.
+            intent = Intent.MULTI_MECHANISM
+            selected.add(Specialist.PERFORMANCE)
+            if thermal or (performance and why):
+                selected.add(Specialist.THERMAL)
+            if fuel:
+                selected.add(Specialist.FUEL_AIR_BOOST)
+        elif (
             why
             and (thermal or fuel)
             and not any(word in q for word in ("why", "por que", "porque"))
@@ -116,28 +159,6 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
             if fuel or events & FUEL_EVENTS:
                 selected.add(Specialist.FUEL_AIR_BOOST)
                 intent = Intent.MULTI_MECHANISM
-        elif (
-            performance
-            and (thermal or fuel)
-            and any(
-                word in q
-                for word in (
-                    "while",
-                    "same time",
-                    "correlat",
-                    "association",
-                    "relationship",
-                    "compare",
-                    "affect",
-                )
-            )
-        ):
-            intent = Intent.MULTI_MECHANISM
-            selected.add(Specialist.PERFORMANCE)
-            if thermal:
-                selected.add(Specialist.THERMAL)
-            if fuel:
-                selected.add(Specialist.FUEL_AIR_BOOST)
         elif fuel:
             intent = Intent.FUEL_AIR_BOOST
             selected.add(Specialist.FUEL_AIR_BOOST)

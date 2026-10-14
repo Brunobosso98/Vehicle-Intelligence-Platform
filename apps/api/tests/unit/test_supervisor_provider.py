@@ -281,3 +281,83 @@ async def test_quality_only_investigation_has_a_valid_discriminating_gap():
     assert [h.category.value for h in result.hypotheses] == ["DATA_QUALITY"]
     assert result.gaps[0].hypothesis_indexes == [0]
     assert InvestigationProposal.model_validate(result.model_dump()) == result
+
+
+@pytest.mark.parametrize("specialist", [False, True])
+@pytest.mark.parametrize("scoped", [False, True])
+async def test_deterministic_pull_selection_is_unique_and_session_scoped(
+    fixture, specialist, scoped
+):
+    evidence = registry(fixture)
+    scope = request_for(fixture, evidence, Specialist.PERFORMANCE)
+    context = scope.context.model_dump(mode="json")
+    session_id = context["sessions"][0]["id"]
+    first, second = str(uuid4()), str(uuid4())
+    records = [
+        {
+            "id": str(uuid4()),
+            "source_tool": "list_session_pulls",
+            "entity_id": identifier,
+            "session_id": owner,
+        }
+        for identifier, owner in [
+            (str(uuid4()), str(uuid4())),
+            (first, session_id if scoped else str(uuid4())),
+            (first, session_id if scoped else str(uuid4())),
+            (second, session_id if scoped else str(uuid4())),
+        ]
+    ]
+    request = ModelInput(
+        question="Como foram as últimas puxadas?",
+        tools=[],
+        context=context,
+        evidence=records,
+        messages=[],
+        specialist=scope if specialist else None,
+    )
+    provider = DeterministicProvider()
+    turn = await (provider.specialist_turn(request) if specialist else provider.turn(request))
+    call = turn.tool_calls[0]
+    if scoped:
+        assert call.name == "get_repeated_pull_analysis"
+        assert call.arguments["pull_ids"] == [first, second]
+    else:
+        assert call.name == "list_session_pulls"
+        assert call.arguments["session_id"] == session_id
+
+
+async def test_deterministic_configuration_comparison_deduplicates_pull_entities(fixture):
+    scope = request_for(fixture, registry(fixture), Specialist.PERFORMANCE)
+    context = scope.context.model_dump(mode="json")
+    sessions = context["sessions"]
+    configs = context["configurations"]
+    configs.append(configs[0] | {"id": str(uuid4()), "effective_at": "2026-02-01T00:00:00Z"})
+    sessions.append(sessions[0] | {"id": str(uuid4()), "configuration_id": configs[-1]["id"]})
+    records = []
+    expected = []
+    for config in sorted(configs, key=lambda c: c["effective_at"]):
+        ids = [str(uuid4()), str(uuid4())]
+        expected.append(ids)
+        session = next(s for s in sessions if s["configuration_id"] == config["id"])
+        for identifier in [ids[0], ids[0], ids[1]]:
+            records.append(
+                {
+                    "id": str(uuid4()),
+                    "entity_id": identifier,
+                    "source_tool": "list_session_pulls",
+                    "configuration_id": config["id"],
+                    "session_id": session["id"],
+                }
+            )
+    request = ModelInput(
+        question="O comportamento mudou depois da configuração?",
+        tools=[],
+        context=context,
+        evidence=records,
+        messages=[],
+    )
+    turn = await DeterministicProvider().turn(request)
+    call = turn.tool_calls[0]
+    assert call.name == "compare_configurations"
+    assert call.arguments["before_pull_ids"] == expected[0]
+    assert call.arguments["after_pull_ids"] == expected[-1]

@@ -448,3 +448,59 @@ def test_source_evidence_must_match_session_effective_configuration(fixture, cas
             request,
             evidence,
         )
+
+
+@pytest.mark.parametrize(
+    "question,expected",
+    [
+        (
+            "Why did performance decline while fuel pressure changed?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL, Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Acceleration declined and charge temperature increased; interpret both changes.",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Performance changed but fuel pressure remained steady; compare the observations.",
+            [Specialist.PERFORMANCE, Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Did performance improve without a worse thermal response?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Can we distinguish a temperature effect from torque intervention?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Are repeated pulls less consistent as the engine gets hotter?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Which explanation has support: a thermal effect or a fuel-pressure change?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL, Specialist.FUEL_AIR_BOOST],
+        ),
+    ],
+)
+def test_related_observations_keep_all_relevant_domain_candidates(fixture, question, expected):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=Intent.MULTI_MECHANISM), context(fixture))
+    assert decision.intent is Intent.MULTI_MECHANISM
+    assert decision.selected == expected
+    assert hints.candidates == tuple(expected)
+
+
+@pytest.mark.parametrize(
+    "question,expected",
+    [
+        ("Was the recorded temperature consistent?", [Specialist.THERMAL]),
+        ("Did throttle close during acceleration?", [Specialist.FUEL_AIR_BOOST]),
+        ("Can temperature be said to cause slower acceleration?", [Specialist.THERMAL]),
+        ("How many pulls and temperature channels were recorded?", []),
+    ],
+)
+def test_related_domain_routing_preserves_narrow_scope_and_metadata(fixture, question, expected):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=hints.intent), context(fixture))
+    assert decision.selected == expected

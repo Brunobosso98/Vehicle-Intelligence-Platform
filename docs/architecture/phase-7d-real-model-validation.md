@@ -1,6 +1,6 @@
 # Phase 7D real-model validation
 
-Status: real round three completed 80 unique plus 40 repeated attempts; quality thresholds failed. Current hardening awaits real validation. The authoritative scope is
+Status: real round nine has 80 unique attempts, 39 repeated attempts and one interrupted repeat; quality thresholds failed. General hardening and exact final-head gates remain in progress. The authoritative scope is
 [the complete execution specification](../prompts/phase-7d-real-model-validation.md).
 [ADR 0022](../adr/0022-bounded-real-model-evaluation.md) records evaluation ownership and accounting.
 
@@ -76,3 +76,9 @@ Preflight separately measures parent payloads with no domain/quality dispatch in
 Free cost preflight now executes every selected unique suite question through the deterministic production graph. Samples are tagged by immutable case ID and use that question's largest observed payload for each role. The extra parent-turn contingency uses the same question's parent sample; unseen roles retain the largest role/global fallback. Full acceptance forecasts sample all 80 unique questions and account for the 40 repeated calls; sparse-history cases use their actual sparse fixture vehicle. Output, topology, caching and hard-budget assumptions are unchanged. Deterministic sampling is cost evidence only, never real-model quality evidence.
 
 An explicitly operator-authorized `--operator-budget-progress` attempt may start with a conservative full-cost projection above remaining funds. It keeps the forecast visible and permits only calls admitted by the existing hard per-call ledger checks. Default projected-cost rejection remains. The opt-in is part of resume identity; budget-skipped observations cannot satisfy full acceptance. The current operator authorization is to continue within USD 2, with no increased ceiling or fallback tier/model.
+
+## Related-domain routing and deterministic selection correction
+
+Round-nine routing restricted linked performance/thermal/fuel observations to a single domain before the typed model could select other relevant specialists. Coordinated changes, contrasting measurements, mechanism comparisons and torque intervention now retain the relevant candidates. Narrow named-mechanism questions and factual metadata remain scoped. General positive/negative tests use new wording; no evaluation phrase or case identifier is matched. Existing fixed caps, safety precedence and evidence quality gate still apply. This routing change requires real affected-case evaluation and full final-candidate acceptance.
+
+Application-owned pull discovery also exposed a deterministic-provider regression: overlapping list evidence contains distinct evidence IDs for the same pull entity. The provider now deduplicates selected entity IDs, limits repeated-pull analysis to the requested session, consumes already owned list metadata and deduplicates configuration-comparison groups. Foreign-session metadata does not satisfy current-session discovery. This changes deterministic test selection, not real-provider answers or dataset expectations.

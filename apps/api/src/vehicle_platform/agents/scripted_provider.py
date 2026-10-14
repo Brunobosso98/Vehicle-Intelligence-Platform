@@ -303,7 +303,9 @@ class DeterministicProvider:
                     for record in records:
                         config = record.get("configuration_id")
                         if config:
-                            groups.setdefault(config, []).append(record["entity_id"])
+                            configuration_pull_ids = groups.setdefault(config, [])
+                            if record["entity_id"] not in configuration_pull_ids:
+                                configuration_pull_ids.append(record["entity_id"])
                     timeline = {
                         c["id"]: c["effective_at"] for c in request.context["configurations"]
                     }
@@ -322,7 +324,15 @@ class DeterministicProvider:
             elif events and "list_session_events" not in executed:
                 calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 10})]
             elif repeated and "get_repeated_pull_analysis" not in executed:
-                pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
+                pulls = list(
+                    {
+                        e["entity_id"]: e
+                        for e in request.evidence
+                        if e["source_tool"] == "list_session_pulls"
+                        and e.get("session_id") == request.context["sessions"][0]["id"]
+                        and e.get("entity_id")
+                    }.values()
+                )
                 if not pulls and "list_session_pulls" not in executed:
                     calls = [("list_session_pulls", {"session_id": sessions[0]["id"], "limit": 4})]
                 elif len(pulls) >= 2:
@@ -522,9 +532,17 @@ class DeterministicProvider:
             if any(word in q for word in ("configur", "intercooler", "modific")):
                 return await self.turn(replace(request, specialist=None))
             if request.context["sessions"] and any(word in q for word in ("pull", "puxada")):
-                pulls = [e for e in request.evidence if e["source_tool"] == "list_session_pulls"]
+                pulls = list(
+                    {
+                        e["entity_id"]: e
+                        for e in request.evidence
+                        if e["source_tool"] == "list_session_pulls"
+                        and e.get("session_id") == request.context["sessions"][0]["id"]
+                        and e.get("entity_id")
+                    }.values()
+                )
                 tool: tuple[str, dict[str, Any]] | None = None
-                if "list_session_pulls" not in executed:
+                if not pulls and "list_session_pulls" not in executed:
                     tool = (
                         "list_session_pulls",
                         {"session_id": request.context["sessions"][0]["id"], "limit": 4},
