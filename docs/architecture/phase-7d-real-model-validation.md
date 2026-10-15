@@ -100,3 +100,11 @@ references. It uses only the current visible evidence, with empty citations and
 bindings when evidence is absent. Host grounding remains authoritative for
 ownership, exact facts and temporal context. The supervisor configuration hash
 records `scoped_draft_evidence_ids: 1.0`. Further real confirmation is required.
+
+## Comparable capture needs
+
+ADR 0027 preserves measurement and quality capture needs when a required
+comparable-history gap lacks sufficient deterministic comparison evidence.
+Optional history and already sufficient comparisons retain existing-data
+resolution. Investigation policy v4 distinguishes primary measurement needs
+from optional discriminators without inventing channels or bypassing approval.

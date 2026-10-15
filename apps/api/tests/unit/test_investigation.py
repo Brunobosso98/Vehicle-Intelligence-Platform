@@ -579,6 +579,33 @@ async def test_existing_search_respects_signal_quality_and_vehicle_context(categ
     found = await search_existing(run, [gap], [signal_need], client)
     assert found.gaps[0].status is GapStatus.AVAILABLE_IN_EXISTING_DATA
     assert found.mcp_calls == 1
+    history = EvidenceGap(
+        id=uuid4(),
+        category=GapType.COMPARABLE_HISTORY,
+        description="Comparable operating windows are missing",
+        why_it_matters="Available channels do not establish compatible comparisons",
+    )
+    missing = await search_existing(run, [gap, history], [signal_need], client)
+    assert all(g.status is GapStatus.NEEDS_NEW_CAPTURE for g in missing.gaps)
+    optional_history = history.model_copy(update={"required": False})
+    optional = await search_existing(run, [gap, optional_history], [signal_need], client)
+    assert optional.gaps[0].status is GapStatus.AVAILABLE_IN_EXISTING_DATA
+    run.evidence = [
+        Evidence(
+            id=uuid4(),
+            run_id=run.id,
+            vehicle_id=run.vehicle_id,
+            evidence_type="comparison",
+            source_tool="compare_pulls",
+            tool_call_id=uuid4(),
+            source_fingerprint="a" * 64,
+            summary="Comparable operating windows",
+            facts=[Fact(path="/comparison/sufficiency", value="sufficient")],
+        )
+    ]
+    sufficient = await search_existing(run, [gap, history], [signal_need], client)
+    assert all(g.status is GapStatus.AVAILABLE_IN_EXISTING_DATA for g in sufficient.gaps)
+    run.evidence = []
     from vehicle_platform.agents.schemas import (
         Intent,
         RoutingDecision,

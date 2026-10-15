@@ -290,6 +290,8 @@ class Supervisor:
                 "tool_error_feedback": "1.0",
                 "scoped_tool_schemas": "1.0",
                 "scoped_draft_evidence_ids": "1.0",
+                "investigation_proposal_policy": "investigation-v4",
+                "existing_comparable_measurement_scope": "1.0",
                 "specialist_terminal_draft": "1.0",
                 "quality_blocked_role_records": "1.0",
                 "quality_observation_projection": "1.1",

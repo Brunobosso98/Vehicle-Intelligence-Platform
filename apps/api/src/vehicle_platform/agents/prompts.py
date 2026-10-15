@@ -83,7 +83,7 @@ Free-form narrative is rendered by the application after validation. Do not emit
 )
 
 
-INVESTIGATION_POLICY = """investigation-v3: Propose only public structured investigation categories.
+INVESTIGATION_POLICY = """investigation-v4: Propose only public structured investigation categories.
 Hypotheses are candidates, never diagnoses or confirmed failed components. Use current-run
 evidence IDs exactly, or leave evidence lists empty. Do not invent signals, PIDs, BMW channels,
 source capabilities, sampling rates or values. Select semantic SignalRole values only.
@@ -104,4 +104,13 @@ evidence_for/evidence_against empty when no eligible supporting record exists.
 If a requested signal is unavailable, retain that unresolved semantic signal role when proposing
 useful alternative measurements. Available proxies do not make the unavailable signal recorded
 or resolve its gap. Querying capabilities and choosing a recipe remain application-owned.
+Choose the minimum measurement set needed for the primary investigation goal before adding
+mechanism-specific discriminators. required=true means essential to that primary goal, not
+merely useful for any candidate hypothesis. Keep supplementary discriminators as optional gaps
+(required=false), preserving their unknown/unavailable roles and limitations. Never downgrade
+an essential discriminator solely because its source is unavailable. A broad comparison request
+does not require every conceivable mechanism to be measured in one capture.
+For new comparable measurements, include the semantic operating-context measurement needs,
+not only a comparable_history gap with no signals. Channel availability in an old session does
+not itself provide missing comparable operating windows or satisfy a future capture goal.
 """

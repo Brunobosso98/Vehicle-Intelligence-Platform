@@ -97,6 +97,12 @@ async def search_existing(
             or any(c.requires_investigation for c in run.supervisor.conflicts)
         )
     )
+    missing_comparison = any(
+        gap.required
+        and gap.category is GapType.COMPARABLE_HISTORY
+        and not _sufficient_analysis(run, gap.category)
+        for gap in gaps
+    )
     for gap in gaps:
         signals = {
             ROLE_TO_SIGNAL[by_id[need_id].role]
@@ -120,12 +126,12 @@ async def search_existing(
                     }
                 )
             )
-        elif unreliable_measurements and gap.category in {
+        elif (unreliable_measurements or missing_comparison) and gap.category in {
             GapType.SIGNAL_OR_MEASUREMENT,
             GapType.DATA_QUALITY,
         }:
             # Availability establishes that a signal was captured, not that the existing
-            # windows are reliable or discriminate mechanisms examined by specialists.
+            # windows are reliable or include the required comparable operating history.
             updated.append(gap.model_copy(update={"status": GapStatus.NEEDS_NEW_CAPTURE}))
         elif signals and any(signals <= available for available in recorded.values()):
             updated.append(
