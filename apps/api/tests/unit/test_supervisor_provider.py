@@ -220,7 +220,9 @@ async def test_real_planning_adapter_receives_structured_supervisor_report(provi
         )
     )
     content = provider.client.responses.create.call_args.kwargs["input"][0]["content"]
-    assert json.loads(content.split("\n", 1)[1])["supervisor"] == report
+    payload = json.loads(content.split("\n", 1)[1])
+    assert payload["supervisor"] == report
+    assert payload["proposal_constraints"]["maximum_signal_needs"] == 16
     format_ = provider.client.responses.create.call_args.kwargs["text"]["format"]
     assert format_["strict"] is True
     for model in format_["schema"]["$defs"].values():
@@ -361,3 +363,31 @@ async def test_deterministic_configuration_comparison_deduplicates_pull_entities
     assert call.name == "compare_configurations"
     assert call.arguments["before_pull_ids"] == expected[0]
     assert call.arguments["after_pull_ids"] == expected[-1]
+
+
+async def test_rejected_proposal_logs_only_safe_rule_not_model_content(provider, caplog):
+    roles = [
+        "engine_speed_context",
+        "vehicle_speed_context",
+        "throttle_opening_behavior",
+        "boost_pressure_behavior",
+        "intake_temperature_behavior",
+        "high_fuel_pressure_behavior",
+    ]
+    gaps = [{"category": "signal_or_measurement", "signal_roles": roles} for _ in range(3)]
+    provider.client.responses.create.return_value = SimpleNamespace(
+        output_text=json.dumps({"hypotheses": [], "gaps": gaps})
+    )
+    with pytest.raises(AgentError, match="invalid_investigation_proposal"):
+        await provider.propose(
+            InvestigationInput(
+                question="private-user-sentinel", context={}, evidence=[], missing_evidence=[]
+            )
+        )
+    records = [
+        r for r in caplog.records if getattr(r, "event", None) == "investigation.proposal.rejected"
+    ]
+    assert len(records) == 1 and records[0].error_code == "signal_need_budget"
+    assert "private-user-sentinel" not in caplog.text
+    assert "engine_speed_context" not in caplog.text
+    assert provider.client.responses.create.call_count == 1

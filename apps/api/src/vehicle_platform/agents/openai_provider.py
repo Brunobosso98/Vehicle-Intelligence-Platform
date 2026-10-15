@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import Any, cast
 
 import httpx
@@ -16,7 +17,11 @@ from openai.types.responses import ResponseInputParam, ToolParam
 from pydantic import ValidationError
 
 from vehicle_platform.agents.config import AgentSettings, redact_data
-from vehicle_platform.agents.investigation.proposal import InvestigationInput, InvestigationProposal
+from vehicle_platform.agents.investigation.proposal import (
+    MAX_SIGNAL_NEEDS,
+    InvestigationInput,
+    InvestigationProposal,
+)
 from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
 from vehicle_platform.agents.provider import (
     AgentError,
@@ -369,6 +374,13 @@ class OpenAIProvider:
             "current_run_evidence": request.evidence,
             "missing_evidence": request.missing_evidence,
             "supervisor": request.supervisor,
+            "proposal_constraints": {
+                "maximum_signal_needs": MAX_SIGNAL_NEEDS,
+                "counting_rule": (
+                    "Sum distinct signal roles within each gap, "
+                    "including repeated roles in separate gaps"
+                ),
+            },
         }
         encoded = json.dumps(payload)
         if len(encoded.encode()) > self.settings.max_input_bytes:
@@ -412,7 +424,32 @@ class OpenAIProvider:
             category = provider_error_category(error)
             self._record_failure(receipt, category)
             raise AgentError(category) from None
-        except (ValidationError, ValueError, TypeError):
+        except ValidationError as error:
+            rules = {
+                "duplicate hypothesis category": "duplicate_hypothesis",
+                "gap references unknown hypothesis": "hypothesis_index",
+                "technical documentation cannot become a telemetry recipe": "documentation_signal",
+                "only measurement or quality gaps can require signals": "gap_signal_category",
+                "hypothesis lacks a discriminating gap": "unlinked_hypothesis",
+                "signal need budget exceeded": "signal_need_budget",
+            }
+            reason = next(
+                (
+                    code
+                    for message, code in rules.items()
+                    if any(
+                        item["msg"] == "Value error, " + message
+                        for item in error.errors(include_input=False, include_url=False)
+                    )
+                ),
+                "schema_validation",
+            )
+            logging.getLogger(__name__).warning(
+                "Investigation proposal rejected",
+                extra={"event": "investigation.proposal.rejected", "error_code": reason},
+            )
+            raise AgentError("invalid_investigation_proposal") from None
+        except (ValueError, TypeError):
             raise AgentError("invalid_investigation_proposal") from None
         finally:
             if self.observer and receipt:

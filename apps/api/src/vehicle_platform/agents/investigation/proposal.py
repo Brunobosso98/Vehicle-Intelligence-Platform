@@ -18,6 +18,8 @@ from vehicle_platform.agents.investigation.domain import (
 from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.agents.schemas import AgentRun, StrictModel
 
+MAX_SIGNAL_NEEDS = 16
+
 
 @dataclass(frozen=True)
 class InvestigationInput:
@@ -63,7 +65,7 @@ class InvestigationProposal(StrictModel):
         for index in range(len(self.hypotheses)):
             if not any(index in gap.hypothesis_indexes for gap in self.gaps):
                 raise ValueError("hypothesis lacks a discriminating gap")
-        if sum(len(set(gap.signal_roles)) for gap in self.gaps) > 16:
+        if sum(len(set(gap.signal_roles)) for gap in self.gaps) > MAX_SIGNAL_NEEDS:
             raise ValueError("signal need budget exceeded")
         return self
 

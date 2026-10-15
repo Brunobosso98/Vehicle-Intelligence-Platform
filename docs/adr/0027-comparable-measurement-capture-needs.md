@@ -38,3 +38,16 @@ unreliable-data handling. The focused investigation/runtime run passed 97 tests.
 Full API, affected G03 and exact-head remote acceptance remain required. Historical
 results and spending remain unchanged. The operator requests only unresolved
 slots, so no full suite is scheduled and no full-cohort acceptance is claimed.
+
+## Follow-up proposal constraints
+
+G03 round eighteen on 1381b8b completed the grounded answer but planning was
+rejected as INVALID_INVESTIGATION_PROPOSAL. No proposal or recipe was published;
+the exact rejected invariant was not retained and cannot be inferred. Cumulative
+spending: USD 4.299164510. The existing global 16-signal-need invariant was absent
+from model instructions and input, despite per-gap schema limits. Policy v5 and
+the proposal input now expose that unchanged total and its per-gap counting rule
+using the validator's shared constant. A rejected proposal logs only a fixed rule
+code (or schema_validation), never model text, validation input or user content.
+No automatic retry or increased budget is added. This clarification does not
+prove which invariant caused the historical rejection.
