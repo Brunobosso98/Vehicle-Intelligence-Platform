@@ -1,10 +1,10 @@
 # Phase 7D real evaluation report
 
-**PHASE 7D — REAL MODEL VALIDATION & AGENT RELIABILITY BASELINE: NOT VERIFIED**
+**Phase 7D: COMPLETED WITH OPERATOR-ACCEPTED VALIDATION CAVEAT.** The operator explicitly accepted closure without an additional complete 120-execution run on the final code because the remaining API balance was insufficient. All 120 scheduled slots have a latest PASS across the recorded rounds; they were not all re-executed together on the final code. Historical failures and full-cohort metrics remain unchanged. This closure does not claim a uniformly verified final-source real baseline. Final GitHub Actions results are tracked separately and must retain their actual status.
 
 ## Current outcome after operator-requested affected retests
 
-**G03 passed in real round 22 on `b459c14626d04a1e829ae8b7dc3476311f6a470b`.** All **120 scheduled slots / 80 unique questions** now have a PASS as their latest observation across rounds 15 (93), 16 (24), 17 (two) and 22 (one). This is an explicitly mixed-source follow-up reconciliation, **not a single final-source full acceptance cohort**. The native full round-15 result and every historical failed result remain unchanged. No further paid call or full suite is scheduled under the operator's instruction to run only non-PASS slots.
+**G03 passed in real round 22 on `b459c14626d04a1e829ae8b7dc3476311f6a470b`.** All **120 scheduled slots / 80 unique questions** now have a PASS as their latest observation across rounds 15 (93), 16 (24), 17 (two) and 22 (one). This is an explicitly mixed-source follow-up reconciliation, **not a single final-source full acceptance cohort**. The native full round-15 result and every historical failed result remain unchanged. No further paid call or full suite is scheduled. The operator explicitly accepted phase closure with the budget caveat above.
 
 Accumulated estimated spend: **USD 4.326918555 / authorized USD 5.00**, including **67 unknown-usage reservations**. Remaining: **USD 0.673081445**. Final G03 has ten valid references, 46 supported bindings and zero observed safety/grounding blockers; its canonical performance-pull plan is AWAITING_APPROVAL, FEASIBLE_WITH_DEGRADATION, with no required missing channels, optional coolant explicitly dropped, approval PENDING and no linked acquired session.
 
@@ -48,7 +48,7 @@ The first suite was interrupted at A04 by local PostgreSQL connection failure. R
 
 Quality rows below describe the immutable full round fifteen; cost/token/cache rows include all paid rounds and smoke through round twenty-two. Latest-slot PASS reconciliation is scoped above and never substituted for full-cohort quality metrics. Historical cohort sections retain their original scope. Current corrections and final acceptance are recorded separately.
 
-The [specification](../prompts/phase-7d-real-model-validation.md) remains authoritative. This report is a working receipt and will be updated after every outstanding gate.
+The [original specification](../prompts/phase-7d-real-model-validation.md) is retained unchanged. The operator explicitly accepts the final-source full-suite exception recorded above. This report preserves measured results; final GitHub Actions evidence is tracked separately without asserting success before completion.
 
 | Item | Requirement                                       | Current evidence                                                                                                                                                                                                                          |
 | ---- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

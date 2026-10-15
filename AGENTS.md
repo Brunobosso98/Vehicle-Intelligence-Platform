@@ -1,6 +1,6 @@
 # Vehicle Intelligence Platform / N55 Intelligence Lab
 
-Phases 0–7C passed canonical full-stack acceptance. Phase 7C is VERIFIED on final PR #35 head `1a07ced07b85393b22b68da62dbcca357ba6d501`, merged at `9b2b2a621d0a903262e4a15a75ea4f102740d60a`. Phase 7D real-model validation is in progress; see docs/prompts/phase-7d-real-model-validation.md and docs/validation/phase-7d-real-evaluation.md. Definitive diagnosis and Phase 8+ infrastructure remain deferred.
+Phases 0–7C passed canonical full-stack acceptance. Phase 7C is VERIFIED on final PR #35 head `1a07ced07b85393b22b68da62dbcca357ba6d501`, merged at `9b2b2a621d0a903262e4a15a75ea4f102740d60a`. Phase 7D is completed with an operator-accepted validation caveat: all 120 scheduled slots have PASS observations across multiple rounds, but the complete 120 were not re-executed together on the final code because API balance was insufficient. Final-source full-suite reliability is not claimed; GitHub Actions status is recorded separately. See docs/prompts/phase-7d-real-model-validation.md and docs/validation/phase-7d-real-evaluation.md. Definitive diagnosis and Phase 8+ infrastructure remain deferred.
 
 - Canonical commands: `make bootstrap`, `make check-api`, `make check-web`, `make contracts-check`, `make verify`.
 - Docker is not guaranteed in Codex Cloud. Detect it first; without it run `make verify-cloud` and

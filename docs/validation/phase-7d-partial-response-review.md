@@ -1,5 +1,7 @@
 # Phase 7D observed response review
 
+**Phase 7D: COMPLETED WITH OPERATOR-ACCEPTED VALIDATION CAVEAT.** The operator explicitly accepted closure without an additional complete 120-execution run on the final code because the remaining API balance was insufficient. All 120 scheduled slots have a latest PASS across the recorded rounds; they were not all re-executed together on the final code. Historical failures and full-cohort metrics remain unchanged. This closure does not claim a uniformly verified final-source real baseline. Final GitHub Actions results are tracked separately and must retain their actual status.
+
 ## Current affected-follow-up review through round 22
 
 All latest slots have PASS across multiple sources; this is not single-source full-suite acceptance. G03 is AWAITING_APPROVAL and no capture was started. The shortlist below contains exactly twenty public answers, grouped for review; previous failures are visible rather than erased. It is a shortlist for human review, not a claim of human sign-off. Native full round-15 metrics remain in the main report.

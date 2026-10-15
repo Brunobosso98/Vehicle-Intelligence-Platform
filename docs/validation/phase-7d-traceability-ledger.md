@@ -1,5 +1,7 @@
 # Phase 7D traceability ledger
 
+**Phase 7D: COMPLETED WITH OPERATOR-ACCEPTED VALIDATION CAVEAT.** The operator explicitly accepted closure without an additional complete 120-execution run on the final code because the remaining API balance was insufficient. All 120 scheduled slots have a latest PASS across the recorded rounds; they were not all re-executed together on the final code. Historical failures and full-cohort metrics remain unchanged. This closure does not claim a uniformly verified final-source real baseline. Final GitHub Actions results are tracked separately and must retain their actual status.
+
 All 143 numbered specification sections are retained. **Current affected-retest outcome: all 120 latest schedule-slot observations have PASS across rounds 15/16/17/22; not a full-source acceptance cohort. G03 passed at b459c14. Cumulative USD 4.326918555 / 5.00. API 885 and disposable harness PASS; exact-final-head remote gates pending. Native full-source quality remains unproven, graph deferred.** Historical closure snapshots follow. This is an evidence audit, not a declaration of completion. Round fifteen on `52f8267423697a9e0894f06a0afdbafe65951326` terminated with 93 PASS, 10 semantic failures, nine runtime failures, six provider failures, one interrupted checkpoint marker and one budget-skipped slot. All 80 unique cases were attempted; native reporting counts 38 completed critical repeats. The budget guard stopped at USD 3.996470140 / USD 4.00, retaining all charges and 66 unknown-usage reservations. Designated escalation (33/36 = 91.67%) misses its 95% target. All eight GitHub checks and the thirteen canonical checks passed on the evaluated source. The interrupted F03 repeat has a completed RUNTIME_FAILURE artifact, retained without replacing the historical checkpoint marker. Final real acceptance remains unproven.
 
 The original case table below retains its historical round-nine source and immutable receipts. The round-twelve appendix supplies current per-case observations; observations from different sources are never combined for acceptance. Individual PASS results do not establish whole-phase acceptance. The [current report](phase-7d-real-evaluation.md) records current quality and cumulative spending.
@@ -426,3 +428,14 @@ All entries below preserve their exact source round. Latest PASS coverage does n
 | H10      | 15:H10:0 PASS              | not scheduled     | not scheduled     |
 
 Current section 142 audit: the required question/repeat slots all have follow-up PASS records, budget/control/approval boundaries remain intact and deterministic API/disposable gates passed. Final-source complete real reliability and exact-final-head canonical/security gates remain unproven; section 143 VERIFIED is not justified. No additional full suite is authorized, and the current conservative deterministic full-schedule projection exceeds the remaining balance. Scope and funding constraints are explicit, never silently converted into success.
+
+## Operator acceptance of phase closure
+
+The operator explicitly requests Phase 7D be marked completed with the observation
+that the complete 120-execution rerun on the final code was not performed because
+of insufficient API balance. This supersedes the pending full-rerun closure
+requirement for phase tracking, without changing the original specification,
+historical scores or measured evidence. All 120 latest slots have PASS across
+source rounds 15/16/17/22, at accumulated USD 4.326918555 of authorized USD 5.00.
+A uniformly verified final-source real baseline is not claimed. GitHub Actions
+checks and PR open/unmerged status remain independently verifiable.

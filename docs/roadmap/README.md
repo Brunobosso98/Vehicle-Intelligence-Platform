@@ -10,7 +10,7 @@
 - Phase 7A — Agent Core & Grounded Orchestration (implemented; see acceptance and PR-head receipts)
 - Phase 7B — Investigation & Adaptive Logging (complete; canonical regression verified in Phase 7C)
 - Phase 7C — Specialist Agent Orchestration (VERIFIED; PR #35 canonical exact-head gates passed)
-- Phase 7D — Real Model Validation & Agent Reliability Baseline (in progress; real evaluation pending)
+- Phase 7D — Real Model Validation & Agent Reliability Baseline (completed with operator-accepted validation caveat; see report)
 - Phase 8 — Technical RAG (planned)
 - Phase 9 — ML / Predictive Models (planned)
 - Phase 10 — MLOps Platform (planned)
@@ -20,7 +20,11 @@
 
 Phases 7A–7C are implemented. Phase 7B provides the bounded, approved, read-only investigation
 and logging-recipe workflow. Phase 7C adds bounded specialists and supervisor orchestration.
-Phase 7D evaluates a real model; Phase 8+ capabilities remain deferred.
+Phase 7D is closed by operator acceptance: all 120 slots have PASS across rounds, but a complete
+120-execution rerun on the final code was omitted because API balance was insufficient.
+This is not a claim of uniform final-source real verification. Final GitHub Actions results
+remain separately recorded in the [evaluation report](../validation/phase-7d-real-evaluation.md)
+and PR checks. Phase 8+ capabilities remain deferred.
 
 # Current phase
 

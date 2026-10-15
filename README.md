@@ -130,4 +130,8 @@ and local credentials. Normal CI tests the harness deterministically. See the
 [runbook](docs/runbooks/phase-7d-real-evaluation.md),
 [architecture](docs/architecture/phase-7d-real-model-validation.md) and
 [current evaluation report](docs/validation/phase-7d-real-evaluation.md).
-Phase 7D remains NOT VERIFIED until the mandatory real suite and final gates pass.
+Phase 7D is **completed with an operator-accepted validation caveat**: all 120 scheduled slots
+have PASS observations across multiple rounds; an additional complete run on the final code
+was not performed because the remaining API balance was insufficient. This does not establish
+a uniformly verified final-source real baseline. See the report for exact sources, costs
+and the separate final GitHub Actions status.
