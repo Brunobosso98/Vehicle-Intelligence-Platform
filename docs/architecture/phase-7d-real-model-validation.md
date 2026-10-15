@@ -108,3 +108,11 @@ comparable-history gap lacks sufficient deterministic comparison evidence.
 Optional history and already sufficient comparisons retain existing-data
 resolution. Investigation policy v4 distinguishes primary measurement needs
 from optional discriminators without inventing channels or bypassing approval.
+
+## Structured proposal categories and evaluation diagnostics
+
+ADR 0028 restricts signal roles in the wire schema to measurement/quality gaps,
+matching existing host validation. `--diagnostics` opts into ignored sanitized
+public model/tool request/response traces, including failed drafts and proposals.
+It excludes credentials, private reasoning and complete SDK/transport objects.
+Per-case sequence files preserve concurrent MCP calls; receipts retain charges.

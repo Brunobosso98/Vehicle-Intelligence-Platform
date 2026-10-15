@@ -4,12 +4,14 @@ import hashlib
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from vehicle_platform.agents.config import AgentSettings
+from vehicle_platform.agents.config import AgentSettings, redact_data
 from vehicle_platform.agents.mcp_client import EvidenceClient, connect
 from vehicle_platform.agents.provider import AgentError
+from vehicle_platform.evaluation.phase7d import atomic_json
 from vehicle_platform.mcp.schemas import Envelope
 from vehicle_platform.mcp.tools import TOOL_NAMES
 
@@ -18,7 +20,14 @@ class ToolMeter:
     # Parent 32 + Phase 7B ten session reads + one recorded-capability refresh.
     limit = 43
 
-    def __init__(self) -> None:
+    def __init__(
+        self, trace_dir: Path | None = None, settings: AgentSettings | None = None
+    ) -> None:
+        self.trace_dir, self.settings = trace_dir, settings
+        if trace_dir is not None:
+            if settings is None:
+                raise ValueError("Trace settings required for sanitization")
+            trace_dir.mkdir(parents=True, exist_ok=True)
         self.case_key: str | None = None
         self.vehicle_id: str | None = None
         self.calls: dict[str, list[dict[str, Any]]] = {}
@@ -53,6 +62,7 @@ class MeteredClient:
             raise AgentError("BUDGET_VIOLATION")
         if name == "get_telemetry_window" and any(c["tool_name"] == name for c in calls):
             raise AgentError("BUDGET_VIOLATION")
+        sequence = len(calls) + 1
         entry: dict[str, Any] = {
             "tool_name": name,
             "argument_hash": hashlib.sha256(
@@ -60,16 +70,35 @@ class MeteredClient:
             ).hexdigest(),
             "status": "running",
         }
+        if meter.trace_dir is not None and meter.settings is not None:
+            entry["arguments"] = redact_data(arguments, meter.settings)
         calls.append(entry)
+        trace_path = (
+            meter.trace_dir / f"mcp-{meter.case_key.replace(':', '-')}-{sequence}.json"
+            if meter.trace_dir is not None
+            else None
+        )
+        if trace_path is not None:
+            atomic_json(trace_path, entry)
         started = perf_counter()
         try:
             result = await self.source.call(name, arguments)
             if str(result.context.get("vehicle_id")) != meter.vehicle_id:
                 raise AgentError("incompatible_context")
             entry["status"] = "completed"
+            if meter.trace_dir is not None and meter.settings is not None:
+                entry["result"] = redact_data(result.model_dump(mode="json"), meter.settings)
             return result
-        except BaseException:
+        except BaseException as error:
             entry["status"] = "failed"
+            entry["error_category"] = (
+                error.category if isinstance(error, AgentError) else "transport_error"
+            )
             raise
         finally:
             entry["duration_seconds"] = perf_counter() - started
+            if meter.trace_dir is not None:
+                atomic_json(
+                    meter.trace_dir / f"mcp-{meter.case_key.replace(':', '-')}-{sequence}.json",
+                    entry,
+                )

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from copy import deepcopy
 from typing import Any, cast
 
 import httpx
@@ -64,6 +65,28 @@ def draft_schema(request: ModelInput) -> dict[str, Any]:
         claim["classification"] = {"type": "string", "enum": ["INSUFFICIENT_EVIDENCE"]}
         claim["bindings"]["maxItems"] = 0
         claim["evidence_ids"]["maxItems"] = 0
+    return schema
+
+
+def investigation_schema() -> dict[str, Any]:
+    schema = to_strict_json_schema(InvestigationProposal)
+    gap = schema["$defs"]["ProposedGap"]
+    measurement = deepcopy(gap)
+    measurement["properties"]["category"] = {
+        "type": "string",
+        "enum": ["signal_or_measurement", "data_quality"],
+    }
+    other = deepcopy(gap)
+    other["properties"]["category"] = {
+        "type": "string",
+        "enum": [
+            value
+            for value in schema["$defs"]["GapType"]["enum"]
+            if value not in {"signal_or_measurement", "data_quality"}
+        ],
+    }
+    other["properties"]["signal_roles"]["maxItems"] = 0
+    schema["$defs"]["ProposedGap"] = {"anyOf": [measurement, other]}
     return schema
 
 
@@ -400,7 +423,7 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "investigation_proposal",
-                            "schema": to_strict_json_schema(InvestigationProposal),
+                            "schema": investigation_schema(),
                             "strict": True,
                         }
                     },

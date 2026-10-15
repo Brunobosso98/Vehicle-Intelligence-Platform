@@ -29,6 +29,7 @@ from vehicle_platform.agents.openai_provider import OpenAIProvider
 from vehicle_platform.agents.provider import AgentError, ModelInput
 from vehicle_platform.api.domain_contracts import PreflightRequest
 from vehicle_platform.core.config import Settings
+from vehicle_platform.evaluation.diagnostics import TracedOpenAIProvider
 from vehicle_platform.evaluation.grading import grade, summarize
 from vehicle_platform.evaluation.metering import ToolMeter
 from vehicle_platform.evaluation.phase7d import Ledger, Rates, atomic_json, load_suite
@@ -128,6 +129,24 @@ def identity(settings, digest, suite):
     }
 
 
+def diagnostic_directory(budget):
+    identities = budget.state.get("identities") or [{}]
+    return (
+        budget.path.parent / "diagnostics"
+        if identities[-1].get("diagnostics")
+        else None
+    )
+
+
+def evaluation_provider(settings, budget):
+    directory = diagnostic_directory(budget)
+    return (
+        TracedOpenAIProvider(settings, budget, directory)
+        if directory is not None
+        else OpenAIProvider(settings, budget)
+    )
+
+
 async def smoke(settings, budget):
     if budget.state["smoke"] is not None:
         if budget.state["smoke"]["status"] != "PASS":
@@ -136,7 +155,7 @@ async def smoke(settings, budget):
     if any(c["case_key"] == "smoke" for c in budget.state["calls"].values()):
         raise AgentError("smoke_failed_or_interrupted")
     budget.case_key = "smoke"
-    provider = OpenAIProvider(settings, budget)
+    provider = evaluation_provider(settings, budget)
     try:
         response, ticket = await provider._create(
             "smoke",
@@ -246,9 +265,9 @@ async def stack(url, settings, budget):
     )
     agents = app.state.agent_service
     agents.settings = local
-    app.state.eval_tool_meter = ToolMeter()
+    app.state.eval_tool_meter = ToolMeter(diagnostic_directory(budget), local)
     agents.client_factory = lambda: app.state.eval_tool_meter.client(local)
-    agents.provider_factory = lambda: OpenAIProvider(local, budget)
+    agents.provider_factory = lambda: evaluation_provider(local, budget)
     try:
         await process.start()
         async with (
@@ -307,7 +326,7 @@ async def evaluate(
             print(json.dumps({"projected_suite_cost_usd": str(projected)}), flush=True)
         agents = app.state.agent_service
         agents.settings = real_settings
-        agents.provider_factory = lambda: OpenAIProvider(agents.settings, budget)
+        agents.provider_factory = lambda: evaluation_provider(agents.settings, budget)
         service = app.state.investigation_service
         scenario = anomaly_scenario("phase7d-source", ())
         content = recording_csv(
@@ -572,6 +591,11 @@ def main():
         action="append",
         help="Exact affected CASE_ID:repeat slot; preserves passed repetitions",
     )
+    parser.add_argument(
+        "--diagnostics",
+        action="store_true",
+        help="Sanitized public model/tool I/O traces; no credentials or reasoning",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     if (args.case_id or args.case_slot) and args.mode != "eval":
@@ -663,6 +687,8 @@ def main():
         if (datetime.now(UTC).date() - date.fromisoformat(rates.verified_on)).days > 7:
             raise AgentError("official_pricing_reverification_required")
         config = identity(settings, digest, suite)
+        if args.diagnostics:
+            config["diagnostics"] = True
         if args.operator_budget_progress:
             config["operator_budget_progress"] = True
         if case_ids is not None:

@@ -392,3 +392,19 @@ async def test_rejected_proposal_logs_only_safe_rule_not_model_content(provider,
     assert "private-user-sentinel" not in caplog.text
     assert "engine_speed_context" not in caplog.text
     assert provider.client.responses.create.call_count == 1
+
+
+@pytest.mark.parametrize("category", list(GapType))
+def test_proposal_wire_schema_rejects_signals_on_nonmeasurement_gaps(category):
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.investigation.proposal import InvestigationProposal
+    from vehicle_platform.agents.openai_provider import investigation_schema
+
+    validator = Draft202012Validator(investigation_schema())
+    proposal = InvestigationProposal(gaps=[ProposedGap(category=category)]).model_dump(mode="json")
+    assert validator.is_valid(proposal)
+    proposal["gaps"][0]["signal_roles"] = ["engine_speed_context"]
+    assert validator.is_valid(proposal) == (
+        category in {GapType.SIGNAL_OR_MEASUREMENT, GapType.DATA_QUALITY}
+    )
