@@ -1,8 +1,6 @@
 # Phase 7D real-model validation
 
-Status: round fifteen remains NOT VERIFIED after resume. Its 120 slots contain 93 PASS, ten semantic, nine runtime and six provider failures, one interrupted marker and one budget-skipped observation. The unchanged USD 4 ceiling blocked further funding at USD 3.996470140. Strict routing and reported-role recall pass; designated escalation is 91.67%, below 95%. All thirteen canonical checks passed on evaluated source 52f8267423697a9e0894f06a0afdbafe65951326. The authoritative scope is
-[the complete execution specification](../prompts/phase-7d-real-model-validation.md).
-[ADR 0022](../adr/0022-bounded-real-model-evaluation.md) records evaluation ownership and accounting.
+Status: real G03 passed on `b459c14626d04a1e829ae8b7dc3476311f6a470b`. The latest observations across explicitly identified sources now cover all 120 scheduled slots with PASS (80 unique questions and 40 critical repeats), at cumulative USD 4.326918555 / authorized USD 5.00. This affected-retest reconciliation does not replace native full-cohort acceptance: round 15 remains immutable with 93 PASS and escalation 91.67%. Material changes have only affected real confirmation; exact-final-head remote checks remain pending. Current API: 885 PASS, typing/lint and coverage PASS; disposable deterministic harness PASS. Graph updates remain deferred. The authoritative scope is [the execution specification](../prompts/phase-7d-real-model-validation.md). ADRs 0022–0029 record evaluation accounting and the general reliability corrections.
 
 The current `evals/phase7d/suite-v2.json` and retained historical `suite-v1.json` each contain exactly 80 unique questions, ten per category A–H.
 The specified 20 critical questions receive two additional observations. The loader rejects

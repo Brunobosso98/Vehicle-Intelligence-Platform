@@ -120,3 +120,15 @@ seam while using the production graph, actual MCP and disposable PostgreSQL. Int
 still has the same Phase 7A/7B identity and tenant ACL limitations. See
 [supervisor architecture](../architecture/phase-7c-specialist-agents-supervisor.md) and
 [runbook](../runbooks/supervisor-specialists.md). Phase 7D owns real-model adversarial evaluation.
+
+## Phase 7D operator diagnostics
+
+Explicit `--diagnostics` captures sanitized public structured model input/output
+and MCP arguments/results for the disposable controlled evaluation fixtures.
+Traces remain under ignored local validation artifacts and do not enable
+production request logging. Configured provider, MCP and investigation tokens
+are redacted before persistence. Full SDK/transport objects, authorization
+headers, private reasoning items and reasoning summaries are excluded; malformed
+unstructured output is hashed. Failed proposals remain untrusted diagnostic data,
+never published findings or executable recipes. Fixed validation-rule codes and
+case/sequence correlation support reconstruction without exposing secrets.

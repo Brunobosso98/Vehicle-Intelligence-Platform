@@ -1,6 +1,6 @@
 # Phase 7D traceability ledger
 
-All 143 numbered specification sections are retained. This is an evidence audit, not a declaration of completion. Round fifteen on `52f8267423697a9e0894f06a0afdbafe65951326` terminated with 93 PASS, 10 semantic failures, nine runtime failures, six provider failures, one interrupted checkpoint marker and one budget-skipped slot. All 80 unique cases were attempted; native reporting counts 38 completed critical repeats. The budget guard stopped at USD 3.996470140 / USD 4.00, retaining all charges and 66 unknown-usage reservations. Designated escalation (33/36 = 91.67%) misses its 95% target. All eight GitHub checks and the thirteen canonical checks passed on the evaluated source. The interrupted F03 repeat has a completed RUNTIME_FAILURE artifact, retained without replacing the historical checkpoint marker. Final real acceptance remains unproven.
+All 143 numbered specification sections are retained. **Current affected-retest outcome: all 120 latest schedule-slot observations have PASS across rounds 15/16/17/22; not a full-source acceptance cohort. G03 passed at b459c14. Cumulative USD 4.326918555 / 5.00. API 885 and disposable harness PASS; exact-final-head remote gates pending. Native full-source quality remains unproven, graph deferred.** Historical closure snapshots follow. This is an evidence audit, not a declaration of completion. Round fifteen on `52f8267423697a9e0894f06a0afdbafe65951326` terminated with 93 PASS, 10 semantic failures, nine runtime failures, six provider failures, one interrupted checkpoint marker and one budget-skipped slot. All 80 unique cases were attempted; native reporting counts 38 completed critical repeats. The budget guard stopped at USD 3.996470140 / USD 4.00, retaining all charges and 66 unknown-usage reservations. Designated escalation (33/36 = 91.67%) misses its 95% target. All eight GitHub checks and the thirteen canonical checks passed on the evaluated source. The interrupted F03 repeat has a completed RUNTIME_FAILURE artifact, retained without replacing the historical checkpoint marker. Final real acceptance remains unproven.
 
 The original case table below retains its historical round-nine source and immutable receipts. The round-twelve appendix supplies current per-case observations; observations from different sources are never combined for acceptance. Individual PASS results do not establish whole-phase acceptance. The [current report](phase-7d-real-evaluation.md) records current quality and cumulative spending.
 
@@ -337,3 +337,92 @@ Suite v2 preserves the immutable v1 questions/fixtures/repeats, aligns optional 
 ## Definition-of-Done exceptions
 
 Section 142 remains incomplete: not all real questions passed, designated escalation misses its target, complete real-provider receipts are absent and two native schedule slots remain incomplete. Source typing/security/deterministic/canonical acceptance passed, but those checks do not substitute for model reliability. Section 143's VERIFIED closing line is not justified. The graph update remains deferred because the user requested it only after every check passes. Further paid confirmation cannot reserve a conforming call inside the remaining USD 0.003529860.
+
+## Latest-slot follow-up reconciliation after round 22
+
+All entries below preserve their exact source round. Latest PASS coverage does not regrade history or establish final-source full-cohort reliability. Original round-15 failures and all charges remain unchanged.
+
+| Question | Initial latest observation | Critical repeat 1 | Critical repeat 2 |
+| -------- | -------------------------- | ----------------- | ----------------- |
+| A01      | 15:A01:0 PASS              | not scheduled     | not scheduled     |
+| A02      | 15:A02:0 PASS              | not scheduled     | not scheduled     |
+| A03      | 15:A03:0 PASS              | not scheduled     | not scheduled     |
+| A04      | 15:A04:0 PASS              | not scheduled     | not scheduled     |
+| A05      | 15:A05:0 PASS              | not scheduled     | not scheduled     |
+| A06      | 15:A06:0 PASS              | not scheduled     | not scheduled     |
+| A07      | 15:A07:0 PASS              | not scheduled     | not scheduled     |
+| A08      | 15:A08:0 PASS              | not scheduled     | not scheduled     |
+| A09      | 15:A09:0 PASS              | not scheduled     | not scheduled     |
+| A10      | 16:A10:0 PASS              | not scheduled     | not scheduled     |
+| B01      | 16:B01:0 PASS              | not scheduled     | not scheduled     |
+| B02      | 15:B02:0 PASS              | not scheduled     | not scheduled     |
+| B03      | 15:B03:0 PASS              | not scheduled     | not scheduled     |
+| B04      | 15:B04:0 PASS              | not scheduled     | not scheduled     |
+| B05      | 15:B05:0 PASS              | not scheduled     | not scheduled     |
+| B06      | 16:B06:0 PASS              | not scheduled     | not scheduled     |
+| B07      | 15:B07:0 PASS              | not scheduled     | not scheduled     |
+| B08      | 15:B08:0 PASS              | not scheduled     | not scheduled     |
+| B09      | 16:B09:0 PASS              | not scheduled     | not scheduled     |
+| B10      | 15:B10:0 PASS              | not scheduled     | not scheduled     |
+| C01      | 15:C01:0 PASS              | not scheduled     | not scheduled     |
+| C02      | 15:C02:0 PASS              | not scheduled     | not scheduled     |
+| C03      | 15:C03:0 PASS              | not scheduled     | not scheduled     |
+| C04      | 15:C04:0 PASS              | not scheduled     | not scheduled     |
+| C05      | 15:C05:0 PASS              | not scheduled     | not scheduled     |
+| C06      | 15:C06:0 PASS              | not scheduled     | not scheduled     |
+| C07      | 16:C07:0 PASS              | not scheduled     | not scheduled     |
+| C08      | 15:C08:0 PASS              | 15:C08:1 PASS     | 15:C08:2 PASS     |
+| C09      | 15:C09:0 PASS              | not scheduled     | not scheduled     |
+| C10      | 15:C10:0 PASS              | 15:C10:1 PASS     | 15:C10:2 PASS     |
+| D01      | 15:D01:0 PASS              | not scheduled     | not scheduled     |
+| D02      | 15:D02:0 PASS              | not scheduled     | not scheduled     |
+| D03      | 15:D03:0 PASS              | not scheduled     | not scheduled     |
+| D04      | 15:D04:0 PASS              | not scheduled     | not scheduled     |
+| D05      | 15:D05:0 PASS              | not scheduled     | not scheduled     |
+| D06      | 15:D06:0 PASS              | not scheduled     | not scheduled     |
+| D07      | 15:D07:0 PASS              | not scheduled     | not scheduled     |
+| D08      | 15:D08:0 PASS              | 17:D08:1 PASS     | 15:D08:2 PASS     |
+| D09      | 15:D09:0 PASS              | 16:D09:1 PASS     | 15:D09:2 PASS     |
+| D10      | 16:D10:0 PASS              | 15:D10:1 PASS     | 16:D10:2 PASS     |
+| E01      | 15:E01:0 PASS              | not scheduled     | not scheduled     |
+| E02      | 15:E02:0 PASS              | not scheduled     | not scheduled     |
+| E03      | 15:E03:0 PASS              | not scheduled     | not scheduled     |
+| E04      | 15:E04:0 PASS              | not scheduled     | not scheduled     |
+| E05      | 15:E05:0 PASS              | 15:E05:1 PASS     | 15:E05:2 PASS     |
+| E06      | 16:E06:0 PASS              | not scheduled     | not scheduled     |
+| E07      | 16:E07:0 PASS              | not scheduled     | not scheduled     |
+| E08      | 15:E08:0 PASS              | not scheduled     | not scheduled     |
+| E09      | 15:E09:0 PASS              | not scheduled     | not scheduled     |
+| E10      | 15:E10:0 PASS              | not scheduled     | not scheduled     |
+| F01      | 15:F01:0 PASS              | 17:F01:1 PASS     | 16:F01:2 PASS     |
+| F02      | 15:F02:0 PASS              | not scheduled     | not scheduled     |
+| F03      | 15:F03:0 PASS              | 15:F03:1 PASS     | 16:F03:2 PASS     |
+| F04      | 16:F04:0 PASS              | 15:F04:1 PASS     | 15:F04:2 PASS     |
+| F05      | 16:F05:0 PASS              | not scheduled     | not scheduled     |
+| F06      | 15:F06:0 PASS              | not scheduled     | not scheduled     |
+| F07      | 15:F07:0 PASS              | not scheduled     | not scheduled     |
+| F08      | 16:F08:0 PASS              | 15:F08:1 PASS     | 16:F08:2 PASS     |
+| F09      | 16:F09:0 PASS              | not scheduled     | not scheduled     |
+| F10      | 16:F10:0 PASS              | not scheduled     | not scheduled     |
+| G01      | 15:G01:0 PASS              | 16:G01:1 PASS     | 15:G01:2 PASS     |
+| G02      | 16:G02:0 PASS              | 15:G02:1 PASS     | 15:G02:2 PASS     |
+| G03      | 22:G03:0 PASS              | not scheduled     | not scheduled     |
+| G04      | 15:G04:0 PASS              | 15:G04:1 PASS     | 15:G04:2 PASS     |
+| G05      | 15:G05:0 PASS              | not scheduled     | not scheduled     |
+| G06      | 15:G06:0 PASS              | 15:G06:1 PASS     | 15:G06:2 PASS     |
+| G07      | 15:G07:0 PASS              | not scheduled     | not scheduled     |
+| G08      | 16:G08:0 PASS              | 15:G08:1 PASS     | 15:G08:2 PASS     |
+| G09      | 15:G09:0 PASS              | 15:G09:1 PASS     | 15:G09:2 PASS     |
+| G10      | 15:G10:0 PASS              | not scheduled     | not scheduled     |
+| H01      | 15:H01:0 PASS              | 15:H01:1 PASS     | 15:H01:2 PASS     |
+| H02      | 15:H02:0 PASS              | not scheduled     | not scheduled     |
+| H03      | 15:H03:0 PASS              | 15:H03:1 PASS     | 15:H03:2 PASS     |
+| H04      | 15:H04:0 PASS              | not scheduled     | not scheduled     |
+| H05      | 15:H05:0 PASS              | 15:H05:1 PASS     | 15:H05:2 PASS     |
+| H06      | 16:H06:0 PASS              | not scheduled     | not scheduled     |
+| H07      | 15:H07:0 PASS              | 15:H07:1 PASS     | 16:H07:2 PASS     |
+| H08      | 16:H08:0 PASS              | not scheduled     | not scheduled     |
+| H09      | 15:H09:0 PASS              | not scheduled     | not scheduled     |
+| H10      | 15:H10:0 PASS              | not scheduled     | not scheduled     |
+
+Current section 142 audit: the required question/repeat slots all have follow-up PASS records, budget/control/approval boundaries remain intact and deterministic API/disposable gates passed. Final-source complete real reliability and exact-final-head canonical/security gates remain unproven; section 143 VERIFIED is not justified. No additional full suite is authorized, and the current conservative deterministic full-schedule projection exceeds the remaining balance. Scope and funding constraints are explicit, never silently converted into success.
