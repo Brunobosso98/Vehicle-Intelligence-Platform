@@ -1,20 +1,28 @@
 import asyncio
 import json
+import logging
+from copy import deepcopy
 from typing import Any, cast
 
+import httpx
 from openai import (
-    APIConnectionError,
+    APIError,
     APIStatusError,
     APITimeoutError,
     AsyncOpenAI,
     AuthenticationError,
     RateLimitError,
 )
+from openai.lib._pydantic import to_strict_json_schema
 from openai.types.responses import ResponseInputParam, ToolParam
 from pydantic import ValidationError
 
-from vehicle_platform.agents.config import AgentSettings
-from vehicle_platform.agents.investigation.proposal import InvestigationInput, InvestigationProposal
+from vehicle_platform.agents.config import AgentSettings, redact_data
+from vehicle_platform.agents.investigation.proposal import (
+    MAX_SIGNAL_NEEDS,
+    InvestigationInput,
+    InvestigationProposal,
+)
 from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
 from vehicle_platform.agents.provider import (
     AgentError,
@@ -23,19 +31,182 @@ from vehicle_platform.agents.provider import (
     RoutingInput,
     ToolRequest,
 )
+from vehicle_platform.agents.receipts import ResponseObserver
 from vehicle_platform.agents.schemas import Draft, RoutingProposal, Usage
 from vehicle_platform.agents.specialists.policy import SUPERVISOR_POLICY, specialist_policy
 
 
+def draft_schema(request: ModelInput) -> dict[str, Any]:
+    schema = to_strict_json_schema(Draft)
+    schema["properties"]["claims"]["minItems"] = 1
+    claim = schema["$defs"]["Claim"]["properties"]
+    identifiers = sorted({str(item["id"]) for item in request.evidence})
+    if identifiers:
+        schema["$defs"]["ScopedEvidenceId"] = {
+            "type": "string",
+            "format": "uuid",
+            "enum": identifiers,
+        }
+        reference = {"$ref": "#/$defs/ScopedEvidenceId"}
+        claim["evidence_ids"]["items"] = reference.copy()
+        schema["$defs"]["Binding"]["properties"]["evidence_id"] = reference.copy()
+    else:
+        # Empty evidence still permits honest insufficiency and safe refusal drafts.
+        claim["evidence_ids"]["maxItems"] = 0
+        claim["bindings"]["maxItems"] = 0
+    if request.specialist:
+        schema["properties"]["claims"]["maxItems"] = 8
+    if (request.supervisor or {}).get("routing", {}).get("intent") == "unsafe":
+        schema["properties"]["claims"]["maxItems"] = 1
+        schema["properties"]["confidence"]["enum"] = ["low"]
+        schema["properties"]["missing_evidence"]["maxItems"] = 0
+        claim = schema["$defs"]["Claim"]["properties"]
+        claim["template"]["enum"] = ["unsafe_operation_refused"]
+        claim["classification"] = {"type": "string", "enum": ["INSUFFICIENT_EVIDENCE"]}
+        claim["bindings"]["maxItems"] = 0
+        claim["evidence_ids"]["maxItems"] = 0
+    return schema
+
+
+def investigation_schema() -> dict[str, Any]:
+    schema = to_strict_json_schema(InvestigationProposal)
+    gap = schema["$defs"]["ProposedGap"]
+    measurement = deepcopy(gap)
+    measurement["properties"]["category"] = {
+        "type": "string",
+        "enum": ["signal_or_measurement", "data_quality"],
+    }
+    other = deepcopy(gap)
+    other["properties"]["category"] = {
+        "type": "string",
+        "enum": [
+            value
+            for value in schema["$defs"]["GapType"]["enum"]
+            if value not in {"signal_or_measurement", "data_quality"}
+        ],
+    }
+    other["properties"]["signal_roles"]["maxItems"] = 0
+    schema["$defs"]["ProposedGap"] = {"anyOf": [measurement, other]}
+    return schema
+
+
+def turn_data(request: ModelInput) -> dict[str, Any]:
+    return {
+        "vehicle_context": request.context,
+        "evidence": request.evidence,
+        "correction": request.correction,
+        "specialist_scope": (
+            request.specialist.model_dump(mode="json", exclude={"context", "question"})
+            if request.specialist
+            else None
+        ),
+        "supervisor": request.supervisor,
+    }
+
+
+def provider_error_category(error: APIError | httpx.HTTPError) -> str:
+    codes = (
+        {value for value in (error.code, error.type) if isinstance(value, str)}
+        if isinstance(error, APIError)
+        else set()
+    )
+    if codes & {"invalid_api_key", "authentication_error"}:
+        return "provider_authentication"
+    if "rate_limit_exceeded" in codes:
+        return "provider_rate_limit"
+    if codes & {
+        "insufficient_quota",
+        "context_length_exceeded",
+        "invalid_request_error",
+        "model_not_found",
+    }:
+        return "provider_configuration"
+    return "provider_unavailable"
+
+
 class OpenAIProvider:
-    def __init__(self, settings: AgentSettings) -> None:
+    def __init__(self, settings: AgentSettings, observer: ResponseObserver | None = None) -> None:
         if not settings.api_key or not settings.model:
             raise AgentError("provider_configuration")
         self.settings = settings
+        self.observer = observer
         self.client = AsyncOpenAI(
             api_key=settings.api_key.get_secret_value(),
             max_retries=0,
             timeout=settings.model_timeout,
+        )
+
+    async def _create(self, role: str, **kwargs: Any) -> tuple[Any, str | None]:
+        kwargs["service_tier"] = self.settings.service_tier
+        if self.settings.reasoning_effort is not None:
+            kwargs["reasoning"] = {"effort": self.settings.reasoning_effort}
+        ticket = (
+            self.observer.begin(role, len(json.dumps(kwargs).encode()), kwargs["max_output_tokens"])
+            if self.observer
+            else None
+        )
+        try:
+            return await self.client.responses.create(**kwargs), ticket
+        except BaseException as error:
+            category = (
+                "provider_authentication"
+                if isinstance(error, AuthenticationError)
+                else "provider_rate_limit"
+                if isinstance(error, RateLimitError)
+                else "provider_timeout"
+                if isinstance(error, (APITimeoutError, TimeoutError))
+                else provider_error_category(error)
+                if isinstance(error, (APIError, httpx.HTTPError))
+                else "invalid_model_response"
+            )
+            if isinstance(error, APIStatusError) and error.status_code in {400, 402, 403, 404, 422}:
+                body = error.body if isinstance(error.body, dict) else {}
+                details = body.get("error", body)
+                param = details.get("param") if isinstance(details, dict) else None
+                category = (
+                    "provider_service_tier_unavailable"
+                    if param == "service_tier"
+                    else "provider_authentication"
+                    if error.status_code == 403
+                    else "provider_configuration"
+                )
+            if self.observer and ticket:
+                self.observer.failed(ticket, category)
+            if not isinstance(error, Exception):
+                raise
+            raise AgentError(category) from None
+
+    def _record_failure(self, ticket: str | None, category: str) -> None:
+        if self.observer and ticket:
+            self.observer.failed(ticket, category)
+
+    def _record(self, response: Any, ticket: str | None) -> None:
+        if not self.observer or not ticket:
+            return
+        usage = getattr(response, "usage", None)
+        self.observer.complete(
+            ticket,
+            redact_data(
+                {
+                    "requested_tools": [
+                        item.name
+                        for item in getattr(response, "output", [])
+                        if item.type == "function_call"
+                    ],
+                    "model": getattr(response, "model", None),
+                    "service_tier": getattr(response, "service_tier", None),
+                    "input_tokens": getattr(usage, "input_tokens", None),
+                    "output_tokens": getattr(usage, "output_tokens", None),
+                    "total_tokens": getattr(usage, "total_tokens", None),
+                    "cached_input_tokens": getattr(
+                        getattr(usage, "input_tokens_details", None), "cached_tokens", None
+                    ),
+                    "reasoning_tokens": getattr(
+                        getattr(usage, "output_tokens_details", None), "reasoning_tokens", None
+                    ),
+                },
+                self.settings,
+            ),
         )
 
     async def turn(self, request: ModelInput) -> ModelTurn:
@@ -49,28 +220,27 @@ class OpenAIProvider:
             }
             for tool in request.tools
         ]
-        public_data = {
-            "vehicle_context": request.context,
-            "evidence": request.evidence,
-            "correction": request.correction,
-            "specialist_scope": (
-                request.specialist.model_dump(mode="json") if request.specialist else None
-            ),
-            "supervisor": request.supervisor,
-        }
+        public_data = turn_data(request)
         messages: list[dict[str, Any]] = [
             {"role": "user", "content": request.question},
             {
                 "role": "developer",
-                "content": "Current-run untrusted DATA:\n" + json.dumps(public_data),
+                "content": "Current-run untrusted DATA:\n"
+                + json.dumps(public_data, separators=(",", ":")),
             },
             *request.messages,
         ]
         if len(json.dumps(messages).encode()) > self.settings.max_input_bytes:
             raise AgentError("model_input_budget_exhausted")
+        receipt: str | None = None
         try:
             async with asyncio.timeout(self.settings.model_timeout):
-                stream = await self.client.responses.create(
+                stream, receipt = await self._create(
+                    request.specialist.specialist.value
+                    if request.specialist
+                    else "synthesis"
+                    if request.supervisor
+                    else "agent",
                     model=self.settings.model,
                     instructions=(
                         SYSTEM_POLICY + specialist_policy(request.specialist.specialist)
@@ -85,11 +255,11 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "grounded_draft",
-                            "schema": Draft.model_json_schema(),
-                            "strict": False,
+                            "schema": draft_schema(request),
+                            "strict": True,
                         }
                     },
-                    max_output_tokens=4096,
+                    max_output_tokens=self.settings.max_output_tokens,
                     store=False,
                     stream=True,
                     parallel_tool_calls=False,
@@ -107,6 +277,7 @@ class OpenAIProvider:
                                 raise AgentError("model_output_budget_exhausted")
                         elif event.type == "response.completed":
                             response = event.response
+                            self._record(response, receipt)
                         elif event.type in {"response.failed", "response.incomplete", "error"}:
                             raise AgentError("invalid_model_response")
                 if response is None:
@@ -139,23 +310,38 @@ class OpenAIProvider:
                 ),
             )
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_model_response") from None
+        finally:
+            if self.observer and receipt:
+                self.observer.failed(receipt)
 
     async def route(self, request: RoutingInput) -> RoutingProposal:
         encoded = json.dumps(request.__dict__)
         if len(encoded.encode()) > self.settings.max_input_bytes:
             raise AgentError("model_input_budget_exhausted")
+        # Usage is provider metadata, never a field for the model to invent.
+        schema = RoutingProposal.model_json_schema()
+        schema["properties"].pop("usage")
+        schema["$defs"].pop("Usage")
+        schema["required"] = ["intent", "specialists"]
+        receipt: str | None = None
         try:
             async with asyncio.timeout(self.settings.model_timeout):
-                response = await self.client.responses.create(
+                response, receipt = await self._create(
+                    "supervisor",
                     model=self.settings.model,
                     instructions=SUPERVISOR_POLICY,
                     input=cast(
@@ -166,13 +352,14 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "supervisor_routing",
-                            "schema": RoutingProposal.model_json_schema(),
-                            "strict": False,
+                            "schema": schema,
+                            "strict": True,
                         }
                     },
                     max_output_tokens=512,
                     store=False,
                 )
+                self._record(response, receipt)
             if len(response.output_text.encode()) > self.settings.max_output_bytes:
                 raise AgentError("model_output_budget_exhausted")
             proposal = RoutingProposal.model_validate_json(response.output_text)
@@ -185,15 +372,23 @@ class OpenAIProvider:
             )
             return proposal
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
         except (ValidationError, ValueError, TypeError):
             raise AgentError("invalid_supervisor_routing") from None
+        finally:
+            if self.observer and receipt:
+                self.observer.failed(receipt)
 
     async def propose(self, request: InvestigationInput) -> InvestigationProposal:
         payload = {
@@ -202,13 +397,22 @@ class OpenAIProvider:
             "current_run_evidence": request.evidence,
             "missing_evidence": request.missing_evidence,
             "supervisor": request.supervisor,
+            "proposal_constraints": {
+                "maximum_signal_needs": MAX_SIGNAL_NEEDS,
+                "counting_rule": (
+                    "Sum distinct signal roles within each gap, "
+                    "including repeated roles in separate gaps"
+                ),
+            },
         }
         encoded = json.dumps(payload)
         if len(encoded.encode()) > self.settings.max_input_bytes:
             raise AgentError("model_input_budget_exhausted")
+        receipt: str | None = None
         try:
             async with asyncio.timeout(self.settings.model_timeout):
-                response = await self.client.responses.create(
+                response, receipt = await self._create(
+                    "investigation",
                     model=self.settings.model,
                     instructions=INVESTIGATION_POLICY,
                     input=cast(
@@ -219,26 +423,61 @@ class OpenAIProvider:
                         "format": {
                             "type": "json_schema",
                             "name": "investigation_proposal",
-                            "schema": InvestigationProposal.model_json_schema(),
-                            "strict": False,
+                            "schema": investigation_schema(),
+                            "strict": True,
                         }
                     },
                     max_output_tokens=2048,
                     store=False,
                 )
+                self._record(response, receipt)
             if len(response.output_text.encode()) > self.settings.max_output_bytes:
                 raise AgentError("model_output_budget_exhausted")
             return InvestigationProposal.model_validate_json(response.output_text)
         except AuthenticationError:
+            self._record_failure(receipt, "provider_authentication")
             raise AgentError("provider_authentication") from None
         except RateLimitError:
+            self._record_failure(receipt, "provider_rate_limit")
             raise AgentError("provider_rate_limit") from None
         except (APITimeoutError, TimeoutError):
+            self._record_failure(receipt, "provider_timeout")
             raise AgentError("provider_timeout") from None
-        except (APIConnectionError, APIStatusError):
-            raise AgentError("provider_unavailable") from None
-        except (ValidationError, ValueError, TypeError):
+        except (APIError, httpx.HTTPError) as error:
+            category = provider_error_category(error)
+            self._record_failure(receipt, category)
+            raise AgentError(category) from None
+        except ValidationError as error:
+            rules = {
+                "duplicate hypothesis category": "duplicate_hypothesis",
+                "gap references unknown hypothesis": "hypothesis_index",
+                "technical documentation cannot become a telemetry recipe": "documentation_signal",
+                "only measurement or quality gaps can require signals": "gap_signal_category",
+                "hypothesis lacks a discriminating gap": "unlinked_hypothesis",
+                "signal need budget exceeded": "signal_need_budget",
+            }
+            reason = next(
+                (
+                    code
+                    for message, code in rules.items()
+                    if any(
+                        item["msg"] == "Value error, " + message
+                        for item in error.errors(include_input=False, include_url=False)
+                    )
+                ),
+                "schema_validation",
+            )
+            logging.getLogger(__name__).warning(
+                "Investigation proposal rejected: %s",
+                reason,
+                extra={"event": "investigation.proposal.rejected", "error_code": reason},
+            )
             raise AgentError("invalid_investigation_proposal") from None
+        except (ValueError, TypeError):
+            raise AgentError("invalid_investigation_proposal") from None
+        finally:
+            if self.observer and receipt:
+                self.observer.failed(receipt)
 
     async def close(self) -> None:
         await self.client.close()

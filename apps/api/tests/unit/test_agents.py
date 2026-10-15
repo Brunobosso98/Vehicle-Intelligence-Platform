@@ -602,10 +602,11 @@ async def test_provider_retry_and_grounding_correction_are_bounded(fixture, tele
         await engine.grounding_node({"execution": state})
 
 
-async def test_tool_error_is_feedback_but_unknown_tool_is_rejected(fixture, telemetry):
+@pytest.mark.parametrize("category", ["mcp_tool_error", "tool_result_budget_exhausted"])
+async def test_tool_error_is_feedback_but_unknown_tool_is_rejected(fixture, telemetry, category):
     state = execution(fixture)
     engine = Orchestrator(AgentSettings(), ScriptedProvider([]), MagicMock(), telemetry)
-    engine.call = AsyncMock(side_effect=AgentError("mcp_tool_error"))
+    engine.call = AsyncMock(side_effect=AgentError(category))
     state.turn = ModelTurn(
         tool_calls=[
             ToolRequest(
@@ -614,7 +615,7 @@ async def test_tool_error_is_feedback_but_unknown_tool_is_rejected(fixture, tele
         ]
     )
     await engine.tools_node({"execution": state})
-    assert "mcp_tool_error" in state.messages[-1]["output"]
+    assert category in state.messages[-1]["output"]
     state.turn.tool_calls[0].name = "execute_sql"
     with pytest.raises(AgentError, match="tool_policy_violation"):
         await engine.tools_node({"execution": state})

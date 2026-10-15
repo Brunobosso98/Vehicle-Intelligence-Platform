@@ -3924,8 +3924,8 @@
             "type": "integer"
           },
           "prompt_version": {
-            "const": "supervisor-v1",
-            "default": "supervisor-v1",
+            "default": "supervisor-v3",
+            "enum": ["supervisor-v1", "supervisor-v2", "supervisor-v3"],
             "title": "Prompt Version",
             "type": "string"
           },
@@ -3945,8 +3945,8 @@
           },
           "routing_usage": { "$ref": "#/components/schemas/Usage" },
           "schema_version": {
-            "const": "1.0",
-            "default": "1.0",
+            "default": "1.1",
+            "enum": ["1.0", "1.1"],
             "title": "Schema Version",
             "type": "string"
           },

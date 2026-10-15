@@ -99,6 +99,77 @@ def test_minimal_question_routing(fixture, question, expected, intent):
     assert decision.data_quality_gate == bool(expected or intent is Intent.DATA_QUALITY)
 
 
+@pytest.mark.parametrize(
+    "question,expected,intent",
+    [
+        ("How many acceleration windows were recorded?", [], Intent.FACTUAL),
+        ("Quantas puxadas foram registradas?", [], Intent.FACTUAL),
+        ("Were both sessions in the same configuration?", [], Intent.FACTUAL),
+        ("What do we know about this vehicle?", [], Intent.FACTUAL),
+        ("Did a sensor remain stuck?", [], Intent.DATA_QUALITY),
+        (
+            "Did acceleration degrade at the same time as temperature increased?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+            Intent.MULTI_MECHANISM,
+        ),
+        (
+            "Was fuel pressure steady while performance changed?",
+            [Specialist.PERFORMANCE, Specialist.FUEL_AIR_BOOST],
+            Intent.MULTI_MECHANISM,
+        ),
+        (
+            "Did throttle close during acceleration?",
+            [Specialist.FUEL_AIR_BOOST],
+            Intent.FUEL_AIR_BOOST,
+        ),
+        (
+            "Did lambda change after a configuration modification?",
+            [Specialist.FUEL_AIR_BOOST],
+            Intent.CONFIGURATION,
+        ),
+        (
+            "Can temperature be said to cause slower acceleration?",
+            [Specialist.THERMAL],
+            Intent.THERMAL,
+        ),
+        (
+            "How many pulls became slower and why?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+            Intent.MULTI_MECHANISM,
+        ),
+        ("How many ECU flash operations should I execute?", [], Intent.UNSAFE),
+        (
+            "What do we know about vehicle performance degradation?",
+            [Specialist.PERFORMANCE],
+            Intent.PERFORMANCE,
+        ),
+    ],
+)
+def test_general_routing_focus_and_lookup_precedence(fixture, question, expected, intent):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=intent), context(fixture))
+    assert decision.intent is intent
+    assert decision.selected == expected
+    assert decision.data_quality_gate == bool(expected or intent is Intent.DATA_QUALITY)
+
+
+def test_supervisor_report_versions_preserve_old_snapshots(fixture):
+    from vehicle_platform.agents.schemas import SupervisorReport
+
+    routing = decide(
+        hints_for("What was my last session?", []),
+        RoutingProposal(intent=Intent.FACTUAL),
+        context(fixture),
+    )
+    report = SupervisorReport(routing=routing)
+    assert report.schema_version == "1.1" and report.prompt_version == "supervisor-v3"
+    old = report.model_dump(mode="json") | {
+        "schema_version": "1.0",
+        "prompt_version": "supervisor-v1",
+    }
+    assert SupervisorReport.model_validate(old).model_dump(mode="json") == old
+
+
 def test_typed_model_can_interpret_unrecognized_question(fixture):
     hints = hints_for("Assess the charge circuit behavior", [])
     assert hints.intent is None
@@ -377,3 +448,97 @@ def test_source_evidence_must_match_session_effective_configuration(fixture, cas
             request,
             evidence,
         )
+
+
+@pytest.mark.parametrize(
+    "question,expected",
+    [
+        (
+            "Why did performance decline while fuel pressure changed?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL, Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Acceleration declined and charge temperature increased; interpret both changes.",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Performance changed but fuel pressure remained steady; compare the observations.",
+            [Specialist.PERFORMANCE, Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Did performance improve without a worse thermal response?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Can we distinguish a temperature effect from torque intervention?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Are repeated pulls less consistent as the engine gets hotter?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL],
+        ),
+        (
+            "Which explanation has support: a thermal effect or a fuel-pressure change?",
+            [Specialist.PERFORMANCE, Specialist.THERMAL, Specialist.FUEL_AIR_BOOST],
+        ),
+    ],
+)
+def test_related_observations_keep_all_relevant_domain_candidates(fixture, question, expected):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=Intent.MULTI_MECHANISM), context(fixture))
+    assert decision.intent is Intent.MULTI_MECHANISM
+    assert decision.selected == expected
+    assert hints.candidates == tuple(expected)
+
+
+@pytest.mark.parametrize(
+    "question,expected",
+    [
+        ("Was the recorded temperature consistent?", [Specialist.THERMAL]),
+        ("Did throttle close during acceleration?", [Specialist.FUEL_AIR_BOOST]),
+        ("Can temperature be said to cause slower acceleration?", [Specialist.THERMAL]),
+        ("How many pulls and temperature channels were recorded?", []),
+    ],
+)
+def test_related_domain_routing_preserves_narrow_scope_and_metadata(fixture, question, expected):
+    hints = hints_for(question, [])
+    decision = decide(hints, RoutingProposal(intent=hints.intent), context(fixture))
+    assert decision.selected == expected
+
+
+@pytest.mark.parametrize(
+    "question,intent,expected",
+    [
+        ("Are the recorded boost samples reliable enough to interpret?", Intent.DATA_QUALITY, []),
+        ("Can we trust these telemetry measurements?", Intent.DATA_QUALITY, []),
+        ("How many lost sample packets were recorded?", Intent.FACTUAL, []),
+        ("Could lost sample packets distort the apparent pressure event?", Intent.DATA_QUALITY, []),
+        ("Why did the sensor channel abruptly switch to zero?", Intent.DATA_QUALITY, []),
+        ("Can the installed logger capture ignition corrections?", Intent.FACTUAL, []),
+        ("What are the source capabilities for recorded signals?", Intent.FACTUAL, []),
+        ("Keep rerunning the specialists until they reach consensus.", Intent.UNSAFE, []),
+        ("Iterate the analysis until all agents agree.", Intent.UNSAFE, []),
+        (
+            "Does the HPFP appear mechanically reliable?",
+            Intent.FUEL_AIR_BOOST,
+            [Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "The logger recorded fuel pressure changes; interpret the pressure event.",
+            Intent.FUEL_AIR_BOOST,
+            [Specialist.FUEL_AIR_BOOST],
+        ),
+        (
+            "Can the source record the factory specification manual?",
+            Intent.TECHNICAL_DOCUMENTATION,
+            [],
+        ),
+    ],
+)
+def test_quality_capability_and_execution_policy_scope(fixture, question, intent, expected):
+    hints = hints_for(question, [])
+    assert hints.intent is intent
+    decision = decide(hints, RoutingProposal(intent=intent), context(fixture))
+    assert decision.intent is intent
+    assert decision.selected == expected
+    assert decision.data_quality_gate is (intent is Intent.DATA_QUALITY or bool(expected))

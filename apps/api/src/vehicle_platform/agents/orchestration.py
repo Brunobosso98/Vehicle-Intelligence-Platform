@@ -13,7 +13,8 @@ from vehicle_platform.agents.config import AgentSettings, redact_data
 from vehicle_platform.agents.context import resolve_context
 from vehicle_platform.agents.evidence import canonical_hash
 from vehicle_platform.agents.grounding import validate
-from vehicle_platform.agents.mcp_client import EvidenceClient
+from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
+from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
 from vehicle_platform.agents.state import Execution, GraphState
@@ -253,9 +254,7 @@ class Orchestrator:
             messages=redact_data(state.messages, self.settings),
             correction=state.correction,
             supervisor=(
-                state.run.supervisor.model_dump(mode="json")
-                if state.run.supervisor and state.run.supervisor.routing.selected
-                else None
+                state.run.supervisor.model_dump(mode="json") if state.run.supervisor else None
             ),
         )
         if len(json.dumps(request.__dict__, default=str).encode()) > self.settings.max_input_bytes:
@@ -360,7 +359,7 @@ class Orchestrator:
                     ],
                 }
             except AgentError as exc:
-                if exc.category != "mcp_tool_error":
+                if exc.category not in RECOVERABLE_TOOL_ERRORS:
                     raise
                 output = {"status": "failed", "error_category": exc.category}
             state.messages.extend(
@@ -384,6 +383,24 @@ class Orchestrator:
         state = graph["execution"]
         if not state.turn or not state.turn.draft or not state.context:
             raise AgentError("invalid_model_response")
+        if state.turn.draft.missing_evidence:
+            from vehicle_platform.agents.schemas import Claim, Classification
+
+            proposed = state.turn.draft.model_copy(deep=True)
+            if not any(
+                claim.classification is Classification.INSUFFICIENT_EVIDENCE
+                for claim in proposed.claims
+            ):
+                proposed.claims = proposed.claims[:15] + [
+                    Claim(
+                        classification=Classification.INSUFFICIENT_EVIDENCE,
+                        template="insufficient_evidence",
+                        bindings=[],
+                        evidence_ids=[],
+                    )
+                ]
+            proposed.confidence = "low"
+            state.turn.draft = proposed
         report = state.run.supervisor
         if (
             report
@@ -428,6 +445,10 @@ class Orchestrator:
         ):
             try:
                 state.final = validate(state.turn.draft, state.registry, state.context)
+                if report and "capture_requires_approval" in report.routing.hints:
+                    state.final.limitations = list(
+                        dict.fromkeys([CAPTURE_APPROVAL_LIMITATION, *state.final.limitations])
+                    )[:32]
                 if report and not report.routing.data_quality_gate and not report.routing.selected:
                     from vehicle_platform.agents.schemas import Sufficiency
 

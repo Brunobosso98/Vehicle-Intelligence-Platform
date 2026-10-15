@@ -156,6 +156,39 @@ def test_unverified_and_uncollectable_needs_never_become_ready() -> None:
     assert timing.needs[0].availability.value == "UNAVAILABLE"
 
 
+@pytest.mark.parametrize("optional", [True, False])
+def test_optional_unknown_channel_does_not_block_supported_alternative_recipe(optional):
+    from vehicle_platform.acquisition.domain import Support
+    from vehicle_platform.agents.investigation.domain import Availability
+
+    source = DeviceCapabilities(
+        "trusted-alternatives",
+        {r.signal: Support.SUPPORTED for r in BY_KEY["performance-pull"].requirements},
+        100,
+    )
+    proposed = plan_recipe(
+        [
+            need(SignalRole.BOOST),
+            need(SignalRole.INTAKE_TEMPERATURE),
+            need(SignalRole.HIGH_FUEL_PRESSURE),
+            need(SignalRole.LAMBDA, required=not optional),
+            need(SignalRole.TIMING, required=False),
+        ],
+        source,
+    )
+    assert proposed.needs[3].availability is Availability.UNKNOWN
+    assert proposed.needs[4].availability is Availability.UNAVAILABLE
+    if optional:
+        assert proposed.recipe is BY_KEY["performance-pull"]
+        assert proposed.reference is not None
+        assert proposed.reference.feasibility is Feasibility.FEASIBLE_WITH_DEGRADATION
+        assert "fuel.equivalence_ratio" in proposed.reference.dropped_signals
+        assert "engine.ignition_timing" in proposed.reference.dropped_signals
+    else:
+        assert proposed.recipe is None
+        assert proposed.reference is None
+
+
 def test_source_preflight_accepts_only_read_only_adapter_channels() -> None:
     allowed = PreflightRequest(
         adapter="elm327-standard-read-only-v1",
@@ -511,7 +544,8 @@ def test_semantic_proposal_rejects_duplicate_and_unsafe_gap() -> None:
         )
 
 
-async def test_existing_search_respects_signal_quality_and_vehicle_context() -> None:
+@pytest.mark.parametrize("category", [GapType.SIGNAL_OR_MEASUREMENT, GapType.DATA_QUALITY])
+async def test_existing_search_respects_signal_quality_and_vehicle_context(category) -> None:
     run = insufficient_run("Why is timing missing?")
     assert run.result is not None
     session_id, configuration_id = uuid4(), uuid4()
@@ -527,7 +561,7 @@ async def test_existing_search_respects_signal_quality_and_vehicle_context() -> 
     signal_need = need(SignalRole.BOOST)
     gap = EvidenceGap(
         id=signal_need.gap_ids[0],
-        category=GapType.SIGNAL_OR_MEASUREMENT,
+        category=category,
         description="Boost is missing in compatible windows",
         why_it_matters="Separates observed airflow associations",
         signal_need_ids=[signal_need.id],
@@ -545,6 +579,33 @@ async def test_existing_search_respects_signal_quality_and_vehicle_context() -> 
     found = await search_existing(run, [gap], [signal_need], client)
     assert found.gaps[0].status is GapStatus.AVAILABLE_IN_EXISTING_DATA
     assert found.mcp_calls == 1
+    history = EvidenceGap(
+        id=uuid4(),
+        category=GapType.COMPARABLE_HISTORY,
+        description="Comparable operating windows are missing",
+        why_it_matters="Available channels do not establish compatible comparisons",
+    )
+    missing = await search_existing(run, [gap, history], [signal_need], client)
+    assert all(g.status is GapStatus.NEEDS_NEW_CAPTURE for g in missing.gaps)
+    optional_history = history.model_copy(update={"required": False})
+    optional = await search_existing(run, [gap, optional_history], [signal_need], client)
+    assert optional.gaps[0].status is GapStatus.AVAILABLE_IN_EXISTING_DATA
+    run.evidence = [
+        Evidence(
+            id=uuid4(),
+            run_id=run.id,
+            vehicle_id=run.vehicle_id,
+            evidence_type="comparison",
+            source_tool="compare_pulls",
+            tool_call_id=uuid4(),
+            source_fingerprint="a" * 64,
+            summary="Comparable operating windows",
+            facts=[Fact(path="/comparison/sufficiency", value="sufficient")],
+        )
+    ]
+    sufficient = await search_existing(run, [gap, history], [signal_need], client)
+    assert all(g.status is GapStatus.AVAILABLE_IN_EXISTING_DATA for g in sufficient.gaps)
+    run.evidence = []
     from vehicle_platform.agents.schemas import (
         Intent,
         RoutingDecision,
@@ -1571,3 +1632,34 @@ async def test_completed_followup_reloads_after_stale_race() -> None:
     reloaded = await service.complete_follow_up(item.vehicle_id, item.id)
     assert reloaded is item
     assert repository.get.await_count == 2
+
+
+@pytest.mark.parametrize("coolant_required", [False, True])
+def test_supported_optional_channels_cannot_veto_required_recipe(coolant_required):
+    signals = {r.signal: Support.SUPPORTED for r in BY_KEY["performance-pull"].requirements}
+    signals["engine.coolant_temperature"] = Support.SUPPORTED
+    source = DeviceCapabilities("trusted-mixed-context", signals, 1000)
+    proposed = plan_recipe(
+        [
+            need(SignalRole.ENGINE_SPEED),
+            need(SignalRole.VEHICLE_SPEED),
+            need(SignalRole.THROTTLE),
+            need(SignalRole.BOOST),
+            need(SignalRole.HIGH_FUEL_PRESSURE),
+            need(SignalRole.INTAKE_TEMPERATURE),
+            need(SignalRole.COOLANT_TEMPERATURE, required=coolant_required),
+        ],
+        source,
+    )
+    if coolant_required:
+        assert proposed.recipe is None and proposed.reference is None
+    else:
+        assert proposed.recipe is BY_KEY["performance-pull"]
+        assert proposed.reference.feasibility is Feasibility.FEASIBLE_WITH_DEGRADATION
+        assert proposed.reference.required_missing == []
+        assert proposed.reference.dropped_signals == ["engine.coolant_temperature"]
+        assert proposed.needs[-1].source_support.value == "AVAILABLE"
+        assert (
+            proposed.reference.configuration_hash == BY_KEY["performance-pull"].configuration_hash
+        )
+        assert proposed.reference.version == BY_KEY["performance-pull"].version

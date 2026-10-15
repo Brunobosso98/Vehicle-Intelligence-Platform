@@ -10,6 +10,9 @@ class AgentSettings(BaseSettings):
     enabled: bool = False
     provider: Literal["openai", "deterministic"] = "openai"
     model: str = Field(default="", max_length=100)
+    service_tier: Literal["auto", "default", "flex"] = "auto"
+    reasoning_effort: Literal["none", "low", "medium", "high"] | None = None
+    max_output_tokens: int = Field(default=4096, ge=512, le=4096)
     api_key: SecretStr | None = None
     mcp_url: str = "http://127.0.0.1:8001/mcp"
     mcp_token: SecretStr | None = None
@@ -20,6 +23,7 @@ class AgentSettings(BaseSettings):
     max_comparisons: int = Field(default=3, ge=0, le=5)
     run_timeout: float = Field(default=90, gt=0, le=180)
     model_timeout: float = Field(default=30, gt=0, le=60)
+    specialist_timeout: float = Field(default=25, gt=0, le=45)
     tool_timeout: float = Field(default=12, gt=0, le=30)
     max_concurrent_runs: int = Field(default=4, ge=1, le=8)
     max_result_bytes: int = Field(default=131072, ge=1024, le=262144)
@@ -31,7 +35,7 @@ class AgentSettings(BaseSettings):
     max_specialists: int = Field(default=3, ge=1, le=3)
     max_concurrent_specialists: int = Field(default=2, ge=1, le=3)
     agent_version: str = "phase7c-v1"
-    prompt_version: str = "supervisor-v1"
+    prompt_version: str = "supervisor-v3"
 
     @model_validator(mode="after")
     def valid_runtime(self) -> "AgentSettings":

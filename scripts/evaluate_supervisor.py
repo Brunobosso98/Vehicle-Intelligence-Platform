@@ -203,7 +203,12 @@ async def evaluate(url: str) -> dict[str, Any]:
                 ] <= (8 if result["specialist"] == "performance" else 6)
                 assert result["supervisor_run_id"] == identifier
                 assert result["vehicle_id"] == vehicle
-                assert result["error_category"] is None, (name, result)
+                if result["status"] == "skipped":
+                    assert result["error_category"] == "quality_gate_blocked"
+                    assert result["model_turn_count"] == result["tool_call_count"] == 0
+                    assert not result["findings"] and not result["evidence_ids"]
+                else:
+                    assert result["error_category"] is None, (name, result)
             events = (await api.get(f"{base}/{identifier}/events")).json()
             assert [event["sequence"] for event in events] == list(
                 range(1, len(events) + 1)
@@ -224,9 +229,18 @@ async def evaluate(url: str) -> dict[str, Any]:
                 assert report["specialists"] == []
             if name == "poor":
                 assert report["sufficiency"] == "UNRELIABLE_DATA"
-                assert [r["specialist"] for r in report["specialists"]] == [
-                    "data_quality"
+                assert [
+                    r["specialist"]
+                    for r in report["specialists"]
+                    if r["status"] != "skipped"
+                ] == ["data_quality"]
+                skipped = [r for r in report["specialists"] if r["status"] == "skipped"]
+                assert [r["specialist"] for r in skipped] == report["routing"][
+                    "selected"
                 ]
+                assert all(
+                    r["model_turn_count"] == r["tool_call_count"] == 0 for r in skipped
+                )
             if name == "ambiguous":
                 assert report["conflicts"] and report["sufficiency"] == "INSUFFICIENT"
                 assert report["investigation_recommended"]

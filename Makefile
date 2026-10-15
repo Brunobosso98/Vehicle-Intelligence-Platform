@@ -117,6 +117,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) phase7b-acceptance
 	$(MAKE) test-investigation-e2e benchmark-investigation investigation-observability
 	$(MAKE) phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
+	$(MAKE) phase7d-harness-acceptance
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -179,3 +180,15 @@ benchmark-supervisor:
 	bash scripts/mcp-validation.sh scripts/benchmark_supervisor.py
 supervisor-observability: containers
 	bash scripts/mcp-validation.sh scripts/observability_supervisor.py
+
+.PHONY: test-phase7d-harness phase7d-smoke phase7d-real-eval phase7d-report phase7d-harness-acceptance
+test-phase7d-harness:
+	$(API)/pytest apps/api/tests/unit/test_phase7d*.py
+phase7d-smoke:
+	$(API)/python scripts/phase7d_eval.py smoke $(PHASE7D_ARGS)
+phase7d-real-eval:
+	bash scripts/mcp-validation.sh scripts/phase7d_eval.py eval $(PHASE7D_ARGS)
+phase7d-report:
+	$(API)/python scripts/phase7d_eval.py report
+phase7d-harness-acceptance:
+	bash scripts/mcp-validation.sh scripts/phase7d_harness_acceptance.py

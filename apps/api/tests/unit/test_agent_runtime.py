@@ -10,7 +10,13 @@ from uuid import UUID, uuid4
 
 import httpx
 import pytest
-from openai import APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError
+from openai import (
+    APIConnectionError,
+    APIError,
+    APITimeoutError,
+    AuthenticationError,
+    RateLimitError,
+)
 from pydantic import SecretStr
 from sqlalchemy.exc import SQLAlchemyError
 from test_agents import fixture as fixture
@@ -128,9 +134,33 @@ async def test_real_provider_adapter_streamed_wire_contract(provider, mode):
     kwargs = provider.client.responses.create.call_args.kwargs
     assert kwargs["stream"] is True and kwargs["store"] is False
     assert kwargs["parallel_tool_calls"] is False
+    assert kwargs["text"]["format"]["strict"] is True
+    schema = kwargs["text"]["format"]["schema"]
+    binding = schema["$defs"]["Binding"]
+    assert set(binding["required"]) == set(binding["properties"])
+    assert binding["additionalProperties"] is False
+    assert {"type": "null"} in binding["properties"]["unit"]["anyOf"]
     assert "sentinel-private-key" not in json.dumps(kwargs)
     await provider.close()
     provider.client.close.assert_awaited_once()
+
+
+def test_unsafe_output_schema_requires_explicit_refusal_without_mutating_normal_schema():
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    normal = draft_schema(model_input)
+    model_input.supervisor = {"routing": {"intent": "unsafe"}}
+    refusal = draft_schema(model_input)
+    claim = refusal["$defs"]["Claim"]["properties"]
+    assert claim["template"]["enum"] == ["unsafe_operation_refused"]
+    assert claim["bindings"]["maxItems"] == 0 and claim["evidence_ids"]["maxItems"] == 0
+    assert refusal["properties"]["claims"]["minItems"] == 1
+    assert refusal["properties"]["claims"]["maxItems"] == 1
+    assert refusal["properties"]["missing_evidence"]["maxItems"] == 0
+    assert refusal["properties"]["confidence"]["enum"] == ["low"]
+    assert "recorded_fact" in normal["$defs"]["Claim"]["properties"]["template"]["enum"]
+    assert normal["properties"]["claims"]["maxItems"] == 16
 
 
 async def test_run_deadline_includes_validated_answer_publication(fixture, telemetry):
@@ -561,3 +591,83 @@ async def test_cancellation_reconciles_allocated_stream_sequence(fixture, teleme
     assert [(e.sequence, e.type) for e in events] == (
         [(1, "run_started"), (2, "run_cancelled")] if committed else [(1, "run_cancelled")]
     )
+
+
+@pytest.mark.parametrize(
+    "mode,category",
+    [
+        ("server_error", "provider_unavailable"),
+        ("rate_limit_exceeded", "provider_rate_limit"),
+        ("insufficient_quota", "provider_configuration"),
+        ("read_error", "provider_unavailable"),
+    ],
+)
+async def test_stream_transport_errors_after_headers_are_normalized_without_private_text(
+    provider, mode, category
+):
+    class FaultStream(ResponseStream):
+        async def generate(self):
+            if False:
+                yield None
+            request = httpx.Request("POST", "https://example.invalid")
+            if mode == "read_error":
+                raise httpx.ReadError("sentinel-private-stream-message", request=request)
+            raise APIError("sentinel-private-stream-message", request=request, body={"code": mode})
+
+    provider.observer = MagicMock()
+    provider.observer.begin.return_value = "stream-ticket"
+    provider.client.responses.create.return_value = FaultStream([])
+    with pytest.raises(AgentError, match=category) as caught:
+        await provider.turn(request())
+    assert "sentinel-private-stream-message" not in str(caught.value)
+    provider.observer.failed.assert_any_call("stream-ticket", category)
+    provider.observer.complete.assert_not_called()
+    assert provider.client.responses.create.call_count == 1
+
+
+def test_draft_schema_restricts_claims_and_bindings_to_current_visible_evidence():
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    known, foreign = uuid4(), uuid4()
+    model_input.evidence = [{"id": str(known)}]
+    schema = draft_schema(model_input)
+    draft = insufficient().model_dump(mode="json")
+    draft["claims"][0]["evidence_ids"] = [str(known)]
+    validator = Draft202012Validator(schema)
+    assert validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(foreign)]
+    assert not validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(known)]
+    draft["claims"][0]["bindings"] = [
+        {"evidence_id": str(known), "path": "/sample_count", "value": 3, "unit": None}
+    ]
+    assert validator.is_valid(draft)
+    draft["claims"][0]["bindings"][0]["evidence_id"] = str(foreign)
+    assert not validator.is_valid(draft)
+    assert schema["$defs"]["ScopedEvidenceId"]["enum"] == [str(known)]
+    # Per-turn schema construction never carries evidence from another request.
+    model_input.evidence = [{"id": str(foreign)}]
+    assert draft_schema(model_input)["$defs"]["ScopedEvidenceId"]["enum"] == [str(foreign)]
+
+
+def test_empty_evidence_schema_allows_insufficiency_but_no_citations_or_bindings():
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    model_input.evidence = []
+    schema = draft_schema(model_input)
+    validator = Draft202012Validator(schema)
+    draft = insufficient().model_dump(mode="json")
+    assert validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(uuid4())]
+    assert not validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = []
+    draft["claims"][0]["bindings"] = [
+        {"evidence_id": str(uuid4()), "path": "/x", "value": 1, "unit": None}
+    ]
+    assert not validator.is_valid(draft)

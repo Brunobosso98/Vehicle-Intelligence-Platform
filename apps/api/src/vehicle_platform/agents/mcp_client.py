@@ -12,6 +12,8 @@ from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.mcp.schemas import Envelope
 from vehicle_platform.mcp.tools import TOOL_NAMES
 
+RECOVERABLE_TOOL_ERRORS = frozenset({"mcp_tool_error", "tool_result_budget_exhausted"})
+
 
 class EvidenceClient(Protocol):
     async def discover(self) -> list[dict[str, Any]]: ...

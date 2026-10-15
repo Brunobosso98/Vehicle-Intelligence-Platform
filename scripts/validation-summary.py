@@ -17,6 +17,7 @@ labels = {
     "Phase 7A grounded agent": "AGENT",
     "Phase 7B investigation": "INVESTIGATION",
     "Phase 7C supervisor": "SUPERVISOR",
+    "Phase 7D deterministic harness": "PHASE7D",
 }
 outcome_status = {
     "success": "PASS",

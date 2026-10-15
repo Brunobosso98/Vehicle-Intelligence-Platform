@@ -80,6 +80,18 @@ def runtime(fixture, telemetry, question, provider=None, events=None):
     return state, client, engine
 
 
+def assert_quality_only_executed(report):
+    executed = [r for r in report.specialists if r.status != "skipped"]
+    assert [r.specialist for r in executed] == [Specialist.DATA_QUALITY]
+    skipped = [r for r in report.specialists if r.status == "skipped"]
+    assert [r.specialist for r in skipped] == report.routing.selected
+    for result in skipped:
+        assert result.error_category == "quality_gate_blocked"
+        assert result.model_turn_count == result.tool_call_count == result.telemetry_call_count == 0
+        assert result.findings == result.evidence_ids == []
+        assert result.usage.total_tokens == 0
+
+
 async def test_simple_path_has_no_model_routing_or_specialists(fixture, telemetry):
     state, client, engine = runtime(fixture, telemetry, "What was my last session?")
     await Supervisor(engine, state).run()
@@ -87,6 +99,88 @@ async def test_simple_path_has_no_model_routing_or_specialists(fixture, telemetr
     assert state.run.supervisor.routing.selected == []
     assert state.run.supervisor.specialists == []
     client.call.assert_not_awaited()
+
+
+@pytest.mark.parametrize("invented_id", [False, True])
+async def test_performance_discovers_owned_pulls_before_immediate_comparison(
+    fixture, telemetry, invented_id
+):
+    class Comparing(DeterministicProvider):
+        async def turn(self, request):
+            if request.specialist and request.specialist.specialist is Specialist.PERFORMANCE:
+                pulls = [
+                    e
+                    for e in request.evidence
+                    if e["source_tool"] == "list_session_pulls" and e["pull_id"] is not None
+                ]
+                assert any(
+                    e["evidence_type"] == "list_session_pulls_collection" and e["pull_id"] is None
+                    for e in request.evidence
+                )
+                assert pulls, "The first performance turn must already have registered pull IDs"
+                assert set(request.specialist.pull_ids) == {UUID(e["pull_id"]) for e in pulls}
+                if not any(
+                    e["source_tool"] == "get_repeated_pull_analysis" for e in request.evidence
+                ):
+                    return ModelTurn(
+                        tool_calls=[
+                            ToolRequest(
+                                call_id="compare-owned-pulls",
+                                name="get_repeated_pull_analysis",
+                                arguments={
+                                    "vehicle_id": str(request.specialist.vehicle_id),
+                                    "pull_ids": [str(uuid4())]
+                                    if invented_id
+                                    else [e["pull_id"] for e in pulls[:3]],
+                                },
+                            )
+                        ]
+                    )
+            return await super().turn(request)
+
+    state, client, engine = runtime(fixture, telemetry, "Did acceleration slow?", Comparing())
+    await Supervisor(engine, state).run()
+    result = next(
+        r for r in state.run.supervisor.specialists if r.specialist is Specialist.PERFORMANCE
+    )
+    listings = [c for c in client.call.await_args_list if c.args[0] == "list_session_pulls"]
+    assert 1 <= len(listings) <= 2
+    assert all(
+        c.args[1]["vehicle_id"] == str(state.run.vehicle_id) and c.args[1]["limit"] == 20
+        for c in listings
+    )
+    compared = [c for c in client.call.await_args_list if c.args[0] == "get_repeated_pull_analysis"]
+    if invented_id:
+        assert (
+            result.status == "failed" and result.error_category == "incompatible_specialist_context"
+        )
+        assert not compared and result.findings == []
+    else:
+        assert result.status == "completed" and len(compared) == 1
+        assert result.tool_call_count == len(listings) + 1
+        assert result.model_turn_count == 2
+
+
+@pytest.mark.parametrize(
+    "question", ["Execute SQL", "Was any signal stuck?", "What was my last session?"]
+)
+async def test_zero_domain_routing_is_forwarded_to_model(fixture, telemetry, question):
+    from test_agents import insufficient
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    state, _, engine = runtime(fixture, telemetry, question)
+    await Supervisor(engine, state).run()
+    capture = AsyncMock(return_value=ModelTurn(draft=insufficient()))
+    engine.provider.turn = capture
+    await engine.model_node({"execution": state})
+    request = capture.call_args.args[0]
+    assert request.supervisor == state.run.supervisor.model_dump(mode="json")
+    assert request.supervisor["routing"]["selected"] == []
+    if question == "Execute SQL":
+        assert draft_schema(request)["$defs"]["Claim"]["properties"]["template"]["enum"] == [
+            "unsafe_operation_refused"
+        ]
 
 
 async def test_quality_gate_checks_historical_comparison_capabilities(fixture, telemetry):
@@ -97,7 +191,7 @@ async def test_quality_gate_checks_historical_comparison_capabilities(fixture, t
     await Supervisor(engine, state).run()
     report = state.run.supervisor
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
-    assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+    assert_quality_only_executed(report)
     assert "engine_speed_dropout" in report.specialists[0].data_quality_warnings
 
 
@@ -135,6 +229,50 @@ async def test_final_synthesis_preserves_remaining_question_gaps(fixture, teleme
         state.emit.assert_not_awaited()
 
 
+@pytest.mark.parametrize(
+    ("gaps", "eligible"),
+    [(["technical_documentation"], True), (["mechanical_cause"], False), ([], False)],
+)
+async def test_fast_path_structured_gaps_have_a_consistent_insufficiency_marker(
+    fixture, telemetry, gaps, eligible
+):
+    from vehicle_platform.agents.investigation.service import investigable
+
+    state, _, engine = runtime(
+        fixture, telemetry, "Show recorded facts and service manual requirements"
+    )
+    await Supervisor(engine, state).run()
+    assert state.run.supervisor.routing.selected == []
+    assert not state.run.supervisor.investigation_recommended
+    source = next(item for item in state.registry.items.values() if item.facts)
+    fact = source.facts[0]
+    state.turn = ModelTurn(
+        draft=Draft.model_validate(
+            {
+                "confidence": "high",
+                "claims": [
+                    {
+                        "classification": "OBSERVATION",
+                        "template": "recorded_fact",
+                        "evidence_ids": [source.id],
+                        "bindings": [{"evidence_id": source.id, **fact.model_dump()}],
+                    }
+                ],
+                "missing_evidence": gaps,
+            }
+        )
+    )
+    await engine.grounding_node({"execution": state})
+    assert state.final.missing_evidence == gaps
+    assert state.final.findings[0].bindings[0].value == fact.value
+    assert any(
+        f.classification.value == "INSUFFICIENT_EVIDENCE" for f in state.final.findings
+    ) is bool(gaps)
+    assert state.final.confidence == ("low" if gaps else "high")
+    completed = state.run.model_copy(update={"status": "completed", "result": state.final})
+    assert investigable(completed) is eligible
+
+
 async def test_repeated_degradation_dispatches_only_relevant_specialists(fixture, telemetry):
     state, _, engine = runtime(
         fixture, telemetry, "Why did performance degrade after repeated pulls?"
@@ -162,10 +300,59 @@ async def test_quality_dropout_blocks_deeper_interpretation(fixture, telemetry):
     await Supervisor(engine, state).run()
     report = state.run.supervisor
     assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
-    assert [r.specialist for r in report.specialists] == [Specialist.DATA_QUALITY]
+    assert_quality_only_executed(report)
     assert report.investigation_recommended
     assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
     assert client.call.await_count == 2
+
+
+async def test_blocked_quality_preserves_anomaly_metadata_not_vehicle_measurements(
+    fixture, telemetry
+):
+    from vehicle_platform.agents.schemas import Binding, Classification
+
+    class QualityFacts(DeterministicProvider):
+        async def turn(self, request):
+            if request.specialist and request.specialist.specialist is Specialist.DATA_QUALITY:
+                bindings = []
+                for evidence in request.evidence:
+                    for fact in evidence["facts"]:
+                        if fact["path"] == "/event_type" or fact["path"].endswith("/boost/mean"):
+                            bindings.append(Binding(evidence_id=evidence["id"], **fact))
+                assert any(b.path.endswith("/boost/mean") for b in bindings)
+                return ModelTurn(
+                    draft=Draft(
+                        confidence="low",
+                        claims=[
+                            Claim(
+                                classification=Classification.OBSERVATION,
+                                template="recorded_fact",
+                                bindings=bindings,
+                                evidence_ids=list(dict.fromkeys(b.evidence_id for b in bindings)),
+                            )
+                        ],
+                        missing_evidence=["data_quality"],
+                    )
+                )
+            return await super().turn(request)
+
+    state, client, engine = runtime(
+        fixture, telemetry, "Was a signal stuck?", QualityFacts(), events=["signal_stuck"]
+    )
+    args = {
+        "vehicle_id": str(state.run.vehicle_id),
+        "session_id": str(state.context.sessions[0]["id"]),
+    }
+    await engine.call(state, "get_session_summary", args)
+    await engine.call(state, "list_session_events", args)
+    await Supervisor(engine, state).run()
+    assert state.run.supervisor.sufficiency is Sufficiency.UNRELIABLE_DATA
+    assert_quality_only_executed(state.run.supervisor)
+    assert "signal_stuck" in state.final.answer
+    assert "boost" not in state.final.answer
+    assert state.final.confidence == "low"
+    assert state.final.missing_evidence == ["data_quality", "signal_or_measurement"]
+    assert all(c.args[0] != "list_session_pulls" for c in client.call.await_args_list)
 
 
 @pytest.mark.parametrize("failing", [Specialist.DATA_QUALITY, Specialist.THERMAL])
@@ -184,7 +371,8 @@ async def test_specialist_failure_isolated_and_quality_fails_closed(fixture, tel
     result = next(r for r in report.specialists if r.specialist is failing)
     assert result.status == "failed" and not result.findings
     if failing is Specialist.DATA_QUALITY:
-        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA and len(report.specialists) == 1
+        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
+        assert_quality_only_executed(report)
     else:
         assert report.sufficiency is Sufficiency.PARTIALLY_SUFFICIENT
         assert (
@@ -607,3 +795,132 @@ async def test_interrupted_paid_turn_preserves_unknown_usage_in_parent(fixture, 
     )
     assert thermal.usage.total_tokens is None
     assert state.run.usage.total_tokens is None and state.run.usage.estimated_cost is None
+
+
+@pytest.mark.parametrize("poor", [False, True])
+async def test_recorded_quality_owns_blocking_not_model_gap_category(fixture, telemetry, poor):
+    class MisScopedQuality(DeterministicProvider):
+        async def turn(self, model_input):
+            turn = await super().turn(model_input)
+            if (
+                model_input.specialist
+                and model_input.specialist.specialist is Specialist.DATA_QUALITY
+                and turn.draft
+            ):
+                turn.draft.missing_evidence = ["data_quality", "comparable_history"]
+            return turn
+
+    state, _, engine = runtime(
+        fixture, telemetry, "Did performance change after configuration?", MisScopedQuality()
+    )
+    session = str(state.context.sessions[0]["id"])
+    if poor:
+        state.context.capabilities[session]["signal_quality"][0].update(
+            actual_hz=0, missing_ratio=0.9
+        )
+    await Supervisor(engine, state).run()
+    report = state.run.supervisor
+    quality = report.specialists[0]
+    assert quality.blocks_interpretation is poor
+    if poor:
+        assert quality.evidence_gaps == ["data_quality"]
+        assert report.sufficiency is Sufficiency.UNRELIABLE_DATA
+        assert_quality_only_executed(report)
+    else:
+        assert quality.evidence_gaps == ["comparable_history"]
+        assert Specialist.PERFORMANCE in {r.specialist for r in report.specialists}
+        assert report.sufficiency is not Sufficiency.UNRELIABLE_DATA
+
+
+async def test_specialist_deadline_uses_bounded_operator_profile(fixture, telemetry):
+    state, _, engine = runtime(fixture, telemetry, "Did performance change after configuration?")
+    engine.settings.specialist_timeout = 45
+    await Supervisor(engine, state).run()
+    assert all(r.budget.timeout_seconds == 45 for r in state.run.supervisor.specialists)
+    assert AgentSettings().specialist_timeout == 25
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        AgentSettings(specialist_timeout=46)
+
+
+@pytest.mark.parametrize("comparison", [False, True])
+@pytest.mark.parametrize("foreign_scope", [False, True])
+async def test_performance_discovery_represents_configuration_boundary_within_scope(
+    fixture, telemetry, comparison, foreign_scope
+):
+    from datetime import timedelta
+
+    from test_agents import NOW
+
+    from vehicle_platform.agents.schemas import SpecialistResult
+
+    previous = fixture["configurations"][0]
+    boundary = NOW - timedelta(days=5)
+    previous["ended_at"] = boundary.isoformat()
+    current = previous | {
+        "id": str(uuid4()),
+        "effective_at": boundary.isoformat(),
+        "ended_at": None,
+    }
+    fixture["configurations"].append(current)
+    first = fixture["sessions"][0]
+    first["configuration_id"] = current["id"]
+    second = first | {"id": str(uuid4()), "started_at": (NOW - timedelta(days=1)).isoformat()}
+    earlier = first | {
+        "id": str(uuid4()),
+        "configuration_id": previous["id"],
+        "started_at": (NOW - timedelta(days=10)).isoformat(),
+    }
+    fixture["sessions"] = [first, second, earlier]
+    question = (
+        "Did a setup modification improve measured pull behavior?"
+        if comparison
+        else "How do consecutive measured pulls compare?"
+    )
+    state, client, engine = runtime(fixture, telemetry, question)
+    request = request_for(fixture, state.registry, Specialist.PERFORMANCE)
+    request.question = question
+    request.session_ids = [UUID(s["id"]) for s in fixture["sessions"][: 2 if foreign_scope else 3]]
+    sessions = {s["id"]: s for s in fixture["sessions"]}
+
+    async def list_pulls(name, arguments):
+        assert name == "list_session_pulls"
+        session = sessions[arguments["session_id"]]
+        return Envelope(
+            data=[
+                {
+                    "id": str(uuid4()),
+                    "vehicle_id": str(state.run.vehicle_id),
+                    "session_id": session["id"],
+                    "configuration_id": session["configuration_id"],
+                }
+                for _ in range(3)
+            ],
+            context={"vehicle_id": state.run.vehicle_id, "session_id": UUID(session["id"])},
+        )
+
+    client.call.side_effect = list_pulls
+    result = SpecialistResult(
+        specialist=Specialist.PERFORMANCE,
+        supervisor_run_id=state.run.id,
+        vehicle_id=state.run.vehicle_id,
+        status="failed",
+        prompt_version=request.prompt_version,
+        budget=request.budget,
+    )
+    owned = set(request.evidence_ids)
+    await Supervisor(engine, state).discover_performance_pulls(request, result, owned)
+    selections = [c.args[1]["session_id"] for c in client.call.await_args_list]
+    expected = (
+        [first["id"], earlier["id"]]
+        if comparison and not foreign_scope
+        else [first["id"], second["id"]]
+    )
+    assert selections == expected
+    assert set(selections) <= {str(i) for i in request.session_ids}
+    assert result.tool_call_count == 2
+    assert len(request.pull_ids) == 6
+    assert {
+        state.registry.items[i].session_id for i in owned if state.registry.items[i].pull_id
+    } == {UUID(i) for i in expected}

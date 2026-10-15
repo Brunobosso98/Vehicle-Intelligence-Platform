@@ -164,9 +164,19 @@ async def test_specialist_system_policy_is_assigned_by_application(provider, fix
         ]
     )
     await provider.turn(model_input)
-    instructions = provider.client.responses.create.call_args.kwargs["instructions"]
+    kwargs = provider.client.responses.create.call_args.kwargs
+    instructions = kwargs["instructions"]
     assert specialist_policy(Specialist.THERMAL) in instructions
-    assert "thermal-v1" in instructions and "No private reasoning" in instructions
+    assert "thermal-v6" in instructions and "No private reasoning" in instructions
+    assert kwargs["text"]["format"]["strict"] is True
+    assert kwargs["text"]["format"]["schema"]["properties"]["claims"]["maxItems"] == 8
+    data = json.loads(kwargs["input"][1]["content"].split("\n", 1)[1])
+    assert data["vehicle_context"] == scope.context.model_dump(mode="json")
+    assert "context" not in data["specialist_scope"] and "question" not in data["specialist_scope"]
+    assert data["specialist_scope"] == scope.model_dump(
+        mode="json", exclude={"context", "question"}
+    )
+    assert kwargs["input"][0]["content"] == model_input.question
 
 
 async def test_supervisor_synthesis_retains_grounding_policy(provider):
@@ -186,7 +196,7 @@ async def test_supervisor_synthesis_retains_grounding_policy(provider):
     )
     await provider.turn(model_input)
     instructions = provider.client.responses.create.call_args.kwargs["instructions"]
-    assert "grounded-v1" in instructions and "supervisor-v1" in instructions
+    assert "grounded-v6" in instructions and "supervisor-v3" in instructions
 
 
 async def test_real_planning_adapter_receives_structured_supervisor_report(provider):
@@ -210,7 +220,15 @@ async def test_real_planning_adapter_receives_structured_supervisor_report(provi
         )
     )
     content = provider.client.responses.create.call_args.kwargs["input"][0]["content"]
-    assert json.loads(content.split("\n", 1)[1])["supervisor"] == report
+    payload = json.loads(content.split("\n", 1)[1])
+    assert payload["supervisor"] == report
+    assert payload["proposal_constraints"]["maximum_signal_needs"] == 16
+    format_ = provider.client.responses.create.call_args.kwargs["text"]["format"]
+    assert format_["strict"] is True
+    for model in format_["schema"]["$defs"].values():
+        if model.get("type") == "object":
+            assert set(model["required"]) == set(model["properties"])
+            assert model["additionalProperties"] is False
 
 
 @pytest.mark.parametrize("poor_quality", [True, False])
@@ -265,3 +283,128 @@ async def test_quality_only_investigation_has_a_valid_discriminating_gap():
     assert [h.category.value for h in result.hypotheses] == ["DATA_QUALITY"]
     assert result.gaps[0].hypothesis_indexes == [0]
     assert InvestigationProposal.model_validate(result.model_dump()) == result
+
+
+@pytest.mark.parametrize("specialist", [False, True])
+@pytest.mark.parametrize("scoped", [False, True])
+async def test_deterministic_pull_selection_is_unique_and_session_scoped(
+    fixture, specialist, scoped
+):
+    evidence = registry(fixture)
+    scope = request_for(fixture, evidence, Specialist.PERFORMANCE)
+    context = scope.context.model_dump(mode="json")
+    session_id = context["sessions"][0]["id"]
+    first, second = str(uuid4()), str(uuid4())
+    records = [
+        {
+            "id": str(uuid4()),
+            "source_tool": "list_session_pulls",
+            "entity_id": identifier,
+            "session_id": owner,
+        }
+        for identifier, owner in [
+            (str(uuid4()), str(uuid4())),
+            (first, session_id if scoped else str(uuid4())),
+            (first, session_id if scoped else str(uuid4())),
+            (second, session_id if scoped else str(uuid4())),
+        ]
+    ]
+    request = ModelInput(
+        question="Como foram as últimas puxadas?",
+        tools=[],
+        context=context,
+        evidence=records,
+        messages=[],
+        specialist=scope if specialist else None,
+    )
+    provider = DeterministicProvider()
+    turn = await (provider.specialist_turn(request) if specialist else provider.turn(request))
+    call = turn.tool_calls[0]
+    if scoped:
+        assert call.name == "get_repeated_pull_analysis"
+        assert call.arguments["pull_ids"] == [first, second]
+    else:
+        assert call.name == "list_session_pulls"
+        assert call.arguments["session_id"] == session_id
+
+
+async def test_deterministic_configuration_comparison_deduplicates_pull_entities(fixture):
+    scope = request_for(fixture, registry(fixture), Specialist.PERFORMANCE)
+    context = scope.context.model_dump(mode="json")
+    sessions = context["sessions"]
+    configs = context["configurations"]
+    configs.append(configs[0] | {"id": str(uuid4()), "effective_at": "2026-02-01T00:00:00Z"})
+    sessions.append(sessions[0] | {"id": str(uuid4()), "configuration_id": configs[-1]["id"]})
+    records = []
+    expected = []
+    for config in sorted(configs, key=lambda c: c["effective_at"]):
+        ids = [str(uuid4()), str(uuid4())]
+        expected.append(ids)
+        session = next(s for s in sessions if s["configuration_id"] == config["id"])
+        for identifier in [ids[0], ids[0], ids[1]]:
+            records.append(
+                {
+                    "id": str(uuid4()),
+                    "entity_id": identifier,
+                    "source_tool": "list_session_pulls",
+                    "configuration_id": config["id"],
+                    "session_id": session["id"],
+                }
+            )
+    request = ModelInput(
+        question="O comportamento mudou depois da configuração?",
+        tools=[],
+        context=context,
+        evidence=records,
+        messages=[],
+    )
+    turn = await DeterministicProvider().turn(request)
+    call = turn.tool_calls[0]
+    assert call.name == "compare_configurations"
+    assert call.arguments["before_pull_ids"] == expected[0]
+    assert call.arguments["after_pull_ids"] == expected[-1]
+
+
+async def test_rejected_proposal_logs_only_safe_rule_not_model_content(provider, caplog):
+    roles = [
+        "engine_speed_context",
+        "vehicle_speed_context",
+        "throttle_opening_behavior",
+        "boost_pressure_behavior",
+        "intake_temperature_behavior",
+        "high_fuel_pressure_behavior",
+    ]
+    gaps = [{"category": "signal_or_measurement", "signal_roles": roles} for _ in range(3)]
+    provider.client.responses.create.return_value = SimpleNamespace(
+        output_text=json.dumps({"hypotheses": [], "gaps": gaps})
+    )
+    with pytest.raises(AgentError, match="invalid_investigation_proposal"):
+        await provider.propose(
+            InvestigationInput(
+                question="private-user-sentinel", context={}, evidence=[], missing_evidence=[]
+            )
+        )
+    records = [
+        r for r in caplog.records if getattr(r, "event", None) == "investigation.proposal.rejected"
+    ]
+    assert len(records) == 1 and records[0].error_code == "signal_need_budget"
+    assert "signal_need_budget" in records[0].getMessage()
+    assert "private-user-sentinel" not in caplog.text
+    assert "engine_speed_context" not in caplog.text
+    assert provider.client.responses.create.call_count == 1
+
+
+@pytest.mark.parametrize("category", list(GapType))
+def test_proposal_wire_schema_rejects_signals_on_nonmeasurement_gaps(category):
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.investigation.proposal import InvestigationProposal
+    from vehicle_platform.agents.openai_provider import investigation_schema
+
+    validator = Draft202012Validator(investigation_schema())
+    proposal = InvestigationProposal(gaps=[ProposedGap(category=category)]).model_dump(mode="json")
+    assert validator.is_valid(proposal)
+    proposal["gaps"][0]["signal_roles"] = ["engine_speed_context"]
+    assert validator.is_valid(proposal) == (
+        category in {GapType.SIGNAL_OR_MEASUREMENT, GapType.DATA_QUALITY}
+    )

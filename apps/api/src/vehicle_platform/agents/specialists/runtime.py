@@ -8,12 +8,15 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from vehicle_platform.agents.config import redact_data
-from vehicle_platform.agents.evidence import canonical_hash
+from vehicle_platform.agents.evidence import EvidenceRegistry, canonical_hash
+from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS
 from vehicle_platform.agents.provider import AgentError, ModelInput, ModelTurn, RoutingInput
 from vehicle_platform.agents.schemas import (
+    Binding,
     Claim,
     Classification,
     Draft,
+    Finding,
     RoutingProposal,
     Specialist,
     SpecialistDraft,
@@ -31,6 +34,7 @@ from vehicle_platform.agents.specialists.routing import (
     event_types,
     hints_for,
 )
+from vehicle_platform.agents.specialists.tool_scope import scoped_tool_definitions
 from vehicle_platform.agents.specialists.validation import (
     conflicts_for,
     materialize,
@@ -44,6 +48,77 @@ if TYPE_CHECKING:
 
 
 ZERO_USAGE = Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0)
+
+
+def quality_observation_bindings(finding: Finding, registry: EvidenceRegistry) -> list[Binding]:
+    bindings: dict[tuple[UUID, str], Binding] = {}
+    event_paths = {
+        "/event_type",
+        "/evidence/signal",
+        "/duration_ms",
+        "/severity",
+        "/started_at",
+        "/ended_at",
+        "/evidence/gap_seconds",
+        "/evidence/analysis_confidence_reduced",
+    }
+    for binding in finding.bindings:
+        source = registry.items[binding.evidence_id]
+        event_type = next(
+            (
+                fact
+                for fact in source.facts
+                if fact.path == "/event_type" and fact.value in QUALITY_EVENTS
+            ),
+            None,
+        )
+        quality_event = (
+            source.source_tool
+            in {
+                "list_session_events",
+                "list_pull_events",
+                "get_event",
+            }
+            and event_type is not None
+        )
+        if source.source_tool == "get_session_capabilities" or (
+            quality_event and binding.path in event_paths
+        ):
+            if quality_event and event_type is not None:
+                bindings[(source.id, event_type.path)] = Binding(
+                    evidence_id=source.id,
+                    path=event_type.path,
+                    value=event_type.value,
+                    unit=event_type.unit,
+                )
+            bindings[(binding.evidence_id, binding.path)] = binding
+    return list(bindings.values())[:8]
+
+
+def performance_discovery_sessions(request: SpecialistRequest) -> list[dict[str, Any]]:
+    allowed = {str(i) for i in request.session_ids}
+    sessions = [s for s in request.context.sessions if str(s["id"]) in allowed]
+    selected = sessions[:2]
+    comparison = any(
+        word in request.question.casefold()
+        for word in ("configur", "modific", "replacement", "intercooler")
+    )
+    if not comparison or not sessions:
+        return selected
+    first = sessions[0]
+    if not first.get("configuration_id") or not first.get("temporal_configuration_valid"):
+        return selected
+    contrast = next(
+        (
+            s
+            for s in sessions[1:]
+            if s.get("temporal_configuration_valid")
+            and s.get("configuration_id")
+            and str(s["configuration_id"]) != str(first["configuration_id"])
+        ),
+        None,
+    )
+    return [first, contrast] if contrast is not None else selected
 
 
 class Supervisor:
@@ -91,11 +166,69 @@ class Supervisor:
         }:
             raise AgentError("incompatible_specialist_context")
 
+    async def discover_performance_pulls(
+        self, request: SpecialistRequest, result: SpecialistResult, owned_ids: set[UUID]
+    ) -> None:
+        """Resolve bounded, owned pull IDs before a performance model can compare them."""
+        if request.specialist is not Specialist.PERFORMANCE:
+            return
+        state = self.state
+        for session in performance_discovery_sessions(request):
+            session_id = str(session["id"])
+            if any(
+                e.id in owned_ids
+                and e.source_tool == "list_session_pulls"
+                and str(e.session_id) == session_id
+                for e in state.registry.items.values()
+            ):
+                continue
+            arguments = {
+                "vehicle_id": str(request.vehicle_id),
+                "session_id": session_id,
+                "limit": 20,
+            }
+            enforce_tool(request.specialist, "list_session_pulls")
+            self.enforce_scope(request, arguments)
+            if result.tool_call_count >= request.budget.mcp_calls:
+                raise AgentError("specialist_tool_budget_exhausted")
+            result.tool_call_count += 1
+            identity = canonical_hash({"tool": "list_session_pulls", "arguments": arguments})
+            await state.emit(
+                "specialist_tool_started",
+                {"specialist": request.specialist.value, "tool": "list_session_pulls"},
+            )
+            async with state.tool_lock:
+                hit = identity in state.cache
+                await self.engine.call_locked(state, "list_session_pulls", arguments)
+                owned_ids.update(
+                    i
+                    for call in state.tool_calls
+                    if call.argument_hash == identity
+                    for i in call.evidence_ids
+                )
+            result.cache_hits += int(hit)
+            await state.emit(
+                "specialist_tool_completed",
+                {
+                    "specialist": request.specialist.value,
+                    "tool": "list_session_pulls",
+                    "cache_hit": hit,
+                },
+            )
+        sessions = set(request.session_ids)
+        request.pull_ids = list(
+            dict.fromkeys(
+                e.pull_id
+                for e in state.registry.items.values()
+                if e.id in owned_ids and e.pull_id and e.session_id in sessions
+            )
+        )[:20]
+
     async def run(self) -> None:
         state = self.state
         if state.context is None:
             raise AgentError("context_missing")
-        await state.emit("supervisor_started", {"prompt_version": "supervisor-v1"})
+        await state.emit("supervisor_started", {"prompt_version": "supervisor-v3"})
         started = perf_counter()
         initial = hints_for(state.ask.question, list(state.registry.items.values()))
         if initial.candidates and state.context.sessions:
@@ -151,6 +284,21 @@ class Supervisor:
         report.configuration_hash = canonical_hash(
             {
                 "version": report.prompt_version,
+                "grounded_synthesis": "grounded-v6",
+                "routing_hints": "1.5",
+                "mcp_context_instructions": "1.0",
+                "tool_error_feedback": "1.0",
+                "scoped_tool_schemas": "1.0",
+                "scoped_draft_evidence_ids": "1.0",
+                "investigation_proposal_policy": "investigation-v5",
+                "investigation_gap_role_schema": "1.0",
+                "recipe_required_optional_selection": "1.0",
+                "existing_comparable_measurement_scope": "1.0",
+                "specialist_terminal_draft": "1.0",
+                "quality_blocked_role_records": "1.0",
+                "quality_observation_projection": "1.1",
+                "evidence_collection_projection": "agent-collection-v1",
+                "performance_pull_discovery": {"version": "1.1", "sessions": 2, "limit": 20},
                 "limits": report.limits.model_dump() if report.limits else {},
                 "roles": {
                     s.value: {
@@ -180,6 +328,23 @@ class Supervisor:
             if sufficiency_for([quality], [], quality_required=True) is Sufficiency.UNRELIABLE_DATA:
                 report.sufficiency = Sufficiency.UNRELIABLE_DATA
                 report.investigation_recommended = True
+                for specialist in decision.selected:
+                    skipped = SpecialistResult(
+                        specialist=specialist,
+                        supervisor_run_id=state.run.id,
+                        vehicle_id=state.run.vehicle_id,
+                        status="skipped",
+                        prompt_version=REGISTRY[specialist].prompt_version,
+                        evidence_gaps=["data_quality"],
+                        data_quality_warnings=["quality_gate_blocked"],
+                        error_category="quality_gate_blocked",
+                        usage=ZERO_USAGE,
+                        budget=REGISTRY[specialist]
+                        .budget()
+                        .model_copy(update={"timeout_seconds": self.settings.specialist_timeout}),
+                    )
+                    report.specialists.append(skipped)
+                    await state.emit("specialist_completed", skipped.model_dump(mode="json"))
                 await self.evaluate()
                 self.synthesize_unreliable()
                 return
@@ -252,15 +417,37 @@ class Supervisor:
 
         if self.state.context is None:
             raise AgentError("context_missing")
+        quality_claims: list[Claim] = []
+        report = self.state.run.supervisor
+        for result in report.specialists if report else []:
+            if result.specialist is not Specialist.DATA_QUALITY or result.status != "completed":
+                continue
+            for finding in result.findings:
+                if (
+                    finding.template != "recorded_fact"
+                    or finding.classification is not Classification.OBSERVATION
+                ):
+                    continue
+                bindings = quality_observation_bindings(finding, self.state.registry)
+                if bindings and len(quality_claims) < 8:
+                    quality_claims.append(
+                        Claim(
+                            classification=Classification.OBSERVATION,
+                            template="recorded_fact",
+                            bindings=bindings,
+                            evidence_ids=list(dict.fromkeys(b.evidence_id for b in bindings)),
+                        )
+                    )
         proposed = Draft(
             confidence="low",
             claims=[
+                *quality_claims,
                 Claim(
                     classification=Classification.INSUFFICIENT_EVIDENCE,
                     template="insufficient_evidence",
                     evidence_ids=[],
                     bindings=[],
-                )
+                ),
             ],
             missing_evidence=["data_quality", "signal_or_measurement"],
         )
@@ -415,8 +602,10 @@ class Supervisor:
             evidence_ids=list(self.shared_ids or tuple(state.registry.items)[:50]),
             session_ids=[UUID(str(s["id"])) for s in state.context.sessions],
             allowed_tools=sorted(policy.allowed_tools),
-            budget=policy.budget(),
-            deadline=datetime.now(UTC) + timedelta(seconds=policy.budget().timeout_seconds),
+            budget=policy.budget().model_copy(
+                update={"timeout_seconds": self.settings.specialist_timeout}
+            ),
+            deadline=datetime.now(UTC) + timedelta(seconds=self.settings.specialist_timeout),
             prompt_version=policy.prompt_version,
         )
         result = SpecialistResult(
@@ -444,12 +633,21 @@ class Supervisor:
             result.trace_id = f"{span.get_span_context().trace_id:032x}"
             try:
                 async with asyncio.timeout(request.budget.timeout_seconds):
+                    await self.discover_performance_pulls(request, result, owned_ids)
                     for _ in range(request.budget.model_turns):
                         self.reserve_turn()
                         result.model_turn_count += 1
                         model_input = ModelInput(
                             question=request.question,
-                            tools=tools_for(specialist, state.tools),
+                            tools=(
+                                scoped_tool_definitions(
+                                    request,
+                                    tools_for(specialist, state.tools),
+                                    [e for i, e in state.registry.items.items() if i in owned_ids],
+                                )
+                                if result.model_turn_count < request.budget.model_turns
+                                else []
+                            ),
                             context=request.context.model_dump(mode="json"),
                             evidence=[
                                 e.model_dump(mode="json")
@@ -539,7 +737,10 @@ class Supervisor:
                                 )
                                 for sid in sorted(set(session_ids)):
                                     await self.engine.capabilities(state, UUID(sid))
-                                if self.quality_warnings()[1]:
+                                if (
+                                    specialist is not Specialist.DATA_QUALITY
+                                    and self.quality_warnings()[1]
+                                ):
                                     raise AgentError("unreliable_specialist_data")
                             if result.tool_call_count >= request.budget.mcp_calls:
                                 raise AgentError("specialist_tool_budget_exhausted")
@@ -555,15 +756,27 @@ class Supervisor:
                                 "specialist_tool_started",
                                 {"specialist": specialist.value, "tool": tool.name},
                             )
+                            output: dict[str, Any]
                             async with state.tool_lock:
                                 hit = identity in state.cache
-                                await self.engine.call_locked(state, tool.name, tool.arguments)
-                                ids = [
-                                    i
-                                    for call in state.tool_calls
-                                    if call.argument_hash == identity
-                                    for i in call.evidence_ids
-                                ]
+                                try:
+                                    await self.engine.call_locked(state, tool.name, tool.arguments)
+                                except AgentError as exc:
+                                    if exc.category not in RECOVERABLE_TOOL_ERRORS:
+                                        raise
+                                    ids = []
+                                    output = {"status": "failed", "error_category": exc.category}
+                                else:
+                                    ids = [
+                                        i
+                                        for call in state.tool_calls
+                                        if call.argument_hash == identity
+                                        for i in call.evidence_ids
+                                    ]
+                                    output = {
+                                        "status": "completed",
+                                        "evidence_ids": [str(i) for i in ids],
+                                    }
                             result.cache_hits += int(hit)
                             owned_ids.update(ids)
                             messages.extend(
@@ -577,9 +790,7 @@ class Supervisor:
                                     {
                                         "type": "function_call_output",
                                         "call_id": tool.call_id,
-                                        "output": json.dumps(
-                                            {"evidence_ids": [str(i) for i in ids]}
-                                        ),
+                                        "output": json.dumps(output),
                                     },
                                 ]
                             )
@@ -601,6 +812,12 @@ class Supervisor:
                             result.evidence_gaps = ["data_quality"]
                         elif "requested_signal_unavailable" in result.data_quality_warnings:
                             result.evidence_gaps = ["signal_or_measurement"]
+                        else:
+                            # The application owns the blocking quality decision.
+                            # An unsupported model category cannot contradict verified metadata.
+                            result.evidence_gaps = [
+                                gap for gap in result.evidence_gaps if gap != "data_quality"
+                            ]
                     validate_result(result, request, state.registry)
             except asyncio.CancelledError:
                 result.status, result.error_category = "cancelled", "cancelled"

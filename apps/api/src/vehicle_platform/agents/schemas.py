@@ -259,8 +259,8 @@ class Sufficiency(StrEnum):
 
 
 class SupervisorReport(StrictModel):
-    schema_version: Literal["1.0"] = "1.0"
-    prompt_version: Literal["supervisor-v1"] = "supervisor-v1"
+    schema_version: Literal["1.0", "1.1"] = "1.1"
+    prompt_version: Literal["supervisor-v1", "supervisor-v2", "supervisor-v3"] = "supervisor-v3"
     routing: RoutingDecision
     specialists: list[SpecialistResult] = Field(default_factory=list, max_length=4)
     conflicts: list[Conflict] = Field(default_factory=list, max_length=8)
