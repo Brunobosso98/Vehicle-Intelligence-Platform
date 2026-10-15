@@ -445,7 +445,8 @@ class OpenAIProvider:
                 "schema_validation",
             )
             logging.getLogger(__name__).warning(
-                "Investigation proposal rejected",
+                "Investigation proposal rejected: %s",
+                reason,
                 extra={"event": "investigation.proposal.rejected", "error_code": reason},
             )
             raise AgentError("invalid_investigation_proposal") from None

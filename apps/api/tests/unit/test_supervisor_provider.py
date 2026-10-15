@@ -388,6 +388,7 @@ async def test_rejected_proposal_logs_only_safe_rule_not_model_content(provider,
         r for r in caplog.records if getattr(r, "event", None) == "investigation.proposal.rejected"
     ]
     assert len(records) == 1 and records[0].error_code == "signal_need_budget"
+    assert "signal_need_budget" in records[0].getMessage()
     assert "private-user-sentinel" not in caplog.text
     assert "engine_speed_context" not in caplog.text
     assert provider.client.responses.create.call_count == 1
