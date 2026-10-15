@@ -1632,3 +1632,34 @@ async def test_completed_followup_reloads_after_stale_race() -> None:
     reloaded = await service.complete_follow_up(item.vehicle_id, item.id)
     assert reloaded is item
     assert repository.get.await_count == 2
+
+
+@pytest.mark.parametrize("coolant_required", [False, True])
+def test_supported_optional_channels_cannot_veto_required_recipe(coolant_required):
+    signals = {r.signal: Support.SUPPORTED for r in BY_KEY["performance-pull"].requirements}
+    signals["engine.coolant_temperature"] = Support.SUPPORTED
+    source = DeviceCapabilities("trusted-mixed-context", signals, 1000)
+    proposed = plan_recipe(
+        [
+            need(SignalRole.ENGINE_SPEED),
+            need(SignalRole.VEHICLE_SPEED),
+            need(SignalRole.THROTTLE),
+            need(SignalRole.BOOST),
+            need(SignalRole.HIGH_FUEL_PRESSURE),
+            need(SignalRole.INTAKE_TEMPERATURE),
+            need(SignalRole.COOLANT_TEMPERATURE, required=coolant_required),
+        ],
+        source,
+    )
+    if coolant_required:
+        assert proposed.recipe is None and proposed.reference is None
+    else:
+        assert proposed.recipe is BY_KEY["performance-pull"]
+        assert proposed.reference.feasibility is Feasibility.FEASIBLE_WITH_DEGRADATION
+        assert proposed.reference.required_missing == []
+        assert proposed.reference.dropped_signals == ["engine.coolant_temperature"]
+        assert proposed.needs[-1].source_support.value == "AVAILABLE"
+        assert (
+            proposed.reference.configuration_hash == BY_KEY["performance-pull"].configuration_hash
+        )
+        assert proposed.reference.version == BY_KEY["performance-pull"].version

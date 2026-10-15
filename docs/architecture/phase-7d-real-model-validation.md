@@ -116,3 +116,11 @@ matching existing host validation. `--diagnostics` opts into ignored sanitized
 public model/tool request/response traces, including failed drafts and proposals.
 It excludes credentials, private reasoning and complete SDK/transport objects.
 Per-case sequence files preserve concurrent MCP calls; receipts retain charges.
+
+## Required and optional recipe coverage
+
+ADR 0029 requires all mandatory mapped measurements to fit the selected canonical
+recipe, then maximizes optional coverage with deterministic tie breaks. Omitted
+optional needs remain explicit and degrade feasibility. Required unavailable
+needs still block readiness. Catalog ingredients, rates, versions and recipe
+hashes remain unchanged; the supervisor hash versions the selection algorithm.

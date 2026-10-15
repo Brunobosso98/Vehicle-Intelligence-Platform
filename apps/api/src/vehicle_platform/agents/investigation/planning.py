@@ -135,16 +135,25 @@ def choose_recipe(needs: tuple[SignalNeed, ...]) -> LoggingRecipe | None:
             if any(need.role is SignalRole.DATA_QUALITY for need in needs)
             else None
         )
+    required = {
+        need.canonical_signal for need in needs if need.required and need.canonical_signal in wanted
+    }
     candidates = [
         recipe
         for recipe in RECIPES
-        if wanted <= {requirement.signal for requirement in recipe.requirements}
+        if required <= {requirement.signal for requirement in recipe.requirements}
+        and wanted & {requirement.signal for requirement in recipe.requirements}
     ]
     if not candidates:
         return None
     return min(
         candidates,
-        key=lambda recipe: (len(recipe.requirements), recipe.minimum_duration_seconds, recipe.key),
+        key=lambda recipe: (
+            -len(wanted & {requirement.signal for requirement in recipe.requirements}),
+            len(recipe.requirements),
+            recipe.minimum_duration_seconds,
+            recipe.key,
+        ),
     )
 
 
@@ -179,6 +188,14 @@ def plan_recipe(
                 need = need.model_copy(update={"availability": Availability.AVAILABLE_DEGRADED})
                 rate_compromises.append(item.signal)
         updated.append(need)
+    recipe_signals = {requirement.signal for requirement in recipe.requirements}
+    omitted_optional = [
+        need.canonical_signal
+        for need in updated
+        if not need.required
+        and need.canonical_signal
+        and need.canonical_signal not in recipe_signals
+    ]
     missing_required = [
         need
         for need in updated
@@ -194,7 +211,12 @@ def plan_recipe(
         feasibility = Feasibility.NOT_FEASIBLE
     elif missing_required:
         feasibility = Feasibility.PARTIALLY_FEASIBLE
-    elif rate_compromises or result.readiness is Readiness.DEGRADED or unavailable:
+    elif (
+        rate_compromises
+        or result.readiness is Readiness.DEGRADED
+        or unavailable
+        or omitted_optional
+    ):
         feasibility = Feasibility.FEASIBLE_WITH_DEGRADATION
     else:
         feasibility = Feasibility.FEASIBLE
@@ -208,9 +230,22 @@ def plan_recipe(
         sampling_algorithm_version=result.sampling_algorithm_version,
         feasibility=feasibility,
         required_missing=[need.canonical_signal or need.role.value for need in missing_required],
-        dropped_signals=[need.canonical_signal or need.role.value for need in unavailable],
+        dropped_signals=list(
+            dict.fromkeys(
+                [need.canonical_signal or need.role.value for need in unavailable]
+                + omitted_optional
+            )
+        ),
         rate_compromises=rate_compromises,
-        rationale=[*result.warnings, "Selected from the versioned Phase 4 recipe catalog"],
+        rationale=[
+            *result.warnings,
+            "Selected from the versioned Phase 4 recipe catalog",
+            *(
+                ["Optional requested measurements remain outside this capture plan"]
+                if omitted_optional
+                else []
+            ),
+        ],
         source=capabilities.adapter,
     )
     return PlannedRecipe(recipe, result, reference, tuple(updated))

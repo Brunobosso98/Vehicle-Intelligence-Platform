@@ -292,6 +292,7 @@ class Supervisor:
                 "scoped_draft_evidence_ids": "1.0",
                 "investigation_proposal_policy": "investigation-v5",
                 "investigation_gap_role_schema": "1.0",
+                "recipe_required_optional_selection": "1.0",
                 "existing_comparable_measurement_scope": "1.0",
                 "specialist_terminal_draft": "1.0",
                 "quality_blocked_role_records": "1.0",
