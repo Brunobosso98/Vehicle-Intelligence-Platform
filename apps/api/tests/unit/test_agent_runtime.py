@@ -623,3 +623,51 @@ async def test_stream_transport_errors_after_headers_are_normalized_without_priv
     provider.observer.failed.assert_any_call("stream-ticket", category)
     provider.observer.complete.assert_not_called()
     assert provider.client.responses.create.call_count == 1
+
+
+def test_draft_schema_restricts_claims_and_bindings_to_current_visible_evidence():
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    known, foreign = uuid4(), uuid4()
+    model_input.evidence = [{"id": str(known)}]
+    schema = draft_schema(model_input)
+    draft = insufficient().model_dump(mode="json")
+    draft["claims"][0]["evidence_ids"] = [str(known)]
+    validator = Draft202012Validator(schema)
+    assert validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(foreign)]
+    assert not validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(known)]
+    draft["claims"][0]["bindings"] = [
+        {"evidence_id": str(known), "path": "/sample_count", "value": 3, "unit": None}
+    ]
+    assert validator.is_valid(draft)
+    draft["claims"][0]["bindings"][0]["evidence_id"] = str(foreign)
+    assert not validator.is_valid(draft)
+    assert schema["$defs"]["ScopedEvidenceId"]["enum"] == [str(known)]
+    # Per-turn schema construction never carries evidence from another request.
+    model_input.evidence = [{"id": str(foreign)}]
+    assert draft_schema(model_input)["$defs"]["ScopedEvidenceId"]["enum"] == [str(foreign)]
+
+
+def test_empty_evidence_schema_allows_insufficiency_but_no_citations_or_bindings():
+    from jsonschema import Draft202012Validator
+
+    from vehicle_platform.agents.openai_provider import draft_schema
+
+    model_input = request()
+    model_input.evidence = []
+    schema = draft_schema(model_input)
+    validator = Draft202012Validator(schema)
+    draft = insufficient().model_dump(mode="json")
+    assert validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = [str(uuid4())]
+    assert not validator.is_valid(draft)
+    draft["claims"][0]["evidence_ids"] = []
+    draft["claims"][0]["bindings"] = [
+        {"evidence_id": str(uuid4()), "path": "/x", "value": 1, "unit": None}
+    ]
+    assert not validator.is_valid(draft)

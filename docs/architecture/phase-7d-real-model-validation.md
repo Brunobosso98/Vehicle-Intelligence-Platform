@@ -92,3 +92,11 @@ Discovery strategy 1.1 keeps the existing maximum two owned session reads and tw
 ## Scoped tools, terminal drafts and optional capture planning
 
 ADR 0025 records per-turn entity-ID schemas, the reserved terminal draft, safe Data Quality summary reads, explicit zero-call quality-blocked role records and independent recognition of canonical numerical semantics. Suite v2 preserves the complete question/fixture/repeat set, aligns optional G09 planning with specification section 82, and strengthens public capture-approval notice checks. Historical receipts remain unchanged. No budget, retry or interpretation guard is expanded.
+
+## Scoped output references
+
+ADR 0026 adds a per-call shared evidence-ID enum to structured claim and binding
+references. It uses only the current visible evidence, with empty citations and
+bindings when evidence is absent. Host grounding remains authoritative for
+ownership, exact facts and temporal context. The supervisor configuration hash
+records `scoped_draft_evidence_ids: 1.0`. Further real confirmation is required.

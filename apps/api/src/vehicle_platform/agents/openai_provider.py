@@ -33,6 +33,21 @@ from vehicle_platform.agents.specialists.policy import SUPERVISOR_POLICY, specia
 def draft_schema(request: ModelInput) -> dict[str, Any]:
     schema = to_strict_json_schema(Draft)
     schema["properties"]["claims"]["minItems"] = 1
+    claim = schema["$defs"]["Claim"]["properties"]
+    identifiers = sorted({str(item["id"]) for item in request.evidence})
+    if identifiers:
+        schema["$defs"]["ScopedEvidenceId"] = {
+            "type": "string",
+            "format": "uuid",
+            "enum": identifiers,
+        }
+        reference = {"$ref": "#/$defs/ScopedEvidenceId"}
+        claim["evidence_ids"]["items"] = reference.copy()
+        schema["$defs"]["Binding"]["properties"]["evidence_id"] = reference.copy()
+    else:
+        # Empty evidence still permits honest insufficiency and safe refusal drafts.
+        claim["evidence_ids"]["maxItems"] = 0
+        claim["bindings"]["maxItems"] = 0
     if request.specialist:
         schema["properties"]["claims"]["maxItems"] = 8
     if (request.supervisor or {}).get("routing", {}).get("intent") == "unsafe":
