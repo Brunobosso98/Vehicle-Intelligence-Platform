@@ -69,9 +69,7 @@ class Orchestrator:
         graph.add_node("grounding", RunnableLambda(self.grounding_node))
         graph.add_edge(START, "context")
         graph.add_edge("context", "knowledge")
-        graph.add_conditional_edges(
-            "knowledge", self.after_grounding, {"model": "supervisor", "end": END}
-        )
+        graph.add_edge("knowledge", "supervisor")
         graph.add_conditional_edges(
             "supervisor", self.after_grounding, {"model": "model", "end": END}
         )
@@ -102,10 +100,22 @@ class Orchestrator:
                 record_exception=False,
                 set_status_on_exception=False,
             ):
-                attached = knowledge_report(result, hybrid=True)
+                attached = knowledge_report(
+                    result,
+                    hybrid=True,
+                    vehicle_evidence_available=bool(
+                        execution.context and execution.context.sessions
+                    )
+                    and not (
+                        execution.run.supervisor
+                        and execution.run.supervisor.sufficiency == "UNRELIABLE_DATA"
+                    ),
+                )
                 execution.final.knowledge = attached
                 excerpt = render_knowledge(attached)
                 execution.final.answer = (execution.final.answer + "\n\n" + excerpt)[:48000]
+            if attached.request_type == "VEHICLE_EVIDENCE_INSUFFICIENT":
+                execution.final.confidence = "low"
             if result.knowledge_gaps:
                 execution.final.missing_evidence = list(
                     dict.fromkeys(["technical_documentation", *execution.final.missing_evidence])
@@ -226,7 +236,10 @@ class Orchestrator:
         with self.telemetry.tracer.start_as_current_span(
             "agent.supervisor", record_exception=False, set_status_on_exception=False
         ):
-            await Supervisor(self, graph["execution"]).run()
+            execution = graph["execution"]
+            await Supervisor(self, execution).run(
+                documentation_only=bool(execution.final and execution.final.knowledge)
+            )
         return {}
 
     async def call(self, state: Execution, name: str, arguments: dict[str, Any]) -> dict[str, Any]:

@@ -1130,6 +1130,9 @@ def test_descriptive_numeric_fact_never_becomes_a_pressure_target() -> None:
         "Explain the observed HPFP pressure in my session",
         "How do recorded boost and throttle vary in the last pull?",
         "Explique a temperatura registrada nesta sessão",
+        "Why did boost fall?",
+        "Why is fuel pressure missing during a pull?",
+        "Why is low fuel pressure unknown?",
     ],
 )
 def test_measurement_explanations_do_not_short_circuit_mcp(question: str) -> None:
@@ -1145,6 +1148,19 @@ def test_explicit_reference_plus_recording_requires_both_evidence_domains() -> N
     assert plan("Explain the recorded HPFP pressure using the OEM reference").request_type == (
         RequestType.HYBRID_COMPARISON
     )
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Which documented rail pressure target is unknown for this tuner map?",
+        "Why is the OEM fuel pressure specification absent from the documentation?",
+    ],
+)
+def test_missing_documentary_targets_do_not_become_missing_telemetry(question: str) -> None:
+    from vehicle_platform.knowledge.tools import RequestType, plan
+
+    assert plan(question).request_type == RequestType.KNOWLEDGE_FACT
 
 
 async def test_query_engine_cannot_override_mcp_scope_or_buy_an_embedding(settings) -> None:

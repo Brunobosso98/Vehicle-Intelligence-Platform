@@ -54,7 +54,10 @@ paragraph locators for **every** document selection belonging to that source. Fo
   "decision": "ACCEPTED",
   "reviewed_extraction_limitations": [],
   "selection_overrides": {
-    "hdp-operating-principle": [[1, null], [8, null]]
+    "hdp-operating-principle": [
+      [1, null],
+      [8, null]
+    ]
   },
   "source_conflicts": []
 }

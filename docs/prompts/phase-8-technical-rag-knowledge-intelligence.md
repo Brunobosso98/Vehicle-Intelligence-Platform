@@ -6,11 +6,11 @@ This is the first phase that introduces a trusted technical knowledge layer alon
 
 The architectural distinction is fundamental:
 
-~~~text
+```text
 MCP = truth about THIS VEHICLE and its recorded state/history
 RAG = technical/documentary knowledge from trusted sources
 Supervisor = combines both while preserving provenance and applicability
-~~~
+```
 
 Phase 8 must not blur these boundaries.
 
@@ -371,6 +371,7 @@ Inspect existing models first.
 Introduce additive entities roughly equivalent to:
 
 ### KnowledgeSource
+
 - id;
 - publisher;
 - canonical URL;
@@ -380,6 +381,7 @@ Introduce additive entities roughly equivalent to:
 - created/updated timestamps.
 
 ### TechnicalDocument
+
 - id;
 - source_id;
 - title;
@@ -394,9 +396,11 @@ Introduce additive entities roughly equivalent to:
 - license/redistribution status.
 
 ### DocumentVersion
+
 if needed for clean version history.
 
 ### DocumentChunk
+
 - id;
 - document/version;
 - ordinal;
@@ -411,6 +415,7 @@ if needed for clean version history.
 - checksum.
 
 ### RetrievalRun
+
 - query;
 - filters;
 - candidates;
@@ -419,6 +424,7 @@ if needed for clean version history.
 - latency.
 
 ### KnowledgeEvidence
+
 or integration with the existing evidence model.
 
 Do not duplicate existing generic Document/Chunk concepts if they already exist.
@@ -853,7 +859,7 @@ For knowledge-required questions, generate a structured retrieval intent.
 
 Example:
 
-~~~text
+```text
 vehicle:
   make: BMW
   platform: F30
@@ -867,7 +873,7 @@ topic:
   high_pressure_fuel_system
 need:
   operating principle / target-vs-actual behavior
-~~~
+```
 
 The model may suggest semantic topic/need.
 
@@ -880,18 +886,23 @@ Deterministic application code enforces actual vehicle/context filters.
 Classify requests into at least:
 
 ### VEHICLE_FACT
+
 Use MCP.
 
 ### KNOWLEDGE_FACT
+
 Use RAG.
 
 ### HYBRID_COMPARISON
+
 Use MCP + RAG.
 
 ### TECHNICAL_KNOWLEDGE_INSUFFICIENT
+
 No adequate source.
 
 ### VEHICLE_EVIDENCE_INSUFFICIENT
+
 Potential Phase 7B path.
 
 Do not send every question to RAG.
@@ -966,21 +977,21 @@ Do not store long copyrighted passages inside AgentRun payloads.
 
 Technical claims must link:
 
-~~~text
+```text
 final claim
 → KnowledgeEvidence
 → DocumentChunk
 → DocumentVersion
 → KnowledgeSource
-~~~
+```
 
 Hybrid claims may link both:
 
-~~~text
+```text
 final claim
 ├─ VehicleEvidence
 └─ KnowledgeEvidence
-~~~
+```
 
 ---
 
@@ -1033,9 +1044,11 @@ Do not answer from model memory.
 Distinguish:
 
 ### Missing telemetry evidence
+
 Potential Phase 7B investigation/logging.
 
 ### Missing technical documentation
+
 Phase 8 knowledge gap.
 
 Do NOT create LoggingRecipe to solve a missing-document problem.
@@ -1049,15 +1062,19 @@ This behavior already existed in 7B/7C and must remain.
 Specialists may access scoped knowledge retrieval.
 
 ### Performance
+
 Can retrieve performance/calibration-related technical knowledge when needed.
 
 ### Thermal
+
 Can retrieve thermal/cooling/IAT-related knowledge.
 
 ### Fuel/Air/Boost
+
 Can retrieve fuel/boost/air-system knowledge.
 
 ### Data Quality
+
 Primarily remains MCP/deterministic; RAG access should be minimal and only if justified.
 
 Do not expose unrestricted "search everything" to each specialist.
@@ -1561,7 +1578,7 @@ Avoid high-cardinality source URLs/IDs in labels.
 
 Trace:
 
-~~~text
+```text
 AgentRun
 → knowledge intent
 → applicability filters
@@ -1570,17 +1587,17 @@ AgentRun
 → hybrid fusion/rerank
 → KnowledgeEvidence
 → grounding/synthesis
-~~~
+```
 
 For hybrid:
 
-~~~text
+```text
 AgentRun
 ├─ MCP vehicle evidence
 └─ RAG knowledge evidence
    ↓
 grounded synthesis
-~~~
+```
 
 ---
 

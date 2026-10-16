@@ -81,12 +81,19 @@ def plan(question: str) -> KnowledgePlan:
             r"\b(recorded|observed|measured|commanded|session|sessão|last pull|registrad[oa])\b", q
         )
     )
+    measured = measured or bool(re.search(r"\b(why did|why was|during (?:a|the) pull)\b", q))
     explicit_documentation = bool(
         re.search(
             r"\b(documentation|documentação|reference|referência|oem|specification|especificação|"
             r"operating principle|princípio|como funciona)\b",
             q,
         )
+    )
+    measured = measured or bool(
+        re.search(r"\b(missing|unknown|absent|not recorded)\b", q)
+        and re.search(r"\b(pressure|boost|iat|rpm|throttle|lambda|telemetry|signal)\b", q)
+        and not explicit_documentation
+        and not re.search(r"\b(target|limit|tuner|map|calibration)\b", q)
     )
     if measured and not hybrid:
         if explicit_documentation:

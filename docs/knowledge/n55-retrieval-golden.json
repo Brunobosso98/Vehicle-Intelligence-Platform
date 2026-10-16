@@ -9,21 +9,12 @@
       "query": "Which technologies does BMW combine in the N55 inline six?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture",
-        "f30-n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture", "f30-n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -33,11 +24,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -47,21 +34,12 @@
       "query": "Does the F30 335i N55 use direct fuel injection?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "f30-n55-architecture",
-        "n55-architecture"
-      ],
+      "expected_documents": ["f30-n55-architecture", "n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -71,11 +49,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -85,20 +59,12 @@
       "query": "How does Valvetronic affect intake pumping losses?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -108,11 +74,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -122,20 +84,12 @@
       "query": "What is the N55 twin scroll housing intended to improve?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -145,11 +99,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -159,20 +109,12 @@
       "query": "Which N55 engine features are described in the F30 launch material?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "f30-n55-architecture"
-      ],
+      "expected_documents": ["f30-n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -182,11 +124,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -196,20 +134,12 @@
       "query": "Does the N55 use one turbocharger or two separate turbochargers?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -219,11 +149,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -233,20 +159,12 @@
       "query": "What keeps exhaust gas streams separated in the N55 turbocharger?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -256,11 +174,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -270,20 +184,12 @@
       "query": "What is the relationship between N55 Valvetronic and intake air?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -293,11 +199,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -307,20 +209,12 @@
       "query": "What engine family powers the BMW F30 335i in the launch reference?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "f30-n55-architecture"
-      ],
+      "expected_documents": ["f30-n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -330,11 +224,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -344,21 +234,12 @@
       "query": "Which BMW reference links N55 turbocharging with High Precision injection?",
       "topic": "architecture",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture",
-        "f30-n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture", "f30-n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -368,11 +249,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -389,14 +266,8 @@
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -406,11 +277,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -420,20 +287,12 @@
       "query": "What does a GDI high pressure fuel sensor measure?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-components"
-      ],
+      "expected_documents": ["gdi-components"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -443,11 +302,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -457,21 +312,12 @@
       "query": "How do high pressure injectors connect the rail and combustion chamber?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-components",
-        "gdi-operating-principle"
-      ],
+      "expected_documents": ["gdi-components", "gdi-operating-principle"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -481,11 +327,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -502,14 +344,8 @@
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -519,11 +355,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -533,20 +365,12 @@
       "query": "What does the low pressure fuel supply deliver to the high pressure pump?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-operating-principle"
-      ],
+      "expected_documents": ["gdi-operating-principle"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -556,11 +380,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -570,20 +390,12 @@
       "query": "How is fuel atomized inside the combustion chamber?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-operating-principle"
-      ],
+      "expected_documents": ["gdi-operating-principle"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -593,11 +405,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -607,20 +415,12 @@
       "query": "What is the fuel rail role between individual injections?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-components"
-      ],
+      "expected_documents": ["gdi-components"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -630,11 +430,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -644,20 +440,12 @@
       "query": "Which generic gasoline system component pumps fuel from the tank?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-components"
-      ],
+      "expected_documents": ["gdi-components"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -667,11 +455,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -681,20 +465,12 @@
       "query": "How does the Motronic controller coordinate ignition and mixture?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "gdi-operating-principle"
-      ],
+      "expected_documents": ["gdi-operating-principle"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -704,11 +480,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -718,20 +490,12 @@
       "query": "What reference describes fuel entering the rail at required pressure?",
       "topic": "fuel",
       "need": "principle",
-      "expected_documents": [
-        "hdp-operating-principle"
-      ],
+      "expected_documents": ["hdp-operating-principle"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -741,11 +505,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -755,20 +515,12 @@
       "query": "How does twin scroll turbocharging reduce N55 response lag?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -778,11 +530,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -792,20 +540,12 @@
       "query": "Why does compressed induction air need intercooling?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -815,11 +555,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -829,20 +565,12 @@
       "query": "Does the BMW N55 reference describe outside air charge cooling?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -852,11 +580,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -866,20 +590,12 @@
       "query": "How does the N55 turbo housing separate exhaust streams?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -889,11 +605,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -903,20 +615,12 @@
       "query": "What combines direct injection and a twin scroll turbo in the F30?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "f30-n55-architecture"
-      ],
+      "expected_documents": ["f30-n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -926,11 +630,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -940,20 +640,12 @@
       "query": "Why does turbocharger compression heat the intake air?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -963,11 +655,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -977,20 +665,12 @@
       "query": "What charge air cooling principle helps prevent knocking?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1000,11 +680,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1014,20 +690,12 @@
       "query": "Does N55 Valvetronic reduce intake pumping losses?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1037,11 +705,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1051,20 +715,12 @@
       "query": "Which launch reference describes the N55 single turbo housing?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "n55-architecture"
-      ],
+      "expected_documents": ["n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1074,11 +730,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1088,21 +740,12 @@
       "query": "What N55 architecture is behind BMW TwinPower Turbo wording?",
       "topic": "boost",
       "need": "principle",
-      "expected_documents": [
-        "f30-n55-architecture",
-        "n55-architecture"
-      ],
+      "expected_documents": ["f30-n55-architecture", "n55-architecture"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1112,11 +755,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1126,20 +765,12 @@
       "query": "Why is N55 induction air cooled after compression?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1149,11 +780,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1163,20 +790,12 @@
       "query": "How can hotter incoming air contribute to knocking?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1186,11 +805,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1200,20 +815,12 @@
       "query": "What cooling medium does the N55 launch reference describe?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1223,11 +830,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1237,20 +840,12 @@
       "query": "Which engine management system includes N55 knock control?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1260,11 +855,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1274,20 +865,12 @@
       "query": "Where is the DME mounted according to the N55 introduction?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1297,11 +880,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1311,20 +890,12 @@
       "query": "Why can insufficient intercooling reduce engine power?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1334,11 +905,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1348,20 +915,12 @@
       "query": "What is meant by intercooling compressed induction air?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1371,11 +930,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1385,20 +940,12 @@
       "query": "What N55 principle relates the intercooler and detonation?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1408,11 +955,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1422,20 +965,12 @@
       "query": "Does documentary intercooling explain a possible IAT mechanism?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1445,11 +980,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1459,20 +990,12 @@
       "query": "What source explains that intake compression heats the air?",
       "topic": "thermal",
       "need": "principle",
-      "expected_documents": [
-        "n55-charge-air-cooling"
-      ],
+      "expected_documents": ["n55-charge-air-cooling"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1482,11 +1005,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1496,22 +1015,12 @@
       "query": "What hardware does the MHD N55 Stage 2 page discuss?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-map-variants"
-      ],
+      "expected_documents": ["n55-map-variants"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "unresolved_source_conflict"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["unresolved_source_conflict"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1521,11 +1030,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1535,22 +1040,12 @@
       "query": "What distinguishes MHD Stage 2 and Stage 2 plus hardware?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-map-variants"
-      ],
+      "expected_documents": ["n55-map-variants"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "unresolved_source_conflict"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["unresolved_source_conflict"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1560,11 +1055,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1574,22 +1065,12 @@
       "query": "Which MHD N55 map description mentions an upgraded HPFP?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-map-variants"
-      ],
+      "expected_documents": ["n55-map-variants"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "unresolved_source_conflict"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["unresolved_source_conflict"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1599,11 +1080,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1613,20 +1090,12 @@
       "query": "Which official tuner describes N55 EWG CustomROM map slots?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1636,11 +1105,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1650,20 +1115,12 @@
       "query": "How does bootmod3 describe flex fuel sensor use with upgraded HPFPs?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1673,11 +1130,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1687,22 +1140,12 @@
       "query": "Which N55 tuner page lists octane variants for Stage maps?",
       "topic": "calibration",
       "need": "principle",
-      "expected_documents": [
-        "n55-map-variants"
-      ],
+      "expected_documents": ["n55-map-variants"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "unresolved_source_conflict"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["unresolved_source_conflict"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1712,11 +1155,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1726,24 +1165,15 @@
       "query": "What exact boost target applies to my unknown Stage 2 map?",
       "topic": "calibration",
       "need": "normative_target",
-      "expected_documents": [
-        "n55-map-variants",
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-map-variants", "n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [
         "applicable_normative_reference_unavailable",
         "exact_tuner_map_target_unavailable"
       ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1753,11 +1183,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1767,24 +1193,15 @@
       "query": "What exact fuel pressure target applies to an unspecified custom tune?",
       "topic": "calibration",
       "need": "normative_target",
-      "expected_documents": [
-        "n55-map-variants",
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-map-variants", "n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [
         "applicable_normative_reference_unavailable",
         "exact_tuner_map_target_unavailable"
       ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1794,11 +1211,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1808,24 +1221,15 @@
       "query": "Can stock targets establish my unknown tuner map limit?",
       "topic": "calibration",
       "need": "normative_target",
-      "expected_documents": [
-        "n55-map-variants",
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-map-variants", "n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [
         "applicable_normative_reference_unavailable",
         "exact_tuner_map_target_unavailable"
       ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1835,11 +1239,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1849,24 +1249,15 @@
       "query": "What normative timing value applies to my proprietary Stage 2 calibration?",
       "topic": "calibration",
       "need": "normative_target",
-      "expected_documents": [
-        "n55-map-variants",
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-map-variants", "n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
       "expected_gaps": [
         "applicable_normative_reference_unavailable",
         "exact_tuner_map_target_unavailable"
       ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "applicable_metadata": {
         "engine": "N55",
         "platform": "F30",
@@ -1876,11 +1267,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1895,17 +1282,9 @@
       "scope": {
         "engine": "B58"
       },
-      "expected_gaps": [
-        "trusted_applicable_documentation_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["trusted_applicable_documentation_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "B58",
@@ -1916,11 +1295,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1935,17 +1310,9 @@
       "scope": {
         "engine": "N20"
       },
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N20",
@@ -1956,11 +1323,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -1976,17 +1339,9 @@
         "platform": "G20",
         "engine": "B58"
       },
-      "expected_gaps": [
-        "trusted_applicable_documentation_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["trusted_applicable_documentation_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "B58",
@@ -1997,11 +1352,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2017,17 +1368,9 @@
       ],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2038,11 +1381,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2059,17 +1398,9 @@
       ],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2080,11 +1411,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2094,23 +1421,12 @@
       "query": "Exact proprietary custom map fuel target",
       "topic": "calibration",
       "need": "normative_target",
-      "expected_documents": [
-        "n55-map-variants",
-        "n55-ewg-calibration"
-      ],
+      "expected_documents": ["n55-map-variants", "n55-ewg-calibration"],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2121,11 +1437,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2141,17 +1453,9 @@
       ],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2162,11 +1466,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2179,17 +1479,9 @@
       "expected_documents": [],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2200,11 +1492,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2217,17 +1505,9 @@
       "expected_documents": [],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2238,11 +1518,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     },
@@ -2255,17 +1531,9 @@
       "expected_documents": [],
       "minimum_trust": "TIER_2_STRONG_TECHNICAL",
       "scope": {},
-      "expected_gaps": [
-        "applicable_normative_reference_unavailable"
-      ],
-      "forbidden_source_types": [
-        "community"
-      ],
-      "forbidden_engines": [
-        "B58",
-        "N20",
-        "B47"
-      ],
+      "expected_gaps": ["applicable_normative_reference_unavailable"],
+      "forbidden_source_types": ["community"],
+      "forbidden_engines": ["B58", "N20", "B47"],
       "require_no_normative_claim": true,
       "applicable_metadata": {
         "engine": "N55",
@@ -2276,11 +1544,7 @@
         "map_version": null
       },
       "inapplicable_metadata": {
-        "engines": [
-          "B58",
-          "N20",
-          "B47"
-        ],
+        "engines": ["B58", "N20", "B47"],
         "normative_unknown_tune_target": true
       }
     }

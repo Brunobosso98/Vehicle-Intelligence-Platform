@@ -15,10 +15,7 @@
       "checksum": "a66887c5b2681c880de49d0266198e6f803f39e307627d517320c29fcd119f50",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "architecture",
-          "boost"
-        ],
+        "subsystems": ["architecture", "boost"],
         "calibration": "principle",
         "make": "BMW",
         "engine": "N55",
@@ -44,11 +41,7 @@
       "checksum": "52f5bc72b53bd91afa29a039b0106b01f66a629645763d496a5ec267c089d33a",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "architecture",
-          "boost",
-          "thermal"
-        ],
+        "subsystems": ["architecture", "boost", "thermal"],
         "calibration": "principle",
         "make": "BMW",
         "engine": "N55"
@@ -102,11 +95,7 @@
       "checksum": "20f4cc852270d7a3fd6a9ab90a3758862f1c3cf2cfd6b33446ecc918e0dcd498",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "fuel",
-          "architecture",
-          "diagnostics"
-        ],
+        "subsystems": ["fuel", "architecture", "diagnostics"],
         "calibration": "principle"
       },
       "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
@@ -128,11 +117,7 @@
       "checksum": "193a435067ee258103e3eaf665342c7ce4daf0b30beb7e1ff53f1dcfdca4a4f0",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "fuel",
-          "architecture",
-          "diagnostics"
-        ],
+        "subsystems": ["fuel", "architecture", "diagnostics"],
         "calibration": "principle"
       },
       "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
@@ -154,11 +139,7 @@
       "checksum": "d56f23edf9d7f7c67172e6b5cbd9720ff7c131befc1bc15743e3567f2db2b18d",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "calibration",
-          "fuel",
-          "boost"
-        ],
+        "subsystems": ["calibration", "fuel", "boost"],
         "calibration": "tune_specific",
         "make": "BMW",
         "engine": "N55",
@@ -183,17 +164,12 @@
       "checksum": "6622b1adeeeeb5a2acdeb6fa91a70051f7bdb5549ad82d20d80765e000e32486",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "calibration",
-          "fuel"
-        ],
+        "subsystems": ["calibration", "fuel"],
         "calibration": "tune_specific",
         "make": "BMW",
         "engine": "N55",
         "tuner": "bootmod3",
-        "hardware": [
-          "electronic wastegate (EWG)"
-        ]
+        "hardware": ["electronic wastegate (EWG)"]
       },
       "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
       "redistribution": "metadata_only",
@@ -217,9 +193,7 @@
       "checksum": "acf3555f968762723f9f642a2b132d54ac47693ff4a3e574c62fafc121547a02",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "diagnostics"
-        ],
+        "subsystems": ["diagnostics"],
         "calibration": "tune_specific",
         "tuner": "bootmod3"
       },
@@ -245,15 +219,9 @@
         "make": "BMW",
         "platform": "F30",
         "engine": "N55",
-        "subsystems": [
-          "thermal",
-          "diagnostics"
-        ],
+        "subsystems": ["thermal", "diagnostics"],
         "calibration": "principle",
-        "hardware": [
-          "option 0337 M Sport Package",
-          "production to July 2014"
-        ]
+        "hardware": ["option 0337 M Sport Package", "production to July 2014"]
       },
       "license_note": "BMW copyright; NHTSA public archive is not a redistribution license. Keep complete PDF and extracted text local; commit metadata only.",
       "redistribution": "metadata_only",
@@ -279,12 +247,7 @@
       "checksum": "dcfc16dcfb0f50063faebb5cec200754000c25d9662cedd8eee1be6680a3b133",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "architecture",
-          "fuel",
-          "boost",
-          "diagnostics"
-        ],
+        "subsystems": ["architecture", "fuel", "boost", "diagnostics"],
         "calibration": "principle"
       },
       "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only. Selected general operating principles do not identify the N55 installed ECU, turbocharger, actuator or calibration.",
@@ -307,10 +270,7 @@
       "checksum": "93151a1232d9c1efc0c13e76964e5e5405da90e3d486d0c0cd2becc9c1a42ffb",
       "mime": "text/html",
       "applicability": {
-        "subsystems": [
-          "boost",
-          "thermal"
-        ],
+        "subsystems": ["boost", "thermal"],
         "calibration": "principle"
       },
       "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only. Selected general operating principles do not identify the N55 installed ECU, turbocharger, actuator or calibration.",
@@ -323,18 +283,9 @@
   ],
   "selection_overrides": {
     "n55-ewg-calibration": [
-      [
-        2,
-        1
-      ],
-      [
-        2,
-        3
-      ],
-      [
-        2,
-        4
-      ]
+      [2, 1],
+      [2, 3],
+      [2, 4]
     ]
   }
 }

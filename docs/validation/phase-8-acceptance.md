@@ -147,9 +147,40 @@ when text is unchanged. Migration `0012` fixes the old text-uniqueness constrain
 applied revision `0011`. These receipts still describe uncommitted source, not final-SHA acceptance.
 The canonical manifest has been updated; its final reconstruction receipt must also be repeated.
 
-Complete hybrid operating-condition
-and historical comparison scenarios, complete browser E2E, remaining delivered instrumentation,
-complete benchmark/security, all Phase 0–7D deterministic regressions, clean-state/exact-final-SHA
-validation, PR creation and mandatory GitHub checks remain pending. The existing real vector cache
+Hybrid operating-condition/history, browser, delivered instrumentation and benchmark checkpoints
+above have executed. Their final committed-head repeats, complete security and Phase 0–7D
+deterministic regressions, clean-state/exact-final-SHA validation and mandatory GitHub checks remain
+pending. Draft PR [#40](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/40)
+is open against main and remains unmerged. The existing real vector cache
 and cumulative ledger must be retained; future refreshes share the same absolute USD 2 ceiling.
 No final-SHA or VERIFIED claim is made.
+
+## Regression follow-up — 2026-10-16
+
+The first committed implementation (`31fe69a`) did not pass canonical remote acceptance.
+Formatting failures were corrected without changing the source-manifest or golden JSON semantics.
+Phase 7B/7C regressions exposed documentary answers bypassing the Supervisor artifact and explicit
+operator review. Documentary-only answers now retain the existing Supervisor report without vehicle
+specialists or telemetry calls. An explicit investigation request can review a typed documentation
+gap as INCONCLUSIVE; it cannot create a logging recipe to supply missing documentation.
+
+Local follow-up runs then exposed measurement questions being classified as documentary-only:
+“Why did boost fall?” and “Why is fuel pressure missing during a pull?”. These stay on the vehicle
+path. New hybrid classification checks also distinguish absent/unreliable vehicle evidence from
+missing documentation, preserve documentary provenance and lower confidence for insufficient
+vehicle evidence. The corrected frozen source passed `make check-api`: 1,042 tests, strict mypy
+(116 source files), Ruff/format, line coverage 95.04% and branch coverage 90.09%. The independent
+four-case hybrid evaluator passed again with zero paid calls. Container builds and docs/contracts
+checks passed. Logs: `vip-phase8-api-routing-final.log`, `vip-phase8-hybrid-routing-recheck.log`,
+`vip-phase8-containers-routing.log` and `vip-phase8-doc-contract-routing.log`. Phase 7B/7C
+independent regression runs subsequently advanced to two further failures: a documentary-only run
+kept unknown token accounting instead of measured zero, and a question about unknown fuel pressure
+still selected the documentary path. Both were corrected, with 106 focused knowledge/orchestration
+tests passing (`vip-phase8-gap-routing-unit.log`). New Phase 7B/7C runs and the final full API repeat
+remain pending; this remains a development checkpoint rather than final committed-head acceptance.
+
+Security remains a failed gate: the committed risk-acceptance policy has seventeen observability
+exceptions expiring October 15, 2026. They have not been renewed or suppressed. A disposable scan
+of official Tempo 3.1.0 still reports four HIGH/CRITICAL findings, so a major Tempo upgrade alone
+would not satisfy the gate. No retained observability volumes have been migrated. Full security
+resolution and final exact-head GitHub checks remain required before verification.

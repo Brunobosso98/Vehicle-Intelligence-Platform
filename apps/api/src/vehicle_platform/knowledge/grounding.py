@@ -93,7 +93,9 @@ def validate_reference(claim: KnowledgeClaim, result: RetrievalResult) -> Knowle
     return evidence
 
 
-def report(result: RetrievalResult, *, hybrid: bool) -> KnowledgeReport:
+def report(
+    result: RetrievalResult, *, hybrid: bool, vehicle_evidence_available: bool = True
+) -> KnowledgeReport:
     claims = []
     for item in result.evidence:
         claim = numeric_reference(item, result) or reference_claim(item)
@@ -102,7 +104,9 @@ def report(result: RetrievalResult, *, hybrid: bool) -> KnowledgeReport:
     for claim in claims:
         validate_reference(claim, result)
     return KnowledgeReport(
-        request_type="TECHNICAL_KNOWLEDGE_INSUFFICIENT"
+        request_type="VEHICLE_EVIDENCE_INSUFFICIENT"
+        if hybrid and not vehicle_evidence_available
+        else "TECHNICAL_KNOWLEDGE_INSUFFICIENT"
         if result.knowledge_gaps
         else "HYBRID_COMPARISON"
         if hybrid
@@ -114,6 +118,11 @@ def report(result: RetrievalResult, *, hybrid: bool) -> KnowledgeReport:
 
 def render(value: KnowledgeReport) -> str:
     lines = []
+    if value.request_type == "VEHICLE_EVIDENCE_INSUFFICIENT":
+        lines.append(
+            "As evidências do veículo são insuficientes para comparar o comportamento observado. "
+            "As referências documentais não estabelecem medições do veículo."
+        )
     for claim in value.claims:
         evidence = validate_reference(claim, value.retrieval)
         label = (

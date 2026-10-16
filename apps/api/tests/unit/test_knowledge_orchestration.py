@@ -16,6 +16,44 @@ from vehicle_platform.agents.scripted_provider import DeterministicProvider, Scr
 from vehicle_platform.knowledge.domain import scope_hash
 
 
+@pytest.mark.parametrize("with_gap", [False, True])
+async def test_documentary_answer_keeps_supervisor_contract_without_vehicle_analysis(
+    fixture, telemetry, with_gap
+):
+    from vehicle_platform.agents.specialists.runtime import Supervisor
+    from vehicle_platform.knowledge.grounding import report
+
+    state = execution(fixture)
+    state.ask = Ask(question="How does the N55 high pressure fuel system regulate pressure?")
+    retrieval = retrieval_fixture()
+    retrieval.knowledge_gaps = ["knowledge_index_unavailable"] if with_gap else []
+    state.final = Answer(
+        answer="Documentary reference.",
+        confidence="low" if with_gap else "moderate",
+        findings=[],
+        evidence=[],
+        uncertainties=[],
+        limitations=[],
+        missing_evidence=["technical_documentation"] if with_gap else [],
+        context=state.context,
+        knowledge=report(retrieval, hybrid=False),
+    )
+    provider = ScriptedProvider([])
+    provider.route = AsyncMock()
+    engine = Orchestrator(AgentSettings(), provider, MagicMock(), telemetry)
+    engine.call = AsyncMock()
+    await Supervisor(engine, state).run(documentation_only=True)
+    engine.call.assert_not_awaited()
+    provider.route.assert_not_awaited()
+    assert state.run.supervisor.routing.selected == []
+    assert not state.run.supervisor.routing.data_quality_gate
+    assert state.run.supervisor.specialists == []
+    assert state.run.supervisor.sufficiency == ("INSUFFICIENT" if with_gap else "SUFFICIENT")
+    assert not state.run.supervisor.investigation_recommended
+    assert state.run.usage.total_tokens == 0
+    assert state.run.usage.estimated_cost is None
+
+
 @pytest.mark.parametrize(
     "mode",
     [
@@ -258,10 +296,31 @@ async def test_hybrid_sample_omits_unitless_values_and_preserves_first_corecorde
 
 
 @pytest.mark.parametrize("with_gap", [False, True])
+@pytest.mark.parametrize("vehicle_state", ["available", "no_sessions", "no_context", "unreliable"])
 async def test_hybrid_attachment_retains_vehicle_answer_and_lowers_confidence_for_doc_gap(
-    fixture, telemetry, with_gap
+    fixture, telemetry, with_gap, vehicle_state
 ):
     state = execution(fixture)
+    resolved_context = state.context
+    if vehicle_state == "no_sessions":
+        state.context.sessions = []
+    elif vehicle_state == "no_context":
+        state.context = None
+    elif vehicle_state == "unreliable":
+        from vehicle_platform.agents.schemas import RoutingDecision, Sufficiency, SupervisorReport
+
+        state.run.supervisor = SupervisorReport(
+            routing=RoutingDecision(
+                intent="data_quality",
+                considered=[],
+                selected=[],
+                skipped=[],
+                data_quality_gate=True,
+                hints=[],
+                reason="Unreliable recorded measurements",
+            ),
+            sufficiency=Sufficiency.UNRELIABLE_DATA,
+        )
     result = retrieval_fixture()
     if with_gap:
         result.knowledge_gaps = ["exact_tuner_map_target_unavailable", "unresolved_source_conflict"]
@@ -274,14 +333,23 @@ async def test_hybrid_attachment_retains_vehicle_answer_and_lowers_confidence_fo
         uncertainties=[],
         limitations=[],
         missing_evidence=[],
-        context=state.context,
+        context=resolved_context,
     )
     engine = Orchestrator(AgentSettings(), ScriptedProvider([]), MagicMock(), telemetry)
     engine.graph = SimpleNamespace(ainvoke=AsyncMock())
     answer = await engine.execute(state)
     assert answer.answer.startswith("Vehicle measurement retained.")
     assert answer.knowledge.retrieval.id == result.id
-    assert answer.confidence == ("low" if with_gap else "high")
+    assert answer.confidence == ("low" if with_gap or vehicle_state != "available" else "high")
+    assert answer.knowledge.request_type == (
+        "VEHICLE_EVIDENCE_INSUFFICIENT"
+        if vehicle_state != "available"
+        else "TECHNICAL_KNOWLEDGE_INSUFFICIENT"
+        if with_gap
+        else "HYBRID_COMPARISON"
+    )
+    if vehicle_state != "available":
+        assert "As evidências do veículo são insuficientes" in answer.answer
     assert answer.missing_evidence == (["technical_documentation"] if with_gap else [])
     if with_gap:
         assert "Stage 2 não define" in answer.answer
