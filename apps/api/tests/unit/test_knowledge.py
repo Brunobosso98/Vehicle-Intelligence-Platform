@@ -814,6 +814,7 @@ async def test_knowledge_metadata_api_and_vehicle_isolated_inspection() -> None:
 def test_controlled_download_content_redirect_and_size_boundaries(
     monkeypatch, status, headers, body, error
 ) -> None:
+    import ssl
     from unittest.mock import Mock
 
     from vehicle_platform.knowledge.security import download
@@ -822,8 +823,8 @@ def test_controlled_download_content_redirect_and_size_boundaries(
     socket = Mock()
     connect = Mock(return_value=socket)
     monkeypatch.setattr("socket.create_connection", connect)
-    tls = Mock()
-    tls.wrap_socket.return_value = socket
+    tls = ssl.create_default_context()
+    monkeypatch.setattr(tls, "wrap_socket", Mock(return_value=socket))
     monkeypatch.setattr("ssl.create_default_context", Mock(return_value=tls))
     response = Mock(status=status)
     response.getheader.side_effect = lambda name, default=None: headers.get(name, default)
@@ -839,6 +840,8 @@ def test_controlled_download_content_redirect_and_size_boundaries(
         assert data == body and mime == headers["Content-Type"]
     connect.assert_called_with(("8.8.8.8", 443), timeout=pytest.approx(20, abs=1))
     tls.wrap_socket.assert_called_with(socket, server_hostname="example.com")
+    assert tls.minimum_version == ssl.TLSVersion.TLSv1_2
+    assert tls.verify_mode == ssl.CERT_REQUIRED and tls.check_hostname
     connection.close.assert_called()
 
 

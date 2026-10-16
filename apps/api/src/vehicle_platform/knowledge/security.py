@@ -69,11 +69,12 @@ def download(url: str, *, max_bytes: int = MAX_BYTES, timeout: float = 20) -> tu
         connection = http.client.HTTPConnection(host, port, timeout=remaining)
         try:
             pinned = socket.create_connection((addresses[0], port), timeout=remaining)
-            connection.sock = (
-                ssl.create_default_context().wrap_socket(pinned, server_hostname=host)
-                if parsed.scheme == "https"
-                else pinned
-            )
+            if parsed.scheme == "https":
+                context = ssl.create_default_context()
+                context.minimum_version = ssl.TLSVersion.TLSv1_2
+                connection.sock = context.wrap_socket(pinned, server_hostname=host)
+            else:
+                connection.sock = pinned
             connection.request(
                 "GET",
                 parsed.path + ("?" + parsed.query if parsed.query else ""),

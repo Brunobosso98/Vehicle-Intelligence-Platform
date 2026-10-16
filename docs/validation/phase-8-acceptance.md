@@ -179,6 +179,16 @@ still selected the documentary path. Both were corrected, with 106 focused knowl
 tests passing (`vip-phase8-gap-routing-unit.log`). New Phase 7B/7C runs and the final full API repeat
 remain pending; this remains a development checkpoint rather than final committed-head acceptance.
 
+The next independent Phase 7B repeat passed all 61 scenarios with zero invented signals,
+approval bypasses, cross-vehicle leaks, unsupported diagnoses, unsafe calls or budget violations
+(`vip-phase8-investigation-gap-recheck.log`). The 1,045-test local API run also passed its assertions;
+its coverage artifacts overlapped with a duplicate run, so its local coverage attribution is not
+used as final evidence. The duplicate was stopped and an isolated `make verify` repeat started.
+GitHub quality passed at `f5fae6a`. Its CodeQL aggregate separately reported a HIGH finding at the
+operator download's implicit SSL context. The downloader now explicitly requires TLS 1.2 or newer;
+all eleven download-boundary cases pass with certificate and hostname verification retained
+(`vip-phase8-tls-security-unit.log`). Updated-head CodeQL verification is still required.
+
 Security remains a failed gate: the committed risk-acceptance policy has seventeen observability
 exceptions expiring October 15, 2026. They have not been renewed or suppressed. A disposable scan
 of official Tempo 3.1.0 still reports four HIGH/CRITICAL findings, so a major Tempo upgrade alone
