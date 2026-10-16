@@ -112,6 +112,14 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "investigation_session_links",
             "investigation_events",
             "acquisition_source_capabilities",
+            "knowledge_sources",
+            "knowledge_documents",
+            "knowledge_document_versions",
+            "knowledge_indexes",
+            "knowledge_chunks",
+            "knowledge_embeddings",
+            "knowledge_conflicts",
+            "knowledge_retrieval_runs",
         }
         assert await connection.scalar(
             text(

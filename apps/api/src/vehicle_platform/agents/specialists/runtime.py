@@ -285,6 +285,10 @@ class Supervisor:
             {
                 "version": report.prompt_version,
                 "grounded_synthesis": "grounded-v6",
+                "technical_knowledge_policy": "scoped-knowledge-v1",
+                "knowledge_indexes": [r.index_id for r in state.knowledge_tools.results]
+                if state.knowledge_tools
+                else [],
                 "routing_hints": "1.5",
                 "mcp_context_instructions": "1.0",
                 "tool_error_feedback": "1.0",
@@ -656,6 +660,12 @@ class Supervisor:
                             ],
                             messages=messages,
                             specialist=request,
+                            knowledge=[
+                                e.model_dump(mode="json")
+                                for e in state.knowledge_tools.for_specialist(specialist.value)
+                            ]
+                            if state.knowledge_tools
+                            else [],
                         )
                         sanitized = redact_data(model_input.__dict__, self.settings)
                         sanitized["specialist"] = SpecialistRequest.model_validate(

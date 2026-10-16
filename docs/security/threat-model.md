@@ -132,3 +132,44 @@ headers, private reasoning items and reasoning summaries are excluded; malformed
 unstructured output is hashed. Failed proposals remain untrusted diagnostic data,
 never published findings or executable recipes. Fixed validation-rule codes and
 case/sequence correlation support reconstruction without exposing secrets.
+
+## Phase 8 documentary knowledge boundary (implementation checkpoint)
+
+Retrieved source text has no authority over tools or application policy. Operator-reviewed immutable
+source snapshots carry verification and trust; unverified/quarantined/rejected/community sources do
+not support normative claims. Application-owned specialist topic allowlists, bounded calls/results,
+current-run evidence ownership and exact quotation/numeric validation constrain documentary output.
+Injection indicators in source/document/chunk metadata are quarantined at retrieval. Pattern matching
+is defense in depth, not a complete prompt-injection detector; runtime tool policy remains decisive.
+
+The controlled downloader validates public DNS addresses and pins its socket to an approved IP while
+verifying the original TLS hostname. Every redirect is revalidated; only bounded HTTP(S)/MIME content
+is accepted. Private/loopback destinations, executable/archive signatures, path traversal and unsafe
+symlinks are rejected. PDF extraction uses a clean child process with CPU/memory/page/character/time
+limits; it does not infer diagrams or run embedded actions. Parser dependencies are pinned.
+
+Vehicle scope derives from MCP, including session-effective configuration and modification intervals.
+The caller cannot override engine/tune filters. Cross-engine mismatches are excluded; unknown tune,
+part or hardware metadata cannot become an exact normative match. Retrieval audit is vehicle-scoped.
+The existing local/operator trust boundary still applies; Phase 8 does not add multi-tenant identity.
+
+Copyrighted full documents and embeddings remain outside public API/export and public Git. Citations
+contain bounded excerpts and provenance. Embedding reservations/cache share a durable cumulative
+USD 2 ledger; source text, API keys and provider exception bodies must not enter logs/traces/UI.
+Atomic index publication prevents an interrupted ingestion from replacing the complete live corpus.
+The exact local `.env` path holds operator-supplied credentials and is excluded from the directory
+secret scan; the gate fails if Git tracks that path. Publisher HTML scan exceptions are limited to
+specific reviewed raw paths and require the manifest checksum to match before scanning. This includes
+Garrett's public client-side Google Maps token; it never authorizes a server/private credential.
+The actual configured private key is independently scanned across every local knowledge artifact,
+including raw HTML, refresh decisions, compiled selections and the durable embedding cache.
+The literal `n55-ewg-calibration` document slug is excepted only in the two known compiled-corpus
+paths, with an AND match on that exact identifier. Source code remains in scan scope.
+The MCP SDK is pinned/locked at 2.2.0 for
+[CVE-2026-59951](https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv).
+The existing HTTP server already uses the unaffected stateless mode and a 64 KiB body limit;
+the dependency update removes the known affected SDK version. Focused MCP/knowledge tests and
+the Python dependency audit passed; complete exact-head regression remains required.
+Source-version revocation invalidates cached candidate selection before reuse. Dedicated SSRF,
+parser, injection, poisoning, applicability and spend tests exist; full security/end-to-end acceptance
+and delivery checks are still pending. See the Phase 8 acceptance checkpoint.

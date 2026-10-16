@@ -1,8 +1,20 @@
 [extend]
 useDefault = true
 [[allowlists]]
+description = "Operator-supplied local credentials; security-cloud rejects tracking this exact file in Git"
+paths = ['''^\.env$''']
+[[allowlists]]
 description = "Generated/dependency/build artifacts, never first-party source"
 paths = ['''(^|/)(node_modules|\.venv|\.next|\.cache|\.validation|coverage|playwright-report|test-results)/''']
 [[allowlists]]
 description = "Graphify generated stat index stores source paths and SHA-256 file digests"
 paths = ['''^graphify-out/cache/stat-index\.json$''']
+[[allowlists]]
+description = "Checksum-verified acquired publisher HTML contains public player/storefront tokens; check_knowledge_security.py verifies raw bytes and scans the configured private key before this exception"
+paths = ['''^\.knowledge/raw/(bmw-n55-introduction|bmw-f30-introduction|bootmod3-logging|bootmod3-n55|mhd-n55|garrett-wastegate)\.html$''']
+[[allowlists]]
+description = "Reviewed document selection identifier is not an API credential"
+condition = "AND"
+paths = ['''^\.knowledge/(approved|refreshed)-corpus\.json$''']
+regexTarget = "match"
+regexes = ['''key":\s*"n55-ewg-calibration"''']

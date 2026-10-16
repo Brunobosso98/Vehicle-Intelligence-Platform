@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from typing import Any
 from uuid import UUID, uuid4
@@ -18,6 +18,11 @@ from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
 from vehicle_platform.agents.state import Execution, GraphState
+from vehicle_platform.knowledge.context import knowledge_scope
+from vehicle_platform.knowledge.grounding import render as render_knowledge
+from vehicle_platform.knowledge.grounding import report as knowledge_report
+from vehicle_platform.knowledge.retrieval import KnowledgeService
+from vehicle_platform.knowledge.tools import KnowledgeTools, RequestType, plan
 from vehicle_platform.observability.telemetry import Telemetry
 
 MEASURED_TOOLS = frozenset(
@@ -43,6 +48,7 @@ class Orchestrator:
         provider: Provider,
         client: EvidenceClient,
         telemetry: Telemetry,
+        knowledge: KnowledgeService | None = None,
     ) -> None:
         self.settings, self.provider, self.client, self.telemetry = (
             settings,
@@ -50,17 +56,22 @@ class Orchestrator:
             client,
             telemetry,
         )
+        self.knowledge = knowledge
         graph = StateGraph(GraphState)
         self.grounding_failures = telemetry.metrics.get_meter(
             "vehicle_platform.agents"
         ).create_counter("agent.grounding.failures")
         graph.add_node("context", RunnableLambda(self.context_node))
+        graph.add_node("knowledge", RunnableLambda(self.knowledge_node))
         graph.add_node("supervisor", RunnableLambda(self.supervisor_node))
         graph.add_node("model", RunnableLambda(self.model_node))
         graph.add_node("tools", RunnableLambda(self.tools_node))
         graph.add_node("grounding", RunnableLambda(self.grounding_node))
         graph.add_edge(START, "context")
-        graph.add_edge("context", "supervisor")
+        graph.add_edge("context", "knowledge")
+        graph.add_conditional_edges(
+            "knowledge", self.after_grounding, {"model": "supervisor", "end": END}
+        )
         graph.add_conditional_edges(
             "supervisor", self.after_grounding, {"model": "model", "end": END}
         )
@@ -80,7 +91,134 @@ class Orchestrator:
             )
         if execution.final is None:
             raise AgentError("invalid_model_response")
+        if (
+            execution.knowledge_tools
+            and execution.knowledge_tools.results
+            and not execution.final.knowledge
+        ):
+            result = execution.knowledge_tools.results[0]
+            with self.telemetry.tracer.start_as_current_span(
+                "knowledge.grounding_synthesis",
+                record_exception=False,
+                set_status_on_exception=False,
+            ):
+                attached = knowledge_report(result, hybrid=True)
+                execution.final.knowledge = attached
+                excerpt = render_knowledge(attached)
+                execution.final.answer = (execution.final.answer + "\n\n" + excerpt)[:48000]
+            if result.knowledge_gaps:
+                execution.final.missing_evidence = list(
+                    dict.fromkeys(["technical_documentation", *execution.final.missing_evidence])
+                )[:4]
+                execution.final.confidence = "low"
         return execution.final
+
+    async def knowledge_node(self, graph: GraphState) -> dict[str, Any]:
+        with self.telemetry.tracer.start_as_current_span(
+            "knowledge.intent", record_exception=False, set_status_on_exception=False
+        ):
+            return await self._knowledge_node(graph)
+
+    async def _knowledge_node(self, graph: GraphState) -> dict[str, Any]:
+        from vehicle_platform.agents.schemas import Intent
+        from vehicle_platform.agents.specialists.routing import hints_for
+
+        state = graph["execution"]
+        if self.knowledge is None or state.context is None:
+            return {}
+        if hints_for(state.ask.question, state.registry.ordered()).intent == Intent.UNSAFE:
+            return {}
+        requested = plan(state.ask.question)
+        if requested.intent is None:
+            return {}
+        session_id = state.ask.session_id
+        if requested.request_type == RequestType.HYBRID_COMPARISON and session_id is None:
+            session_id = (
+                UUID(str(state.context.sessions[0]["id"])) if state.context.sessions else None
+            )
+        scope = knowledge_scope(state.context, session_id)
+        state.knowledge_tools = KnowledgeTools(self.knowledge, scope)
+        result = await state.knowledge_tools.search_technical_knowledge(
+            requested.intent, "supervisor"
+        )
+        if requested.request_type == RequestType.KNOWLEDGE_FACT:
+            attached = knowledge_report(result, hybrid=False)
+            state.final = Answer(
+                answer=render_knowledge(attached)
+                or "A referência técnica aplicável está indisponível.",
+                confidence="low" if result.knowledge_gaps else "moderate",
+                findings=[],
+                evidence=state.registry.ordered(),
+                uncertainties=list(result.knowledge_gaps),
+                limitations=["Referências documentais não substituem medições do veículo."],
+                missing_evidence=["technical_documentation"] if result.knowledge_gaps else [],
+                context=state.context,
+                knowledge=attached,
+            )
+        elif session_id is not None:
+            await self.call(
+                state,
+                "get_session_summary",
+                {"vehicle_id": str(state.run.vehicle_id), "session_id": str(session_id)},
+            )
+            if requested.intent.topic == "fuel" and scope.configuration_id is not None:
+                await self.call(
+                    state,
+                    "get_vehicle_baseline",
+                    {
+                        "vehicle_id": str(state.run.vehicle_id),
+                        "configuration_id": str(scope.configuration_id),
+                    },
+                )
+            if requested.intent.topic in {"fuel", "boost"}:
+                await self.knowledge_operating_sample(state, session_id)
+        return {}
+
+    async def knowledge_operating_sample(self, state: Execution, session_id: UUID) -> None:
+        """Preserve a bounded co-recorded sample alongside the full MCP session summary.
+
+        It illustrates recorded operating context, never a normative target or an entire pull.
+        Signals without recorded samples remain explicit MCP gaps; no target/load is invented.
+        """
+        try:
+            pulls = await self.call(
+                state,
+                "list_session_pulls",
+                {
+                    "vehicle_id": str(state.run.vehicle_id),
+                    "session_id": str(session_id),
+                    "limit": 1,
+                },
+            )
+            records = pulls.get("data")
+            if not isinstance(records, list) or not records:
+                return
+            start = datetime.fromisoformat(records[0]["started_at"].replace("Z", "+00:00"))
+            end = min(
+                start + timedelta(milliseconds=200),
+                datetime.fromisoformat(records[0]["ended_at"].replace("Z", "+00:00")),
+            )
+            if end <= start:
+                return
+            await self.call(
+                state,
+                "get_telemetry_window",
+                {
+                    "vehicle_id": str(state.run.vehicle_id),
+                    "session_id": str(session_id),
+                    "signals": [
+                        "fuel.high_pressure",
+                        "engine.rpm",
+                        "engine.throttle_position",
+                        "engine.boost_pressure",
+                    ],
+                    "window": {"start": start.isoformat(), "end": end.isoformat()},
+                    "max_samples": 16,
+                },
+            )
+        except AgentError as exc:
+            if exc.category not in RECOVERABLE_TOOL_ERRORS:
+                raise
 
     async def supervisor_node(self, graph: GraphState) -> dict[str, Any]:
         from vehicle_platform.agents.specialists.runtime import Supervisor
@@ -253,6 +391,12 @@ class Orchestrator:
             ),
             messages=redact_data(state.messages, self.settings),
             correction=state.correction,
+            knowledge=[
+                e.model_dump(mode="json")
+                for e in state.knowledge_tools.for_specialist("supervisor")
+            ]
+            if state.knowledge_tools
+            else [],
             supervisor=(
                 state.run.supervisor.model_dump(mode="json") if state.run.supervisor else None
             ),

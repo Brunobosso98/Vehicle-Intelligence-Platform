@@ -113,6 +113,13 @@ jobs:
         continue-on-error: true
         run: make phase7d-harness-acceptance
 
+      - name: Validate Phase 8 database, MCP/RAG, browser, benchmark and observability
+        id: knowledge
+        continue-on-error: true
+        run: |
+          make phase8-acceptance test-knowledge-e2e benchmark-knowledge knowledge-observability
+          make phase8-acceptance test-knowledge-e2e
+
       - name: Capture stack logs
         if: always()
         run: |
@@ -138,6 +145,7 @@ jobs:
           test ! -d .validation/investigation || cp -r .validation/investigation/. validation-artifacts/investigation/
           test ! -d .validation/supervisor || cp -r .validation/supervisor validation-artifacts/
           test ! -d .validation/phase7d-deterministic || cp -r .validation/phase7d-deterministic validation-artifacts/
+          test ! -d .validation/knowledge || cp -r .validation/knowledge validation-artifacts/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -156,6 +164,7 @@ jobs:
           INVESTIGATION: ${{ steps.investigation.outcome }}
           SUPERVISOR: ${{ steps.supervisor.outcome }}
           PHASE7D: ${{ steps.phase7d.outcome }}
+          KNOWLEDGE: ${{ steps.knowledge.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -180,6 +189,7 @@ jobs:
           INVESTIGATION: ${{ steps.investigation.outcome }}
           SUPERVISOR: ${{ steps.supervisor.outcome }}
           PHASE7D: ${{ steps.phase7d.outcome }}
+          KNOWLEDGE: ${{ steps.knowledge.outcome }}
         run: |
           failed=0
           for entry in \
@@ -187,7 +197,7 @@ jobs:
             "stack:$STACK" "e2e:$E2E" "streaming:$STREAMING" \
             "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" \
             "agent:$AGENT" "investigation:$INVESTIGATION" "supervisor:$SUPERVISOR" \
-            "phase7d:$PHASE7D"; do
+            "phase7d:$PHASE7D" "knowledge:$KNOWLEDGE"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

@@ -273,6 +273,26 @@ class DeterministicProvider:
         comparison = any(
             word in question for word in ("configura", "intercooler", "peça", "antes", "depois")
         )
+        if (
+            request.knowledge
+            and any(
+                word in question for word in ("boost", "hpfp", "rail pressure", "fuel pressure")
+            )
+            and not any(
+                word in question
+                for word in (
+                    "before",
+                    "after",
+                    "antes",
+                    "depois",
+                    "upgrade",
+                    "modifi",
+                    "intercooler",
+                )
+            )
+        ):
+            # A calibration's configuration is not itself a before/after hardware comparison.
+            comparison = False
         events = any(word in question for word in ("boost drop", "estranho", "evento"))
         repeated = any(word in question for word in ("puxada", "pull", "consecut", "iat"))
         if sessions and not unsafe:
@@ -370,12 +390,36 @@ class DeterministicProvider:
             if repeated
             else "list_sessions"
         )
+        if (
+            request.knowledge
+            and not comparison
+            and not unsafe
+            and request.supervisor
+            and request.supervisor.get("sufficiency") != "UNRELIABLE_DATA"
+            and any(
+                word in question for word in ("hpfp", "fuel pressure", "rail pressure", "boost")
+            )
+        ):
+            preferred = "get_telemetry_window"
         sources = [e for e in request.evidence if e["source_tool"] == preferred]
         quality_insufficient = any(e["warnings"] or e["truncated"] for e in sources)
         insufficient = insufficient or quality_insufficient
         for source in sources[:3]:
             candidates = source["facts"]
-            if preferred == "list_session_events":
+            if preferred == "get_telemetry_window":
+                selected = []
+                signals = set()
+                by_path = {fact["path"]: fact for fact in candidates}
+                for fact in candidates:
+                    if not fact["path"].endswith("/signal") or fact["value"] in signals:
+                        continue
+                    value = by_path.get(fact["path"].removesuffix("/signal") + "/value")
+                    if value and value.get("unit") and type(value["value"]) in {int, float}:
+                        signals.add(fact["value"])
+                        selected.extend([fact, value])
+                    if len(signals) == 4:
+                        break
+            elif preferred == "list_session_events":
                 selected = [f for f in candidates if f["path"] == "/event_type"]
             elif preferred == "list_sessions":
                 selected = [

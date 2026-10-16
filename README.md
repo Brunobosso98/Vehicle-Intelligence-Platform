@@ -135,3 +135,16 @@ have PASS observations across multiple rounds; an additional complete run on the
 was not performed because the remaining API balance was insufficient. This does not establish
 a uniformly verified final-source real baseline. See the report for exact sources, costs
 and the separate final GitHub Actions status.
+
+## Phase 8 technical knowledge (in progress)
+
+Phase 8 adds versioned PostgreSQL/pgvector documentary evidence alongside read-only MCP vehicle
+facts. The initial reviewed local corpus targets BMW F30 335i / N55. Unknown tuner/map details
+remain partial applicability; Stage 2 never supplies a universal pressure or boost target.
+
+See [architecture](docs/architecture/phase-8-technical-rag.md),
+[source research](docs/knowledge/n55-source-research.md),
+[controlled ingestion](docs/runbooks/knowledge-ingestion.md) and
+[current acceptance](docs/validation/phase-8-acceptance.md). `make phase8-embed-corpus` is a
+dedicated explicitly confirmed paid operation under a cumulative USD 2 ceiling. Ordinary validation
+and the cache-only `make phase8-retrieval-eval` never buy embeddings. Phase 8 is NOT VERIFIED.

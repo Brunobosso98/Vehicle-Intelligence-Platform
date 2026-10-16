@@ -50,7 +50,7 @@ services:
     image: quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     volumes:
-      - "./observability/prometheus-agent.yaml:/etc/prometheus/prometheus.yml:ro"
+      - "${KNOWLEDGE_PROMETHEUS_CONFIG:-./observability/prometheus-agent.yaml}:/etc/prometheus/prometheus.yml:ro"
       - "agent-prometheus-data:/prometheus"
     ports: ["127.0.0.1::9090"]
 volumes:

@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
+from vehicle_platform.knowledge.domain import KnowledgeReport
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
@@ -288,6 +290,7 @@ class SpecialistDraft(StrictModel):
 
 
 class Answer(StrictModel):
+    knowledge: KnowledgeReport | None = None
     schema_version: Literal["1.0"] = "1.0"
     answer: str = Field(max_length=48000)
     confidence: Literal["low", "moderate", "high"]

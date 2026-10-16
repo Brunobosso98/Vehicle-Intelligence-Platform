@@ -1,3 +1,4 @@
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -23,6 +24,11 @@ from vehicle_platform.api.middleware import CorrelationMiddleware
 from vehicle_platform.api.routes import router
 from vehicle_platform.core.config import Settings
 from vehicle_platform.infrastructure.database import Database, DatabaseProbe
+from vehicle_platform.knowledge.embeddings import EmbeddingSettings
+from vehicle_platform.knowledge.queries import QueryEmbeddingEncoder
+from vehicle_platform.knowledge.repository import KnowledgeRepository
+from vehicle_platform.knowledge.retrieval import KnowledgeService
+from vehicle_platform.knowledge.routes import knowledge_router
 from vehicle_platform.observability.telemetry import Telemetry
 
 
@@ -60,6 +66,29 @@ def create_app(
     agent_service = AgentService(
         AgentRepository(agent_database), agent_config, signals, provider_factory
     )
+    knowledge_repository = KnowledgeRepository(database or agent_database, signals)
+    embedding_config = EmbeddingSettings(_env_file=".env")
+
+    def redact_knowledge(value: str) -> str:
+        value = agent_service.redact(value)
+        key = embedding_config.agent_api_key
+        return (
+            value.replace(key.get_secret_value(), "[redacted]")
+            if key and key.get_secret_value()
+            else value
+        )
+
+    query_encoder = QueryEmbeddingEncoder(
+        knowledge_repository,
+        embedding_config,
+        signals,
+        confirmed=os.environ.get("VIP_8_CONFIRM_EMBEDDING_SPEND") == "yes",
+        allow_paid=config.environment != "test",
+    )
+    knowledge_service = KnowledgeService(
+        knowledge_repository, signals, query_encoder, redact_knowledge
+    )
+    agent_service.knowledge = knowledge_service
     investigation_service = InvestigationService(
         agent_service,
         InvestigationRepository(agent_service.repository, signals),
@@ -73,6 +102,7 @@ def create_app(
         finally:
             await investigation_service.close()
             await agent_service.close()
+            await query_encoder.close()
             await publisher.close()
             if database is not None:
                 await database.close()
@@ -90,6 +120,8 @@ def create_app(
     app.add_middleware(ResourceBudgetMiddleware)
     app.add_middleware(AgentRequestBudgetMiddleware)
     app.include_router(router(config, dependency, signals))
+    app.state.knowledge_service = knowledge_service
+    app.include_router(knowledge_router(knowledge_service, agent_service))
     app.state.agent_service = agent_service
     app.state.investigation_service = investigation_service
     app.include_router(agent_router(agent_service))

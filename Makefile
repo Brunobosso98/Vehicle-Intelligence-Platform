@@ -118,6 +118,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) test-investigation-e2e benchmark-investigation investigation-observability
 	$(MAKE) phase7c-acceptance test-supervisor-e2e benchmark-supervisor supervisor-observability
 	$(MAKE) phase7d-harness-acceptance
+	$(MAKE) phase8-acceptance test-knowledge-e2e benchmark-knowledge knowledge-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -192,3 +193,29 @@ phase7d-report:
 	$(API)/python scripts/phase7d_eval.py report
 phase7d-harness-acceptance:
 	bash scripts/mcp-validation.sh scripts/phase7d_harness_acceptance.py
+
+.PHONY: test-knowledge phase8-acceptance
+test-knowledge:
+	$(API)/pytest apps/api/tests/unit/test_knowledge*.py
+phase8-acceptance:
+	bash scripts/mcp-validation.sh scripts/evaluate_knowledge.py
+
+.PHONY: phase8-embed-corpus
+phase8-embed-corpus:
+	$(API)/python scripts/phase8_embed.py $(PHASE8_EMBED_ARGS)
+
+.PHONY: phase8-retrieval-eval
+phase8-retrieval-eval:
+	$(API)/python scripts/evaluate_knowledge_retrieval.py $(PHASE8_RETRIEVAL_ARGS)
+
+.PHONY: benchmark-knowledge
+benchmark-knowledge:
+	bash scripts/mcp-validation.sh scripts/benchmark_knowledge.py
+
+.PHONY: knowledge-observability
+knowledge-observability:
+	bash scripts/mcp-validation.sh scripts/observability_knowledge.py
+
+.PHONY: test-knowledge-e2e
+test-knowledge-e2e:
+	bash scripts/mcp-validation.sh scripts/knowledge_browser_e2e.py

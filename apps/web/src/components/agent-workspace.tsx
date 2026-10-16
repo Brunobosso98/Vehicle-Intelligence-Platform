@@ -1,5 +1,6 @@
 "use client";
 
+import { KnowledgeCitations } from "./knowledge-workspace";
 import { useEffect, useRef, useState } from "react";
 import type { components } from "../../../../packages/contracts/generated/api";
 import { InvestigationWorkspace } from "./investigation-workspace";
@@ -243,6 +244,9 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
         {status}
       </p>
       {error && <p role="alert">{error}</p>}
+      {result?.knowledge && (
+        <KnowledgeCitations result={result.knowledge.retrieval} />
+      )}
       {run && (
         <div>
           <button
@@ -332,6 +336,7 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
               )}
             </pre>
           </details>
+          <h3>Vehicle Evidence</h3>
           <details>
             <summary>Expandir evidências</summary>
             {result.evidence.map((evidence) => (

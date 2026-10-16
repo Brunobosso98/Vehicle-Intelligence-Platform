@@ -12,6 +12,11 @@ vi.mock("../src/components/analytics-workspace", () => ({
     <p>Analytics vehicle {vehicleId}</p>
   ),
 }));
+vi.mock("../src/components/knowledge-workspace", () => ({
+  KnowledgeWorkspace: ({ vehicleId }: { vehicleId: string }) => (
+    <p>Knowledge vehicle {vehicleId}</p>
+  ),
+}));
 vi.mock("../src/components/live-acquisition", () => ({
   LiveAcquisition: ({
     vehicleId,
@@ -52,6 +57,7 @@ test("vehicle choice changes every panel and stays locked during acquisition", a
   });
   expect(screen.getByText("Telemetry vehicle b")).toBeVisible();
   expect(screen.getByText("Analytics vehicle b")).toBeVisible();
+  expect(screen.getByText("Knowledge vehicle b")).toBeVisible();
   expect(screen.getByText("Live vehicle b")).toBeVisible();
   fireEvent.click(screen.getByText("Begin acquisition"));
   expect(screen.getByLabelText("Vehicle")).toBeDisabled();

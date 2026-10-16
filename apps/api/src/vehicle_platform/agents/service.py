@@ -18,6 +18,7 @@ from vehicle_platform.agents.provider import AgentError, Provider
 from vehicle_platform.agents.repository import AgentRepository
 from vehicle_platform.agents.schemas import AgentRun, Ask, Evidence, StreamEvent, ToolCall
 from vehicle_platform.agents.state import Execution
+from vehicle_platform.knowledge.retrieval import KnowledgeService
 from vehicle_platform.observability.telemetry import Telemetry
 
 ClientFactory = Callable[[], AbstractAsyncContextManager[EvidenceClient]]
@@ -46,9 +47,11 @@ class AgentService:
         telemetry: Telemetry,
         provider_factory: ProviderFactory,
         client_factory: ClientFactory | None = None,
+        knowledge: KnowledgeService | None = None,
     ) -> None:
         self.repository, self.settings, self.telemetry = repository, settings, telemetry
         self.provider_factory = provider_factory
+        self.knowledge = knowledge
         self.client_factory = client_factory or (lambda: connect(settings))
         self.signals = AgentInstrumentation(telemetry)
         self.tasks: dict[UUID, asyncio.Task[None]] = {}
@@ -98,7 +101,7 @@ class AgentService:
                 status="running",
                 provider=self.settings.provider,
                 model=self.redact(self.settings.model or "scripted-v1"),
-                agent_version=self.settings.agent_version,
+                agent_version="phase8-v1" if self.knowledge else self.settings.agent_version,
                 prompt_version=self.settings.prompt_version,
                 started_at=datetime.now(UTC),
             )
@@ -215,7 +218,7 @@ class AgentService:
                     provider = self.provider_factory()
                     async with self.client_factory() as client:
                         run.result = await Orchestrator(
-                            self.settings, provider, client, self.telemetry
+                            self.settings, provider, client, self.telemetry, self.knowledge
                         ).execute(state)
                     # Publish validated public prose in bounded chunks.
                     run.result = type(run.result).model_validate(

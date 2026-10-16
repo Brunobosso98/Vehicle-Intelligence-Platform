@@ -18,6 +18,7 @@ labels = {
     "Phase 7B investigation": "INVESTIGATION",
     "Phase 7C supervisor": "SUPERVISOR",
     "Phase 7D deterministic harness": "PHASE7D",
+    "Phase 8 technical knowledge": "KNOWLEDGE",
 }
 outcome_status = {
     "success": "PASS",
