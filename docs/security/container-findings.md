@@ -23,6 +23,12 @@ expiry and the vendor update condition. The local observability profile exposes 
 HTTP/2 or TLS/ECH. These controls reduce the reachable paths but do not make the scanner findings
 disappear. Re-scan as soon as a fixed vendor image is published and no later than 2026-10-23.
 
+The first canonical startup with Tempo 3.0.4 exposed a configuration migration: Tempo 3 removes the
+legacy top-level `compactor` block ([migration guide](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/migrate-to-3/)).
+The local monolithic configuration now retains the seven-day block-retention setting under
+`backend_worker.compaction`, matching the [Tempo 3 local configuration](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/deploy/locally/linux/).
+The canonical stack and observability checks must pass again on the corrected commit.
+
 The Tempo 3.0.4 configuration/startup compatibility check and scans of the freshly built API/Web
 images still require the canonical Docker workflow. The current host's Docker daemon is running,
 but the active Codex process lacks the account's `docker` supplementary group. The canonical GitHub

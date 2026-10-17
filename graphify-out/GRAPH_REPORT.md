@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-10-17)
 
 ## Corpus Check
-- 420 files · ~393,238 words
+- 420 files · ~393,290 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2f6d5c07`
+- Built from commit: `b48762b5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1095,7 +1095,7 @@ Nodes (3): Evidence references, Phase 7C traceability ledger, Requirement matrix
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `OpenAIProvider`?**
-  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
 - **Are the 135 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 135 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `react-dom`, `typescript` to the rest of the system?**
@@ -1103,7 +1103,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.08134642356241234 - nodes in this community are weakly interconnected._
 - **Why does `OpenAIProvider` connect `OpenAIProvider` to `Telemetry`, `ResponseObserver`, `AgentSettings`, `Settings`, `.execute_scoped`, `test_investigation.py`, `agents/schemas.py`, `phase7d_eval.py`, `pytest`, `Phase 7D real-model validation`, `TracedOpenAIProvider`, `test_agent_runtime.py`, `DeterministicProvider`, `provider`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
 - **Are the 45 inferred relationships involving `router()` (e.g. with `LoggingRecipe` and `AcquisitionAuthError`) actually correct?**
   _`router()` has 45 INFERRED edges - model-reasoned connections that need verification._
 - **Should `router` be split into smaller, more focused modules?**
