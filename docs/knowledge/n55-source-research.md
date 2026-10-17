@@ -1,10 +1,14 @@
 # N55 source research
 
-Research date: 2026-10-15. Vehicle: BMW 335i F30 2015 / N55.
-This is a research checkpoint; corpus ingestion and Phase 8 acceptance remain incomplete.
-The [source manifest](n55-source-manifest.json) records actual publisher, canonical URL,
-retrieval timestamp, checksum, trust, applicability, redistribution and ingestion status.
-Unknown publication dates and versions remain null.
+Research date: 2026-10-15, refreshed 2026-10-17. Vehicle: BMW 335i F30 2015 / N55.
+This report records the reviewed Phase 8 source selection and its known limits. The manifest has
+ten reviewed sources (five Tier 1 authoritative and five Tier 2 strong technical), plus one
+unavailable ST916 candidate. The [source manifest](n55-source-manifest.json) records publisher,
+canonical URL, retrieval timestamp, checksum, trust, applicability, redistribution and review state.
+Unknown publication dates and versions remain null. The real-vector corpus build and 60-query
+evaluation passed on the previous workstation; the ignored source cache/index is not carried by the
+new-PC checkout. Canonical CI uses free synthetic fixtures and does not repurchase embeddings; see
+the [Phase 8 acceptance report](../validation/phase-8-acceptance.md) for the separate evidence.
 
 ## Sources considered and acquired
 
@@ -19,9 +23,9 @@ Unknown publication dates and versions remain null.
 | How To Datalog                                     | protuningfreaks / Tier 2                              | Vendor logging context; does not establish current collector or recorded signal availability.                                                            |
 | SI B17 01 15, February 2015                        | BMW of North America / Tier 1, official NHTSA archive | Cooling repair context on N55/F30 with option 0337, produced to July 2014. Unknown production/package identity remains partial; not a model-year cutoff. |
 
-Seven public HTML sources and one official-regulator-hosted BMW PDF were acquired through the
-controlled URL boundary. Reviewed selections reconstruct ten logical document versions/twenty
-chunks locally; real embedding/index activation and sixty-query retrieval passed on October 15–16.
+Nine public HTML sources and one official-regulator-hosted BMW PDF were acquired through the
+controlled URL boundary. Twelve reviewed selections reconstruct twenty-three chunks; the real
+embedding/index build and 60-query real-vector retrieval evaluation passed on October 15–16.
 The reviewed October 16 bootmod3 metadata revision records EWG as a hardware requirement;
 it does not establish that the vehicle has that wastegate. Raw originals stay in ignored
 `.knowledge/raw/`. No full source is committed. Dynamic page changes require checksum review.

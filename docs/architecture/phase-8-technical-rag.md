@@ -1,7 +1,7 @@
 # Phase 8 technical RAG
 
-Implementation and validation in progress. Real corpus/retrieval, browser and instrumentation
-checkpoints have passed; complete frozen regressions and exact-final-head acceptance remain pending.
+Implementation and acceptance passed on corrected source SHA `550844619a5b4e4fc215742e3dd22c0362e3d1d9`.
+The final branch SHA and required current-head workflow receipts are recorded on [PR #40](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/40).
 The authoritative requirements remain the
 [Phase 8 specification](../prompts/phase-8-technical-rag-knowledge-intelligence.md).
 
@@ -77,12 +77,11 @@ without a contradictory Stage label. Tune targets require matching vendor/map me
 recomputes applicability against the current scope instead of trusting a stale eligibility flag.
 Pending documents, community/unverified sources and open conflicts cannot produce these claims.
 
-AgentRun and scoped specialist tools now consume these contracts. The independent disposable
-PostgreSQL/MCP evaluator executed four deterministic knowledge/hybrid questions. Bounded metadata,
-query and vehicle-isolated citation APIs and the minimal UI are implemented. Browser acceptance
-passed; the strengthened hybrid operating-condition cohort and final-head repeats remain pending.
-Phase 7A vehicle claim grounding remains
-separate from application-rendered documentary excerpts.
+AgentRun and scoped specialist tools consume these contracts. The independent disposable
+PostgreSQL/MCP evaluator passed four deterministic knowledge/hybrid questions. Bounded metadata,
+query and vehicle-isolated citation APIs and the minimal UI are implemented. Browser acceptance,
+strengthened hybrid operating-condition cases and corrected-head canonical regression passed.
+Phase 7A vehicle claim grounding remains separate from application-rendered documentary excerpts.
 
 Candidate caching is bounded to 64 entries/30 seconds and keyed by intent, complete vehicle scope,
 index and a database revision. Source verification-version changes, document publication and conflict
@@ -100,14 +99,14 @@ text across document versions, retaining each document/checksum cache identity a
 is USD 2, including smoke, document and query calls. Provider SDK retries are zero. A failed request
 retains its reservation; no automatic repurchase loop exists.
 
-Official documentation was fetched on 2026-10-15: [model and price](https://developers.openai.com/api/docs/models/text-embedding-3-small),
+Official documentation was fetched on 2026-10-15 and price was re-verified on 2026-10-17: [model and price](https://developers.openai.com/api/docs/models/text-embedding-3-small),
 [dimensions and guide](https://developers.openai.com/api/docs/guides/embeddings),
 [endpoint](https://developers.openai.com/api/reference/resources/embeddings/methods/create).
 The verified standard rate is USD 0.02 per million input tokens, default dimensions 1536.
 The dedicated paid CLI executed a real smoke/build on 2026-10-15: four calls, 2,473 tokens,
 USD 0.00004946 calculated spend; the immediate resume made zero new calls. Sixty real-vector
-retrieval cases passed. See the [acceptance checkpoint](../validation/phase-8-acceptance.md) for
-metrics and the remaining final-head gates. Ordinary unit/database tests use synthetic free vectors.
+retrieval cases passed. See the [acceptance report](../validation/phase-8-acceptance.md) for full metrics and
+current-head check receipts. Ordinary unit/database tests use synthetic free vectors.
 
 Runtime query encoding defaults to `VIP_KNOWLEDGE_QUERY_MODE=cache_only`: absent/corrupt cached vectors
 degrade to lexical retrieval. `disabled` avoids vector lookup. Explicit `paid` mode additionally
