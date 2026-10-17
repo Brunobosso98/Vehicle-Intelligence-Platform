@@ -189,8 +189,11 @@ operator download's implicit SSL context. The downloader now explicitly requires
 all eleven download-boundary cases pass with certificate and hostname verification retained
 (`vip-phase8-tls-security-unit.log`). Updated-head CodeQL verification is still required.
 
-Security remains a failed gate: the committed risk-acceptance policy has seventeen observability
-exceptions expiring October 15, 2026. They have not been renewed or suppressed. A disposable scan
-of official Tempo 3.1.0 still reports four HIGH/CRITICAL findings, so a major Tempo upgrade alone
-would not satisfy the gate. No retained observability volumes have been migrated. Full security
-resolution and final exact-head GitHub checks remain required before verification.
+Security remediation checkpoint (2026-10-17): fresh Trivy 0.75.0 remote scans found official Tempo
+3.0.4 at zero High/Critical findings; it replaces the vulnerable 2.10.8 image. Grafana is pinned to
+12.4.13 (5 High findings) after reviewing newer 13.2.4 (60 High findings). Collector 0.162.0 and
+Prometheus 3.15.0 retain four and eight High occurrences respectively; all accepted residuals are
+scoped by digest, CVE and package, reviewed on October 17, and expire October 23 with a named vendor
+remediation condition. The candidates passed the repository policy evaluator; no Critical finding
+is accepted or suppressed. Compatibility validation and scans of rebuilt API/Web images still need
+the canonical Docker workflow. Final exact-head Security and full-regression checks remain pending.
