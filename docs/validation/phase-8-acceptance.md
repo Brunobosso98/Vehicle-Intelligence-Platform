@@ -197,3 +197,22 @@ scoped by digest, CVE and package, reviewed on October 17, and expire October 23
 remediation condition. The candidates passed the repository policy evaluator; no Critical finding
 is accepted or suppressed. Compatibility validation and scans of rebuilt API/Web images still need
 the canonical Docker workflow. Final exact-head Security and full-regression checks remain pending.
+
+## Canonical rerun and Phase 7B browser regression — 2026-10-17
+
+Canonical run [39059177093](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39059177093)
+executed on `3d9dbd79bb8a5e6bdcf156d573c8bedc1f311887`. Cloud validation, image builds and scans,
+disposable database/migrations, stack, E2E, 100k streaming, observability, Phase 6 MCP, Phase 7A,
+Phase 7C, the non-paid Phase 7D harness, and the complete Phase 8 acceptance/browser/benchmark/
+observability block passed. Phase 7B's server acceptance passed all 61 scenarios with zero unsafe
+or unsupported outcomes. Its browser block failed the documentation-gap follow-up: the UI only
+offered InvestigationWorkspace when an answer contained an `INSUFFICIENT_EVIDENCE` vehicle
+finding, while a valid typed `TECHNICAL_KNOWLEDGE_INSUFFICIENT` answer correctly has no vehicle
+finding. The backend permits an explicitly requested review of that same-vehicle documentary gap
+and requires the result to remain INCONCLUSIVE with no LoggingRecipe.
+
+`InvestigationWorkspace` now admits that path only when the run is complete, the typed knowledge
+gap is scoped to the selected vehicle, the retrieval records an actual knowledge gap, and
+`technical_documentation` is the sole missing-evidence item. It still rejects cross-vehicle
+documentary gaps. Two component tests cover those conditions; `make check-web` passes with 52
+tests, lint, and typecheck. The canonical full workflow must pass again on the corrected exact SHA.

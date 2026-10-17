@@ -1866,9 +1866,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/investigation-workspace.tsx": {
-    "mtime": 1792258051.783853,
-    "seen": 1792259354.1045473,
-    "ast_hash": "b16e62de28bfd4a16955a97bbd59fe28",
+    "mtime": 1792266132.2748282,
+    "seen": 1792266202.4270608,
+    "ast_hash": "7bbe9ffadc65714f1eb4a13c0cf5c42e",
     "semantic_hash": ""
   },
   "apps/web/tests/e2e/investigation.spec.ts": {
@@ -1878,9 +1878,9 @@
     "semantic_hash": ""
   },
   "apps/web/tests/investigation-workspace.test.tsx": {
-    "mtime": 1792258051.7851405,
-    "seen": 1792259354.1045675,
-    "ast_hash": "4a541bc8f2f414e9240e200b183a5311",
+    "mtime": 1792266132.3268301,
+    "seen": 1792266202.427086,
+    "ast_hash": "35ecd3f1bc852bf326db552f03bff29e",
     "semantic_hash": ""
   },
   "scripts/benchmark_investigation.py": {
