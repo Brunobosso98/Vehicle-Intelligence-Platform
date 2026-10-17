@@ -68,6 +68,9 @@ class JSONFormatter(logging.Formatter):
             "conflict_count",
             "sufficiency",
             "phase7b_proposed",
+            "index_version",
+            "candidates",
+            "knowledge_gap",
         ):
             value = getattr(record, key, None)
             if value is not None:
@@ -110,6 +113,17 @@ class Telemetry:
         reader = PrometheusMetricReader(registry=self.registry)
         self.metrics = MeterProvider(resource=resource, metric_readers=[reader])
         meter = self.metrics.get_meter("vehicle_platform")
+        # Knowledge metrics count completed operations, including idempotent replays.
+        # Never label them with document text, URLs, credentials or entity identities.
+        self.knowledge_ingestions = meter.create_counter("knowledge_ingestion_total")
+        self.knowledge_ingestion_failures = meter.create_counter(
+            "knowledge_ingestion_failures_total"
+        )
+        self.knowledge_chunks = meter.create_counter("knowledge_chunks_total")
+        self.embedding_requests = meter.create_counter("embedding_requests_total")
+        self.embedding_tokens = meter.create_counter("embedding_tokens_total")
+        self.embedding_cost = meter.create_counter("embedding_estimated_cost_usd")
+        self.embedding_cache_hits = meter.create_counter("embedding_cache_hits_total")
         self.requests = meter.create_counter("http.server.requests", unit="{request}")
         self.latency = meter.create_histogram(
             "http.server.duration",

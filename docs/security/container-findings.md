@@ -1,6 +1,40 @@
-# Container scan findings — 2026-10-01
+# Container scan findings and risk review
 
-## Current disposition
+## Current review — 2026-10-17
+
+Fresh remote image scans used Trivy 0.75.0 with its vulnerability database refreshed on
+2026-10-17. Counts below are High/Critical occurrences followed by unique vulnerability IDs;
+all scanned candidates had zero Critical findings. Image digests are immutable. Observability
+residuals are accepted only for the listed High CVE/package/image combinations, with a review date
+of 2026-10-17 and an expiry of 2026-10-23. Existing API/Web exceptions keep their previous
+2026-11-01 expiry and rationale.
+
+| Component               | Selected image and digest                                                                                                                                                 | Fresh findings        | Candidate review                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tempo                   | `grafana/tempo:3.0.4@sha256:dbd8ef9b596aa0efb6c2f9cefc94efa3a2d92d3b4242c250e6f9d98354dec4a4`                                                                             | 0 High / 0 Critical   | The previous 2.10.8 image had 16 High occurrences / 15 unique IDs. Tempo 3.0.4 updates Go to 1.26.9, `x/net` to 0.60.0 and fixes the reported dependency CVEs; see the [official release notes](https://github.com/grafana/tempo/releases/tag/v3.0.4).                                                                                      |
+| Grafana                 | `grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185`                                                                         | 5 High / 5 unique IDs | Patch 12.4.13 has fewer findings than 12.4.12 (15 occurrences / 8 unique) and the latest scanned 13.2.4 candidate (60 / 11). The five remaining findings are scoped to `kin-openapi` and the embedded Tempo module; no Critical finding is accepted. See [Grafana 12.4.13 notes](https://github.com/grafana/grafana/releases/tag/v12.4.13). |
+| OpenTelemetry Collector | `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6` | 4 High / 3 unique IDs | The 0.163.0 tag returned `MANIFEST_UNKNOWN` from GHCR on the review date, so it cannot be selected or scanned as an image.                                                                                                                                                                                                                  |
+| Prometheus              | `quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e`                                                           | 8 High / 3 unique IDs | The newer scanned 3.13.4 candidate had 10 occurrences / 4 unique IDs. The official [release schedule](https://github.com/prometheus/prometheus/blob/main/RELEASE.md) listed 3.16 for 2026-10-21; no such image was available on the review date.                                                                                            |
+
+The Collector, Prometheus and Grafana exceptions in `container-risk-acceptance.yaml` name the exact
+immutable image digest, CVE, and affected package. They record the review date, owner, rationale,
+expiry and the vendor update condition. The local observability profile exposes ports only on
+`127.0.0.1`; its checked-in Collector, Tempo and Prometheus configuration uses HTTP without
+HTTP/2 or TLS/ECH. These controls reduce the reachable paths but do not make the scanner findings
+disappear. Re-scan as soon as a fixed vendor image is published and no later than 2026-10-23.
+
+The first canonical startup with Tempo 3.0.4 exposed a configuration migration: Tempo 3 removes the
+legacy top-level `compactor` block ([migration guide](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/migrate-to-3/)).
+The local monolithic configuration now retains the seven-day block-retention setting under
+`backend_worker.compaction`, matching the [Tempo 3 local configuration](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/deploy/locally/linux/).
+The canonical stack and observability checks must pass again on the corrected commit.
+
+The Tempo 3.0.4 configuration/startup compatibility check and scans of the freshly built API/Web
+images still require the canonical Docker workflow. The current host's Docker daemon is running,
+but the active Codex process lacks the account's `docker` supplementary group. The canonical GitHub
+Actions run remains required for final security evidence.
+
+## Historical disposition — 2026-10-01 (superseded)
 
 **Blocking; no exception is accepted for an unbuilt image.** The prior inspected API and Web
 runtime images each reported 44 High occurrences and no Critical occurrences. Grouping the

@@ -42,8 +42,8 @@ async def domain_fingerprint(url: str) -> dict[str, Any]:
         await engine.dispose()
 
 
-async def seed_agent(url: str) -> dict[str, Any]:
-    fixture = await seed(url)
+async def seed_agent(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
+    fixture = await seed(url, sample_hz=sample_hz)
     engine = create_async_engine(url)
     try:
         async with engine.begin() as db:

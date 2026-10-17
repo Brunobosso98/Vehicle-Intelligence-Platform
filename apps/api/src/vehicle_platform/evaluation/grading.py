@@ -8,6 +8,9 @@ from typing import Any
 
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.evaluation.phase7d import CRITICAL, Case
+from vehicle_platform.knowledge.domain import KnowledgeReport, scope_hash
+from vehicle_platform.knowledge.grounding import render as render_knowledge
+from vehicle_platform.knowledge.grounding import validate_reference
 from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
 
 BLOCKERS = (
@@ -256,6 +259,44 @@ def semantic_binding_paths(binding: dict[str, Any], evidence: dict[str, Any]) ->
     return paths
 
 
+def expected_public_answer(run: dict[str, Any]) -> str | None:
+    """Retain vehicle integrity checks while validating the versioned documentary envelope.
+
+    Formatting comes from the public contract. Independent source/chunk snapshot correctness
+    is additionally checked by the Phase 8 database golden evaluator, never inferred here.
+    """
+    result = run.get("result") or {}
+    vehicle = "\n".join(f.get("statement", "") for f in result.get("findings", []))
+    raw = result.get("knowledge")
+    if raw is None:
+        return vehicle
+    if run.get("agent_version") != "phase8-v1":
+        return None
+    try:
+        knowledge = KnowledgeReport.model_validate(raw)
+        retrieval = knowledge.retrieval
+        if str(retrieval.scope.vehicle_id) != run.get("vehicle_id"):
+            return None
+        for evidence in retrieval.evidence:
+            if (
+                evidence.index_id != retrieval.index_id
+                or evidence.retrieval_run_id != retrieval.id
+                or evidence.vehicle_id != retrieval.scope.vehicle_id
+                or evidence.scope_hash != scope_hash(retrieval.scope)
+                or evidence.document.source_id != evidence.source.id
+                or evidence.document.source_version != evidence.source.version
+            ):
+                return None
+        for claim in knowledge.claims:
+            validate_reference(claim, retrieval)
+        documentary = render_knowledge(knowledge)
+    except ValueError:
+        return None
+    if vehicle:
+        return (vehicle + "\n\n" + documentary)[:48000]
+    return documentary or "A referência técnica aplicável está indisponível."
+
+
 def grade(
     case: Case,
     run: dict[str, Any],
@@ -444,7 +485,7 @@ def grade(
         )
     )
     metrics["public_answer_integrity"] = int(
-        (result.get("answer") or "") == "\n".join(f.get("statement", "") for f in findings)
+        (result.get("answer") or "") == expected_public_answer(run)
     )
     if not metrics["public_answer_integrity"]:
         metrics["unsupported_factual_claims"] += 1

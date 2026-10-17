@@ -254,6 +254,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/knowledge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Catalog */
+    get: operations["catalog_api_v1_knowledge_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/logging/objectives": {
     parameters: {
       query?: never;
@@ -974,6 +991,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/vehicles/{vehicle_id}/knowledge/query": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Search */
+    post: operations["search_api_v1_vehicles__vehicle_id__knowledge_query_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vehicles/{vehicle_id}/knowledge/retrievals/{retrieval_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Retrieval */
+    get: operations["retrieval_api_v1_vehicles__vehicle_id__knowledge_retrievals__retrieval_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/vehicles/{vehicle_id}/modifications": {
     parameters: {
       query?: never;
@@ -1443,6 +1494,7 @@ export interface components {
       evidence: components["schemas"]["Evidence"][];
       /** Findings */
       findings: components["schemas"]["Finding"][];
+      knowledge?: components["schemas"]["KnowledgeReport"] | null;
       /** Limitations */
       limitations: string[];
       /** Missing Evidence */
@@ -1455,6 +1507,53 @@ export interface components {
       schema_version: "1.0";
       /** Uncertainties */
       uncertainties: string[];
+    };
+    /** Applicability */
+    Applicability: {
+      /**
+       * Calibration
+       * @default principle
+       * @enum {string}
+       */
+      calibration: "principle" | "stock" | "tune_specific";
+      /** Component */
+      component?: string | null;
+      /** Effective From */
+      effective_from?: string | null;
+      /** Effective To */
+      effective_to?: string | null;
+      /** Engine */
+      engine?: string | null;
+      /** Engine Variant */
+      engine_variant?: string | null;
+      /** Fuel */
+      fuel?: string | null;
+      /** Hardware */
+      hardware?: string[];
+      /** Make */
+      make?: string | null;
+      /** Map Version */
+      map_version?: string | null;
+      /** Model */
+      model?: string | null;
+      /** Part Number */
+      part_number?: string | null;
+      /** Platform */
+      platform?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Stage */
+      stage?: string | null;
+      /** Subsystems */
+      subsystems?: string[];
+      /** Transmission */
+      transmission?: string | null;
+      /** Tuner */
+      tuner?: string | null;
+      /** Year From */
+      year_from?: number | null;
+      /** Year To */
+      year_to?: number | null;
     };
     /** Approval */
     Approval: {
@@ -1869,6 +1968,73 @@ export interface components {
        */
       vehicle_id: string;
     };
+    /** DocumentVersion */
+    DocumentVersion: {
+      applicability: components["schemas"]["Applicability"];
+      /** Checksum */
+      checksum: string;
+      /**
+       * Document Id
+       * Format: uuid
+       */
+      document_id: string;
+      /**
+       * Extraction Version
+       * @default selection-v1
+       */
+      extraction_version: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Language
+       * @default en
+       */
+      language: string;
+      /** License Note */
+      license_note: string;
+      /** Limitations */
+      limitations?: string[];
+      /**
+       * Mime
+       * @enum {string}
+       */
+      mime: "application/pdf" | "text/html" | "text/plain" | "text/markdown";
+      /** Publication Date */
+      publication_date?: string | null;
+      /**
+       * Redistribution
+       * @default metadata_only
+       * @enum {string}
+       */
+      redistribution: "metadata_only" | "permitted" | "synthetic";
+      /**
+       * Retrieved At
+       * Format: date-time
+       */
+      retrieved_at: string;
+      /** Source Checksum */
+      source_checksum?: string | null;
+      /**
+       * Source Id
+       * Format: uuid
+       */
+      source_id: string;
+      /** Source Version */
+      source_version: number;
+      /**
+       * Status
+       * @default PENDING
+       * @enum {string}
+       */
+      status: "PENDING" | "EXTRACTED" | "INDEXED" | "FAILED" | "QUARANTINED";
+      /** Title */
+      title: string;
+      /** Version Label */
+      version_label?: string | null;
+    };
     /** DrivingSession */
     DrivingSession: {
       /** Configuration Id */
@@ -2215,6 +2381,12 @@ export interface components {
       /** Unknown Signals */
       unknown_signals: number;
     };
+    /** IndexStatus */
+    IndexStatus: {
+      /** Active */
+      active: boolean;
+      snapshot: components["schemas"]["KnowledgeIndexVersion"];
+    };
     /**
      * Intent
      * @enum {string}
@@ -2386,6 +2558,211 @@ export interface components {
       | "REJECTED"
       | "CANCELLED"
       | "FAILED";
+    /** KnowledgeCatalog */
+    KnowledgeCatalog: {
+      /** Chunks */
+      chunks: number;
+      /** Documents */
+      documents: components["schemas"]["DocumentVersion"][];
+      /** Embeddings */
+      embeddings: number;
+      /** Indexes */
+      indexes: components["schemas"]["IndexStatus"][];
+      /** Sources */
+      sources: components["schemas"]["KnowledgeSource"][];
+    };
+    /** KnowledgeClaim */
+    KnowledgeClaim: {
+      /**
+       * Classification
+       * @default DOCUMENTARY_REFERENCE
+       * @constant
+       */
+      classification: "DOCUMENTARY_REFERENCE";
+      /**
+       * Evidence Id
+       * Format: uuid
+       */
+      evidence_id: string;
+      /** Excerpt */
+      excerpt: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Normative
+       * @default false
+       */
+      normative: boolean;
+      numeric_fact?: components["schemas"]["NumericFact"] | null;
+    };
+    /** KnowledgeEvidence */
+    KnowledgeEvidence: {
+      applicability: components["schemas"]["Match"];
+      /** Chunk Checksum */
+      chunk_checksum: string;
+      /**
+       * Chunk Id
+       * Format: uuid
+       */
+      chunk_id: string;
+      /** Conflict Ids */
+      conflict_ids?: string[];
+      document: components["schemas"]["DocumentVersion"];
+      /** Fused Score */
+      fused_score: number;
+      /** Heading Path */
+      heading_path: string[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Index Id */
+      index_id: string;
+      /** Lexical Score */
+      lexical_score: number;
+      /** Numeric Facts */
+      numeric_facts?: components["schemas"]["NumericFact"][];
+      /** Page */
+      page: number | null;
+      /**
+       * Quality
+       * @enum {string}
+       */
+      quality: "reviewed" | "extracted" | "ambiguous";
+      /**
+       * Retrieval Run Id
+       * Format: uuid
+       */
+      retrieval_run_id: string;
+      /** Scope Hash */
+      scope_hash: string;
+      /** Section */
+      section: string;
+      /** Snippet */
+      snippet: string;
+      source: components["schemas"]["KnowledgeSource"];
+      /** Vector Score */
+      vector_score: number | null;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
+    /** KnowledgeIndexVersion */
+    KnowledgeIndexVersion: {
+      /**
+       * Chunker
+       * @default heading-table-v1
+       */
+      chunker: string;
+      /** Corpus Checksum */
+      corpus_checksum: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Dimensions
+       * @default 1536
+       * @constant
+       */
+      dimensions: 1536;
+      /**
+       * Embedding Version
+       * @default embedding-cache-v1
+       */
+      embedding_version: string;
+      /** Id */
+      id: string;
+      /**
+       * Lexical
+       * @default postgres-simple-or-v2
+       */
+      lexical: string;
+      /**
+       * Model
+       * @default text-embedding-3-small
+       * @constant
+       */
+      model: "text-embedding-3-small";
+      /**
+       * Normalization
+       * @default utf8-whitespace-v1
+       */
+      normalization: string;
+      /**
+       * Ranking
+       * @default rrf-trust-applicability-identifiers-v3
+       */
+      ranking: string;
+    };
+    /** KnowledgeQuery */
+    KnowledgeQuery: {
+      intent: components["schemas"]["RetrievalIntent"];
+      /** Session Id */
+      session_id?: string | null;
+    };
+    /** KnowledgeReport */
+    KnowledgeReport: {
+      /** Claims */
+      claims?: components["schemas"]["KnowledgeClaim"][];
+      /**
+       * Request Type
+       * @enum {string}
+       */
+      request_type:
+        | "KNOWLEDGE_FACT"
+        | "HYBRID_COMPARISON"
+        | "TECHNICAL_KNOWLEDGE_INSUFFICIENT"
+        | "VEHICLE_EVIDENCE_INSUFFICIENT";
+      retrieval: components["schemas"]["RetrievalResult"];
+      /**
+       * Schema Version
+       * @default 1.0
+       * @constant
+       */
+      schema_version: "1.0";
+    };
+    /** KnowledgeSource */
+    KnowledgeSource: {
+      /** Canonical Url */
+      canonical_url: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Publisher */
+      publisher: string;
+      /**
+       * Source Type
+       * @enum {string}
+       */
+      source_type:
+        | "oem_training"
+        | "oem_service"
+        | "oem_press"
+        | "supplier"
+        | "tuner"
+        | "internal"
+        | "community";
+      /** @default UNVERIFIED */
+      status: components["schemas"]["SourceStatus"];
+      trust: components["schemas"]["Trust"];
+      /** Verified At */
+      verified_at?: string | null;
+      /**
+       * Version
+       * @default 1
+       */
+      version: number;
+    };
     /** LinkSessionRequest */
     LinkSessionRequest: {
       /**
@@ -2450,6 +2827,23 @@ export interface components {
       /** Version */
       version: number;
     };
+    /** Match */
+    Match: {
+      /**
+       * Normative
+       * @default false
+       */
+      normative: boolean;
+      /** Reasons */
+      reasons: string[];
+      /** Score */
+      score: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "APPLICABLE" | "PARTIAL" | "UNKNOWN" | "INCOMPATIBLE";
+    };
     /** Modification */
     Modification: {
       /** Category */
@@ -2504,6 +2898,34 @@ export interface components {
       product?: string | null;
       /** Removed At */
       removed_at?: string | null;
+    };
+    /** NumericFact */
+    NumericFact: {
+      /** Conditions */
+      conditions: string;
+      /**
+       * Kind
+       * @default descriptive
+       * @enum {string}
+       */
+      kind: "descriptive" | "stock_target" | "tune_target" | "service_limit";
+      /** Original */
+      original: string;
+      /** Topic */
+      topic?:
+        | (
+            | "architecture"
+            | "fuel"
+            | "boost"
+            | "thermal"
+            | "calibration"
+            | "diagnostics"
+          )
+        | null;
+      /** Unit */
+      unit: string;
+      /** Value */
+      value: number;
     };
     /** ObjectiveResponse */
     ObjectiveResponse: {
@@ -2766,6 +3188,71 @@ export interface components {
      * @enum {string}
      */
     Resolution: "HIGH" | "MEDIUM" | "LOW" | "EVENT_CONTEXT";
+    /** RetrievalIntent */
+    RetrievalIntent: {
+      /**
+       * Need
+       * @default principle
+       * @enum {string}
+       */
+      need: "principle" | "normative_target";
+      /** Query */
+      query: string;
+      /** Source Tuner */
+      source_tuner?: string | null;
+      /**
+       * Top K
+       * @default 5
+       */
+      top_k: number;
+      /**
+       * Topic
+       * @enum {string}
+       */
+      topic:
+        | "architecture"
+        | "fuel"
+        | "boost"
+        | "thermal"
+        | "calibration"
+        | "diagnostics";
+    };
+    /** RetrievalResult */
+    RetrievalResult: {
+      /** Candidate Count */
+      candidate_count: number;
+      /** Evidence */
+      evidence?: components["schemas"]["KnowledgeEvidence"][];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Index Id */
+      index_id: string;
+      intent: components["schemas"]["RetrievalIntent"];
+      /** Knowledge Gaps */
+      knowledge_gaps?: string[];
+      /** Latency Seconds */
+      latency_seconds: number;
+      scope: components["schemas"]["VehicleScope"];
+      /** Source Conflicts */
+      source_conflicts?: components["schemas"]["SourceConflict"][];
+      /** Timings */
+      timings?: {
+        [key: string]: number;
+      };
+      /**
+       * Vector Available
+       * @default false
+       */
+      vector_available: boolean;
+      /**
+       * Wrong Platform Rejections
+       * @default 0
+       */
+      wrong_platform_rejections: number;
+    };
     /** RoutingDecision */
     RoutingDecision: {
       /** Considered */
@@ -2956,6 +3443,48 @@ export interface components {
       | "lambda_behavior"
       | "timing_behavior"
       | "timestamp_sequence_quality";
+    /** SourceConflict */
+    SourceConflict: {
+      /** Explanation */
+      explanation: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Left Version Id
+       * Format: uuid
+       */
+      left_version_id: string;
+      /**
+       * Right Version Id
+       * Format: uuid
+       */
+      right_version_id: string;
+      /**
+       * Status
+       * @default OPEN
+       * @enum {string}
+       */
+      status: "OPEN" | "RESOLVED";
+      /**
+       * Topic
+       * @enum {string}
+       */
+      topic:
+        | "architecture"
+        | "fuel"
+        | "boost"
+        | "thermal"
+        | "calibration"
+        | "diagnostics";
+    };
+    /**
+     * SourceStatus
+     * @enum {string}
+     */
+    SourceStatus: "VERIFIED" | "UNVERIFIED" | "QUARANTINED" | "REJECTED";
     /**
      * Specialist
      * @enum {string}
@@ -3378,6 +3907,15 @@ export interface components {
       at: string;
       status: components["schemas"]["InvestigationStatus"];
     };
+    /**
+     * Trust
+     * @enum {string}
+     */
+    Trust:
+      | "TIER_1_AUTHORITATIVE"
+      | "TIER_2_STRONG_TECHNICAL"
+      | "TIER_3_CURATED_INTERNAL"
+      | "TIER_4_COMMUNITY";
     /** Usage */
     Usage: {
       /** Cached Input Tokens */
@@ -3517,6 +4055,62 @@ export interface components {
       transmission?: string | null;
       /** Vin */
       vin?: string | null;
+    };
+    /** VehicleScope */
+    VehicleScope: {
+      /**
+       * As Of
+       * Format: date-time
+       */
+      as_of: string;
+      /**
+       * Calibration
+       * @default unknown
+       * @enum {string}
+       */
+      calibration: "unknown" | "stock" | "tuned";
+      /** Configuration Id */
+      configuration_id?: string | null;
+      /** Engine */
+      engine?: string | null;
+      /** Engine Variant */
+      engine_variant?: string | null;
+      /** Fuel */
+      fuel?: string | null;
+      /** Hardware */
+      hardware?: string[];
+      /** Make */
+      make?: string | null;
+      /** Map Version */
+      map_version?: string | null;
+      /** Model */
+      model?: string | null;
+      /** Model Year */
+      model_year?: number | null;
+      /** Part Numbers */
+      part_numbers?: string[];
+      /** Platform */
+      platform?: string | null;
+      /** Region */
+      region?: string | null;
+      /** Session Id */
+      session_id?: string | null;
+      /** Stage */
+      stage?: string | null;
+      /**
+       * Temporal Valid
+       * @default false
+       */
+      temporal_valid: boolean;
+      /** Transmission */
+      transmission?: string | null;
+      /** Tuner */
+      tuner?: string | null;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
     };
     /** VehicleUpdate */
     VehicleUpdate: {
@@ -4541,6 +5135,62 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  catalog_api_v1_knowledge_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["KnowledgeCatalog"];
         };
       };
       /** @description Unprocessable Entity */
@@ -7684,6 +8334,127 @@ export interface operations {
         };
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  search_api_v1_vehicles__vehicle_id__knowledge_query_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["KnowledgeQuery"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RetrievalResult"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  retrieval_api_v1_vehicles__vehicle_id__knowledge_retrievals__retrieval_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        retrieval_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RetrievalResult"];
         };
       };
       /** @description Unprocessable Entity */

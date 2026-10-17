@@ -47,6 +47,7 @@ class ModelInput:
     correction: str | None = None
     specialist: SpecialistRequest | None = None
     supervisor: dict[str, Any] | None = None
+    knowledge: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass

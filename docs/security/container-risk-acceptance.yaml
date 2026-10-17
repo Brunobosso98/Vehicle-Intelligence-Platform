@@ -1,282 +1,299 @@
 version: 1
 exceptions:
   - id: api-web-cve-2025-69720
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2025-69720
-    packages: ["libncursesw6", "libtinfo6", "ncurses-base", "ncurses-bin"]
+    packages:
+      - libncursesw6
+      - libtinfo6
+      - ncurses-base
+      - ncurses-bin
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The affected infocmp CLI is not invoked by either service; containers are non-root, read-only, and expose no shell-driven input."
+    rationale:
+      The affected infocmp CLI is not invoked by either service; containers are non-root, read-only, and
+      expose no shell-driven input.
   - id: api-web-cve-2026-16742
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-16742
-    packages: ["libsystemd0", "libudev1"]
+    packages:
+      - libsystemd0
+      - libudev1
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit path requires systemd-homed/local logged-in users; these service containers run neither systemd nor homed."
+    rationale:
+      The exploit path requires systemd-homed/local logged-in users; these service containers run neither
+      systemd nor homed.
   - id: api-web-cve-2026-54369
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-54369
-    packages: ["libacl1"]
+    packages:
+      - libacl1
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The affected privileged ACL pathname path is not used; services are non-root with read-only roots."
+    rationale: The affected privileged ACL pathname path is not used; services are non-root with read-only roots.
   - id: api-web-cve-2026-76642
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-76642
     packages:
-      [
-        "bsdutils",
-        "libblkid1",
-        "liblastlog2-2",
-        "libmount1",
-        "libsmartcols1",
-        "libuuid1",
-        "login",
-        "mount",
-        "util-linux",
-      ]
+      - bsdutils
+      - libblkid1
+      - liblastlog2-2
+      - libmount1
+      - libsmartcols1
+      - libuuid1
+      - login
+      - mount
+      - util-linux
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit requires privileged mount helpers/hooks; services drop all capabilities and do not invoke mount."
+    rationale:
+      The exploit requires privileged mount helpers/hooks; services drop all capabilities and do not invoke
+      mount.
   - id: api-web-cve-2026-78408
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-78408
     packages:
-      [
-        "bsdutils",
-        "libblkid1",
-        "liblastlog2-2",
-        "libmount1",
-        "libsmartcols1",
-        "libuuid1",
-        "login",
-        "mount",
-        "util-linux",
-      ]
+      - bsdutils
+      - libblkid1
+      - liblastlog2-2
+      - libmount1
+      - libsmartcols1
+      - libuuid1
+      - login
+      - mount
+      - util-linux
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free."
+    rationale: The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free.
   - id: api-web-cve-2026-78409
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-78409
     packages:
-      [
-        "bsdutils",
-        "libblkid1",
-        "liblastlog2-2",
-        "libmount1",
-        "libsmartcols1",
-        "libuuid1",
-        "login",
-        "mount",
-        "util-linux",
-      ]
+      - bsdutils
+      - libblkid1
+      - liblastlog2-2
+      - libmount1
+      - libsmartcols1
+      - libuuid1
+      - login
+      - mount
+      - util-linux
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit requires fstab-authorized mount operations not exposed by either service container."
+    rationale: The exploit requires fstab-authorized mount operations not exposed by either service container.
   - id: api-web-cve-2026-78410
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-78410
     packages:
-      [
-        "bsdutils",
-        "libblkid1",
-        "liblastlog2-2",
-        "libmount1",
-        "libsmartcols1",
-        "libuuid1",
-        "login",
-        "mount",
-        "util-linux",
-      ]
+      - bsdutils
+      - libblkid1
+      - liblastlog2-2
+      - libmount1
+      - libsmartcols1
+      - libuuid1
+      - login
+      - mount
+      - util-linux
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit requires SUID mount/fstab bind mount control; no such path or capability exists in the services."
+    rationale:
+      The exploit requires SUID mount/fstab bind mount control; no such path or capability exists in the
+      services.
   - id: api-web-cve-2026-9538
-    images: ["vehicle-platform-api:local", "vehicle-platform-web:local"]
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-9538
-    packages: ["perl-base"]
+    packages:
+      - perl-base
     owner: repository-maintainer
     expires: 2026-11-01
-    rationale: "The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither service executes Perl or accepts archive uploads."
-
-  - id: tempo-2-10-8-cve-2026-43871
+    rationale:
+      The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither service
+      executes Perl or accepts archive uploads.
+  - id: collector-cve-2026-78667
     images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-43871
-    packages: ["github.com/apache/thrift"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is the latest 2.10 patch; Tempo 3 requires a configuration/architecture migration. The Phase 0 profile is loopback-only and non-production."
-  - id: tempo-2-10-8-cve-2026-56854
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56854
-    packages: ["golang.org/x/crypto"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
-  - id: tempo-2-10-8-cve-2026-84304
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-84304
-    packages: ["google.golang.org/grpc"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
-  - id: tempo-2-10-8-cve-2026-84445
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-84445
-    packages: ["google.golang.org/grpc"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Vendor 2.10.8 still embeds this dependency; the service is restricted to the local observability profile while a Tempo 3 migration is tracked."
-  - id: tempo-2-10-8-cve-2026-33818
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-33818
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-39821
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-39821
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-46600
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-46600
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-56853
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56853
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-56858
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56858
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-56859
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56859
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-56860
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56860
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: tempo-2-10-8-cve-2026-56862
-    images:
-      [
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-      ]
-    vulnerability_id: CVE-2026-56862
-    packages: ["stdlib"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Tempo 2.10.8 is built with Go 1.26.5; moving to Tempo 3 is a deliberate migration. Exposure is limited to the loopback-only Phase 0 profile."
-  - id: grafana-12-4-12-cve-2026-21728
-    images:
-      [
-        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
-      ]
-    vulnerability_id: CVE-2026-21728
-    packages: ["github.com/grafana/tempo"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Latest 12.4 patch still embeds the affected Tempo module. Grafana is loopback-only, anonymous Viewer only, and used solely for local Phase 0 observability."
-  - id: grafana-12-4-12-cve-2026-28377
-    images:
-      [
-        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
-      ]
-    vulnerability_id: CVE-2026-28377
-    packages: ["github.com/grafana/tempo"]
-    owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Latest 12.4 patch still embeds the affected Tempo module. Grafana is loopback-only, anonymous Viewer only, and used solely for local Phase 0 observability."
-  - id: observability-go-cve-2026-78667
-    images:
-      [
-        "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6",
-        "quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
-      ]
+      - ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
     vulnerability_id: CVE-2026-78667
-    packages: ["stdlib"]
+    packages:
+      - stdlib
     owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Go net/http file-serving Range parsing can consume excessive CPU. These pinned images run only in the local observability profile with HTTP ports bound to loopback; refresh each vendor image as soon as one built with Go 1.26.9 or 1.27.2 is available."
-  - id: observability-go-cve-2026-97031
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image built with Go 1.26.9 or 1.27.2, then rescan; review
+      again by 2026-10-23.
+    rationale:
+      Go net/http Range parsing is classified High. The service is reachable only on the local observability
+      profile bound to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: collector-cve-2026-97031
     images:
-      [
-        "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6",
-        "quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
-      ]
+      - ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
     vulnerability_id: CVE-2026-97031
-    packages: ["stdlib"]
+    packages:
+      - stdlib
     owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "Go TLS ECH outer-extension parsing can exhaust server memory. The local observability profile exposes only HTTP endpoints and no TLS or ECH listener; refresh each vendor image as soon as one built with Go 1.26.9 or 1.27.2 is available."
-  - id: observability-go-cve-2026-78669
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image built with Go 1.26.9 or 1.27.2, then rescan; review
+      again by 2026-10-23.
+    rationale:
+      Go TLS ECH parsing is classified High. The checked-in local observability configuration serves HTTP
+      without TLS/ECH and binds published ports to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: collector-cve-2026-78669
     images:
-      [
-        "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6",
-        "quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e",
-        "grafana/tempo:2.10.8@sha256:f0561deb1c68ec44d6e6e7e4487f30106c4e5e768642077695b37958b105812a",
-        "grafana/grafana:12.4.12@sha256:83be3e511ede559bee80e2215bb1987cb1246075461cb961beb515b0341e7aea",
-      ]
+      - ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
     vulnerability_id: CVE-2026-78669
-    packages: ["golang.org/x/net", "stdlib"]
+    packages:
+      - golang.org/x/net
+      - stdlib
     owner: repository-maintainer
-    expires: 2026-10-15
-    rationale: "HTTP/2 SETTINGS handling can consume excessive CPU. These exact images are confined to the local observability profile with host ports bound to 127.0.0.1. Collector and Tempo are configured for OTLP/HTTP only, Prometheus scrapes fixed internal HTTP targets, and Grafana uses HTTP; none configures TLS or an HTTP/2 listener. Vendor fixes are not yet in stable images; replace and rescan at the next patched release, before expiry."
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image containing golang.org/x/net 0.60.0 and Go 1.26.9
+      or 1.27.2, then rescan; review again by 2026-10-23.
+    rationale:
+      Go HTTP/2 SETTINGS handling is classified High. The checked-in local observability profile configures
+      HTTP/1 endpoints only and binds published ports to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: prometheus-cve-2026-78667
+    images:
+      - quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    vulnerability_id: CVE-2026-78667
+    packages:
+      - stdlib
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image built with Go 1.26.9 or 1.27.2, then rescan; review
+      again by 2026-10-23.
+    rationale:
+      Go net/http Range parsing is classified High. The service is reachable only on the local observability
+      profile bound to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: prometheus-cve-2026-97031
+    images:
+      - quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    vulnerability_id: CVE-2026-97031
+    packages:
+      - stdlib
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image built with Go 1.26.9 or 1.27.2, then rescan; review
+      again by 2026-10-23.
+    rationale:
+      Go TLS ECH parsing is classified High. The checked-in local observability configuration serves HTTP
+      without TLS/ECH and binds published ports to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: prometheus-cve-2026-78669
+    images:
+      - quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    vulnerability_id: CVE-2026-78669
+    packages:
+      - golang.org/x/net
+      - stdlib
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Replace with a compatible vendor image containing golang.org/x/net 0.60.0 and Go 1.26.9
+      or 1.27.2, then rescan; review again by 2026-10-23.
+    rationale:
+      Go HTTP/2 SETTINGS handling is classified High. The checked-in local observability profile configures
+      HTTP/1 endpoints only and binds published ports to 127.0.0.1; this limits exposure but does not remove the finding.
+  - id: grafana-cve-2026-100352
+    images:
+      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+    vulnerability_id: CVE-2026-100352
+    packages:
+      - github.com/getkin/kin-openapi
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Upgrade to a Grafana release embedding kin-openapi 0.148.0 or later and rescan; review
+      again by 2026-10-23.
+    rationale:
+      The pinned Grafana 12.4.13 image contains kin-openapi 0.147.0; the advisory fixes this YAML/OAS 3.1
+      validation panic in 0.148.0. The Grafana endpoint is local-only with anonymous Viewer access. Reachability of
+      the vulnerable validation path in Grafana is not established by the image scan, so this is a short, finding-specific
+      acceptance pending the next vendor patch.
+  - id: grafana-cve-2026-100353
+    images:
+      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+    vulnerability_id: CVE-2026-100353
+    packages:
+      - github.com/getkin/kin-openapi
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Upgrade to a Grafana release embedding kin-openapi 0.149.0 or later and rescan; review
+      again by 2026-10-23.
+    rationale:
+      The pinned Grafana 12.4.13 image contains kin-openapi 0.147.0; the advisory fixes nil-items request-validation
+      panics in 0.149.0. The Grafana endpoint is local-only with anonymous Viewer access. Reachability of the vulnerable
+      validation path in Grafana is not established by the image scan, so this is a short, finding-specific acceptance
+      pending the next vendor patch.
+  - id: grafana-cve-2026-100354
+    images:
+      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+    vulnerability_id: CVE-2026-100354
+    packages:
+      - github.com/getkin/kin-openapi
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition:
+      Upgrade to a Grafana release embedding kin-openapi 0.149.0 or later and rescan; review
+      again by 2026-10-23.
+    rationale:
+      The pinned Grafana 12.4.13 image contains kin-openapi 0.147.0; the advisory fixes recursive-schema
+      validation crashes in 0.149.0. The Grafana endpoint is local-only with anonymous Viewer access. Reachability
+      of the vulnerable validation path in Grafana is not established by the image scan, so this is a short, finding-specific
+      acceptance pending the next vendor patch.
+  - id: grafana-cve-2026-21728
+    images:
+      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+    vulnerability_id: CVE-2026-21728
+    packages:
+      - github.com/grafana/tempo
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition: Rescan Grafana after the vendor updates its embedded Tempo module; review again by 2026-10-23.
+    rationale:
+      Grafana bundles a Tempo module version reported by Trivy, but the active Tempo server is the separately
+      deployed, fixed 3.0.4 image with no object-storage encryption key configured. Grafana is local-only with anonymous
+      Viewer access; retain this exact module finding for review rather than treating the scanner result as remediated.
+  - id: grafana-cve-2026-28377
+    images:
+      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+    vulnerability_id: CVE-2026-28377
+    packages:
+      - github.com/grafana/tempo
+    owner: repository-maintainer
+    reviewed_on: "2026-10-17"
+    expires: "2026-10-23"
+    remediation_condition: Rescan Grafana after the vendor updates its embedded Tempo module; review again by 2026-10-23.
+    rationale:
+      Grafana bundles a Tempo module version reported by Trivy, but the active Tempo server is the separately
+      deployed, fixed 3.0.4 image with no object-storage encryption key configured. Grafana is local-only with anonymous
+      Viewer access; retain this exact module finding for review rather than treating the scanner result as remediated.

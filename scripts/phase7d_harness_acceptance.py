@@ -130,7 +130,12 @@ async def main():
                     "approval_bypass",
                     "budget_violations",
                 )
-            )
+            ), {
+                "case_id": identifier,
+                "nonzero_metrics": {
+                    key: value for key, value in scored["metrics"].items() if value
+                },
+            }
             results.append(
                 {
                     "case_id": identifier,

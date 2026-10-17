@@ -136,3 +136,33 @@ and skipped roles, state, counts, outcome, duration and the Phase 7B recommendat
 raw telemetry, credentials and private reasoning. `make supervisor-observability` queries actual
 Tempo/Prometheus delivery and checks sibling trace parents plus redaction; artifacts belong to
 `.validation/supervisor/observability`. Delivery is not verified until the command succeeds.
+
+## Phase 8 knowledge retrieval (implementation checkpoint)
+
+The knowledge service emits `retrieval_requests_total`, `retrieval_latency_seconds`,
+`retrieval_candidates_total`, `retrieval_knowledge_gap_total`,
+`retrieval_wrong_platform_rejections_total` and `retrieval_cache_hits_total` through the application
+OTel provider. Spans currently cover `knowledge.retrieval`, candidate lexical/vector selection and
+fusion/reranking. Structured retrieval summaries record bounded operational metadata without query
+text, chunk bodies, source URLs, API keys or SQL. Vehicle/document IDs must never become metric labels.
+
+SQL engine/platform exclusions happen before candidate return; the rejection counter currently counts
+only incompatibilities rejected by application reranking, so it is not a count of all SQL exclusions.
+Cache hits still produce independent retrieval/evidence IDs and audits. A candidate-cache revision
+checks source versions, current documents, conflicts and active index before reuse.
+
+Embedding usage/cost/cache/reservations are durably recorded by the local ledger and paid-command
+receipt. Ingestion emits `knowledge_ingestion_total`, `knowledge_ingestion_failures_total` and
+`knowledge_chunks_total` after transaction completion. Idempotent replays count completed operations,
+not unique documents. Embedding instrumentation counts attempted endpoint calls, successfully
+accounted tokens/cost, and cache reuse; uncertain failed reservations remain visible in the ledger.
+Metrics never carry source, vehicle, document, query or credential labels.
+
+The October 16 `make knowledge-observability` checkpoint delivered retrieval, ingestion and embedding
+metrics to Prometheus and spans to Tempo, including intent, combined SQL lexical/vector selection,
+fusion/reranking, evidence and grounded synthesis. The operator probe executes real repository
+ingestion and the actual SDK/embedder boundary with a network-disabled synthetic HTTP transport and
+an isolated fixture ledger. It proves instrumentation delivery, not OpenAI quality or paid usage.
+Its internal-only metrics listener runs in the disposable test container; production gains no new
+ingestion endpoint. `.validation/knowledge/observability/` contains backend-queryable proof and
+redaction checks; final committed-head delivery must still be repeated.

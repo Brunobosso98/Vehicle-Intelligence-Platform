@@ -46,10 +46,21 @@ Adapter = Literal["synthetic", "replay", "obd"]
 def investigable(run: AgentRun) -> bool:
     if run.status != "completed" or run.result is None:
         return False
+    knowledge = run.result.knowledge
+    documentary_gap = bool(
+        knowledge
+        and knowledge.request_type == "TECHNICAL_KNOWLEDGE_INSUFFICIENT"
+        and knowledge.retrieval.scope.vehicle_id == run.vehicle_id
+        and knowledge.retrieval.knowledge_gaps
+        and set(run.result.missing_evidence) == {"technical_documentation"}
+    )
     return bool(
-        any(
-            finding.classification is Classification.INSUFFICIENT_EVIDENCE
-            for finding in run.result.findings
+        (
+            documentary_gap
+            or any(
+                finding.classification is Classification.INSUFFICIENT_EVIDENCE
+                for finding in run.result.findings
+            )
         )
         and set(run.result.missing_evidence)
         & {

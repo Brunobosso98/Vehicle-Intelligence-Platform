@@ -17,11 +17,12 @@ dependencies = [
  "aiokafka==0.13.0",
  "typer==0.21.0",
  "httpx==0.28.1",
- "mcp==2.0.0",
+ "mcp==2.2.0",
  "openai==3.26.0",
  "langgraph==1.2.14",
  "jsonschema==4.26.0",
  "langchain-core==1.6.7",
+ "pypdf==6.20.1",
 ]
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"

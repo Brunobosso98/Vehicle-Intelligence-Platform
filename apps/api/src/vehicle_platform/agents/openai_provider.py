@@ -23,7 +23,7 @@ from vehicle_platform.agents.investigation.proposal import (
     InvestigationInput,
     InvestigationProposal,
 )
-from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, SYSTEM_POLICY
+from vehicle_platform.agents.prompts import INVESTIGATION_POLICY, system_policy
 from vehicle_platform.agents.provider import (
     AgentError,
     ModelInput,
@@ -94,6 +94,7 @@ def turn_data(request: ModelInput) -> dict[str, Any]:
     return {
         "vehicle_context": request.context,
         "evidence": request.evidence,
+        **({"knowledge_evidence": request.knowledge} if request.knowledge else {}),
         "correction": request.correction,
         "specialist_scope": (
             request.specialist.model_dump(mode="json", exclude={"context", "question"})
@@ -243,11 +244,12 @@ class OpenAIProvider:
                     else "agent",
                     model=self.settings.model,
                     instructions=(
-                        SYSTEM_POLICY + specialist_policy(request.specialist.specialist)
+                        system_policy(bool(request.knowledge))
+                        + specialist_policy(request.specialist.specialist)
                         if request.specialist
-                        else SYSTEM_POLICY + SUPERVISOR_POLICY
+                        else system_policy(bool(request.knowledge)) + SUPERVISOR_POLICY
                         if request.supervisor
-                        else SYSTEM_POLICY
+                        else system_policy(bool(request.knowledge))
                     ),
                     input=cast(ResponseInputParam, messages),
                     tools=cast(list[ToolParam], tools),

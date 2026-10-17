@@ -32,12 +32,21 @@ export function InvestigationWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const base = `/api/domain/vehicles/${encodeURIComponent(vehicleId)}/investigations`;
-  const eligible =
-    run.status === "completed" &&
-    run.result?.findings.some(
+  const result = run.result;
+  const missingEvidence = result?.missing_evidence ?? [];
+  const documentaryKnowledge = result?.knowledge;
+  const documentaryGap = Boolean(
+    documentaryKnowledge?.request_type === "TECHNICAL_KNOWLEDGE_INSUFFICIENT" &&
+    documentaryKnowledge.retrieval.scope.vehicle_id === vehicleId &&
+    (documentaryKnowledge.retrieval.knowledge_gaps?.length ?? 0) > 0 &&
+    missingEvidence.length === 1 &&
+    missingEvidence[0] === "technical_documentation",
+  );
+  const vehicleEvidenceGap = Boolean(
+    result?.findings.some(
       (finding) => finding.classification === "INSUFFICIENT_EVIDENCE",
     ) &&
-    run.result?.missing_evidence.some((item) =>
+    missingEvidence.some((item) =>
       [
         "signal_or_measurement",
         "comparable_history",
@@ -45,7 +54,10 @@ export function InvestigationWorkspace({
         "data_quality",
         "configuration_context",
       ].includes(item),
-    );
+    ),
+  );
+  const eligible =
+    run.status === "completed" && (documentaryGap || vehicleEvidenceGap);
 
   const request = useCallback(
     async (

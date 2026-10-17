@@ -618,6 +618,12 @@
             "title": "Findings",
             "type": "array"
           },
+          "knowledge": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/KnowledgeReport" },
+              { "type": "null" }
+            ]
+          },
           "limitations": {
             "items": { "type": "string" },
             "maxItems": 32,
@@ -654,6 +660,150 @@
           "context"
         ],
         "title": "Answer",
+        "type": "object"
+      },
+      "Applicability": {
+        "additionalProperties": false,
+        "properties": {
+          "calibration": {
+            "default": "principle",
+            "enum": ["principle", "stock", "tune_specific"],
+            "title": "Calibration",
+            "type": "string"
+          },
+          "component": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Component"
+          },
+          "effective_from": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Effective To"
+          },
+          "engine": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine"
+          },
+          "engine_variant": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine Variant"
+          },
+          "fuel": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Fuel"
+          },
+          "hardware": {
+            "items": { "maxLength": 160, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "title": "Hardware",
+            "type": "array"
+          },
+          "make": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Make"
+          },
+          "map_version": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Map Version"
+          },
+          "model": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Model"
+          },
+          "part_number": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Part Number"
+          },
+          "platform": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Platform"
+          },
+          "region": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Region"
+          },
+          "stage": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Stage"
+          },
+          "subsystems": {
+            "items": { "maxLength": 160, "minLength": 1, "type": "string" },
+            "maxItems": 16,
+            "title": "Subsystems",
+            "type": "array"
+          },
+          "transmission": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Transmission"
+          },
+          "tuner": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Tuner"
+          },
+          "year_from": {
+            "anyOf": [
+              { "maximum": 2200, "minimum": 1900, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Year From"
+          },
+          "year_to": {
+            "anyOf": [
+              { "maximum": 2200, "minimum": 1900, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Year To"
+          }
+        },
+        "title": "Applicability",
         "type": "object"
       },
       "Approval": {
@@ -1479,6 +1629,131 @@
         "title": "DetectedEvent",
         "type": "object"
       },
+      "DocumentVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "applicability": { "$ref": "#/components/schemas/Applicability" },
+          "checksum": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Checksum",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "extraction_version": {
+            "default": "selection-v1",
+            "title": "Extraction Version",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "language": {
+            "default": "en",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Language",
+            "type": "string"
+          },
+          "license_note": {
+            "maxLength": 1000,
+            "minLength": 5,
+            "title": "License Note",
+            "type": "string"
+          },
+          "limitations": {
+            "items": { "maxLength": 160, "minLength": 1, "type": "string" },
+            "maxItems": 32,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "mime": {
+            "enum": [
+              "application/pdf",
+              "text/html",
+              "text/plain",
+              "text/markdown"
+            ],
+            "title": "Mime",
+            "type": "string"
+          },
+          "publication_date": {
+            "anyOf": [
+              { "format": "date", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Publication Date"
+          },
+          "redistribution": {
+            "default": "metadata_only",
+            "enum": ["metadata_only", "permitted", "synthetic"],
+            "title": "Redistribution",
+            "type": "string"
+          },
+          "retrieved_at": {
+            "format": "date-time",
+            "title": "Retrieved At",
+            "type": "string"
+          },
+          "source_checksum": {
+            "anyOf": [
+              { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Checksum"
+          },
+          "source_id": {
+            "format": "uuid",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_version": {
+            "minimum": 1,
+            "title": "Source Version",
+            "type": "integer"
+          },
+          "status": {
+            "default": "PENDING",
+            "enum": [
+              "PENDING",
+              "EXTRACTED",
+              "INDEXED",
+              "FAILED",
+              "QUARANTINED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "version_label": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Version Label"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "source_id",
+          "source_version",
+          "title",
+          "retrieved_at",
+          "checksum",
+          "mime",
+          "applicability",
+          "license_note"
+        ],
+        "title": "DocumentVersion",
+        "type": "object"
+      },
       "DrivingSession": {
         "properties": {
           "configuration_id": {
@@ -2043,6 +2318,16 @@
         "title": "ImportResult",
         "type": "object"
       },
+      "IndexStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "active": { "title": "Active", "type": "boolean" },
+          "snapshot": { "$ref": "#/components/schemas/KnowledgeIndexVersion" }
+        },
+        "required": ["snapshot", "active"],
+        "title": "IndexStatus",
+        "type": "object"
+      },
       "Intent": {
         "enum": [
           "factual",
@@ -2353,6 +2638,341 @@
         "title": "InvestigationStatus",
         "type": "string"
       },
+      "KnowledgeCatalog": {
+        "additionalProperties": false,
+        "properties": {
+          "chunks": { "minimum": 0, "title": "Chunks", "type": "integer" },
+          "documents": {
+            "items": { "$ref": "#/components/schemas/DocumentVersion" },
+            "maxItems": 100,
+            "title": "Documents",
+            "type": "array"
+          },
+          "embeddings": {
+            "minimum": 0,
+            "title": "Embeddings",
+            "type": "integer"
+          },
+          "indexes": {
+            "items": { "$ref": "#/components/schemas/IndexStatus" },
+            "maxItems": 20,
+            "title": "Indexes",
+            "type": "array"
+          },
+          "sources": {
+            "items": { "$ref": "#/components/schemas/KnowledgeSource" },
+            "maxItems": 100,
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": ["sources", "documents", "indexes", "chunks", "embeddings"],
+        "title": "KnowledgeCatalog",
+        "type": "object"
+      },
+      "KnowledgeClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "const": "DOCUMENTARY_REFERENCE",
+            "default": "DOCUMENTARY_REFERENCE",
+            "title": "Classification",
+            "type": "string"
+          },
+          "evidence_id": {
+            "format": "uuid",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "maxLength": 350,
+            "minLength": 1,
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "normative": {
+            "default": false,
+            "title": "Normative",
+            "type": "boolean"
+          },
+          "numeric_fact": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/NumericFact" },
+              { "type": "null" }
+            ]
+          }
+        },
+        "required": ["id", "evidence_id", "excerpt"],
+        "title": "KnowledgeClaim",
+        "type": "object"
+      },
+      "KnowledgeEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "applicability": { "$ref": "#/components/schemas/Match" },
+          "chunk_checksum": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Chunk Checksum",
+            "type": "string"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "conflict_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 16,
+            "title": "Conflict Ids",
+            "type": "array"
+          },
+          "document": { "$ref": "#/components/schemas/DocumentVersion" },
+          "fused_score": { "title": "Fused Score", "type": "number" },
+          "heading_path": {
+            "items": { "type": "string" },
+            "title": "Heading Path",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "index_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Index Id",
+            "type": "string"
+          },
+          "lexical_score": { "title": "Lexical Score", "type": "number" },
+          "numeric_facts": {
+            "items": { "$ref": "#/components/schemas/NumericFact" },
+            "maxItems": 32,
+            "title": "Numeric Facts",
+            "type": "array"
+          },
+          "page": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Page"
+          },
+          "quality": {
+            "enum": ["reviewed", "extracted", "ambiguous"],
+            "title": "Quality",
+            "type": "string"
+          },
+          "retrieval_run_id": {
+            "format": "uuid",
+            "title": "Retrieval Run Id",
+            "type": "string"
+          },
+          "scope_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Scope Hash",
+            "type": "string"
+          },
+          "section": { "title": "Section", "type": "string" },
+          "snippet": {
+            "maxLength": 1000,
+            "title": "Snippet",
+            "type": "string"
+          },
+          "source": { "$ref": "#/components/schemas/KnowledgeSource" },
+          "vector_score": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Vector Score"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "retrieval_run_id",
+          "index_id",
+          "vehicle_id",
+          "scope_hash",
+          "source",
+          "document",
+          "chunk_id",
+          "chunk_checksum",
+          "page",
+          "section",
+          "heading_path",
+          "snippet",
+          "applicability",
+          "lexical_score",
+          "vector_score",
+          "fused_score",
+          "quality"
+        ],
+        "title": "KnowledgeEvidence",
+        "type": "object"
+      },
+      "KnowledgeIndexVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "chunker": {
+            "default": "heading-table-v1",
+            "title": "Chunker",
+            "type": "string"
+          },
+          "corpus_checksum": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Corpus Checksum",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dimensions": {
+            "const": 1536,
+            "default": 1536,
+            "title": "Dimensions",
+            "type": "integer"
+          },
+          "embedding_version": {
+            "default": "embedding-cache-v1",
+            "title": "Embedding Version",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "lexical": {
+            "default": "postgres-simple-or-v2",
+            "title": "Lexical",
+            "type": "string"
+          },
+          "model": {
+            "const": "text-embedding-3-small",
+            "default": "text-embedding-3-small",
+            "title": "Model",
+            "type": "string"
+          },
+          "normalization": {
+            "default": "utf8-whitespace-v1",
+            "title": "Normalization",
+            "type": "string"
+          },
+          "ranking": {
+            "default": "rrf-trust-applicability-identifiers-v3",
+            "title": "Ranking",
+            "type": "string"
+          }
+        },
+        "required": ["id", "corpus_checksum", "created_at"],
+        "title": "KnowledgeIndexVersion",
+        "type": "object"
+      },
+      "KnowledgeQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "intent": { "$ref": "#/components/schemas/RetrievalIntent" },
+          "session_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "required": ["intent"],
+        "title": "KnowledgeQuery",
+        "type": "object"
+      },
+      "KnowledgeReport": {
+        "additionalProperties": false,
+        "properties": {
+          "claims": {
+            "items": { "$ref": "#/components/schemas/KnowledgeClaim" },
+            "maxItems": 5,
+            "title": "Claims",
+            "type": "array"
+          },
+          "request_type": {
+            "enum": [
+              "KNOWLEDGE_FACT",
+              "HYBRID_COMPARISON",
+              "TECHNICAL_KNOWLEDGE_INSUFFICIENT",
+              "VEHICLE_EVIDENCE_INSUFFICIENT"
+            ],
+            "title": "Request Type",
+            "type": "string"
+          },
+          "retrieval": { "$ref": "#/components/schemas/RetrievalResult" },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": ["request_type", "retrieval"],
+        "title": "KnowledgeReport",
+        "type": "object"
+      },
+      "KnowledgeSource": {
+        "additionalProperties": false,
+        "properties": {
+          "canonical_url": {
+            "maxLength": 2048,
+            "minLength": 8,
+            "title": "Canonical Url",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "publisher": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Publisher",
+            "type": "string"
+          },
+          "source_type": {
+            "enum": [
+              "oem_training",
+              "oem_service",
+              "oem_press",
+              "supplier",
+              "tuner",
+              "internal",
+              "community"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceStatus",
+            "default": "UNVERIFIED"
+          },
+          "trust": { "$ref": "#/components/schemas/Trust" },
+          "verified_at": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Verified At"
+          },
+          "version": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "publisher",
+          "canonical_url",
+          "source_type",
+          "trust"
+        ],
+        "title": "KnowledgeSource",
+        "type": "object"
+      },
       "LinkSessionRequest": {
         "additionalProperties": false,
         "properties": {
@@ -2455,6 +3075,36 @@
           "requirements"
         ],
         "title": "LoggingRecipeResponse",
+        "type": "object"
+      },
+      "Match": {
+        "additionalProperties": false,
+        "properties": {
+          "normative": {
+            "default": false,
+            "title": "Normative",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": { "type": "string" },
+            "maxItems": 32,
+            "title": "Reasons",
+            "type": "array"
+          },
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "status": {
+            "enum": ["APPLICABLE", "PARTIAL", "UNKNOWN", "INCOMPATIBLE"],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": ["status", "score", "reasons"],
+        "title": "Match",
         "type": "object"
       },
       "Modification": {
@@ -2578,6 +3228,61 @@
         },
         "required": ["category", "installed_at"],
         "title": "ModificationCreate",
+        "type": "object"
+      },
+      "NumericFact": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Conditions",
+            "type": "string"
+          },
+          "kind": {
+            "default": "descriptive",
+            "enum": [
+              "descriptive",
+              "stock_target",
+              "tune_target",
+              "service_limit"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "original": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Original",
+            "type": "string"
+          },
+          "topic": {
+            "anyOf": [
+              {
+                "enum": [
+                  "architecture",
+                  "fuel",
+                  "boost",
+                  "thermal",
+                  "calibration",
+                  "diagnostics"
+                ],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Topic"
+          },
+          "unit": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": { "title": "Value", "type": "number" }
+        },
+        "required": ["value", "unit", "conditions", "original"],
+        "title": "NumericFact",
         "type": "object"
       },
       "ObjectiveResponse": {
@@ -3080,6 +3785,120 @@
         "title": "Resolution",
         "type": "string"
       },
+      "RetrievalIntent": {
+        "additionalProperties": false,
+        "properties": {
+          "need": {
+            "default": "principle",
+            "enum": ["principle", "normative_target"],
+            "title": "Need",
+            "type": "string"
+          },
+          "query": {
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Query",
+            "type": "string"
+          },
+          "source_tuner": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Tuner"
+          },
+          "top_k": {
+            "default": 5,
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Top K",
+            "type": "integer"
+          },
+          "topic": {
+            "enum": [
+              "architecture",
+              "fuel",
+              "boost",
+              "thermal",
+              "calibration",
+              "diagnostics"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": ["query", "topic"],
+        "title": "RetrievalIntent",
+        "type": "object"
+      },
+      "RetrievalResult": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_count": {
+            "minimum": 0,
+            "title": "Candidate Count",
+            "type": "integer"
+          },
+          "evidence": {
+            "items": { "$ref": "#/components/schemas/KnowledgeEvidence" },
+            "maxItems": 5,
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "index_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Index Id",
+            "type": "string"
+          },
+          "intent": { "$ref": "#/components/schemas/RetrievalIntent" },
+          "knowledge_gaps": {
+            "items": { "type": "string" },
+            "maxItems": 16,
+            "title": "Knowledge Gaps",
+            "type": "array"
+          },
+          "latency_seconds": {
+            "minimum": 0,
+            "title": "Latency Seconds",
+            "type": "number"
+          },
+          "scope": { "$ref": "#/components/schemas/VehicleScope" },
+          "source_conflicts": {
+            "items": { "$ref": "#/components/schemas/SourceConflict" },
+            "maxItems": 16,
+            "title": "Source Conflicts",
+            "type": "array"
+          },
+          "timings": {
+            "additionalProperties": { "type": "number" },
+            "title": "Timings",
+            "type": "object"
+          },
+          "vector_available": {
+            "default": false,
+            "title": "Vector Available",
+            "type": "boolean"
+          },
+          "wrong_platform_rejections": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Wrong Platform Rejections",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "index_id",
+          "scope",
+          "intent",
+          "candidate_count",
+          "latency_seconds"
+        ],
+        "title": "RetrievalResult",
+        "type": "object"
+      },
       "RoutingDecision": {
         "additionalProperties": false,
         "properties": {
@@ -3398,6 +4217,60 @@
           "timestamp_sequence_quality"
         ],
         "title": "SignalRole",
+        "type": "string"
+      },
+      "SourceConflict": {
+        "additionalProperties": false,
+        "properties": {
+          "explanation": {
+            "maxLength": 1000,
+            "minLength": 10,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "left_version_id": {
+            "format": "uuid",
+            "title": "Left Version Id",
+            "type": "string"
+          },
+          "right_version_id": {
+            "format": "uuid",
+            "title": "Right Version Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "OPEN",
+            "enum": ["OPEN", "RESOLVED"],
+            "title": "Status",
+            "type": "string"
+          },
+          "topic": {
+            "enum": [
+              "architecture",
+              "fuel",
+              "boost",
+              "thermal",
+              "calibration",
+              "diagnostics"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "left_version_id",
+          "right_version_id",
+          "topic",
+          "explanation"
+        ],
+        "title": "SourceConflict",
+        "type": "object"
+      },
+      "SourceStatus": {
+        "enum": ["VERIFIED", "UNVERIFIED", "QUARANTINED", "REJECTED"],
+        "title": "SourceStatus",
         "type": "string"
       },
       "Specialist": {
@@ -4118,6 +4991,16 @@
         "title": "Transition",
         "type": "object"
       },
+      "Trust": {
+        "enum": [
+          "TIER_1_AUTHORITATIVE",
+          "TIER_2_STRONG_TECHNICAL",
+          "TIER_3_CURATED_INTERNAL",
+          "TIER_4_COMMUNITY"
+        ],
+        "title": "Trust",
+        "type": "string"
+      },
       "Usage": {
         "additionalProperties": false,
         "properties": {
@@ -4396,6 +5279,142 @@
         },
         "required": ["manufacturer", "model"],
         "title": "VehicleCreate",
+        "type": "object"
+      },
+      "VehicleScope": {
+        "additionalProperties": false,
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "calibration": {
+            "default": "unknown",
+            "enum": ["unknown", "stock", "tuned"],
+            "title": "Calibration",
+            "type": "string"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "engine": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine"
+          },
+          "engine_variant": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Engine Variant"
+          },
+          "fuel": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Fuel"
+          },
+          "hardware": {
+            "items": { "maxLength": 160, "minLength": 1, "type": "string" },
+            "maxItems": 20,
+            "title": "Hardware",
+            "type": "array"
+          },
+          "make": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Make"
+          },
+          "map_version": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Map Version"
+          },
+          "model": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Model"
+          },
+          "model_year": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Model Year"
+          },
+          "part_numbers": {
+            "items": { "maxLength": 160, "minLength": 1, "type": "string" },
+            "maxItems": 20,
+            "title": "Part Numbers",
+            "type": "array"
+          },
+          "platform": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Platform"
+          },
+          "region": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Region"
+          },
+          "session_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Session Id"
+          },
+          "stage": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Stage"
+          },
+          "temporal_valid": {
+            "default": false,
+            "title": "Temporal Valid",
+            "type": "boolean"
+          },
+          "transmission": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Transmission"
+          },
+          "tuner": {
+            "anyOf": [
+              { "maxLength": 160, "minLength": 1, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Tuner"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": ["vehicle_id", "as_of"],
+        "title": "VehicleScope",
         "type": "object"
       },
       "VehicleUpdate": {
@@ -5591,6 +6610,55 @@
           }
         },
         "summary": "Get Event"
+      }
+    },
+    "/api/v1/knowledge": {
+      "get": {
+        "operationId": "catalog_api_v1_knowledge_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/KnowledgeCatalog" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Catalog",
+        "tags": ["knowledge"]
       }
     },
     "/api/v1/logging/objectives": {
@@ -9343,6 +10411,146 @@
         },
         "summary": "Stream",
         "tags": ["investigation"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/knowledge/query": {
+      "post": {
+        "operationId": "search_api_v1_vehicles__vehicle_id__knowledge_query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/KnowledgeQuery" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RetrievalResult" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Search",
+        "tags": ["knowledge"]
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/knowledge/retrievals/{retrieval_id}": {
+      "get": {
+        "operationId": "retrieval_api_v1_vehicles__vehicle_id__knowledge_retrievals__retrieval_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "retrieval_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Retrieval Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RetrievalResult" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Retrieval",
+        "tags": ["knowledge"]
       }
     },
     "/api/v1/vehicles/{vehicle_id}/modifications": {

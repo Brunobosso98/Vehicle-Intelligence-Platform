@@ -17,6 +17,7 @@ from vehicle_platform.agents.schemas import (
     Classification,
     Draft,
     Finding,
+    Intent,
     RoutingProposal,
     Specialist,
     SpecialistDraft,
@@ -30,6 +31,7 @@ from vehicle_platform.agents.schemas import (
 from vehicle_platform.agents.specialists.policy import REGISTRY, enforce_tool, tools_for
 from vehicle_platform.agents.specialists.routing import (
     QUALITY_EVENTS,
+    RoutingHints,
     decide,
     event_types,
     hints_for,
@@ -224,13 +226,23 @@ class Supervisor:
             )
         )[:20]
 
-    async def run(self) -> None:
+    async def run(self, *, documentation_only: bool = False) -> None:
         state = self.state
         if state.context is None:
             raise AgentError("context_missing")
         await state.emit("supervisor_started", {"prompt_version": "supervisor-v3"})
         started = perf_counter()
-        initial = hints_for(state.ask.question, list(state.registry.items.values()))
+        initial = (
+            RoutingHints(
+                intent=Intent.TECHNICAL_DOCUMENTATION,
+                candidates=(),
+                required=(),
+                hints=("documentary_only",),
+                unreliable=False,
+            )
+            if documentation_only
+            else hints_for(state.ask.question, list(state.registry.items.values()))
+        )
         if initial.candidates and state.context.sessions:
             args = {
                 "vehicle_id": str(state.run.vehicle_id),
@@ -238,7 +250,11 @@ class Supervisor:
             }
             await self.engine.call(state, "get_session_summary", args)
             await self.engine.call(state, "list_session_events", args | {"limit": 20})
-        hints = hints_for(state.ask.question, list(state.registry.items.values()))
+        hints = (
+            initial
+            if documentation_only
+            else hints_for(state.ask.question, list(state.registry.items.values()))
+        )
         with self.engine.telemetry.tracer.start_as_current_span(
             "supervisor.routing", record_exception=False, set_status_on_exception=False
         ):
@@ -259,8 +275,6 @@ class Supervisor:
                 proposal = RoutingProposal.model_validate(proposal)
                 self.add_usage(proposal.usage)
             else:
-                from vehicle_platform.agents.schemas import Intent
-
                 proposal = RoutingProposal(intent=hints.intent or Intent.FACTUAL, usage=ZERO_USAGE)
             decision = decide(hints, proposal, state.context, self.settings.max_specialists)
         report = SupervisorReport(
@@ -285,6 +299,10 @@ class Supervisor:
             {
                 "version": report.prompt_version,
                 "grounded_synthesis": "grounded-v6",
+                "technical_knowledge_policy": "scoped-knowledge-v1",
+                "knowledge_indexes": [r.index_id for r in state.knowledge_tools.results]
+                if state.knowledge_tools
+                else [],
                 "routing_hints": "1.5",
                 "mcp_context_instructions": "1.0",
                 "tool_error_feedback": "1.0",
@@ -321,6 +339,13 @@ class Supervisor:
             duration_seconds=report.routing_seconds,
         )
         await state.emit("routing_completed", decision.model_dump(mode="json"))
+        if documentation_only and state.final is not None:
+            state.run.usage = ZERO_USAGE.model_copy(deep=True)
+            report.sufficiency = (
+                Sufficiency.INSUFFICIENT if state.final.missing_evidence else Sufficiency.SUFFICIENT
+            )
+            await self.evaluate()
+            return
         if not decision.data_quality_gate and not decision.selected:
             return
         if decision.data_quality_gate:
@@ -656,6 +681,12 @@ class Supervisor:
                             ],
                             messages=messages,
                             specialist=request,
+                            knowledge=[
+                                e.model_dump(mode="json")
+                                for e in state.knowledge_tools.for_specialist(specialist.value)
+                            ]
+                            if state.knowledge_tools
+                            else [],
                         )
                         sanitized = redact_data(model_input.__dict__, self.settings)
                         sanitized["specialist"] = SpecialistRequest.model_validate(

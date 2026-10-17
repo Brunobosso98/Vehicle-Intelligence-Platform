@@ -507,6 +507,27 @@ def test_investigable_requires_grounded_material_gap() -> None:
     assert not investigable(run)
 
 
+def test_documentary_gap_can_be_reviewed_without_inventing_a_vehicle_finding() -> None:
+    from test_knowledge import retrieval_fixture
+
+    from vehicle_platform.knowledge.grounding import report
+
+    run = insufficient_run("Why is the factory specification absent from the manual?")
+    run.result.findings = []
+    run.result.missing_evidence = ["technical_documentation"]
+    retrieval = retrieval_fixture()
+    retrieval.scope.vehicle_id = run.vehicle_id
+    retrieval.evidence = []
+    retrieval.knowledge_gaps = ["knowledge_index_unavailable"]
+    run.result.knowledge = report(retrieval, hybrid=False)
+    assert investigable(run)
+    run.result.knowledge.retrieval.scope.vehicle_id = uuid4()
+    assert not investigable(run)
+    run.result.knowledge.retrieval.scope.vehicle_id = run.vehicle_id
+    run.result.knowledge.retrieval.knowledge_gaps = []
+    assert not investigable(run)
+
+
 def test_semantic_proposal_rejects_duplicate_and_unsafe_gap() -> None:
     good = {
         "hypotheses": [{"category": "THERMAL"}],

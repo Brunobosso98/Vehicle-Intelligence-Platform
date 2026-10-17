@@ -11,9 +11,11 @@ from vehicle_platform.events.synthetic import AnomalyInjection, anomaly_scenario
 from vehicle_platform.main import create_app
 
 
-async def seed(url: str) -> dict[str, Any]:
+async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise ValueError("MCP validation requires a disposable vehicle_test* database")
+    if sample_hz not in {5, 10}:
+        raise ValueError("Fixture sampling must be 5 or 10 Hz")
     app = create_app(Settings(database_url=url, environment="test"))
     scenario = anomaly_scenario("phase6", (AnomalyInjection("boost_drop", 1),))
     fixture: dict[str, Any] = {"sessions": [], "pulls": [], "configurations": []}
@@ -71,18 +73,29 @@ async def seed(url: str) -> dict[str, Any]:
                 "fuel.high_pressure": "Pa",
             }
             for n, frame in enumerate(scenario.frames):
-                for subdivision in range(5):
-                    at = frame.observed_at + shift + timedelta(seconds=subdivision / 5)
+                for subdivision in range(sample_hz):
+                    at = (
+                        frame.observed_at
+                        + shift
+                        + timedelta(seconds=subdivision / sample_hz)
+                    )
                     for signal, raw_value in frame.values.items():
                         if raw_value is not None:
                             value = raw_value
+                            if sample_hz == 10 and signal in {
+                                "engine.boost_pressure",
+                                "fuel.high_pressure",
+                            }:
+                                # The higher-rate knowledge fixture models a varying sensor,
+                                # retaining the boost drop without creating a frozen-signal event.
+                                value += subdivision * 250
                             if (
                                 frame.values.get("engine.throttle_position") or 0
                             ) >= 70:
                                 if signal == "engine.rpm":
-                                    value += subdivision * 100
+                                    value += subdivision * 500 / sample_hz
                                 elif signal == "vehicle.speed":
-                                    value += subdivision * 0.4
+                                    value += subdivision * 2 / sample_hz
                             lines.append(
                                 f"{at.isoformat()},{signal},{value},{units[signal]},"
                                 f"{n}:{subdivision}:{signal},"

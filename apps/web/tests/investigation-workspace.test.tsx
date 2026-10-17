@@ -118,6 +118,60 @@ test("offers investigation only for material insufficient evidence", () => {
   expect(screen.queryByText("Investigar evidências insuficientes")).toBeNull();
 });
 
+test("allows explicit review of a scoped documentary gap without vehicle findings", () => {
+  const documentaryGap = {
+    ...run,
+    result: {
+      ...run.result!,
+      findings: [],
+      missing_evidence: ["technical_documentation"],
+      knowledge: {
+        request_type: "TECHNICAL_KNOWLEDGE_INSUFFICIENT",
+        retrieval: {
+          scope: { vehicle_id: "vehicle-1" },
+          knowledge_gaps: ["knowledge_index_unavailable"],
+        },
+      },
+    },
+  } as unknown as AgentRun;
+  render(
+    <InvestigationWorkspace
+      vehicleId="vehicle-1"
+      run={documentaryGap}
+      onFollowUp={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByText("Investigar evidências insuficientes"),
+  ).toBeInTheDocument();
+});
+
+test("does not expose a documentary-gap investigation for another vehicle", () => {
+  const documentaryGap = {
+    ...run,
+    result: {
+      ...run.result!,
+      findings: [],
+      missing_evidence: ["technical_documentation"],
+      knowledge: {
+        request_type: "TECHNICAL_KNOWLEDGE_INSUFFICIENT",
+        retrieval: {
+          scope: { vehicle_id: "another-vehicle" },
+          knowledge_gaps: ["knowledge_index_unavailable"],
+        },
+      },
+    },
+  } as unknown as AgentRun;
+  render(
+    <InvestigationWorkspace
+      vehicleId="vehicle-1"
+      run={documentaryGap}
+      onFollowUp={vi.fn()}
+    />,
+  );
+  expect(screen.queryByText("Investigar evidências insuficientes")).toBeNull();
+});
+
 test("reviews exact recipe, approves explicitly, links and retains the follow-up", async () => {
   const followUp = vi.fn();
   const fetch = vi

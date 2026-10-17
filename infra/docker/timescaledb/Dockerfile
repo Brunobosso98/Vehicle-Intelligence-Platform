@@ -39,4 +39,17 @@ RUN set -eux; \
     timescaledb-tune --version; \
     postgres --version
 
+ARG PGVECTOR_VERSION=0.8.2
+ARG PGVECTOR_SHA256=69f4019389af05dc1c9548deb8628e62878e6e207c03907f2b8af2016472cdaa
+RUN set -eux; \
+    apk add --no-cache --virtual .vector-build build-base clang19 llvm19-dev curl; \
+    curl -fsSL "https://github.com/pgvector/pgvector/archive/refs/tags/v${PGVECTOR_VERSION}.tar.gz" -o /tmp/vector.tar.gz; \
+    echo "${PGVECTOR_SHA256}  /tmp/vector.tar.gz" | sha256sum -c -; \
+    mkdir /tmp/vector; \
+    tar -xzf /tmp/vector.tar.gz -C /tmp/vector --strip-components=1; \
+    make -C /tmp/vector OPTFLAGS="" with_llvm=no; \
+    make -C /tmp/vector install with_llvm=no; \
+    rm -rf /tmp/vector /tmp/vector.tar.gz; \
+    apk del .vector-build
+
 USER postgres

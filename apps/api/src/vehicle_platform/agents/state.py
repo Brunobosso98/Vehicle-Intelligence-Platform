@@ -6,6 +6,7 @@ from typing import Any, TypedDict
 from vehicle_platform.agents.evidence import EvidenceRegistry
 from vehicle_platform.agents.provider import ModelTurn
 from vehicle_platform.agents.schemas import AgentRun, Answer, Ask, ToolCall, VehicleContext
+from vehicle_platform.knowledge.tools import KnowledgeTools
 
 EventSink = Callable[[str, dict[str, Any]], Awaitable[None]]
 AuditSink = Callable[[ToolCall], Awaitable[None]]
@@ -33,6 +34,7 @@ class Execution:
     tool_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     provider_retries: int = 0
     synthesis_turns: int = 0
+    knowledge_tools: KnowledgeTools | None = None
 
 
 class GraphState(TypedDict):

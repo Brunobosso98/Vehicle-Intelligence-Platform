@@ -455,3 +455,70 @@ def test_unrun_cases_do_not_change_observed_quality_rates():
     assert report["routing_accuracy"] == 1
     assert report["average_specialists_per_case"] == 2
     assert report["status"] == "NOT VERIFIED"
+
+
+def documentary_run():
+    from test_knowledge import retrieval_fixture
+
+    from vehicle_platform.knowledge.grounding import render, report
+
+    run = public_run()
+    knowledge = report(retrieval_fixture(), hybrid=True)
+    run["agent_version"] = "phase8-v1"
+    run["vehicle_id"] = str(knowledge.retrieval.scope.vehicle_id)
+    run["evidence"][0]["vehicle_id"] = run["vehicle_id"]
+    run["result"]["knowledge"] = knowledge.model_dump(mode="json")
+    run["result"]["answer"] += "\n\n" + render(knowledge)
+    return run
+
+
+def test_phase8_documentary_envelope_preserves_legacy_vehicle_grading():
+    run = documentary_run()
+    scored = grade(case("A01"), run, {"tool_calls": []}, None, [])
+    assert scored["status"] == "PASS"
+    assert scored["metrics"]["public_answer_integrity"] == 1
+    assert scored["metrics"]["supported_factual_claims"] == 1
+
+
+@pytest.mark.parametrize(
+    "attack",
+    [
+        "vehicle",
+        "source",
+        "source_version",
+        "index",
+        "citation",
+        "normative",
+        "schema",
+        "version",
+        "extra_text",
+    ],
+)
+def test_documentary_attachment_cannot_launder_forged_public_outputs(attack):
+    from uuid import uuid4
+
+    run = documentary_run()
+    knowledge = run["result"]["knowledge"]
+    evidence = knowledge["retrieval"]["evidence"][0]
+    if attack == "vehicle":
+        knowledge["retrieval"]["scope"]["vehicle_id"] = str(uuid4())
+    elif attack == "source":
+        evidence["source"]["id"] = str(uuid4())
+    elif attack == "source_version":
+        evidence["document"]["source_version"] += 1
+    elif attack == "index":
+        evidence["index_id"] = "unrelated-index"
+    elif attack == "citation":
+        knowledge["claims"][0]["evidence_id"] = str(uuid4())
+    elif attack == "normative":
+        knowledge["claims"][0]["normative"] = True
+    elif attack == "schema":
+        run["result"]["knowledge"] = {"untrusted": True}
+    elif attack == "version":
+        run["agent_version"] = "phase7d-v1"
+    else:
+        run["result"]["answer"] += " Unsupported extra conclusion."
+    scored = grade(case("A01"), run, {"tool_calls": []}, None, [])
+    assert scored["status"] == "SEMANTIC_FAILURE"
+    assert scored["metrics"]["public_answer_integrity"] == 0
+    assert scored["metrics"]["unsupported_factual_claims"] > 0

@@ -1,0 +1,291 @@
+{
+  "schema_version": "1.0",
+  "research_date": "2026-10-16",
+  "sources": [
+    {
+      "key": "bmw-f30-introduction",
+      "publisher": "BMW Group",
+      "title": "The All-New BMW 3 Series Sedan. UPDATED with photos",
+      "canonical_url": "https://www.press.bmwgroup.com/canada/article/detail/T0122601EN/the-all-new-bmw-3-series-sedan-updated-with-photos",
+      "source_type": "oem_press",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": "2011-10-14",
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:39.562032+00:00",
+      "checksum": "a66887c5b2681c880de49d0266198e6f803f39e307627d517320c29fcd119f50",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["architecture", "boost"],
+        "calibration": "principle",
+        "make": "BMW",
+        "engine": "N55",
+        "platform": "F30",
+        "model": "335i"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "bmw-n55-introduction",
+      "publisher": "BMW Group",
+      "title": "The New 2011 BMW 3 Series Coupe and Convertible",
+      "canonical_url": "https://www.press.bmwgroup.com/usa/article/detail/T0076954EN_US",
+      "source_type": "oem_press",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": "2010-01-16",
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:39.564233+00:00",
+      "checksum": "52f5bc72b53bd91afa29a039b0106b01f66a629645763d496a5ec267c089d33a",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["architecture", "boost", "thermal"],
+        "calibration": "principle",
+        "make": "BMW",
+        "engine": "N55"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "bmw-n55-training",
+      "publisher": "BMW Group",
+      "title": "ST916 N55 Engine Reference Manual",
+      "canonical_url": "https://bmwtechinfo.bmwgroup.com/tech_training_manual/ST916%20N55%20Engine.pdf",
+      "source_type": "oem_training",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:39.566618+00:00",
+      "checksum": null,
+      "mime": null,
+      "applicability": {
+        "subsystems": [
+          "architecture",
+          "fuel",
+          "boost",
+          "thermal",
+          "diagnostics"
+        ],
+        "calibration": "principle",
+        "make": "BMW",
+        "engine": "N55"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "REJECTED_UNAVAILABLE",
+      "review_status": "REJECTED_UNAVAILABLE",
+      "verified_at": null
+    },
+    {
+      "key": "bosch-gdi",
+      "publisher": "Bosch Mobility",
+      "title": "Gasoline direct injection",
+      "canonical_url": "https://www.bosch-mobility.com/en/solutions/powertrain/gasoline/gasoline-direct-injection/",
+      "source_type": "supplier",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:39.567792+00:00",
+      "checksum": "20f4cc852270d7a3fd6a9ab90a3758862f1c3cf2cfd6b33446ecc918e0dcd498",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["fuel", "architecture", "diagnostics"],
+        "calibration": "principle"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "bosch-hdp",
+      "publisher": "Bosch Mobility",
+      "title": "High-pressure pump HDP",
+      "canonical_url": "https://www.bosch-mobility.com/en/solutions/pumps/high-pressure-pump/",
+      "source_type": "supplier",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:42.303184+00:00",
+      "checksum": "193a435067ee258103e3eaf665342c7ce4daf0b30beb7e1ff53f1dcfdca4a4f0",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["fuel", "architecture", "diagnostics"],
+        "calibration": "principle"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "mhd-n55",
+      "publisher": "MHD Tuning",
+      "title": "MHD Super Tuning License for N55",
+      "canonical_url": "https://mhdtuning.com/products/mhd-super-license-for-n55",
+      "source_type": "tuner",
+      "trust": "TIER_2_STRONG_TECHNICAL",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:42.381970+00:00",
+      "checksum": "d56f23edf9d7f7c67172e6b5cbd9720ff7c131befc1bc15743e3567f2db2b18d",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["calibration", "fuel", "boost"],
+        "calibration": "tune_specific",
+        "make": "BMW",
+        "engine": "N55",
+        "tuner": "MHD"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "bootmod3-n55",
+      "publisher": "protuningfreaks",
+      "title": "bootmod3: CustomROM Release N55-EWG",
+      "canonical_url": "https://checkout.bootmod3.com/blogs/news/bootmod3-customrom-release-n55-ewg-mapswitching-flexfuel-antilag-in-dash-ethanol-content-liveadjust-exhaust-burble-and-more",
+      "source_type": "tuner",
+      "trust": "TIER_2_STRONG_TECHNICAL",
+      "publication_date": "2021-05-12",
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:42.415535+00:00",
+      "checksum": "6622b1adeeeeb5a2acdeb6fa91a70051f7bdb5549ad82d20d80765e000e32486",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["calibration", "fuel"],
+        "calibration": "tune_specific",
+        "make": "BMW",
+        "engine": "N55",
+        "tuner": "bootmod3",
+        "hardware": ["electronic wastegate (EWG)"]
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "REFRESH_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-16T13:04:08.023527+00:00",
+      "source_version": 2,
+      "reviewed_extraction_limitations": [],
+      "reviewed_source_conflicts": []
+    },
+    {
+      "key": "bootmod3-logging",
+      "publisher": "protuningfreaks",
+      "title": "How To Datalog with bootmod3",
+      "canonical_url": "https://checkout.bootmod3.com/pages/how-to-datalog",
+      "source_type": "tuner",
+      "trust": "TIER_2_STRONG_TECHNICAL",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-15T12:21:42.858885+00:00",
+      "checksum": "acf3555f968762723f9f642a2b132d54ac47693ff4a3e574c62fafc121547a02",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["diagnostics"],
+        "calibration": "tune_specific",
+        "tuner": "bootmod3"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T12:53:43.581892+00:00"
+    },
+    {
+      "key": "bmw-cooling-service",
+      "publisher": "BMW of North America, Inc. (official NHTSA archive)",
+      "title": "SI B17 01 15 \u2014 Reduced Heat After Cooling System Repairs",
+      "canonical_url": "https://static.nhtsa.gov/odi/tsbs/2015/MC-10147075-9999.pdf",
+      "source_type": "oem_service",
+      "trust": "TIER_1_AUTHORITATIVE",
+      "publication_date": null,
+      "version_label": "SI B17 01 15, February 2015 (day unspecified)",
+      "retrieved_at": "2026-10-15T13:26:16.579892+00:00",
+      "checksum": "7f1aeb81260417167ecf15acb7ae3c21c053bf148b84ac5b42353b8029d5eff6",
+      "mime": "application/pdf",
+      "applicability": {
+        "make": "BMW",
+        "platform": "F30",
+        "engine": "N55",
+        "subsystems": ["thermal", "diagnostics"],
+        "calibration": "principle",
+        "hardware": ["option 0337 M Sport Package", "production to July 2014"]
+      },
+      "license_note": "BMW copyright; NHTSA public archive is not a redistribution license. Keep complete PDF and extracted text local; commit metadata only.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-15T19:05:19.233246+00:00",
+      "reviewed_extraction_limitations": [
+        "pdf_tables_and_diagrams_require_review"
+      ],
+      "review_note": "Only page 1 subject/model/situation/cause before PROCEDURE is selected. Diagrams and repair instructions are excluded. Production cutoff is not model year. Unknown package/production identity remains partial.",
+      "source_version": 2
+    },
+    {
+      "key": "bosch-ecu",
+      "publisher": "Bosch Mobility",
+      "title": "Electronic engine control unit",
+      "canonical_url": "https://www.bosch-mobility.com/en/solutions/control-units/engine-control-unit/",
+      "source_type": "supplier",
+      "trust": "TIER_2_STRONG_TECHNICAL",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-16T13:22:08.619435+00:00",
+      "checksum": "dcfc16dcfb0f50063faebb5cec200754000c25d9662cedd8eee1be6680a3b133",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["architecture", "fuel", "boost", "diagnostics"],
+        "calibration": "principle"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only. Selected general operating principles do not identify the N55 installed ECU, turbocharger, actuator or calibration.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-16T13:23:33.466517+00:00",
+      "reviewed_extraction_limitations": []
+    },
+    {
+      "key": "garrett-wastegate",
+      "publisher": "Garrett Motion",
+      "title": "Wastegate Turbochargers for Gasoline Engines",
+      "canonical_url": "https://www.garrettmotion.com/turbocharger-technology/gasoline-turbochargers/wastegate-turbochargers-for-gasoline-engines/",
+      "source_type": "supplier",
+      "trust": "TIER_2_STRONG_TECHNICAL",
+      "publication_date": null,
+      "version_label": null,
+      "retrieved_at": "2026-10-16T13:22:06.904495+00:00",
+      "checksum": "93151a1232d9c1efc0c13e76964e5e5405da90e3d486d0c0cd2becc9c1a42ffb",
+      "mime": "text/html",
+      "applicability": {
+        "subsystems": ["boost", "thermal"],
+        "calibration": "principle"
+      },
+      "license_note": "Copyright retained by publisher. Public access does not establish redistribution rights; store locally and commit metadata only. Selected general operating principles do not identify the N55 installed ECU, turbocharger, actuator or calibration.",
+      "redistribution": "metadata_only",
+      "ingestion_status": "ACQUIRED_REVIEWED_NOT_YET_INDEXED",
+      "review_status": "APPROVED_SELECTED_PARAGRAPHS_V1",
+      "verified_at": "2026-10-16T13:23:33.476292+00:00",
+      "reviewed_extraction_limitations": []
+    }
+  ],
+  "selection_overrides": {
+    "n55-ewg-calibration": [
+      [2, 1],
+      [2, 3],
+      [2, 4]
+    ]
+  }
+}

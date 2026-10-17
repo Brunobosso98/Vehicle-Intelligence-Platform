@@ -243,6 +243,8 @@ h1 {
 }
 .telemetry-card {
   max-width: 850px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .telemetry-card select {
   display: block;
@@ -251,6 +253,7 @@ h1 {
   background: var(--surface);
   color: var(--text);
   border: 1px solid #798e86;
+  max-width: 100%;
 }
 .telemetry-card svg {
   width: 100%;
@@ -431,4 +434,23 @@ footer span {
 }
 .live-acquisition details {
   margin: 1rem 0;
+}
+
+.knowledge-workspace details {
+  margin-block: 1rem;
+}
+.knowledge-workspace summary {
+  cursor: pointer;
+}
+.knowledge-workspace dd {
+  overflow-wrap: anywhere;
+  margin-inline-start: 0;
+}
+.knowledge-workspace dt {
+  font-weight: 600;
+  margin-block-start: 0.5rem;
+}
+.knowledge-workspace blockquote {
+  margin-inline: 0;
+  max-width: 72ch;
 }
