@@ -45,6 +45,32 @@ from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
 START = datetime(2026, 1, 1, tzinfo=UTC)
 
 
+def target_source_refs(pull: dict[str, object]) -> dict[str, object]:
+    pull_id = str(pull["id"])
+    target = {
+        "id": pull_id,
+        "vehicle_id": pull["vehicle_id"],
+        "session_id": pull["session_id"],
+        "started_at": pull["started_at"],
+        "ended_at": pull["ended_at"],
+        "created_at": START,
+        "session_created_at": START,
+        "vehicle_created_at": START,
+        "effective_configuration_id": None,
+        "active_modification_ids": [],
+    }
+    return {
+        "by_target": {
+            pull_id: {
+                "pull_rows": {pull_id: target},
+                "event_rows": {},
+                "configuration_rows": {},
+                "modification_rows": {},
+            }
+        }
+    }
+
+
 def sample(identifier: str, signal: str, value: float, at: datetime) -> TelemetryFeatureSample:
     return TelemetryFeatureSample(
         sample_id=identifier,
@@ -498,7 +524,11 @@ def test_lineage_guard_rejects_cross_vehicle_and_future_sources() -> None:
         "ended_at": START + timedelta(seconds=4),
         "active_modification_ids": [],
     }
-    feature_set = {"configuration_id": None}
+    feature_set = {
+        "pull_id": pull["id"],
+        "configuration_id": None,
+        "observation_cutoff": START + timedelta(seconds=5),
+    }
     item = {
         "value": "N55",
         "unit": None,
@@ -521,7 +551,7 @@ def test_lineage_guard_rejects_cross_vehicle_and_future_sources() -> None:
         (feature,),
         {feature.key: item},
         provenance,
-        {"pull_rows": {"pull-current": {"active_modification_ids": []}}},
+        target_source_refs(pull),
         pull,
         feature_set,
         START + timedelta(seconds=5),
@@ -560,9 +590,13 @@ def test_lineage_allows_observed_zero_prior_pull_count() -> None:
         (feature,),
         {feature.key: item},
         {"source_context": {"active_modification_ids": [], "prior_candidates": []}},
-        {"pull_rows": {"pull-current": {"active_modification_ids": []}}},
+        target_source_refs(pull),
         pull,
-        {"configuration_id": None},
+        {
+            "pull_id": pull["id"],
+            "configuration_id": None,
+            "observation_cutoff": START + timedelta(seconds=5),
+        },
         START + timedelta(seconds=5),
         dataset,
     )

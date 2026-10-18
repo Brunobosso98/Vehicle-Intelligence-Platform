@@ -2,10 +2,9 @@
 
 ## Status
 
-Phase 9A database acceptance, feature integration, feature observability and the 1,000-pull
-synthetic benchmark pass on the revised implementation. The canonical `make verify` completed
-successfully on 2026-10-18 with Docker available. Exact-head GitHub receipts will be recorded after
-the final commit is pushed. PR #41 remains open and unmerged.
+The focused Phase 9A database acceptance, feature integration, feature observability and 1,000-pull
+synthetic benchmark pass locally. The canonical validation result and exact-head GitHub receipts
+are tracked for PR #41, which remains open and unmerged.
 
 The Phase 7D harness in the canonical run passed with the deterministic provider and reported
 `real_model_validated: false`. The existing operator-accepted caveat remains: all 120 scheduled
@@ -52,20 +51,26 @@ dependencies plus the actual sample signals used for provenance.
 ## Disposable database acceptance
 
 `make phase9a-acceptance` passed against a freshly migrated disposable TimescaleDB. Its controlled
-fixture contained 2 vehicles, 3 configurations, 4 sessions, 5 pulls, a non-boundary pre-pull
-thermal observation, a late-ingested sample, two events including a late-created event, unavailable
-fuel, and a low-quality pull.
+fixture contained 2 vehicles, 3 configurations, 4 sessions and 6 pulls, including a good-quality
+pull for the second vehicle and a separate low-quality pull. It also contained a non-boundary
+pre-pull thermal observation, a late-ingested sample, two events including a late-created event,
+unavailable fuel and a modification whose installation predates the pulls but whose record was
+created after the earlier observation cutoffs. The dataset builder now validates each source
+against the cutoff of the selected FeatureSet, so a later-recorded active modification cannot
+rewrite an earlier dataset row.
 
 | Acceptance metric                                | Result |
 | ------------------------------------------------ | -----: |
 | Feature definitions                              |     79 |
-| FeatureSets generated                            |      5 |
+| FeatureSets generated                            |      6 |
 | Deterministic comparisons / equalities           |  1 / 1 |
-| Deliberate leakage rejections                    |      2 |
+| Leakage checks passed / undetected deliberate leaks | 7 / 0 |
+| Late-modification leaks                          |      0 |
 | Invalid persisted features                       |      0 |
 | Cross-vehicle / incompatible configuration leaks |  0 / 0 |
 | Fabricated unavailable sensor values             |      0 |
-| Eligible / excluded dataset rows                 |  4 / 1 |
+| Eligible / excluded dataset rows                 |  5 / 1 |
+| Dataset vehicle / configuration coverage         |  2 / 3 |
 | Controlled-fixture checksum stability            |   100% |
 
 The evaluator observed a 315 K pre-pull IAT, an IAT recovery delta of −11 K, a 2-second
@@ -75,9 +80,14 @@ sample and late-created event stayed out of target quality/history; cross-vehicl
 configuration histories remained isolated. The low-quality row was excluded with reason
 `minimum_quality_not_met` and represented in the profile as a `quality_failure`.
 
-The generated baseline artifact at `.validation/phase9a/baseline-profile.json` contains the full
-feature/source capability matrix, selected feature distributions, source role, and quality-failure
-record. The summary is in the [baseline profile](phase-9a-baseline-profile.md).
+The eligible rows cover both vehicles and all three configurations. Selected IAT delta values are
+2, 4, 6 and 8 K; peak boost values are 104,000–116,000 Pa; and rail-pressure means span
+13,800,000–16,800,000 Pa across four observed rows. The fifth row has unavailable fuel, which stays
+null with its explicit reason. The low-quality candidate is excluded as
+`minimum_quality_not_met`. The generated baseline artifact at
+`.validation/phase9a/baseline-profile.json` contains the full feature/source capability matrix,
+selected feature distributions, source role and quality-failure record. The summary is in the
+[baseline profile](phase-9a-baseline-profile.md).
 
 ## Integration, observability and benchmark
 
@@ -87,31 +97,25 @@ early observation cutoff that excludes late ingestion, configuration/history iso
 materialization and nonnegative database-read, compute and persistence timing observations.
 
 `make feature-observability` passed. It verified the generation, configuration, telemetry-read,
-compute, persistence and dataset spans; bounded metrics; and absence of entity identifiers from
-metric labels.
+compute, persistence and dataset spans; generation, null-value, leakage and dataset metrics; and
+absence of entity identifiers from metric labels.
 
 `FEATURE_BENCHMARK_PULLS=1000 make benchmark-features` generated 1,000 synthetic FeatureSets in
-152.2842 seconds (6.57 pulls/second). The separately bounded dataset materialization measured 100
-rows in 0.6473 seconds (154.48 rows/second), with zero exclusions. Stage totals were 88.5317
-seconds for database reads, 34.9031 seconds for feature compute and 22.6605 seconds for
-persistence. Peak Python allocation was 24,666,559 bytes; maximum process RSS was 135,868,416
+148.5127 seconds (6.73 pulls/second). The separately bounded dataset materialization measured 100
+rows in 0.9159 seconds (109.18 rows/second), with zero exclusions. Stage totals were 86.1528
+seconds for database reads, 33.9186 seconds for feature compute and 22.3899 seconds for
+persistence. Peak Python allocation was 27,808,244 bytes; maximum process RSS was 141,742,080
 bytes. The dataset benchmark is capped at 100 rows to remain within the builder's 32 MiB source
 payload limit. These are synthetic local measurements, not production capacity or real-vehicle
 performance claims.
 
 ## Canonical validation and delivery
 
-The revised implementation's canonical `make verify` passed locally on 2026-10-18. It checked API
-and web lint, typing, tests and coverage; contracts and documentation; production builds; prior
-Phase 0–8 acceptance; Docker integration and browser E2E; security; and all Phase 9A acceptance,
-integration, benchmark and observability targets. Results included 1,067 passing API unit tests
-with 95.15% line and 90.36% branch coverage, 52 passing web unit tests, 13 passing full-stack
-integration tests, and a passing Phase 9A disposable-database integration test. The aggregate
-Playwright target passed 8 tests and skipped 5 fixture-specific tests; the dedicated agent,
-investigation, knowledge and supervisor browser targets passed separately.
-
-After this verified tree is committed and pushed, PR #41's body will record the final head SHA and
-the exact-SHA GitHub workflow receipts. The PR will remain unmerged.
+`make verify` is the canonical local full-stack validation command. It covers API and web lint,
+typing, tests and coverage; contracts and documentation; production builds; prior Phase 0–8
+acceptance; Docker integration and browser E2E; security; and the Phase 9A acceptance, integration,
+benchmark and observability gates. The final local result and exact-head GitHub receipts are linked
+from PR #41. The PR remains unmerged.
 
 Phase 9A does not train a model, predict vehicle health, issue diagnosis, or add a prediction API,
 MCP tool or predictive UI. The ranked Phase 9B candidate shortlist remains in the architecture

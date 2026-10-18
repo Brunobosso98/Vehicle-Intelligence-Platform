@@ -103,6 +103,21 @@ async def _seed(database: Database) -> dict[str, object]:
                 "created": start - timedelta(hours=2),
             },
         )
+        late_modification_id = (
+            await db.execute(
+                text(
+                    "INSERT INTO modifications(vehicle_id,configuration_id,category,manufacturer,product,"
+                    "installed_at,created_at) VALUES(:vehicle,:config,'intake','Fixture',"
+                    "'Retroactively recorded intake',:installed,:created) RETURNING id"
+                ),
+                {
+                    "vehicle": vehicles["a"],
+                    "config": config_a,
+                    "installed": start - timedelta(hours=1),
+                    "created": start + timedelta(seconds=25),
+                },
+            )
+        ).scalar_one()
         session_ids: dict[str, UUID] = {}
         for key, vehicle_id, configuration_id, at, ended in (
             (
@@ -153,11 +168,72 @@ async def _seed(database: Database) -> dict[str, object]:
             ).scalar_one()
         pull_ids: dict[str, UUID] = {}
         pull_specs = (
-            ("p1", "a", "first", config_a, start, 1.0, True),
-            ("p2", "a", "first", config_a, start + timedelta(seconds=10), 1.0, True),
-            ("p3", "a", "second", config_a, start + timedelta(seconds=20), 0.85, False),
-            ("p4", "a", "third", config_b, start + timedelta(seconds=40), 1.0, True),
-            ("p5", "b", "fourth", config_c, start + timedelta(seconds=50), 0.25, True),
+            ("p1", "a", "first", config_a, start, 1.0, True, 0.0, 0.5, -4_000.0, 0.0),
+            (
+                "p2",
+                "a",
+                "first",
+                config_a,
+                start + timedelta(seconds=10),
+                1.0,
+                True,
+                0.0,
+                1.0,
+                2_000.0,
+                500_000.0,
+            ),
+            (
+                "p3",
+                "a",
+                "second",
+                config_a,
+                start + timedelta(seconds=20),
+                0.85,
+                False,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+            ),
+            (
+                "p4",
+                "a",
+                "third",
+                config_b,
+                start + timedelta(seconds=40),
+                1.0,
+                True,
+                3.0,
+                1.5,
+                4_000.0,
+                -1_000_000.0,
+            ),
+            (
+                "p5",
+                "b",
+                "fourth",
+                config_c,
+                start + timedelta(seconds=50),
+                1.0,
+                True,
+                6.0,
+                2.0,
+                8_000.0,
+                2_000_000.0,
+            ),
+            (
+                "p6",
+                "b",
+                "fourth",
+                config_c,
+                start + timedelta(seconds=55),
+                0.25,
+                True,
+                10.0,
+                3.0,
+                12_000.0,
+                -2_000_000.0,
+            ),
         )
         signal_specs = (
             ("engine.rpm", "rpm", 3000.0, 500.0),
@@ -169,6 +245,11 @@ async def _seed(database: Database) -> dict[str, object]:
             ("engine.coolant_temperature", "K", 335.0, 0.5),
             ("fuel.high_pressure", "Pa", 15_000_000.0, -100_000.0),
         )
+        thermal_signals = {
+            "engine.intake_air_temperature",
+            "engine.oil_temperature",
+            "engine.coolant_temperature",
+        }
         for (
             name,
             vehicle_key,
@@ -177,6 +258,10 @@ async def _seed(database: Database) -> dict[str, object]:
             at,
             completeness,
             fuel_available,
+            thermal_offset,
+            thermal_step,
+            boost_offset,
+            fuel_offset,
         ) in pull_specs:
             vehicle_id = vehicles[vehicle_key]
             session_id = session_ids[session_key]
@@ -218,7 +303,17 @@ async def _seed(database: Database) -> dict[str, object]:
                 for signal, unit, initial, delta in signal_specs:
                     if signal == "fuel.high_pressure" and not fuel_available:
                         continue
-                    value = initial + index * delta
+                    sample_offset = (
+                        thermal_offset
+                        if signal in thermal_signals
+                        else boost_offset
+                        if signal == "engine.boost_pressure"
+                        else fuel_offset
+                        if signal == "fuel.high_pressure"
+                        else 0.0
+                    )
+                    sample_step = thermal_step if signal in thermal_signals else delta
+                    value = initial + index * sample_step + sample_offset
                     sample_id = hashlib.sha256(f"{pull_id}:{signal}:{index}".encode()).hexdigest()
                     await db.execute(
                         text(
@@ -241,7 +336,7 @@ async def _seed(database: Database) -> dict[str, object]:
                             "record": f"{name}-{signal}-{index}",
                             "sequence": index,
                             "quality": "invalid"
-                            if name == "p5" and signal == "engine.rpm" and index == 0
+                            if name == "p6" and signal == "engine.rpm" and index == 0
                             else "valid",
                             "hash": sample_id,
                         },
@@ -368,6 +463,7 @@ async def _seed(database: Database) -> dict[str, object]:
         "start": start,
         "vehicles": vehicles,
         "configurations": {"a": config_a, "b": config_b, "c": config_c},
+        "late_modification": late_modification_id,
         "sessions": session_ids,
         "pulls": pull_ids,
     }
@@ -408,7 +504,8 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
             pulls["p3"], fixture["start"] + timedelta(seconds=20, milliseconds=500)
         )
         next_configuration = await service.generate_pull(pulls["p4"])
-        poor_quality = await service.generate_pull(pulls["p5"])
+        second_vehicle = await service.generate_pull(pulls["p5"])
+        poor_quality = await service.generate_pull(pulls["p6"])
 
         assert first.values["fuel.rail_pressure_mean"].value is not None
         assert target.values["thermal.iat_delta_k"].value == 4
@@ -422,8 +519,20 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
         assert target.values["history.prior_event_count"].value == 1
         assert target.values["fuel.rail_pressure_mean"].missing_reason.value == "unavailable_signal"
         assert target.values["quality.observation_count"].value == 35
+        assert first.values["temporal_context.prior_pull_count"].value == 0
+        assert same_p2_a.values["temporal_context.prior_pull_count"].value == 1
         assert next_configuration.configuration_id == fixture["configurations"]["b"]
         assert next_configuration.values["temporal_context.prior_pull_count"].value == 0
+        assert second_vehicle.vehicle_id == fixture["vehicles"]["b"]
+        assert second_vehicle.configuration_id == fixture["configurations"]["c"]
+        late_modification = str(fixture["late_modification"])
+        assert (
+            late_modification not in first.provenance["source_context"]["active_modification_ids"]
+        )
+        assert (
+            late_modification not in target.provenance["source_context"]["active_modification_ids"]
+        )
+        assert poor_quality.values["thermal.iat_delta_k"].value is None
         assert poor_quality.quality_metadata["pull_completeness"] == 0.25
         assert {stage for stage, _ in stage_timings} >= {
             "database_read",
@@ -443,6 +552,27 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
             fixture["sessions"]["first"], observation_cutoff=fixture["start"] - timedelta(days=2)
         )
         assert bad_batch["failed"] == 2
+        async with database.session() as db:
+            bad_cutoff_feature_sets = await db.scalar(
+                text(
+                    "SELECT count(*) FROM feature_sets WHERE pull_id=ANY(:pulls) "
+                    "AND observation_cutoff=:cutoff"
+                ),
+                {
+                    "pulls": [pulls["p1"], pulls["p2"]],
+                    "cutoff": fixture["start"] - timedelta(days=2),
+                },
+            )
+            failed_runs = await db.scalar(
+                text(
+                    "SELECT count(*) FROM feature_generation_runs WHERE requested_entity_id=ANY(:pulls) "
+                    "AND status='failed' AND failed_count=1"
+                ),
+                {"pulls": [pulls["p1"], pulls["p2"]]},
+            )
+        assert bad_cutoff_feature_sets == 0
+        assert failed_runs >= 2
+        assert (await service.generate_pull(pulls["p1"])).id == first.id
 
         dataset_definition = DatasetDefinition(
             name=f"phase9a-integration-{uuid4().hex[:10]}",
@@ -451,9 +581,15 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
             feature_set_version=service.version.version,
             selected_features=(
                 "raw_context.engine_code",
+                "raw_context.configuration_stage",
                 "thermal.iat_delta_k",
+                "thermal.pre_pull_iat_k",
                 "history.prior_boost_mean_pa",
                 "history.prior_event_count",
+                "performance.pull_duration_s",
+                "performance.rpm_3500_4500_s_per_1000rpm",
+                "boost_air.pressure_max",
+                "fuel.rail_pressure_mean",
                 "quality.observation_count",
             ),
             observation_cutoff=fixture["start"] + timedelta(seconds=60),
@@ -465,9 +601,22 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
         built_a = await builder.build(dataset_definition)
         built_b = await builder.build(dataset_definition)
         assert built_a.checksum == built_b.checksum
-        assert built_a.manifest["row_count"] == 4
+        assert built_a.manifest["row_count"] == 5
+        assert built_a.manifest["vehicle_count"] == 2
+        assert built_a.manifest["configuration_count"] == 3
         assert built_a.manifest["excluded_rows_by_reason"]["minimum_quality_not_met"] == 1
         assert built_a.checksum == built_b.checksum
+        for feature_key in (
+            "thermal.iat_delta_k",
+            "boost_air.pressure_max",
+            "fuel.rail_pressure_mean",
+        ):
+            values = {
+                row["features"][feature_key]
+                for row in built_a.rows
+                if feature_key in row["features"]
+            }
+            assert len(values) >= 2
 
         async with database.session() as db:
             count = await db.scalar(

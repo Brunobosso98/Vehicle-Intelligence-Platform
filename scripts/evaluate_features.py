@@ -53,16 +53,18 @@ async def evaluate() -> None:
     sessions = fixture["sessions"]
     assert isinstance(pulls, dict) and isinstance(sessions, dict)
     service = FeatureGenerationService(database)
-    metrics: dict[str, object] = {
+    metrics: dict[str, Any] = {
         "feature_definitions": len(DEFAULT_REGISTRY.list()),
         "feature_sets_generated": 0,
         "deterministic_equalities": 0,
         "deterministic_comparisons": 0,
-        "leakage_violations_detected": 0,
+        "leakage_checks_passed": 0,
+        "undetected_deliberate_leakage": 0,
         "invalid_persisted_features": 0,
         "cross_vehicle_leaks": 0,
         "cross_configuration_leaks": 0,
         "fabricated_unavailable_values": 0,
+        "late_modification_leaks": 0,
     }
     try:
         await service.ensure_version()
@@ -90,8 +92,13 @@ async def evaluate() -> None:
             "p3": await service.generate_pull(pulls["p3"]),
             "p4": await service.generate_pull(pulls["p4"]),
             "p5": await service.generate_pull(pulls["p5"]),
+            "p6": await service.generate_pull(pulls["p6"]),
         }
         metrics["feature_sets_generated"] = len(results)
+        if first.values["temporal_context.prior_pull_count"].value != 0:
+            metrics["undetected_deliberate_leakage"] = 1
+            raise AssertionError("a future pull entered the first pull's history")
+        metrics["leakage_checks_passed"] += 1
         target = results["p3"]
         if target.values["thermal.iat_delta_k"].value != 4:
             raise AssertionError("thermal delta is not derived from observed K values")
@@ -124,30 +131,54 @@ async def evaluate() -> None:
         if metrics["fabricated_unavailable_values"]:
             raise AssertionError("missing fuel signal produced a sensor value")
         if target.values["quality.observation_count"].value != 35:
+            metrics["undetected_deliberate_leakage"] = 1
             raise AssertionError("future-ingested sample entered quality counts")
+        metrics["leakage_checks_passed"] += 1
         if target.values["history.prior_event_count"].value != 1:
+            metrics["undetected_deliberate_leakage"] = 1
             raise AssertionError("future-created event leaked into prior event history")
+        metrics["leakage_checks_passed"] += 1
         if target.values["temporal_context.prior_pull_count"].value != 2:
             raise AssertionError(
                 "same-vehicle/configuration prior history is incorrect"
             )
-        leakage_violations_detected = 1
-        metrics["leakage_violations_detected"] = leakage_violations_detected
+        late_modification = str(fixture["late_modification"])
+        if (
+            late_modification
+            in first.provenance["source_context"]["active_modification_ids"]
+        ):
+            metrics["late_modification_leaks"] = 1
+            metrics["undetected_deliberate_leakage"] = 1
+            raise AssertionError(
+                "a later-recorded modification entered an earlier pull"
+            )
+        if (
+            late_modification
+            in target.provenance["source_context"]["active_modification_ids"]
+        ):
+            metrics["late_modification_leaks"] = 1
+            metrics["undetected_deliberate_leakage"] = 1
+            raise AssertionError(
+                "a later-recorded modification entered a pre-recording cutoff"
+            )
+        metrics["leakage_checks_passed"] += 1
         if results["p5"].values["temporal_context.prior_pull_count"].value != 0:
             metrics["cross_vehicle_leaks"] = 1
         if results["p4"].values["temporal_context.prior_pull_count"].value != 0:
             metrics["cross_configuration_leaks"] = 1
         if metrics["cross_vehicle_leaks"] or metrics["cross_configuration_leaks"]:
+            metrics["undetected_deliberate_leakage"] = 1
             raise AssertionError("history crossed vehicle or configuration boundary")
+        metrics["leakage_checks_passed"] += 2
 
         try:
             await service.generate_pull(
                 pulls["p3"], fixture["start"] - timedelta(days=2)
             )
         except FeatureLeakageRejected:
-            leakage_violations_detected += 1
-            metrics["leakage_violations_detected"] = leakage_violations_detected
+            metrics["leakage_checks_passed"] += 1
         else:
+            metrics["undetected_deliberate_leakage"] = 1
             raise AssertionError(
                 "future pull was not rejected against observation cutoff"
             )
@@ -175,8 +206,15 @@ async def evaluate() -> None:
             feature_set_version=service.version.version,
             selected_features=(
                 "raw_context.engine_code",
+                "raw_context.configuration_stage",
                 "thermal.iat_delta_k",
+                "thermal.pre_pull_iat_k",
                 "history.prior_event_count",
+                "performance.pull_duration_s",
+                "performance.rpm_3500_4500_s_per_1000rpm",
+                "boost_air.pressure_max",
+                "history.prior_boost_mean_pa",
+                "fuel.rail_pressure_mean",
                 "quality.observation_count",
             ),
             observation_cutoff=fixture["start"] + timedelta(seconds=60),
@@ -192,7 +230,41 @@ async def evaluate() -> None:
         exclusions = Counter(item["reason"] for item in dataset_a.exclusions)
         if exclusions["minimum_quality_not_met"] != 1:
             raise AssertionError("poor-quality row exclusion lacks an explicit reason")
+        if dataset_a.manifest["vehicle_count"] != 2:
+            raise AssertionError(
+                "acceptance dataset must contain rows for both vehicles"
+            )
+        if dataset_a.manifest["configuration_count"] != 3:
+            raise AssertionError(
+                "acceptance dataset must cover all three configurations; "
+                f"manifest={dataset_a.manifest['configuration_distribution']}, "
+                f"rows={[row['configuration_id'] for row in dataset_a.rows]}, "
+                f"exclusions={dataset_a.exclusions}"
+            )
+        variation: dict[str, list[object]] = {}
+        for feature_key in (
+            "thermal.iat_delta_k",
+            "boost_air.pressure_max",
+            "fuel.rail_pressure_mean",
+        ):
+            variation_values = sorted(
+                {
+                    row["features"][feature_key]
+                    for row in dataset_a.rows
+                    if feature_key in row["features"]
+                }
+            )
+            if len(variation_values) < 2:
+                raise AssertionError(
+                    f"acceptance dataset lacks {feature_key} variation"
+                )
+            variation[feature_key] = variation_values
         metrics["dataset_rows"] = len(dataset_a.rows)
+        metrics["dataset_vehicle_count"] = dataset_a.manifest["vehicle_count"]
+        metrics["dataset_configuration_count"] = dataset_a.manifest[
+            "configuration_count"
+        ]
+        metrics["dataset_feature_variation"] = variation
         metrics["dataset_exclusions_by_reason"] = dict(sorted(exclusions.items()))
         metrics["dataset_checksum_stability"] = 1.0
         metrics["dataset_checksum"] = dataset_a.checksum
@@ -218,8 +290,10 @@ async def evaluate() -> None:
             )
         invalid = 0
         for vector in rows:
-            values = vector if isinstance(vector, dict) else json.loads(vector)
-            for key, item in values.items():
+            persisted_values = (
+                vector if isinstance(vector, dict) else json.loads(vector)
+            )
+            for key, item in persisted_values.items():
                 definition_item = DEFAULT_REGISTRY.resolve(key)
                 if item.get("value") is None:
                     valid_missing = item.get(
@@ -246,12 +320,15 @@ async def evaluate() -> None:
                 "vehicles": 2,
                 "configurations": 3,
                 "sessions": 4,
-                "pulls": 5,
+                "pulls": 6,
                 "event_cases": 2,
                 "future_ingestion_sample": True,
                 "non_boundary_pre_pull_thermal_sample": True,
                 "unavailable_fuel_case": True,
                 "poor_quality_case": True,
+                "retroactively_recorded_modification": True,
+                "feature_dataset_spans_two_vehicles": True,
+                "feature_dataset_spans_three_configurations": True,
             },
             "metrics": metrics,
             "baseline_profile_path": ".validation/phase9a/baseline-profile.json",
@@ -266,6 +343,8 @@ async def evaluate() -> None:
                 "future-ingested sample and future-created event excluded",
                 "future pull rejected by observation cutoff",
                 "history isolated by vehicle and effective configuration",
+                "later-recorded modification excluded before it became observable",
+                "model-ready rows span two vehicles and three configurations with thermal, boost and fuel variation",
                 "dataset checksum stable and exclusion reason explicit",
                 "persisted values satisfy definition type/unit/bounds",
             ],

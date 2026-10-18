@@ -120,15 +120,8 @@ class DatasetBuilder:
                 (
                     await db.execute(
                         text(
-                            "SELECT p.id,p.vehicle_id,p.configuration_id,p.session_id,p.started_at,p.ended_at,"
-                            "p.created_at,p.data_completeness,s.configuration_id AS session_configuration_id,"
-                            "s.created_at AS session_created_at,v.created_at AS vehicle_created_at,"
-                            "COALESCE((SELECT vc.id FROM vehicle_configurations vc WHERE vc.id=s.configuration_id "
-                            "AND vc.vehicle_id=p.vehicle_id AND vc.effective_at<=p.started_at "
-                            "AND (vc.ended_at IS NULL OR vc.ended_at>p.started_at) AND vc.created_at<=:cutoff),"
-                            "(SELECT vc.id FROM vehicle_configurations vc WHERE vc.vehicle_id=p.vehicle_id "
-                            "AND vc.effective_at<=p.started_at AND (vc.ended_at IS NULL OR vc.ended_at>p.started_at) "
-                            "AND vc.created_at<=:cutoff ORDER BY vc.effective_at DESC,vc.id LIMIT 1)) AS effective_configuration_id "
+                            "SELECT p.id,p.vehicle_id,p.session_id,p.started_at,p.ended_at,p.created_at,"
+                            "s.created_at AS session_created_at,v.created_at AS vehicle_created_at "
                             "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
                             "JOIN vehicles v ON v.id=p.vehicle_id "
                             "WHERE p.started_at<=:cutoff AND p.created_at<=:cutoff "
@@ -192,23 +185,23 @@ class DatasetBuilder:
                     .mappings()
                     .all()
                 )
-            source_refs: dict[str, Any] = {
-                "pull_rows": {},
-                "event_rows": {},
-                "configuration_rows": {},
-                "modification_rows": {},
-            }
+            source_refs: dict[str, Any] = {"by_target": {}}
             if feature_sets:
                 source = _feature_source_refs(feature_sets)
-                if sum(len(values) for values in source.values()) > MAX_DATASET_SOURCE_ENTITIES:
+                if (
+                    sum(len(values) for key, values in source.items() if key != "by_target")
+                    > MAX_DATASET_SOURCE_ENTITIES
+                ):
                     raise FeatureGenerationLimitError(
                         "dataset lineage exceeds 200000 source entities"
                     )
+                target_cutoffs = {
+                    str(item["pull_id"]): item["observation_cutoff"] for item in feature_sets
+                }
                 source_refs = await self._validate_source_ownership(
                     db,
                     source,
-                    [str(item["pull_id"]) for item in feature_sets],
-                    definition.observation_cutoff,
+                    target_cutoffs,
                 )
                 annotated = []
                 for item in feature_sets:
@@ -304,11 +297,6 @@ class DatasetBuilder:
                     str(item["id"]),
                 ),
             )
-            expected_configuration = (
-                str(pull["effective_configuration_id"])
-                if pull["effective_configuration_id"]
-                else None
-            )
             actual_configuration = (
                 str(feature_set["configuration_id"]) if feature_set["configuration_id"] else None
             )
@@ -319,7 +307,14 @@ class DatasetBuilder:
             ):
                 exclusions.append({"pull_id": pull_id, "reason": "entity_ownership_mismatch"})
                 continue
-            if actual_configuration != expected_configuration:
+            target_source_refs = source_refs.get("by_target", {}).get(pull_id, {})
+            target_source = target_source_refs.get("pull_rows", {}).get(pull_id)
+            expected_configuration = (
+                str(target_source["effective_configuration_id"])
+                if target_source is not None and target_source["effective_configuration_id"]
+                else None
+            )
+            if target_source is None or actual_configuration != expected_configuration:
                 exclusions.append({"pull_id": pull_id, "reason": "configuration_mismatch"})
                 continue
             if not definition.allow_configuration_mixing:
@@ -465,77 +460,133 @@ class DatasetBuilder:
     async def _validate_source_ownership(
         self,
         db: Any,
-        refs: dict[str, set[str]],
-        target_pull_ids: list[str],
-        cutoff: datetime,
+        refs: dict[str, Any],
+        target_cutoffs: dict[str, datetime],
     ) -> dict[str, Any]:
-        pull_ids = refs.get("pulls", set())
-        event_ids = refs.get("events", set())
+        by_target_refs = refs.get("by_target", {})
+        pull_pairs = {
+            (target_id, source_id, cutoff)
+            for target_id, cutoff in target_cutoffs.items()
+            for source_id in {
+                target_id,
+                *by_target_refs.get(target_id, {}).get("pulls", set()),
+            }
+        }
+        event_pairs = {
+            (target_id, event_id, cutoff)
+            for target_id, cutoff in target_cutoffs.items()
+            for event_id in by_target_refs.get(target_id, {}).get("events", set())
+        }
+        if len(pull_pairs) + len(event_pairs) > MAX_DATASET_SOURCE_ENTITIES:
+            raise FeatureGenerationLimitError("dataset lineage link count exceeds 200000")
         config_ids = refs.get("configurations", set())
-        all_pull_ids = set(pull_ids) | set(target_pull_ids)
         result: dict[str, Any] = {
-            "pull_rows": {},
-            "event_rows": {},
+            "by_target": {
+                target_id: {"pull_rows": {}, "event_rows": {}} for target_id in target_cutoffs
+            },
             "configuration_rows": {},
             "modification_rows": {},
         }
-        if all_pull_ids:
+        if pull_pairs:
+            pairs_json = json.dumps(
+                [
+                    {
+                        "target_pull_id": target_id,
+                        "source_id": source_id,
+                        "cutoff": cutoff.isoformat(),
+                    }
+                    for target_id, source_id, cutoff in sorted(pull_pairs)
+                ],
+                sort_keys=True,
+            )
             rows = (
                 (
                     await db.execute(
                         text(
-                            "WITH source_pulls AS (SELECT p.id,p.vehicle_id,p.configuration_id,p.session_id,"
+                            "WITH pairs AS (SELECT * FROM jsonb_to_recordset(CAST(:pairs AS jsonb)) "
+                            "AS pair(target_pull_id uuid,source_id uuid,cutoff timestamptz)), "
+                            "source_pulls AS (SELECT p.id,p.vehicle_id,p.configuration_id,p.session_id,"
                             "p.started_at,p.ended_at,p.created_at,s.created_at AS session_created_at,"
-                            "v.created_at AS vehicle_created_at,s.configuration_id AS session_configuration_id,"
-                            "COALESCE((SELECT vc.id FROM vehicle_configurations vc WHERE vc.id=s.configuration_id "
-                            "AND vc.vehicle_id=p.vehicle_id AND vc.effective_at<=p.started_at "
-                            "AND (vc.ended_at IS NULL OR vc.ended_at>p.started_at) AND vc.created_at<=:cutoff),"
-                            "(SELECT vc.id FROM vehicle_configurations vc WHERE vc.vehicle_id=p.vehicle_id "
-                            "AND vc.effective_at<=p.started_at AND (vc.ended_at IS NULL OR vc.ended_at>p.started_at) "
-                            "AND vc.created_at<=:cutoff ORDER BY vc.effective_at DESC,vc.id LIMIT 1)) AS effective_configuration_id "
+                            "v.created_at AS vehicle_created_at,s.configuration_id AS session_configuration_id "
                             "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
-                            "JOIN vehicles v ON v.id=p.vehicle_id WHERE p.id=ANY(:ids)) "
-                            "SELECT sp.*,ARRAY(SELECT m.id::text FROM modifications m WHERE m.vehicle_id=sp.vehicle_id "
+                            "JOIN vehicles v ON v.id=p.vehicle_id WHERE p.id IN (SELECT source_id FROM pairs)) "
+                            "SELECT pairs.target_pull_id,sp.*,COALESCE(session_config.id,latest_config.id) "
+                            "AS effective_configuration_id,ARRAY(SELECT m.id::text FROM modifications m "
+                            "WHERE m.vehicle_id=sp.vehicle_id "
                             "AND m.installed_at<=sp.started_at AND (m.removed_at IS NULL OR m.removed_at>sp.started_at) "
-                            "AND m.created_at<=:cutoff AND (m.configuration_id IS NULL "
-                            "OR m.configuration_id=sp.effective_configuration_id) ORDER BY m.id) AS active_modification_ids "
-                            "FROM source_pulls sp"
+                            "AND m.created_at<=pairs.cutoff AND (m.configuration_id IS NULL "
+                            "OR m.configuration_id=COALESCE(session_config.id,latest_config.id)) "
+                            "ORDER BY m.id) AS active_modification_ids "
+                            "FROM pairs JOIN source_pulls sp ON sp.id=pairs.source_id "
+                            "LEFT JOIN LATERAL (SELECT vc.id FROM vehicle_configurations vc "
+                            "WHERE vc.id=sp.session_configuration_id AND vc.vehicle_id=sp.vehicle_id "
+                            "AND vc.effective_at<=sp.started_at "
+                            "AND (vc.ended_at IS NULL OR vc.ended_at>sp.started_at) "
+                            "AND vc.created_at<=pairs.cutoff LIMIT 1) session_config ON TRUE "
+                            "LEFT JOIN LATERAL (SELECT vc.id FROM vehicle_configurations vc "
+                            "WHERE vc.vehicle_id=sp.vehicle_id AND vc.effective_at<=sp.started_at "
+                            "AND (vc.ended_at IS NULL OR vc.ended_at>sp.started_at) "
+                            "AND vc.created_at<=pairs.cutoff ORDER BY vc.effective_at DESC,vc.id LIMIT 1) "
+                            "latest_config ON TRUE"
                         ),
-                        {"ids": [UUID(item) for item in sorted(all_pull_ids)], "cutoff": cutoff},
+                        {"pairs": pairs_json},
                     )
                 )
                 .mappings()
                 .all()
             )
-            result["pull_rows"] = {str(row["id"]): row for row in rows}
-        if event_ids:
+            for row in rows:
+                result["by_target"][str(row["target_pull_id"])]["pull_rows"][str(row["id"])] = row
+        if event_pairs:
+            pairs_json = json.dumps(
+                [
+                    {
+                        "target_pull_id": target_id,
+                        "source_id": event_id,
+                        "cutoff": cutoff.isoformat(),
+                    }
+                    for target_id, event_id, cutoff in sorted(event_pairs)
+                ],
+                sort_keys=True,
+            )
             rows = (
                 (
                     await db.execute(
                         text(
-                            "WITH source_events AS (SELECT e.id,e.vehicle_id,e.session_id,e.started_at,e.ended_at,e.created_at,"
-                            "s.created_at AS session_created_at,"
-                            "COALESCE((SELECT vc.id FROM vehicle_configurations vc WHERE vc.id=s.configuration_id "
-                            "AND vc.vehicle_id=e.vehicle_id AND vc.effective_at<=e.started_at "
-                            "AND (vc.ended_at IS NULL OR vc.ended_at>e.started_at) AND vc.created_at<=:cutoff),"
-                            "(SELECT vc.id FROM vehicle_configurations vc WHERE vc.vehicle_id=e.vehicle_id "
-                            "AND vc.effective_at<=e.started_at AND (vc.ended_at IS NULL OR vc.ended_at>e.started_at) "
-                            "AND vc.created_at<=:cutoff ORDER BY vc.effective_at DESC,vc.id LIMIT 1)) AS effective_configuration_id "
+                            "WITH pairs AS (SELECT * FROM jsonb_to_recordset(CAST(:pairs AS jsonb)) "
+                            "AS pair(target_pull_id uuid,source_id uuid,cutoff timestamptz)), "
+                            "source_events AS (SELECT e.id,e.vehicle_id,e.session_id,e.started_at,e.ended_at,e.created_at,"
+                            "s.created_at AS session_created_at,v.created_at AS vehicle_created_at,"
+                            "s.configuration_id AS session_configuration_id "
                             "FROM detected_events e JOIN driving_sessions s ON s.id=e.session_id "
-                            "WHERE e.id=ANY(:ids) AND s.created_at<=:cutoff) "
-                            "SELECT se.*,ARRAY(SELECT m.id::text FROM modifications m WHERE m.vehicle_id=se.vehicle_id "
-                            "AND m.installed_at<=se.started_at AND (m.removed_at IS NULL OR m.removed_at>se.started_at) "
-                            "AND m.created_at<=:cutoff AND (m.configuration_id IS NULL "
-                            "OR m.configuration_id=se.effective_configuration_id) ORDER BY m.id) AS active_modification_ids "
-                            "FROM source_events se"
+                            "JOIN vehicles v ON v.id=e.vehicle_id WHERE e.id IN (SELECT source_id FROM pairs)) "
+                            "SELECT pairs.target_pull_id,se.*,COALESCE(session_config.id,latest_config.id) "
+                            "AS effective_configuration_id,ARRAY(SELECT m.id::text FROM modifications m "
+                            "WHERE m.vehicle_id=se.vehicle_id AND m.installed_at<=se.started_at "
+                            "AND (m.removed_at IS NULL OR m.removed_at>se.started_at) "
+                            "AND m.created_at<=pairs.cutoff AND (m.configuration_id IS NULL "
+                            "OR m.configuration_id=COALESCE(session_config.id,latest_config.id)) "
+                            "ORDER BY m.id) AS active_modification_ids "
+                            "FROM pairs JOIN source_events se ON se.id=pairs.source_id "
+                            "LEFT JOIN LATERAL (SELECT vc.id FROM vehicle_configurations vc "
+                            "WHERE vc.id=se.session_configuration_id AND vc.vehicle_id=se.vehicle_id "
+                            "AND vc.effective_at<=se.started_at "
+                            "AND (vc.ended_at IS NULL OR vc.ended_at>se.started_at) "
+                            "AND vc.created_at<=pairs.cutoff LIMIT 1) session_config ON TRUE "
+                            "LEFT JOIN LATERAL (SELECT vc.id FROM vehicle_configurations vc "
+                            "WHERE vc.vehicle_id=se.vehicle_id AND vc.effective_at<=se.started_at "
+                            "AND (vc.ended_at IS NULL OR vc.ended_at>se.started_at) "
+                            "AND vc.created_at<=pairs.cutoff ORDER BY vc.effective_at DESC,vc.id LIMIT 1) "
+                            "latest_config ON TRUE"
                         ),
-                        {"ids": [UUID(item) for item in sorted(event_ids)], "cutoff": cutoff},
+                        {"pairs": pairs_json},
                     )
                 )
                 .mappings()
                 .all()
             )
-            result["event_rows"] = {str(row["id"]): row for row in rows}
+            for row in rows:
+                result["by_target"][str(row["target_pull_id"])]["event_rows"][str(row["id"])] = row
         if config_ids:
             rows = (
                 (
@@ -567,6 +618,9 @@ class DatasetBuilder:
                 .all()
             )
             result["modification_rows"] = {str(row["id"]): row for row in rows}
+        for target_refs in result["by_target"].values():
+            target_refs["configuration_rows"] = result["configuration_rows"]
+            target_refs["modification_rows"] = result["modification_rows"]
         return result
 
 
@@ -648,6 +702,26 @@ def _lineage_is_safe(
     cutoff: datetime,
     definition: DatasetDefinition,
 ) -> bool:
+    source_refs = source_refs.get("by_target", {}).get(str(feature_set["pull_id"]))
+    if source_refs is None:
+        return False
+    lineage_cutoff = feature_set["observation_cutoff"]
+    target_source = source_refs.get("pull_rows", {}).get(str(pull["id"]))
+    if target_source is None or (
+        target_source["vehicle_id"] != pull["vehicle_id"]
+        or target_source["session_id"] != pull["session_id"]
+        or target_source["started_at"] != pull["started_at"]
+        or target_source["ended_at"] != pull["ended_at"]
+        or target_source["created_at"] > lineage_cutoff
+        or target_source["session_created_at"] > lineage_cutoff
+        or target_source["vehicle_created_at"] > lineage_cutoff
+        or target_source["effective_configuration_id"] != feature_set["configuration_id"]
+    ):
+        return False
+    if not _configuration_modifications_are_safe(
+        provenance, source_refs, pull, feature_set, lineage_cutoff
+    ):
+        return False
     for feature in selected:
         item = vector.get(feature.key)
         if not isinstance(item, dict) or item.get("value") is None:
@@ -687,7 +761,7 @@ def _lineage_is_safe(
                     config_row["ended_at"] is not None
                     and config_row["ended_at"] <= pull["started_at"]
                 )
-                or config_row["created_at"] > cutoff
+                or config_row["created_at"] > lineage_cutoff
             ):
                 return False
         elif feature.key == "quality.truncated":
@@ -721,9 +795,10 @@ def _lineage_is_safe(
                         return False
                     if (
                         source["vehicle_id"] != pull["vehicle_id"]
-                        or source["ended_at"] > cutoff
-                        or source["created_at"] > cutoff
-                        or source["session_created_at"] > cutoff
+                        or source["ended_at"] > lineage_cutoff
+                        or source["created_at"] > lineage_cutoff
+                        or source["session_created_at"] > lineage_cutoff
+                        or source["vehicle_created_at"] > lineage_cutoff
                         or source["started_at"] >= pull["started_at"]
                         or source["ended_at"] >= pull["started_at"]
                     ):
@@ -752,10 +827,10 @@ def _lineage_is_safe(
                     if (
                         source["vehicle_id"] != pull["vehicle_id"]
                         or source["ended_at"] >= pull["started_at"]
-                        or source["ended_at"] > cutoff
-                        or source["created_at"] > cutoff
-                        or source["session_created_at"] > cutoff
-                        or source["vehicle_created_at"] > cutoff
+                        or source["ended_at"] > lineage_cutoff
+                        or source["created_at"] > lineage_cutoff
+                        or source["session_created_at"] > lineage_cutoff
+                        or source["vehicle_created_at"] > lineage_cutoff
                     ):
                         return False
                     expected = (
@@ -780,10 +855,6 @@ def _lineage_is_safe(
                         source.get("active_modification_ids", [])
                     ):
                         return False
-        if not _configuration_modifications_are_safe(
-            provenance, source_refs, pull, feature_set, cutoff
-        ):
-            return False
     return True
 
 
@@ -824,14 +895,20 @@ def _configuration_modifications_are_safe(
     return True
 
 
-def _feature_source_refs(feature_sets: Iterable[Any]) -> dict[str, set[str]]:
-    result: dict[str, set[str]] = {
+def _feature_source_refs(feature_sets: Iterable[Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {
         "pulls": set(),
         "events": set(),
         "configurations": set(),
         "modifications": set(),
     }
     for feature_set in feature_sets:
+        target_id = str(feature_set["pull_id"])
+        target_refs = result.setdefault(
+            "by_target", {target_id: {"pulls": set(), "events": set()}}
+        ).setdefault(target_id, {"pulls": set(), "events": set()})
+        if feature_set["configuration_id"] is not None:
+            result["configurations"].add(str(feature_set["configuration_id"]))
         vector = _json_object(feature_set["feature_values"])
         provenance = _json_object(feature_set["provenance"])
         context = provenance.get("source_context", {})
@@ -848,6 +925,7 @@ def _feature_source_refs(feature_sets: Iterable[Any]) -> dict[str, set[str]]:
                 source = str(entity)
                 if "event" in key:
                     result["events"].add(source)
+                    target_refs["events"].add(source)
                 elif key.startswith(
                     (
                         "history.",
@@ -861,6 +939,7 @@ def _feature_source_refs(feature_sets: Iterable[Any]) -> dict[str, set[str]]:
                     )
                 ):
                     result["pulls"].add(source)
+                    target_refs["pulls"].add(source)
                     candidate = candidate_context.get(source)
                     if candidate:
                         result["modifications"].update(
@@ -874,6 +953,7 @@ def _feature_source_refs(feature_sets: Iterable[Any]) -> dict[str, set[str]]:
         ):
             for candidate in context.get("prior_candidates", []):
                 result["pulls"].add(str(candidate["id"]))
+                target_refs["pulls"].add(str(candidate["id"]))
                 result["modifications"].update(
                     str(value) for value in candidate.get("active_modification_ids", [])
                 )
