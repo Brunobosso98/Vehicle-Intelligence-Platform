@@ -59,19 +59,19 @@ created after the earlier observation cutoffs. The dataset builder now validates
 against the cutoff of the selected FeatureSet, so a later-recorded active modification cannot
 rewrite an earlier dataset row.
 
-| Acceptance metric                                | Result |
-| ------------------------------------------------ | -----: |
-| Feature definitions                              |     79 |
-| FeatureSets generated                            |      6 |
-| Deterministic comparisons / equalities           |  1 / 1 |
-| Leakage checks passed / undetected deliberate leaks | 7 / 0 |
-| Late-modification leaks                          |      0 |
-| Invalid persisted features                       |      0 |
-| Cross-vehicle / incompatible configuration leaks |  0 / 0 |
-| Fabricated unavailable sensor values             |      0 |
-| Eligible / excluded dataset rows                 |  5 / 1 |
-| Dataset vehicle / configuration coverage         |  2 / 3 |
-| Controlled-fixture checksum stability            |   100% |
+| Acceptance metric                                   | Result |
+| --------------------------------------------------- | -----: |
+| Feature definitions                                 |     79 |
+| FeatureSets generated                               |      6 |
+| Deterministic comparisons / equalities              |  1 / 1 |
+| Leakage checks passed / undetected deliberate leaks |  7 / 0 |
+| Late-modification leaks                             |      0 |
+| Invalid persisted features                          |      0 |
+| Cross-vehicle / incompatible configuration leaks    |  0 / 0 |
+| Fabricated unavailable sensor values                |      0 |
+| Eligible / excluded dataset rows                    |  5 / 1 |
+| Dataset vehicle / configuration coverage            |  2 / 3 |
+| Controlled-fixture checksum stability               |   100% |
 
 The evaluator observed a 315 K pre-pull IAT, an IAT recovery delta of −11 K, a 2-second
 3,500–4,500 RPM interval, a 4-second pull duration and 108,000 Pa peak boost. A late-ingested
