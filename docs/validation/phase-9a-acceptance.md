@@ -2,12 +2,12 @@
 
 ## Status
 
-**Local implementation gates: PASS. Exact-head delivery: pending.** These measurements were
-collected from the Phase 9A working tree on branch
+**Local implementation gates: PASS. Exact-head checks: tracked on the current head of PR #41.**
+These measurements were collected from the Phase 9A implementation on branch
 `codex/phase-9a-feature-engineering-foundation`, based on baseline
-`d1e35baba8f11c89f413e54c228a86724605a8f1`. The source changes were not committed when these
-local runs completed, so this report does not claim a final source SHA or GitHub result. The
-final exact-head checks and open PR state will be added after commit and push.
+`d1e35baba8f11c89f413e54c228a86724605a8f1`. The current source SHA, clean-tree state, PR state,
+and exact-head GitHub workflow receipts are available from the linked
+[Phase 9A pull request](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/41).
 
 ## Feature registry and temporal contract
 
@@ -109,9 +109,8 @@ synthetic embedding transport. No paid Phase 7D or Phase 8 job was run.
 
 The browser regression uncovered a broad `role=status` locator in the existing agent E2E. The test
 now selects the exact “Resposta validada.” status; the focused browser gate and the full canonical
-verify both passed after this correction. Local validation is complete. Commit SHA, clean-tree state,
-remote-head equality, PR URL/state and exact-head GitHub checks will be recorded after commit and
-push.
+verify both passed after this correction. Local validation is complete. Remote-head equality and
+the PR's current-head GitHub check results are verified as part of delivery.
 
 No Phase 9B–9H predictive models, anomaly detection, prediction API, PredictionEvidence, agent
 integration or predictive UI is included. A ranked 9B shortlist and the detailed traceability mapping
