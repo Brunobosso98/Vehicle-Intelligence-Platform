@@ -2,7 +2,7 @@ import hashlib
 import json
 import math
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Literal
@@ -288,9 +288,75 @@ class FeatureSet:
 @dataclass(frozen=True)
 class LabelDefinition:
     key: str
-    source_signals: tuple[str, ...]
+    source_signals: tuple[str, ...] = ()
     source_feature_keys: tuple[str, ...] = ()
     post_outcome: bool = True
+    version: str = "1.0.0"
+    name: str = ""
+    description: str = ""
+    dtype: str = "boolean"
+    task_type: str = "classification"
+    horizon: PredictionHorizon = field(
+        default_factory=lambda: PredictionHorizon(HorizonKind.NEXT_PULL)
+    )
+    source_outcome: str = "future_observable_outcome"
+    algorithm_id: str = "vehicle-platform.label"
+    algorithm_version: str = "1"
+    required_signals: tuple[str, ...] = ()
+    quality_policy: dict[str, Any] = field(default_factory=dict)
+    compatibility_policy: dict[str, Any] = field(default_factory=dict)
+    threshold_policy: dict[str, Any] = field(default_factory=dict)
+    provenance_policy: dict[str, Any] = field(default_factory=dict)
+    active: bool = True
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,119}", self.key):
+            raise ValueError("label key must be a bounded stable identifier")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", self.version):
+            raise ValueError("invalid label definition version")
+        if self.dtype not in {"boolean", "float", "integer"}:
+            raise ValueError("unsupported label dtype")
+        if self.task_type not in {"classification", "regression"}:
+            raise ValueError("unsupported label task type")
+        if not self.algorithm_id or not self.algorithm_version or not self.source_outcome:
+            raise ValueError("label algorithm and outcome source are required")
+        signals = tuple(dict.fromkeys((*self.source_signals, *self.required_signals)))
+        object.__setattr__(self, "source_signals", signals)
+        object.__setattr__(self, "required_signals", signals)
+        for name in (
+            "quality_policy",
+            "compatibility_policy",
+            "threshold_policy",
+            "provenance_policy",
+        ):
+            object.__setattr__(self, name, dict(getattr(self, name)))
+
+    def manifest(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "version": self.version,
+            "name": self.name or self.key,
+            "description": self.description,
+            "dtype": self.dtype,
+            "task_type": self.task_type,
+            "horizon": {"kind": self.horizon.kind.value, "minutes": self.horizon.minutes},
+            "source_outcome": self.source_outcome,
+            "source_signals": list(self.source_signals),
+            "required_signals": list(self.required_signals),
+            "source_feature_keys": list(self.source_feature_keys),
+            "algorithm_id": self.algorithm_id,
+            "algorithm_version": self.algorithm_version,
+            "quality_policy": self.quality_policy,
+            "compatibility_policy": self.compatibility_policy,
+            "threshold_policy": self.threshold_policy,
+            "provenance_policy": self.provenance_policy,
+            "post_outcome": self.post_outcome,
+            "active": self.active,
+        }
+
+    @property
+    def checksum(self) -> str:
+        return stable_hash(self.manifest())
 
 
 @dataclass(frozen=True)
@@ -351,7 +417,7 @@ class DatasetDefinition:
             "required_features": list(self.required_features),
             "allow_configuration_mixing": self.allow_configuration_mixing,
             "split_policy": self.split_policy.value,
-            "label_definition": asdict(self.label_definition) if self.label_definition else None,
+            "label_definition": self.label_definition.manifest() if self.label_definition else None,
             "source": self.source,
         }
 

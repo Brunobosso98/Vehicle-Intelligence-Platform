@@ -1,0 +1,19 @@
+# Phase 9B traceability ledger
+
+| Requirement                                                                  | Implementation                                                                      | Evidence                                                                                    |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Versioned next-pull labels with source provenance                            | `ml/labels.py`, `features/domain.py`, `0014_predictive_models.py`                   | `test_ml.py`; `evaluate_predictive_models.py`; persisted checksums and target-source values |
+| Strict input/outcome separation and immediate-next compatibility             | `ml/labels.py`, `features/datasets.py`                                              | pair boundary and leakage sentinels in database acceptance                                  |
+| Chronological session-group train/validation/test and walk-forward           | `ml/splitting.py`, `ml/training.py`                                                 | split ordering/group assertions and three walk-forward folds per task                       |
+| Dummy, linear and nonlinear candidate comparison                             | `ml/domain.py`, `ml/training.py`                                                    | candidate validation table in [model evaluation](phase-9b-acceptance.md)                    |
+| Validation-only selection and threshold; test held until selection completes | `ml/training.py`                                                                    | `test_evaluated_after_selection`; report `test_used_for_selection: false`                   |
+| Missing values, units, quality and forbidden identity/future/target features | `ml/training.py`, `ml/labels.py`, `ml/artifacts.py`                                 | unit sentinels and offline schema validation                                                |
+| Immutable dataset and registry lineage                                       | migration `0014`, `ml/registry.py`                                                  | database acceptance creates all 3 datasets, model versions and runs                         |
+| Artifact path, size, checksum, family and smoke checks                       | `ml/artifacts.py`                                                                   | artifact tamper/schema tests; database acceptance stage/load/inference                      |
+| Bounded operator-only training CLI and production refusal                    | `scripts/train_predictive_models.py`                                                | CLI bounds and environment guard; API/agent routes remain unchanged                         |
+| Actual ML metrics/spans and no entity labels                                 | `observability/telemetry.py`, `scripts/evaluate_predictive_models.py`               | observed metric names/spans and ID sentinel in database acceptance                          |
+| Benchmark and operator documentation                                         | `scripts/benchmark_predictive_models.py`, `scripts/check_ml_observability.py`, docs | `make benchmark-models`, `make model-observability`; committed model cards/runbook          |
+| Dependency and database migration safety                                     | pinned `pyproject.toml`/`uv.lock`, Alembic `0014`                                   | `make verify`, disposable upgrade from `0013`, downgrade/re-upgrade cycle                   |
+
+The current evidence is synthetic engineering validation. Exact-head CI receipts are recorded only
+after push and must match the final branch SHA.

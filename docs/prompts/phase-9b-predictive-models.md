@@ -21,7 +21,7 @@ Phase 9B must build the first controlled predictive-model training and offline e
 
 Conceptually:
 
-~~~text
+```text
 Phase 9A FeatureSet / DatasetDefinition
         ↓
 time-aware dataset
@@ -43,7 +43,7 @@ versioned MLModel / MLModelVersion
 NO online prediction service yet.
 NO agent integration yet.
 NO anomaly engine yet.
-~~~
+```
 
 The purpose of 9B is NOT to claim production-grade mechanical failure prediction.
 
@@ -361,10 +361,10 @@ A model must never reference an anonymous dataframe.
 
 Each supervised row must clearly separate:
 
-~~~text
+```text
 X = features available before NEXT_PULL
 y = outcome measured in NEXT_PULL
-~~~
+```
 
 Persist or export target identity separately from feature identity.
 
@@ -455,9 +455,11 @@ Every task must include simple baselines.
 At minimum compare:
 
 ### Dummy baseline
+
 - majority / prior / simple deterministic baseline appropriate to task.
 
 ### Linear baseline
+
 - LogisticRegression for classification;
 - linear/regularized regression if a regression task is selected.
 
@@ -556,6 +558,7 @@ Preprocessing may include:
 Do not blindly mean-impute semantically unavailable sensor values.
 
 Prefer:
+
 - explicit missing flags;
 - feature exclusion;
 - model support for missing values;
@@ -616,9 +619,11 @@ Current project datasets are small relative to production ML.
 The training system must distinguish:
 
 ### ENGINEERING_VALIDATION
+
 synthetic/golden controlled data.
 
 ### REAL_WORLD_VALIDATION
+
 real vehicle/fleet data.
 
 Phase 9B may be VERIFIED using engineering-validation criteria.
@@ -936,10 +941,12 @@ Reserve at least one synthetic scenario family for final testing.
 Example:
 
 train/validation:
+
 - stable;
 - moderate degradation profiles.
 
 test:
+
 - unseen combination or severity.
 
 Do not reuse identical deterministic sequences across all splits.
@@ -951,9 +958,11 @@ Do not reuse identical deterministic sequences across all splits.
 Provide offline feature importance.
 
 For linear model:
+
 - coefficients.
 
 For tree model:
+
 - native importance/permutation importance.
 
 Prefer permutation importance on held-out validation/test where practical.
@@ -973,6 +982,7 @@ SHAP is not mandatory in 9B.
 Full prediction explanation may be introduced later alongside PredictionEvidence/agents.
 
 If SHAP is added:
+
 - keep offline;
 - bound computation;
 - do not imply causality.
@@ -1098,9 +1108,9 @@ Set conservative engineering minimums.
 
 Example starting floor for controlled classification:
 
-- >= 100 rows total;
-- >= 20 positive;
-- >= 20 negative;
+- at least 100 rows total;
+- at least 20 positive;
+- at least 20 negative;
 - meaningful validation/test support.
 
 If current acceptance fixture is smaller, generate a larger deterministic synthetic training fixture rather than lowering standards silently.
@@ -1177,7 +1187,7 @@ Prevent trivial vehicle/session memorization.
 
 Recommended structure:
 
-~~~text
+```text
 DatasetDefinition
 → labeled dataset builder
 → leakage validator
@@ -1189,7 +1199,7 @@ DatasetDefinition
 → test evaluator
 → artifact registry
 → report
-~~~
+```
 
 Do not mix test evaluation into model selection.
 
@@ -1201,9 +1211,8 @@ After selecting hyperparameters on train/validation:
 
 define whether selected model is:
 
-- fitted on train only and tested once;
-or
-- refit on train+validation then evaluated on untouched test.
+- fit on train only and test once; or
+- refit on train+validation then evaluate on untouched test.
 
 Document the exact policy.
 
@@ -1384,7 +1393,7 @@ Avoid vehicle/session IDs in metric labels.
 
 Trace:
 
-~~~text
+```text
 TrainingRun
 → dataset materialization
 → label build
@@ -1395,7 +1404,7 @@ TrainingRun
 → selection
 → test evaluation
 → artifact register
-~~~
+```
 
 Do not trace complete feature matrices.
 
@@ -1463,6 +1472,7 @@ Predictive product UI is deferred to 9H.
 A small engineering Model Registry view is optional if consistent with the project.
 
 Do not add:
+
 - health gauges;
 - risk warnings;
 - live predictions;

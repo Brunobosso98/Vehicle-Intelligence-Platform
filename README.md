@@ -153,7 +153,7 @@ Phase 7D paid-suite caveat remains documented there.
 
 ## Phase 9A feature engineering foundation
 
-Phase 9A adds a deterministic 76-definition feature registry, immutable feature-set versions,
+Phase 9A adds a deterministic 79-definition feature registry, immutable feature-set versions,
 provenance and temporal cutoffs, configuration-aware history, a leakage-safe pull dataset builder,
 JSONL/manifest export, profiling and bounded operator CLIs. It does not train models, generate
 predictions, diagnose vehicle conditions, expose a public feature API or add a predictive UI.
@@ -165,4 +165,7 @@ See the [architecture](docs/architecture/phase-9a-feature-engineering.md),
 Run `make test-features`, `make test-feature-integration`, `make phase9a-acceptance`,
 `make benchmark-features`, and `make feature-observability` for focused gates. These use a fresh
 disposable TimescaleDB for database-backed checks. `make verify` includes all five Phase 9A gates.
-Phase 9B predictive models are next; 9C–9H remain deferred.
+Phase 9B adds only the offline supervised model-training and evaluation foundation for observable
+next-pull behavior. It does not diagnose failures, serve predictions, or control the vehicle.
+Phases 9C–9H remain deferred. See the [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
+[training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md).

@@ -23,6 +23,7 @@ dependencies = [
  "jsonschema==4.26.0",
  "langchain-core==1.6.7",
  "pypdf==6.20.1",
+ "scikit-learn==1.9.1",
 ]
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"
@@ -64,6 +65,9 @@ plugins = ["pydantic.mypy"]
 module = ["aiokafka", "aiokafka.*"]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
+[[tool.mypy.overrides]]
+module = ["sklearn", "sklearn.*", "threadpoolctl", "joblib"]
+ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
@@ -82,6 +86,10 @@ omit = [
  "*/vehicle_platform/analytics/service.py", # analytics SQL/idempotency requires real integration
  "*/vehicle_platform/features/service.py", # versioned persistence/idempotency requires real database integration
  "*/vehicle_platform/features/datasets.py", # ownership and cutoff queries require real database integration
+ "*/vehicle_platform/ml/pipeline.py", # end-to-end dataset/training/registration uses disposable TimescaleDB
+ "*/vehicle_platform/ml/registry.py", # immutable model persistence is exercised by DB acceptance
+ "*/vehicle_platform/ml/synthetic.py", # canonical telemetry fixture uses real feature generation
+ "*/vehicle_platform/ml/artifacts.py", # registry-backed artifact loading is exercised by DB acceptance
 ]
 [tool.coverage.report]
 fail_under = 90

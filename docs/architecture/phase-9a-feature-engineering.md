@@ -127,6 +127,12 @@ distributions, quality-failure exclusions, and possible extremes without deletin
 Numeric synthetic extremes are marked `synthetic_boundary`; real or imported extremes are marked
 `possible_real_extreme` for review.
 
+The current dataset row schema also records configuration, compatible modification state, source
+FeatureSet identity/hash, and each candidate's eligibility or exclusion reason. Candidate lineage is
+retained even when a row is excluded, so downstream supervised labelers can preserve the immediate
+next-pull horizon and explain missing or incompatible outcomes. These fields are checksum-covered
+under the current row schema version.
+
 Chronological and walk-forward split helpers preserve ordering. Exports use canonical JSON Lines
 plus a JSON manifest and are atomically written under the fixed approved artifact directory. Path
 components are constrained; output is capped at 64 MiB. Database reads are bounded to 100,000

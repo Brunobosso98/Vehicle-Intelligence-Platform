@@ -43,6 +43,38 @@ class DatasetValidationError(ValueError):
 
 
 @dataclass(frozen=True)
+class DatasetCandidate:
+    """A pull considered by DatasetBuilder, including pulls excluded from feature rows."""
+
+    pull_id: str
+    vehicle_id: str
+    configuration_id: str | None
+    session_id: str
+    started_at: str
+    ended_at: str
+    active_modification_ids: tuple[str, ...] = ()
+    feature_set_id: str | None = None
+    feature_set_source_hash: str | None = None
+    row_id: str | None = None
+    exclusion_reason: str | None = None
+
+    def manifest(self) -> dict[str, Any]:
+        return {
+            "pull_id": self.pull_id,
+            "vehicle_id": self.vehicle_id,
+            "configuration_id": self.configuration_id,
+            "session_id": self.session_id,
+            "started_at": self.started_at,
+            "ended_at": self.ended_at,
+            "active_modification_ids": list(self.active_modification_ids),
+            "feature_set_id": self.feature_set_id,
+            "feature_set_source_hash": self.feature_set_source_hash,
+            "row_id": self.row_id,
+            "exclusion_reason": self.exclusion_reason,
+        }
+
+
+@dataclass(frozen=True)
 class DatasetBuild:
     definition: DatasetDefinition
     rows: tuple[dict[str, Any], ...]
@@ -50,6 +82,7 @@ class DatasetBuild:
     checksum: str
     manifest: dict[str, Any]
     profile: dict[str, Any]
+    candidates: tuple[DatasetCandidate, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -120,7 +153,7 @@ class DatasetBuilder:
                 (
                     await db.execute(
                         text(
-                            "SELECT p.id,p.vehicle_id,p.session_id,p.started_at,p.ended_at,p.created_at,"
+                            "SELECT p.id,p.vehicle_id,p.configuration_id,p.session_id,p.started_at,p.ended_at,p.created_at,"
                             "s.created_at AS session_created_at,v.created_at AS vehicle_created_at "
                             "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
                             "JOIN vehicles v ON v.id=p.vehicle_id "
@@ -270,27 +303,45 @@ class DatasetBuilder:
             by_pull.setdefault(str(feature_set["pull_id"]), []).append(feature_set)
         rows: list[dict[str, Any]] = []
         exclusions: list[dict[str, str]] = []
+        candidate_records: list[DatasetCandidate] = []
         materialized_bytes = 0
         first_configuration: str | None = None
         configuration_is_set = False
         for pull in pull_rows:
             pull_id = str(pull["id"])
+            candidate: dict[str, Any] = {
+                "pull_id": pull_id,
+                "vehicle_id": str(pull["vehicle_id"]),
+                "configuration_id": (
+                    str(pull["configuration_id"]) if pull["configuration_id"] else None
+                ),
+                "session_id": str(pull["session_id"]),
+                "started_at": pull["started_at"].isoformat(),
+                "ended_at": pull["ended_at"].isoformat(),
+                "active_modification_ids": (),
+                "feature_set_id": None,
+                "feature_set_source_hash": None,
+                "row_id": None,
+            }
+
             row_cutoff = _row_cutoff(definition, pull)
             if row_cutoff < pull["created_at"]:
-                exclusions.append({"pull_id": pull_id, "reason": "pull_not_observed_by_cutoff"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "pull_not_observed_by_cutoff"
+                )
                 continue
-            candidates = [
+            feature_set_candidates = [
                 item
                 for item in by_pull.get(pull_id, [])
                 if item["observation_cutoff"] <= row_cutoff
             ]
-            if not candidates:
-                exclusions.append(
-                    {"pull_id": pull_id, "reason": "feature_set_missing_or_after_cutoff"}
+            if not feature_set_candidates:
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "feature_set_missing_or_after_cutoff"
                 )
                 continue
             feature_set = max(
-                candidates,
+                feature_set_candidates,
                 key=lambda item: (
                     item["observation_cutoff"],
                     item["generated_at"],
@@ -305,8 +356,20 @@ class DatasetBuilder:
                 or feature_set["session_id"] != pull["session_id"]
                 or feature_set["pull_id"] != pull["id"]
             ):
-                exclusions.append({"pull_id": pull_id, "reason": "entity_ownership_mismatch"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "entity_ownership_mismatch"
+                )
                 continue
+            provenance = feature_set.get("_feature_provenance") or _json_object(
+                feature_set["provenance"]
+            )
+            source_context = provenance.get("source_context", {})
+            candidate["configuration_id"] = actual_configuration
+            candidate["active_modification_ids"] = tuple(
+                sorted(str(value) for value in source_context.get("active_modification_ids", []))
+            )
+            candidate["feature_set_id"] = str(feature_set["id"])
+            candidate["feature_set_source_hash"] = str(feature_set["source_hash"])
             target_source_refs = source_refs.get("by_target", {}).get(pull_id, {})
             target_source = target_source_refs.get("pull_rows", {}).get(pull_id)
             expected_configuration = (
@@ -315,31 +378,35 @@ class DatasetBuilder:
                 else None
             )
             if target_source is None or actual_configuration != expected_configuration:
-                exclusions.append({"pull_id": pull_id, "reason": "configuration_mismatch"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "configuration_mismatch"
+                )
                 continue
             if not definition.allow_configuration_mixing:
                 if not configuration_is_set:
                     first_configuration = actual_configuration
                     configuration_is_set = True
                 elif actual_configuration != first_configuration:
-                    exclusions.append(
-                        {"pull_id": pull_id, "reason": "configuration_mixing_disallowed"}
+                    _record_candidate_exclusion(
+                        exclusions, candidate_records, candidate, "configuration_mixing_disallowed"
                     )
                     continue
             quality = _json_object(feature_set["quality_metadata"])
             if float(quality.get("pull_completeness") or 0.0) < definition.minimum_quality:
-                exclusions.append({"pull_id": pull_id, "reason": "minimum_quality_not_met"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "minimum_quality_not_met"
+                )
                 continue
             vector = _json_object(feature_set["feature_values"])
-            provenance = feature_set.get("_feature_provenance") or _json_object(
-                feature_set["provenance"]
-            )
             prior_count = _prior_count(vector)
             if prior_count < definition.minimum_history:
-                exclusions.append({"pull_id": pull_id, "reason": "minimum_history_not_met"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "minimum_history_not_met"
+                )
                 continue
             output_values: dict[str, Any] = {}
             missing: dict[str, str] = {}
+            feature_quality: dict[str, str] = {}
             feature_failure: str | None = None
             for definition_item in selected:
                 item = vector.get(definition_item.key)
@@ -349,6 +416,10 @@ class DatasetBuilder:
                     item = _missing_value(MissingReason.NOT_OBSERVED_YET, definition_item.unit)
                 reason = item.get("missing_reason")
                 value = item.get("value")
+                quality_value = item.get("quality")
+                feature_quality[definition_item.key] = (
+                    str(quality_value) if quality_value is not None else "invalid"
+                )
                 if value is None:
                     missing[definition_item.key] = str(
                         reason or MissingReason.COMPUTATION_ERROR.value
@@ -360,7 +431,9 @@ class DatasetBuilder:
                         feature_failure = f"invalid_persisted_feature:{definition_item.key}"
                     output_values[definition_item.key] = value
             if feature_failure:
-                exclusions.append({"pull_id": pull_id, "reason": feature_failure})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, feature_failure
+                )
                 continue
             if not _lineage_is_safe(
                 selected,
@@ -372,7 +445,9 @@ class DatasetBuilder:
                 row_cutoff,
                 definition,
             ):
-                exclusions.append({"pull_id": pull_id, "reason": "leakage_or_lineage_rejected"})
+                _record_candidate_exclusion(
+                    exclusions, candidate_records, candidate, "leakage_or_lineage_rejected"
+                )
                 continue
             identity = {
                 "vehicle_id": str(pull["vehicle_id"]),
@@ -394,11 +469,15 @@ class DatasetBuilder:
                 "quality": quality,
                 "features": output_values,
                 "missing": missing,
+                "feature_quality": feature_quality,
+                "active_modification_ids": list(candidate["active_modification_ids"]),
             }
             materialized_bytes += len(canonical_json(row).encode("utf-8"))
             if materialized_bytes > MAX_EXPORT_BYTES:
                 raise FeatureGenerationLimitError("materialized dataset exceeds 64 MiB")
             rows.append(row)
+            candidate["row_id"] = row_id
+            candidate_records.append(DatasetCandidate(**candidate, exclusion_reason=None))
         rows.sort(
             key=lambda item: (
                 item["observation_cutoff"],
@@ -410,6 +489,15 @@ class DatasetBuilder:
         )
         if len({item["row_id"] for item in rows}) != len(rows):
             raise DatasetValidationError("dataset row identity collision")
+        candidate_records.sort(
+            key=lambda item: (
+                item.started_at,
+                item.vehicle_id,
+                item.configuration_id or "",
+                item.session_id,
+                item.pull_id,
+            )
+        )
         profile = profile_dataset(rows, selected, definition, exclusions=exclusions)
         excluded_counts = dict(sorted(Counter(item["reason"] for item in exclusions).items()))
         checksum_payload = {
@@ -420,9 +508,12 @@ class DatasetBuilder:
                     "feature_set_source_hash": item["feature_set_source_hash"],
                     "features": item["features"],
                     "missing": item["missing"],
+                    "feature_quality": item["feature_quality"],
+                    "active_modification_ids": item["active_modification_ids"],
                 }
                 for item in rows
             ],
+            "candidate_rows": [item.manifest() for item in candidate_records],
             "exclusions": sorted(exclusions, key=lambda item: (item["pull_id"], item["reason"])),
         }
         checksum = stable_hash(checksum_payload)
@@ -431,7 +522,9 @@ class DatasetBuilder:
             "dataset_version": definition.version,
             "dataset_definition_checksum": definition.checksum,
             "checksum": checksum,
+            "row_schema_version": "phase9a-dataset-row-v2",
             "row_count": len(rows),
+            "candidate_count": len(candidate_records),
             "feature_list": [item.key for item in selected],
             "feature_set_version": definition.feature_set_version,
             "observation_cutoff": definition.observation_cutoff.isoformat(),
@@ -455,6 +548,7 @@ class DatasetBuilder:
             checksum,
             manifest,
             profile,
+            tuple(candidate_records),
         )
 
     async def _validate_source_ownership(
@@ -622,6 +716,16 @@ class DatasetBuilder:
             target_refs["configuration_rows"] = result["configuration_rows"]
             target_refs["modification_rows"] = result["modification_rows"]
         return result
+
+
+def _record_candidate_exclusion(
+    exclusions: list[dict[str, str]],
+    candidates: list[DatasetCandidate],
+    candidate: dict[str, Any],
+    reason: str,
+) -> None:
+    exclusions.append({"pull_id": candidate["pull_id"], "reason": reason})
+    candidates.append(DatasetCandidate(**candidate, exclusion_reason=reason))
 
 
 def _row_cutoff(definition: DatasetDefinition, pull: Any) -> datetime:
