@@ -22,5 +22,14 @@ change a sampling rate, start a collector or mutate canonical telemetry. An oper
 every investigation route, while approval and session linkage use version/hash/context checks.
 See [Phase 7B](phase-7b-investigation-adaptive-logging.md) and [ADR 0020](../adr/0020-investigation-recipe-and-approval-boundary.md).
 
-Specialist agents, RAG, ML, diagnosis and production identity/infrastructure remain deferred.
+Phase 9A's `features` package is a read-only consumer of canonical telemetry, sessions, pulls,
+events and effective vehicle/configuration/modification context. It owns immutable feature
+versions, pull FeatureSets, generation receipts and dataset definitions/build receipts. It cannot
+write source evidence or invoke MCP/agents. Bounded operator CLIs perform generation and local
+JSONL export; no public API or model/prediction service exists. See
+[Phase 9A architecture](phase-9a-feature-engineering.md) and
+[ADR 0031](../adr/0031-versioned-feature-engineering-and-temporal-datasets.md).
+
+Specialist agents and RAG are implemented in later phases; predictive models, diagnosis and
+production identity/infrastructure remain deferred.
 See [Phase 6](phase-6-mcp-tool-platform.md).

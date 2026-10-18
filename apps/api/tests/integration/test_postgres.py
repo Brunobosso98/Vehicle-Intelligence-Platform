@@ -120,6 +120,11 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "knowledge_embeddings",
             "knowledge_conflicts",
             "knowledge_retrieval_runs",
+            "feature_set_versions",
+            "feature_sets",
+            "feature_generation_runs",
+            "dataset_definitions",
+            "dataset_build_runs",
         }
         assert await connection.scalar(
             text(

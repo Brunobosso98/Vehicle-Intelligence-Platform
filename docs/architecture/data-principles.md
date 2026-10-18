@@ -10,4 +10,7 @@ Missing is not zero. Record sensor quality, uncertainty and source sampling limi
 Every important observation identifies vehicle, session, source/sensor, timestamp, schema version,
 raw value and meaningful transformation history. Imports require explicit idempotency keys and
 duplicate handling in Phase 1. Reproducible analysis records source dataset hashes, code/schema/model
-versions and parameters. No ingestion or telemetry schemas are implemented in Phase 0.
+versions and parameters. Phase 9A feature snapshots preserve source and provenance hashes,
+definition/generator/source-schema versions, units, quality and observation cutoffs. Missing
+signals stay explicit nulls with reasons. Training labels, predictions and learned targets are not
+features. No ingestion or telemetry schemas are implemented in Phase 0.

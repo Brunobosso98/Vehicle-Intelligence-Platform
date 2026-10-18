@@ -21,7 +21,7 @@ The purpose of 9A is to create the deterministic, versioned, leakage-safe featur
 
 Conceptually:
 
-~~~text
+```text
 canonical telemetry
 + sessions
 + pulls
@@ -42,7 +42,7 @@ Leakage / temporal validation
 model-ready datasets
 
 NO predictive model yet.
-~~~
+```
 
 The Phase 9A implementation must be production-grade enough that later model training can trust feature identity, provenance, temporal boundaries and reproducibility.
 
@@ -150,7 +150,9 @@ Create a formal taxonomy.
 At minimum:
 
 ### RAW_CONTEXT
+
 Stable contextual attributes:
+
 - vehicle/platform;
 - engine;
 - configuration identifier;
@@ -158,30 +160,39 @@ Stable contextual attributes:
 - fuel/calibration when recorded.
 
 ### SESSION
+
 Whole-session derived features.
 
 ### PULL
+
 Pull-specific features.
 
 ### THERMAL
+
 Temperature and heat behavior.
 
 ### PERFORMANCE
+
 Performance/acceleration behavior.
 
 ### BOOST_AIR
+
 Boost/throttle/air related behavior.
 
 ### FUEL
+
 Fuel-pressure / fueling behavior from actually recorded signals.
 
 ### QUALITY
+
 Data quality/readiness features.
 
 ### HISTORY
+
 Past-only historical aggregates.
 
 ### TEMPORAL_CONTEXT
+
 Features derived from time/order/history boundaries.
 
 Do not create features for unavailable sensors.
@@ -1184,7 +1195,7 @@ Avoid high-cardinality labels.
 
 Trace:
 
-~~~text
+```text
 feature generation
 → source resolve
 → configuration resolve
@@ -1192,18 +1203,18 @@ feature generation
 → feature compute
 → validation
 → persistence
-~~~
+```
 
 Dataset build:
 
-~~~text
+```text
 dataset build
 → candidate selection
 → feature resolve
 → temporal validation
 → eligibility
 → manifest
-~~~
+```
 
 ---
 
@@ -1254,30 +1265,35 @@ Create explicit malicious/edge fixtures.
 Examples:
 
 ### Future pull leakage
+
 Feature row for pull 2 accidentally sees pull 3.
 
 Expected:
 rejected.
 
 ### Future event leakage
+
 An event recorded after cutoff enters current row.
 
 Expected:
 rejected.
 
 ### Current outcome leakage
+
 Dataset intended to predict pull duration includes final pull duration.
 
 Expected:
 dependency/label conflict detection when label is defined later or mark as post-outcome-only.
 
 ### Cross-vehicle
+
 History from vehicle B enters vehicle A.
 
 Expected:
 rejected.
 
 ### Cross-config
+
 Incompatible configuration history used without allowed policy.
 
 Expected:

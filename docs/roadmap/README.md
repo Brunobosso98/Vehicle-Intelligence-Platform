@@ -11,8 +11,15 @@
 - Phase 7B — Investigation & Adaptive Logging (complete; canonical regression verified in Phase 7C)
 - Phase 7C — Specialist Agent Orchestration (VERIFIED; PR #35 canonical exact-head gates passed)
 - Phase 7D — Real Model Validation & Agent Reliability Baseline (completed with operator-accepted validation caveat; see report)
-- Phase 8 — Technical RAG & Knowledge Intelligence (implementation in progress; NOT VERIFIED)
-- Phase 9 — ML / Predictive Models (planned)
+- Phase 8 — Technical RAG & Knowledge Intelligence (complete; see acceptance report)
+- Phase 9A — Feature Engineering Foundation (implementation complete; exact-head gates pending)
+- Phase 9B — Predictive Models (next)
+- Phase 9C — Anomaly Detection (planned)
+- Phase 9D — Prediction Service (planned)
+- Phase 9E — PredictionEvidence (planned)
+- Phase 9F — Agent Integration (planned)
+- Phase 9G — Evaluation / Calibration (planned)
+- Phase 9H — Predictive Intelligence UI (planned)
 - Phase 10 — MLOps Platform (planned)
 - Phase 11 — Agent Evals / Red Team (planned)
 - Phase 12 — Production Cloud Infrastructure (planned)
@@ -24,14 +31,15 @@ Phase 7D is closed by operator acceptance: all 120 slots have PASS across rounds
 120-execution rerun on the final code was omitted because API balance was insufficient.
 This is not a claim of uniform final-source real verification. Final GitHub Actions results
 remain separately recorded in the [evaluation report](../validation/phase-7d-real-evaluation.md)
-and PR checks. Phase 8 is under implementation; Phase 9+ capabilities remain deferred.
+and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
+feature and dataset foundation; 9B–9H remain deferred until 9A final-head acceptance is complete.
 
 # Current phase
 
 Phases 0–6 passed canonical acceptance. The Phase 7A agent consumes MCP facts and validates
 structured claims. The [Phase 7A gate](../validation/phase-7a-acceptance.md) records executed
 checkpoint evidence and identifies the exact-head delivery receipts.
-Unsupported diagnosis, proven root-cause interpretation, RAG, ML and future infrastructure remain deferred.
+Unsupported diagnosis, proven root-cause interpretation, predictive models and future infrastructure remain deferred.
 
 ## Phase 7C implementation
 
@@ -44,12 +52,25 @@ and [traceability ledger](../validation/phase-7c-traceability-ledger.md) define 
 Security/CodeQL/dependency review and the canonical Docker/full-stack gate
 [run 38198158098](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/38198158098).
 The local workstation issue does not reopen Phase 7C; historical receipts remain intact.
-Comprehensive real-model evaluation is Phase 7D; documentary retrieval and RAG remain Phase 8.
+Comprehensive real-model evaluation is Phase 7D; documentary retrieval is Phase 8.
 
-## Phase 8 implementation checkpoint
+## Phase 8 acceptance
 
 [The specification](../prompts/phase-8-technical-rag-knowledge-intelligence.md) remains the full
 definition of done. Storage/retrieval, trust/applicability, controlled source selections, embedding
-spend protection, scoped agent tools and a minimal citation UI are implemented. Real embedding,
-complete hybrid/browser/observability/security/regression and final-head gates remain pending.
-See [acceptance evidence](../validation/phase-8-acceptance.md); no Phase 8 VERIFIED status is claimed.
+spend protection, scoped agent tools and the citation UI passed the corrected implementation
+acceptance described in [the report](../validation/phase-8-acceptance.md). Its Phase 7D paid-suite
+caveat remains separately documented.
+
+## Phase 9A implementation checkpoint
+
+The 9A branch defines 76 deterministic features, immutable version identity and provenance,
+cutoff-aware pull generation, temporal/leakage validation, bounded reproducible datasets, operator
+CLIs, profiling and observability. It has no model, prediction, public feature API or predictive UI.
+The local independent evaluator, disposable integration, 100-pull benchmark and observability gate
+are recorded in the [Phase 9A acceptance report](../validation/phase-9a-acceptance.md). Exact-head
+GitHub checks and the current PR state determine final completion.
+
+The Phase 9 sequence is deliberately separated: 9B predictive models; 9C anomaly detection; 9D
+prediction service; 9E PredictionEvidence; 9F agent integration; 9G evaluation/calibration; 9H
+predictive intelligence UI. No later subphase is implemented by 9A.

@@ -54,9 +54,9 @@ test("grounded vehicle question, evidence, modifications and insufficient causal
     .getByLabel("Pergunta sobre o veículo")
     .fill("Essa peça causou a melhora?");
   await workspace.getByRole("button", { name: "Consultar agente" }).click();
-  await expect(workspace.getByRole("status")).toHaveText("Resposta validada.", {
-    timeout: 90000,
-  });
+  await expect(
+    workspace.getByRole("status").filter({ hasText: /^Resposta validada\.$/ }),
+  ).toHaveText("Resposta validada.", { timeout: 90000 });
   await expect(result).toContainText("INSUFFICIENT_EVIDENCE");
   await expect(result).toContainText("Confiança: low");
   await expect(result).toContainText("mechanical_cause");
