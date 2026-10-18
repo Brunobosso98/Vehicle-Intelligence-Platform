@@ -283,6 +283,16 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
                         "thermal_step": thermal_step,
                         "vehicle_id": vehicle_id,
                         "fuel_available": fuel_available,
+                        # Independent of the task event/noise functions above. This exercises
+                        # the registered duplicate-timestamp quality feature as a negative control.
+                        "negative_control_duplicate": int.from_bytes(
+                            hashlib.sha256(
+                                f"phase9b-negative-control-v1:{vehicle_index}:{round_index}:{pull_index}".encode()
+                            ).digest()[:2],
+                            "big",
+                        )
+                        % 4
+                        == 0,
                     }
                 )
                 current_iat = next_iat
@@ -291,6 +301,7 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
                 current_interval = next_interval
 
         for params in pull_params:
+            duplicate_sample: dict[str, Any] | None = None
             for index, (signal, unit, value) in enumerate(params["values"]):
                 sample_index = index // 8
                 if signal == "fuel.high_pressure" and not params["fuel_available"]:
@@ -301,23 +312,39 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
                 sample_id = hashlib.sha256(
                     f"{params['pull_id']}:{signal}:{sample_index}".encode()
                 ).hexdigest()
-                telemetry_rows.append(
-                    {
-                        "sample_id": sample_id,
-                        "vehicle_id": params["vehicle_id"],
-                        "session_id": params["session_id"],
-                        "observed_at": observed_at,
-                        "ingested_at": observed_at,
-                        "signal": signal,
-                        "value": value,
-                        "unit": unit,
-                        "raw": str(value),
-                        "record": f"{params['pull_id']}:{signal}:{sample_index}",
-                        "sequence": sample_index,
-                        "quality": "valid",
-                        "hash": sample_id,
+                telemetry_row = {
+                    "sample_id": sample_id,
+                    "vehicle_id": params["vehicle_id"],
+                    "session_id": params["session_id"],
+                    "observed_at": observed_at,
+                    "ingested_at": observed_at,
+                    "signal": signal,
+                    "value": value,
+                    "unit": unit,
+                    "raw": str(value),
+                    "record": f"{params['pull_id']}:{signal}:{sample_index}",
+                    "sequence": sample_index,
+                    "quality": "valid",
+                    "hash": sample_id,
+                }
+                telemetry_rows.append(telemetry_row)
+                if (
+                    params["negative_control_duplicate"]
+                    and signal == "vehicle.speed"
+                    and sample_index == 2
+                ):
+                    duplicate_id = hashlib.sha256(
+                        f"{sample_id}:phase9b-negative-control-v1".encode()
+                    ).hexdigest()
+                    duplicate_sample = {
+                        **telemetry_row,
+                        "sample_id": duplicate_id,
+                        "record": f"{telemetry_row['record']}:negative-control",
+                        "sequence": sample_index + 1,
+                        "hash": duplicate_id,
                     }
-                )
+            if duplicate_sample is not None:
+                telemetry_rows.append(duplicate_sample)
         await db.execute(
             text(
                 "INSERT INTO telemetry_samples(sample_id,vehicle_id,session_id,observed_at,ingested_at,"  # noqa: E501

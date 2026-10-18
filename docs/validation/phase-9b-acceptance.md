@@ -11,9 +11,9 @@ synthetic data. It is not real-world validation, a mechanical diagnosis, or a fa
 The disposable database upgraded through revision `0013` to head, downgraded to `0013`, and
 re-upgraded through head before the acceptance fixture ran.
 
-The current work uses the Phase 9B candidate branch and consumes merged Phase 9A mainline code.
-Exact-head validation and GitHub checks must be recorded after final commit/push; this report
-records local acceptance evidence, not a merge or deployment.
+The Phase 9B candidate consumes the merged Phase 9A mainline code. Exact-head validation and
+GitHub check status are recorded in PR #42; this report records local acceptance evidence, not a
+merge or deployment.
 
 ## Label and dataset evidence
 
@@ -44,32 +44,39 @@ undefined dummy F1 means it predicted no positives.
 | Task        | Candidate           | Validation AP | Validation F1 | Validation BA |
 | ----------- | ------------------- | ------------: | ------------: | ------------: |
 | Thermal     | Dummy               |         0.406 |     undefined |         0.500 |
-| Thermal     | Logistic regression |         0.637 |         0.769 |         0.806 |
-| Thermal     | Random forest       |         0.815 |         0.769 |         0.806 |
+| Thermal     | Logistic regression |         0.609 |         0.769 |         0.806 |
+| Thermal     | Random forest       |         0.855 |         0.769 |         0.806 |
 | Performance | Dummy               |         0.344 |     undefined |         0.500 |
-| Performance | Logistic regression |         0.734 |         0.815 |         0.881 |
-| Performance | Random forest       |         0.790 |         0.727 |         0.792 |
+| Performance | Logistic regression |         0.773 |         0.786 |         0.857 |
+| Performance | Random forest       |         0.749 |         0.762 |         0.816 |
 | Fuel        | Dummy               |         0.500 |     undefined |         0.500 |
-| Fuel        | Logistic regression |         0.886 |         0.867 |         0.857 |
-| Fuel        | Random forest       |         0.912 |         0.875 |         0.857 |
+| Fuel        | Logistic regression |         0.761 |         0.720 |         0.750 |
+| Fuel        | Random forest       |         0.889 |         0.828 |         0.821 |
 
 | Task        | Selected family / threshold | Test AP | Test F1 | Test BA |             Test support |
 | ----------- | --------------------------- | ------: | ------: | ------: | -----------------------: |
-| Thermal     | Random forest / 0.50        |   0.891 |   0.786 |   0.810 | 18 negative, 14 positive |
-| Performance | Random forest / 0.55        |   0.757 |   0.588 |   0.705 | 22 negative, 10 positive |
-| Fuel        | Random forest / 0.25        |   0.894 |   0.750 |   0.756 | 17 negative, 13 positive |
+| Thermal     | Random forest / 0.50        |   0.885 |   0.786 |   0.810 | 18 negative, 14 positive |
+| Performance | Logistic regression / 0.45  |   0.788 |   0.643 |   0.745 | 22 negative, 10 positive |
+| Fuel        | Random forest / 0.40        |   0.889 |   0.759 |   0.776 | 17 negative, 13 positive |
 
-All three candidates met the predeclared engineering acceptance rules on this fixture. The
-performance task's final test F1 is 0.588 and held-out-vehicle F1 is 0.500, which is weak despite
-beating its dummy AP baseline. This result is retained as a limitation, not hidden by the stronger
-validation score. Holdout metrics are reported separately and are not used to tune the selected
-model:
+All three candidates met the predeclared synthetic engineering acceptance rules. Performance was
+selected as logistic regression because it had the highest validation AP. Its test F1 is 0.643,
+below the validation F1 of 0.786, while its vehicle-holdout F1 is 0.737. The weaker test result is
+retained as a limitation. Holdout metrics are reported separately and are not used to tune the
+selected model:
 
 | Task        | Scenario holdout AP / F1 / BA | Vehicle holdout AP / F1 / BA | Configuration holdout AP / F1 / BA |
 | ----------- | ----------------------------- | ---------------------------- | ---------------------------------- |
-| Thermal     | 0.853 / 0.792 / 0.821         | 0.825 / 0.737 / 0.753        | 0.756 / 0.821 / 0.845              |
-| Performance | 0.847 / 0.712 / 0.802         | 0.820 / 0.500 / 0.646        | 0.720 / 0.691 / 0.811              |
-| Fuel        | 0.882 / 0.764 / 0.776         | 0.882 / 0.706 / 0.792        | 0.871 / 0.772 / 0.769              |
+| Thermal     | 0.872 / 0.720 / 0.766         | 0.826 / 0.737 / 0.753        | 0.698 / 0.836 / 0.858              |
+| Performance | 0.855 / 0.677 / 0.767         | 0.931 / 0.737 / 0.771        | 0.789 / 0.680 / 0.792              |
+| Fuel        | 0.761 / 0.692 / 0.720         | 0.882 / 0.714 / 0.792        | 0.752 / 0.700 / 0.682              |
+
+The independent negative control is `quality.duplicate_timestamp_count`, populated by a
+deterministic hash-based duplicate `vehicle.speed` observation in about one quarter of synthetic
+pulls. Its validation permutation-importance shares were 0.8% thermal, 2.7% performance and 2.4%
+fuel; acceptance rejects a control carrying at least half of total importance. The current-pull
+`quality.sample_interval_stddev_s` remains a performance input because it derives from RPM timing;
+it is not labeled as an irrelevant control.
 
 The fixture also retained cross-task confounder examples: 65 high-IAT rows without performance
 degradation, 22 performance-degradation rows with stable IAT delta, 36 fuel-deviation rows with
@@ -86,13 +93,23 @@ For each task, repeated training produced identical split IDs, selected family, 
 `1e-12` and metrics. Artifact byte determinism is not claimed. Each selected artifact was written
 atomically, smoke-tested before registration, loaded by registered version/checksum and produced
 the same offline score as in-process inference. Each task measured 1,000 offline predictions at
-about 183–188 predictions/s on this workstation. The full acceptance took about 53 seconds and
-observed about 265 MiB peak process RSS; these values are machine-specific synthetic benchmarks.
+about 178–794 predictions/s on this workstation. The full acceptance took about 48 seconds and
+observed about 264 MiB peak process RSS; these values are machine-specific synthetic benchmarks.
 
 All tasks reached `CANDIDATE` state, with 3 labels, 3 models, 3 supervised datasets, 3 model
 versions and 3 training runs. Observed metrics covered training, candidate evaluation, dataset rows,
 artifact size and exclusions. Required training spans were observed; metric/span evidence excludes
 vehicle, session, pull, VIN, feature values and sample content.
+
+## Imported-data compatibility smoke
+
+A copied local development database contained 74 CSV-source sessions. On the disposable copy,
+canonical Phase 9A feature generation completed for all 204 imported pulls with no generation
+errors. All three task dataset and training paths were exercised, but no eligible outcome rows were
+available: task outcome features were unavailable or pairs failed signal, compatibility and
+next-pull checks. The training path stopped before fitting because it could not form chronological
+groups. No real-data predictive metrics are reported, and this smoke does not support an accuracy
+claim.
 
 ## Safety and limitations
 

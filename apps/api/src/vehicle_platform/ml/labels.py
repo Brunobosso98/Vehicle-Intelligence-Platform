@@ -27,7 +27,7 @@ FEATURE_SET_VERSION = "phase9a-pull-v2"
 LABEL_QUALITY_MINIMUM = 0.75
 MINIMUM_PRIOR_FUEL_PULLS = 2
 
-_COMMON_NOISE_CONTROL = "quality.sample_interval_stddev_s"
+_COMMON_NOISE_CONTROL = "quality.duplicate_timestamp_count"
 
 
 def model_specs() -> tuple[ModelSpec, ...]:
@@ -158,6 +158,9 @@ def model_specs() -> tuple[ModelSpec, ...]:
                 "performance.rpm_4500_5500_s_per_1000rpm",
                 "history.prior_performance_mean_s",
                 "history.prior_performance_variance_s2",
+                # This is an eligible current-pull timing input for performance; it is not
+                # the irrelevant negative control because it shares the measured RPM timing.
+                "quality.sample_interval_stddev_s",
                 "boost_air.pressure_max",
                 "boost_air.pressure_stddev_pa",
                 "thermal.iat_start",

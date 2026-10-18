@@ -17,8 +17,9 @@ modification state and session sequence.
 
 Feature set `phase9a-pull-v2`; task-specific Phase 9A input and outcome datasets are cutoff-versioned
 and checksummed. Inputs are current-pull IAT delta/slope, pre-pull IAT and recovery, boost pressure
-variation, the 2,500–3,500 RPM interval, and sample-interval quality. Target-pull IAT is outcome-only.
-Identity, future-only and target-source features are rejected.
+variation, the 2,500–3,500 RPM interval, and `quality.duplicate_timestamp_count` as an independent
+negative control. Target-pull IAT is outcome-only. Identity, future-only and target-source features
+are rejected.
 
 The controlled fixture produced 158 rows (88 negative, 70 positive). It had 40 no-next-pull and 1
 insufficient-quality exclusion. All evidence is synthetic `ENGINEERING_VALIDATION`.
@@ -27,11 +28,12 @@ insufficient-quality exclusion. All evidence is synthetic `ENGINEERING_VALIDATIO
 
 Chronological session groups: 94 train, 32 validation, 32 test rows. The candidates were dummy,
 logistic regression and random forest. Random forest was selected using validation AP with threshold
-0.50. Validation AP/F1/BA: dummy 0.406/undefined/0.500, logistic 0.637/0.769/0.806, random forest
-0.815/0.769/0.806. Test selected AP/F1/BA: 0.891/0.786/0.810; dummy AP/BA: 0.438/0.500.
+0.50. Validation AP/F1/BA: dummy 0.406/undefined/0.500, logistic 0.609/0.769/0.806, random forest
+0.855/0.769/0.806. Test selected AP/F1/BA: 0.885/0.786/0.810; dummy AP/BA: 0.438/0.500.
 
-Scenario holdout AP/F1/BA was 0.853/0.792/0.821, held-out-vehicle 0.825/0.737/0.753, and
-held-out-configuration 0.756/0.821/0.845. Small synthetic holdouts do not establish generalization.
+Scenario holdout AP/F1/BA was 0.872/0.720/0.766, held-out-vehicle 0.826/0.737/0.753, and
+held-out-configuration 0.698/0.836/0.858. The negative-control importance share was 0.8%. Small
+synthetic holdouts do not establish generalization.
 
 ## Limitations and failure modes
 

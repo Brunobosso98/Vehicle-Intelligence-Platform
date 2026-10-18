@@ -16,7 +16,9 @@ monotonic under Phase 5's existing maximum-gap policy. No target interval enters
 
 Feature set `phase9a-pull-v2`; task-specific Phase 9A input and outcome datasets are cutoff-versioned
 and checksummed. Inputs include the other normalized RPM intervals, prior compatible performance
-mean/variance, boost max/variation, current IAT start/delta and sample-interval quality. Identity,
+mean/variance, current-pull sample-interval variability, boost max/variation, current IAT start/delta
+and `quality.duplicate_timestamp_count` as an independent negative control. The sample-interval
+feature is a timing input derived from the current pull, not the irrelevant control. Identity,
 future-only and target-source features are rejected.
 
 The controlled fixture produced 158 rows (106 negative, 52 positive), with 40 no-next-pull and 1
@@ -25,14 +27,15 @@ insufficient-quality exclusion. Evidence is synthetic `ENGINEERING_VALIDATION`.
 ## Split and model
 
 Chronological session groups: 94 train, 32 validation, 32 test rows. Candidates were dummy,
-logistic regression and random forest. Random forest was selected by validation AP with threshold
-0.55. Validation AP/F1/BA: dummy 0.344/undefined/0.500, logistic 0.734/0.815/0.881, random forest
-0.790/0.727/0.792. Test selected AP/F1/BA: 0.757/0.588/0.705; dummy AP/BA: 0.312/0.500.
+logistic regression and random forest. Logistic regression was selected by validation AP with
+threshold 0.45. Validation AP/F1/BA: dummy 0.344/undefined/0.500, logistic 0.773/0.786/0.857,
+random forest 0.749/0.762/0.816. Test selected AP/F1/BA: 0.788/0.643/0.745; dummy AP/BA:
+0.313/0.500.
 
-Scenario holdout AP/F1/BA was 0.847/0.712/0.802, held-out-vehicle 0.820/0.500/0.646, and
-held-out-configuration 0.720/0.691/0.811. Final test and vehicle-holdout F1 are weak. The result
-passes only the predeclared synthetic engineering gate and should not be treated as a deployable
-predictor.
+Scenario holdout AP/F1/BA was 0.855/0.677/0.767, held-out-vehicle 0.931/0.737/0.771, and
+held-out-configuration 0.789/0.680/0.792. The negative-control importance share was 2.7%. Test F1
+is lower than validation F1. This result passes only the predeclared synthetic engineering gate and
+should not be treated as a deployable predictor.
 
 ## Limitations and failure modes
 

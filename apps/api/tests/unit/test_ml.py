@@ -44,6 +44,7 @@ from vehicle_platform.ml.splitting import (
 )
 from vehicle_platform.ml.training import (
     InsufficientTrainingData,
+    _acceptance_state,
     _fit_candidates,
     _probabilities,
     _select_candidate,
@@ -186,8 +187,7 @@ def _training_dataset() -> SupervisedDataset:
                 "thermal.iat_recovery_delta_k": float((session_index + row_index) % 4),
                 "boost_air.pressure_stddev_pa": float((session_index * 13 + row_index * 3) % 70),
                 "performance.rpm_2500_3500_s_per_1000rpm": 1.0 + (session_index % 4) * 0.1,
-                "quality.sample_interval_stddev_s": float((session_index * 17 + row_index) % 11)
-                / 10.0,
+                "quality.duplicate_timestamp_count": float((session_index * 17 + row_index) % 2),
             }
             input_started = start + timedelta(seconds=row_index * 20)
             rows.append(
@@ -246,6 +246,9 @@ def test_all_model_specs_and_label_generators_are_versioned(task: MLTask) -> Non
     assert len(dataset.checksum) == 64
     assert dataset.manifest["validation_type"] == "ENGINEERING_VALIDATION"
     assert set(spec.feature_keys).isdisjoint(spec.label_definition.source_feature_keys)
+    assert "quality.duplicate_timestamp_count" in spec.feature_keys
+    if task is MLTask.PERFORMANCE_DEGRADATION:
+        assert "quality.sample_interval_stddev_s" in spec.feature_keys
     assert all(set(row.features) == set(spec.feature_keys) for row in dataset.rows)
     assert all(row.input_available_at < row.target_started_at for row in dataset.rows)
     assert all(row.input_pull_id != row.target_pull_id for row in dataset.rows)
@@ -540,6 +543,11 @@ def test_training_uses_bounded_baselines_and_repeats_deterministically() -> None
     first = train_and_evaluate(dataset, split)
     second = train_and_evaluate(dataset, split)
     assert {item.family for item in first.candidates} == set(CandidateFamily)
+    assert (
+        first.feature_importance["method"]
+        == "validation permutation importance grouped by raw feature"
+    )
+    assert first.feature_importance["noise_control_key"] == "quality.duplicate_timestamp_count"
     assert first.test_evaluated_after_selection
     selected = next(item for item in first.candidates if item.family is first.selected_family)
     later_groups_without_positive_support = replace(
@@ -567,6 +575,27 @@ def test_training_uses_bounded_baselines_and_repeats_deterministically() -> None
         _probabilities(second.selected_model, test_matrix),
     )
     assert first.walk_forward["fold_count"] >= 1
+
+
+def test_dominant_negative_control_fails_engineering_acceptance() -> None:
+    dataset = _training_dataset()
+    result = train_and_evaluate(dataset, chronological_group_split(dataset))
+    selected = next(item for item in result.candidates if item.family is result.selected_family)
+
+    acceptance = _acceptance_state(
+        dataset,
+        result.split,
+        result.candidates,
+        selected,
+        result.test_metrics,
+        {
+            "noise_control_key": "quality.duplicate_timestamp_count",
+            "noise_control_importance_share": 0.5,
+        },
+        dataset.model_spec,
+    )
+
+    assert acceptance["criteria"]["negative_control_not_dominant"] is False
 
 
 def test_metrics_report_undefined_class_support() -> None:

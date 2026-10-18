@@ -2808,9 +2808,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/labels.py": {
-    "mtime": 1792346530.5093446,
-    "seen": 1792346830.6717443,
-    "ast_hash": "9b5cb6637301990b06b7a71ee550a2e2",
+    "mtime": 1792354993.884906,
+    "seen": 1792355397.1277587,
+    "ast_hash": "b28002bbb75b24ad099a25dddcb727e2",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/pipeline.py": {
@@ -2832,21 +2832,21 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/synthetic.py": {
-    "mtime": 1792346900.1597857,
-    "seen": 1792347669.5555723,
-    "ast_hash": "8df40ab456ab9f2d5d6d00ae094d15b4",
+    "mtime": 1792354788.199885,
+    "seen": 1792354806.2454317,
+    "ast_hash": "9231a8fb96f8dd1da46e64f07b85fef5",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/training.py": {
-    "mtime": 1792346900.1597857,
-    "seen": 1792347669.5555735,
-    "ast_hash": "8df932271ae24bed47085977d003e0cd",
+    "mtime": 1792355134.241663,
+    "seen": 1792355397.1277661,
+    "ast_hash": "512f6d67f1e54815bdb89adec89491ac",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_ml.py": {
-    "mtime": 1792347580.0280359,
-    "seen": 1792347669.555632,
-    "ast_hash": "70210f6c196d56b07c1b3dd8ab090c4b",
+    "mtime": 1792355400.3088334,
+    "seen": 1792355454.8938713,
+    "ast_hash": "51b25e039e8552510d1554b7e6f893ce",
     "semantic_hash": ""
   },
   "scripts/benchmark_predictive_models.py": {
@@ -2862,9 +2862,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_predictive_models.py": {
-    "mtime": 1792346780.1067216,
-    "seen": 1792346830.6719458,
-    "ast_hash": "88b30ee8f51d1e05a5b62f90e3fd6719",
+    "mtime": 1792355438.3664742,
+    "seen": 1792355454.8940258,
+    "ast_hash": "b82ec6b526802e169da477c332251da4",
     "semantic_hash": ""
   },
   "scripts/phase9b-validation.sh": {
@@ -2904,21 +2904,21 @@
     "semantic_hash": ""
   },
   "docs/ml/models/NEXT_PULL_FUEL_DEVIATION.md": {
-    "mtime": 1792346685.6555042,
-    "seen": 1792346830.6721144,
-    "ast_hash": "d2633e8236b5296bd9a307770becac81",
+    "mtime": 1792355354.206462,
+    "seen": 1792355397.1281471,
+    "ast_hash": "92c53246377acc1d11ca7b9638b73ed2",
     "semantic_hash": ""
   },
   "docs/ml/models/NEXT_PULL_PERFORMANCE_DEGRADATION.md": {
-    "mtime": 1792346685.6555042,
-    "seen": 1792346830.6721158,
-    "ast_hash": "de27cf36999440e7d359d6ea0506b31d",
+    "mtime": 1792355344.8418343,
+    "seen": 1792355397.1281488,
+    "ast_hash": "3d8a8455a18b2f5b5fd890c8d9d7403c",
     "semantic_hash": ""
   },
   "docs/ml/models/NEXT_PULL_THERMAL_DEGRADATION.md": {
-    "mtime": 1792346685.6555042,
-    "seen": 1792346830.6721168,
-    "ast_hash": "fe1148611e0ab1e272f600bc5c16c718",
+    "mtime": 1792355338.9814565,
+    "seen": 1792355397.1281497,
+    "ast_hash": "13493edf6bf6431168a9b60124e6ce7c",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9b-predictive-models.md": {
@@ -2934,15 +2934,15 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9b-acceptance.md": {
-    "mtime": 1792347813.2587516,
-    "seen": 1792348224.1264286,
-    "ast_hash": "3efa66cf1fdd0bc685bdefdd22ec2c3b",
+    "mtime": 1792355302.516363,
+    "seen": 1792355397.1282203,
+    "ast_hash": "c4a19e4bc0e5f78388f08b9d51de65dc",
     "semantic_hash": ""
   },
   "docs/validation/phase-9b-model-evaluation.md": {
-    "mtime": 1792347813.2867534,
-    "seen": 1792348224.1264424,
-    "ast_hash": "f12230c118783278841dba6c7ba8ea92",
+    "mtime": 1792355316.1372237,
+    "seen": 1792355397.1282218,
+    "ast_hash": "71e01a87c584579ef504aa36c8c89cd9",
     "semantic_hash": ""
   },
   "docs/validation/phase-9b-traceability-ledger.md": {

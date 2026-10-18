@@ -104,18 +104,10 @@ def _configuration_holdout(
     configuration_ids_by_vehicle: dict[str, tuple[str, str]],
 ) -> dict[str, Any]:
     held_configuration_ids = {item[1] for item in configuration_ids_by_vehicle.values()}
-    known = tuple(
-        row
-        for row in dataset.rows
-        if row.configuration_id not in held_configuration_ids
-    )
-    held = tuple(
-        row for row in dataset.rows if row.configuration_id in held_configuration_ids
-    )
+    known = tuple(row for row in dataset.rows if row.configuration_id not in held_configuration_ids)
+    held = tuple(row for row in dataset.rows if row.configuration_id in held_configuration_ids)
     blocks = temporal_blocks(known)
-    _assert(
-        len(blocks) >= 3, "configuration holdout lacks chronological reference groups"
-    )
+    _assert(len(blocks) >= 3, "configuration holdout lacks chronological reference groups")
     split_at = max(2, int(len(blocks) * 0.7))
     train = tuple(row for block in blocks[:split_at] for row in block.rows)
     validation = tuple(row for block in blocks[split_at:] for row in block.rows)
@@ -129,16 +121,12 @@ def _configuration_holdout(
         "configuration holdout validation is not later than training",
     )
     _assert(
-        {row.configuration_id for row in train + validation}.isdisjoint(
-            held_configuration_ids
-        ),
+        {row.configuration_id for row in train + validation}.isdisjoint(held_configuration_ids),
         "held-out configuration leaked into training or threshold validation",
     )
     spec = dataset.model_spec
     candidate = next(
-        item
-        for item in spec.candidates
-        if item.key is CandidateFamily.LOGISTIC_REGRESSION
+        item for item in spec.candidates if item.key is CandidateFamily.LOGISTIC_REGRESSION
     )
     train_matrix, train_labels, _, _ = matrix_for_rows(train, spec)
     validation_matrix, validation_labels, _, _ = matrix_for_rows(validation, spec)
@@ -152,9 +140,7 @@ def _configuration_holdout(
         _probabilities(model, validation_matrix),
         spec.threshold_grid,
     )
-    metrics = classification_metrics(
-        held_labels, _probabilities(model, held_matrix), threshold
-    )
+    metrics = classification_metrics(held_labels, _probabilities(model, held_matrix), threshold)
     return {
         "training_configuration_count": len({row.configuration_id for row in train}),
         "held_out_configuration_count": len(held_configuration_ids),
@@ -168,14 +154,11 @@ def _configuration_holdout(
     }
 
 
-def _confounder_evidence(
-    performance: SupervisedDataset, fuel: SupervisedDataset
-) -> dict[str, int]:
+def _confounder_evidence(performance: SupervisedDataset, fuel: SupervisedDataset) -> dict[str, int]:
     performance_rows = performance.rows
     fuel_rows = fuel.rows
     high_iat_without_performance = sum(
-        row.target is False
-        and float(row.features.get("thermal.iat_start") or 0.0) >= 298.0
+        row.target is False and float(row.features.get("thermal.iat_start") or 0.0) >= 298.0
         for row in performance_rows
     )
     performance_with_stable_iat = sum(
@@ -183,13 +166,11 @@ def _confounder_evidence(
         for row in performance_rows
     )
     fuel_with_normal_boost = sum(
-        row.target
-        and float(row.features.get("boost_air.pressure_max") or 0.0) < 120_000.0
+        row.target and float(row.features.get("boost_air.pressure_max") or 0.0) < 120_000.0
         for row in fuel_rows
     )
     boost_variation_without_performance = sum(
-        not row.target
-        and float(row.features.get("boost_air.pressure_stddev_pa") or 0.0) >= 500.0
+        not row.target and float(row.features.get("boost_air.pressure_stddev_pa") or 0.0) >= 500.0
         for row in performance_rows
     )
     return {
@@ -246,9 +227,7 @@ def _pair_boundary_checks(dataset: SupervisedDataset) -> dict[str, bool]:
         ended_at=row.target_started_at.isoformat(),
     )
     return {
-        "same_vehicle_configuration_is_compatible": pair_compatibility_reason(
-            current, target
-        )
+        "same_vehicle_configuration_is_compatible": pair_compatibility_reason(current, target)
         is None,
         "cross_vehicle_history_rejected": pair_compatibility_reason(
             current, replace(target, vehicle_id="another-vehicle")
@@ -268,9 +247,7 @@ def _pair_boundary_checks(dataset: SupervisedDataset) -> dict[str, bool]:
 async def evaluate() -> dict[str, Any]:
     url = os.environ.get("TEST_DATABASE_URL", "")
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
-        raise ValueError(
-            "predictive acceptance requires a disposable vehicle_test database"
-        )
+        raise ValueError("predictive acceptance requires a disposable vehicle_test database")
     database = Database(
         Settings(database_url=SecretStr(url), environment="test"), command_timeout=60
     )
@@ -337,16 +314,14 @@ async def evaluate() -> dict[str, Any]:
                     f"{task.value} lacks minimum rows",
                 )
                 _assert(
-                    sum(row.target for row in dataset.rows)
-                    >= dataset.model_spec.minimum_positive
+                    sum(row.target for row in dataset.rows) >= dataset.model_spec.minimum_positive
                     and sum(not row.target for row in dataset.rows)
                     >= dataset.model_spec.minimum_negative,
                     f"{task.value} lacks class support",
                 )
                 _assert(
                     len(training.candidates) == 3
-                    and {item.family for item in training.candidates}
-                    == set(CandidateFamily),
+                    and {item.family for item in training.candidates} == set(CandidateFamily),
                     f"{task.value} did not evaluate dummy, linear and nonlinear baselines",
                 )
                 _assert(
@@ -357,11 +332,29 @@ async def evaluate() -> dict[str, Any]:
                     training.manifest()["test_influenced_selection"] is False,
                     "test set was used during model selection",
                 )
+                candidate_summary = [
+                    {
+                        "family": item.family.value,
+                        "threshold": item.threshold,
+                        "validation": {
+                            key: item.validation_metrics.get(key)
+                            for key in (
+                                "average_precision",
+                                "f1",
+                                "balanced_accuracy",
+                                "brier_score",
+                            )
+                        },
+                    }
+                    for item in training.candidates
+                ]
                 _assert(
                     training.acceptance["all_criteria_pass"]
                     and training.state.value == "CANDIDATE",
                     f"{task.value} did not satisfy predeclared engineering acceptance: "
-                    f"{training.acceptance}",
+                    f"{training.acceptance}; selected validation metrics="
+                    f"{training.selected_validation_metrics}; "
+                    f"candidate metrics={candidate_summary}",
                 )
                 _assert(
                     not any(item.warnings for item in training.candidates),
@@ -371,8 +364,7 @@ async def evaluate() -> dict[str, Any]:
                 if task is MLTask.FUEL_DEVIATION:
                     _assert(
                         any(
-                            "MISSING_OUTCOME_SIGNAL" in row["reason"]
-                            for row in dataset.exclusions
+                            "MISSING_OUTCOME_SIGNAL" in row["reason"] for row in dataset.exclusions
                         ),
                         "missing fuel outcome signal was not explicitly excluded",
                     )
@@ -394,24 +386,18 @@ async def evaluate() -> dict[str, Any]:
                     f"{task.value} compatibility boundary checks failed: {boundaries}",
                 )
                 _assert(
-                    all(
-                        not key.endswith((".id", "_id"))
-                        for key in dataset.rows[0].features
-                    ),
+                    all(not key.endswith((".id", "_id")) for key in dataset.rows[0].features),
                     f"{task.value} identity-like model input was admitted",
                 )
 
                 first = dataset.rows[0]
                 repeat = train_and_evaluate(dataset, training.split)
                 _assert(
-                    _stable_training_evidence(training)
-                    == _stable_training_evidence(repeat),
+                    _stable_training_evidence(training) == _stable_training_evidence(repeat),
                     f"{task.value} repeated training evidence differs",
                 )
                 feature_matrix, _, _, _ = matrix_for_rows((first,), dataset.model_spec)
-                first_probability = _probabilities(
-                    training.selected_model, feature_matrix
-                )[0]
+                first_probability = _probabilities(training.selected_model, feature_matrix)[0]
                 loaded = await artifact_store.load_registered(
                     database, str(result.model_version_id)
                 )
@@ -428,10 +414,7 @@ async def evaluate() -> dict[str, Any]:
                     feature_quality=first.feature_quality,
                 )
                 _assert(
-                    abs(
-                        float(offline["engineering_validation_score"])
-                        - float(first_probability)
-                    )
+                    abs(float(offline["engineering_validation_score"]) - float(first_probability))
                     <= 1e-12,
                     f"{task.value} offline prediction differs from in-process inference",
                 )
@@ -476,6 +459,34 @@ async def evaluate() -> dict[str, Any]:
                 class_counts = Counter(
                     "positive" if row.target else "negative" for row in dataset.rows
                 )
+                negative_control_values = [
+                    row.features.get(training.feature_importance["noise_control_key"])
+                    for row in dataset.rows
+                ]
+                negative_control_counts = Counter(
+                    str(int(value)) for value in negative_control_values if value is not None
+                )
+                negative_control_target_counts = Counter(
+                    f"{int(value)}:{'positive' if row.target else 'negative'}"
+                    for row, value in zip(dataset.rows, negative_control_values, strict=True)
+                    if value is not None
+                )
+                _assert(
+                    sum(negative_control_counts.values()) == len(dataset.rows),
+                    f"{task.value} negative control contains missing values",
+                )
+                _assert(
+                    len(negative_control_counts) > 1,
+                    f"{task.value} negative control has no variation",
+                )
+                _assert(
+                    len(negative_control_target_counts) == 4,
+                    f"{task.value} negative control does not cover both labels at each value",
+                )
+                _assert(
+                    training.acceptance["criteria"]["negative_control_not_dominant"],
+                    f"{task.value} irrelevant negative control dominates feature importance",
+                )
                 async with database.session() as db:
                     registered_dataset = (
                         await db.execute(
@@ -508,12 +519,19 @@ async def evaluate() -> dict[str, Any]:
                     "class_counts": dict(class_counts),
                     "exclusions_by_reason": dict(sorted(exclusions.items())),
                     "split": training.manifest()["split"],
-                    "candidate_models": [
-                        item.manifest() for item in training.candidates
-                    ],
+                    "candidate_models": [item.manifest() for item in training.candidates],
                     "selected_model": training.manifest()["selected_model"],
                     "test_metrics": training.test_metrics,
                     "feature_importance": training.feature_importance,
+                    "negative_control": {
+                        "feature_key": training.feature_importance["noise_control_key"],
+                        "value_counts": dict(sorted(negative_control_counts.items())),
+                        "target_cross_tab": dict(sorted(negative_control_target_counts.items())),
+                        "importance_share": training.feature_importance[
+                            "noise_control_importance_share"
+                        ],
+                        "dominance_limit": 0.5,
+                    },
                     "walk_forward": training.walk_forward,
                     "overfit_warnings": list(training.overfit_warnings),
                     "acceptance": training.acceptance,
@@ -548,8 +566,7 @@ async def evaluate() -> dict[str, Any]:
                         "matches_in_process": True,
                         "real_world_failure_probability": False,
                         "throughput_predictions": inference_count,
-                        "throughput_predictions_per_second": inference_count
-                        / inference_seconds,
+                        "throughput_predictions_per_second": inference_count / inference_seconds,
                     },
                     "elapsed_seconds": time.perf_counter() - started,
                 }
@@ -612,10 +629,7 @@ async def evaluate() -> dict[str, Any]:
             }
             _assert(
                 all(
-                    not any(
-                        identifier in repr(span.attributes)
-                        for identifier in traced_entity_ids
-                    )
+                    not any(identifier in repr(span.attributes) for identifier in traced_entity_ids)
                     for span in span_exporter.get_finished_spans()
                 ),
                 "vehicle, pull, or session identifier leaked into ML span attributes",
@@ -696,9 +710,7 @@ async def main() -> None:
                 "state": result["state"],
                 "rows": result["row_count"],
                 "selected_family": result["selected_model"]["family"],
-                "test_average_precision": result["test_metrics"]["selected"][
-                    "average_precision"
-                ],
+                "test_average_precision": result["test_metrics"]["selected"]["average_precision"],
                 "test_f1": result["test_metrics"]["selected"]["f1"],
             }
             for task, result in sorted(report["tasks"].items())

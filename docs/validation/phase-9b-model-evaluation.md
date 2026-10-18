@@ -20,42 +20,47 @@ dummy predicted no positive cases at the selected threshold.
 | Task        | Family              | Validation AP | Validation F1 | Validation BA | Selection                |
 | ----------- | ------------------- | ------------: | ------------: | ------------: | ------------------------ |
 | Thermal     | Dummy               |         0.406 |     undefined |         0.500 | baseline                 |
-| Thermal     | Logistic regression |         0.637 |         0.769 |         0.806 | eligible                 |
-| Thermal     | Random forest       |         0.815 |         0.769 |         0.806 | selected, threshold 0.50 |
+| Thermal     | Logistic regression |         0.609 |         0.769 |         0.806 | eligible                 |
+| Thermal     | Random forest       |         0.855 |         0.769 |         0.806 | selected, threshold 0.50 |
 | Performance | Dummy               |         0.344 |     undefined |         0.500 | baseline                 |
-| Performance | Logistic regression |         0.734 |         0.815 |         0.881 | eligible                 |
-| Performance | Random forest       |         0.790 |         0.727 |         0.792 | selected, threshold 0.55 |
+| Performance | Logistic regression |         0.773 |         0.786 |         0.857 | selected, threshold 0.45 |
+| Performance | Random forest       |         0.749 |         0.762 |         0.816 | eligible                 |
 | Fuel        | Dummy               |         0.500 |     undefined |         0.500 | baseline                 |
-| Fuel        | Logistic regression |         0.886 |         0.867 |         0.857 | eligible                 |
-| Fuel        | Random forest       |         0.912 |         0.875 |         0.857 | selected, threshold 0.25 |
+| Fuel        | Logistic regression |         0.761 |         0.720 |         0.750 | eligible                 |
+| Fuel        | Random forest       |         0.889 |         0.828 |         0.821 | selected, threshold 0.40 |
 
-All tasks selected random forest by validation AP and met their predeclared validation and support
-criteria. This describes the controlled fixture only.
+All tasks met their predeclared validation and support criteria. Performance selected logistic
+regression by validation AP; thermal and fuel selected random forest. This describes the controlled
+fixture only.
 
 ## Held test and generalization evidence
 
 | Task        | Partition              |    AP |        F1 |    BA | Rows / class support         |
 | ----------- | ---------------------- | ----: | --------: | ----: | ---------------------------- |
-| Thermal     | Test, selected         | 0.891 |     0.786 | 0.810 | 32; 18 negative, 14 positive |
+| Thermal     | Test, selected         | 0.885 |     0.786 | 0.810 | 32; 18 negative, 14 positive |
 | Thermal     | Test, dummy            | 0.438 | undefined | 0.500 | 32; 18 negative, 14 positive |
-| Thermal     | Scenario holdout       | 0.853 |     0.792 | 0.821 | 64                           |
-| Thermal     | Held-out vehicle       | 0.825 |     0.737 | 0.753 | 20                           |
-| Thermal     | Held-out configuration | 0.756 |     0.821 | 0.845 | 64                           |
-| Performance | Test, selected         | 0.757 |     0.588 | 0.705 | 32; 22 negative, 10 positive |
+| Thermal     | Scenario holdout       | 0.872 |     0.720 | 0.766 | 64                           |
+| Thermal     | Held-out vehicle       | 0.826 |     0.737 | 0.753 | 20                           |
+| Thermal     | Held-out configuration | 0.698 |     0.836 | 0.858 | 64                           |
+| Performance | Test, selected         | 0.788 |     0.643 | 0.745 | 32; 22 negative, 10 positive |
 | Performance | Test, dummy            | 0.312 | undefined | 0.500 | 32; 22 negative, 10 positive |
-| Performance | Scenario holdout       | 0.847 |     0.712 | 0.802 | 64                           |
-| Performance | Held-out vehicle       | 0.820 |     0.500 | 0.646 | 20                           |
-| Performance | Held-out configuration | 0.720 |     0.691 | 0.811 | 64                           |
-| Fuel        | Test, selected         | 0.894 |     0.750 | 0.756 | 30; 17 negative, 13 positive |
+| Performance | Scenario holdout       | 0.855 |     0.677 | 0.767 | 64                           |
+| Performance | Held-out vehicle       | 0.931 |     0.737 | 0.771 | 20                           |
+| Performance | Held-out configuration | 0.789 |     0.680 | 0.792 | 64                           |
+| Fuel        | Test, selected         | 0.889 |     0.759 | 0.776 | 30; 17 negative, 13 positive |
 | Fuel        | Test, dummy            | 0.433 | undefined | 0.500 | 30; 17 negative, 13 positive |
-| Fuel        | Scenario holdout       | 0.882 |     0.764 | 0.776 | 58                           |
-| Fuel        | Held-out vehicle       | 0.882 |     0.706 | 0.792 | 18                           |
-| Fuel        | Held-out configuration | 0.871 |     0.772 | 0.769 | 56                           |
+| Fuel        | Scenario holdout       | 0.761 |     0.692 | 0.720 | 58                           |
+| Fuel        | Held-out vehicle       | 0.882 |     0.714 | 0.792 | 18                           |
+| Fuel        | Held-out configuration | 0.752 |     0.700 | 0.682 | 56                           |
 
-The performance model has weak test F1 (0.588) and held-out-vehicle F1 (0.500). The model remains
-`CANDIDATE` only because its predeclared acceptance policy uses validation floors and requires the
-held test to beat the dummy on AP and F1; that policy is not a deployment gate. Reviewers should
-retain the weak holdout evidence when assessing later work.
+Performance test F1 (0.643) is lower than validation F1 (0.786), while the vehicle holdout is
+0.737. The predeclared gate is an engineering fixture check, not a deployment gate. Reviewers should
+retain the lower test score when assessing later work.
+
+The active negative control is `quality.duplicate_timestamp_count`. Its validation permutation
+importance share was 0.8% thermal, 2.7% performance and 2.4% fuel. The acceptance gate rejects a
+control with at least 50% of total importance. Performance also uses current-pull
+`quality.sample_interval_stddev_s` as a timing input; it is distinct from the irrelevant control.
 
 Each task also ran three expanding walk-forward folds. Fold supports are small and several fold
 metrics are undefined or marked `INSUFFICIENT_TEST_SUPPORT`. Fold results, reliability summaries,

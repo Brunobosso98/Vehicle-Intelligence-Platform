@@ -31,6 +31,8 @@ MISSING_REASON_FEATURES = tuple(item.value for item in MissingReason)
 MINIMUM_TEST_CLASS_SUPPORT = 5
 OVERFIT_AP_GAP = 0.25
 OVERFIT_F1_GAP = 0.25
+NEGATIVE_CONTROL_KEY = "quality.duplicate_timestamp_count"
+NEGATIVE_CONTROL_DOMINANCE_LIMIT = 0.5
 
 
 class InsufficientTrainingData(ValueError):
@@ -234,7 +236,9 @@ def train_and_evaluate(
     feature_importance = _feature_importance(selected, split.validation, spec)
     walk_forward = _walk_forward_evaluation(dataset, spec, selected)
     overfit = _overfit_warnings(selected, test_metrics)
-    acceptance = _acceptance_state(dataset, split, candidates, selected, test_metrics, spec)
+    acceptance = _acceptance_state(
+        dataset, split, candidates, selected, test_metrics, feature_importance, spec
+    )
     elapsed = perf_counter() - started
     stage_seconds.update({"total_training_and_evaluation": elapsed})
     if telemetry is not None:
@@ -557,13 +561,10 @@ def _feature_importance(
     coefficients = getattr(estimator, "coef_", None)
     if coefficients is not None:
         for column, coefficient in zip(matrix_columns, coefficients[0], strict=True):
-            feature = column.split("__missing__", maxsplit=1)[0]
             raw_coefficients[column] = float(coefficient)
-            grouped[feature] = grouped.get(feature, 0.0) + abs(float(coefficient))
-    else:
-        for column, importance in zip(matrix_columns, permutation.importances_mean, strict=True):
-            feature = column.split("__missing__", maxsplit=1)[0]
-            grouped[feature] = grouped.get(feature, 0.0) + float(importance)
+    for column, importance in zip(matrix_columns, permutation.importances_mean, strict=True):
+        feature = column.split("__missing__", maxsplit=1)[0]
+        grouped[feature] = grouped.get(feature, 0.0) + float(importance)
     values: list[dict[str, str | float]] = [
         {"feature_key": key, "association_importance": value}
         for key, value in sorted(grouped.items(), key=lambda item: (-item[1], item[0]))
@@ -573,13 +574,13 @@ def _feature_importance(
         total += abs(cast(float, item["association_importance"]))
     noise_share = 0.0
     for item in values:
-        if item["feature_key"] == "quality.sample_interval_stddev_s" and total:
+        if item["feature_key"] == NEGATIVE_CONTROL_KEY and total:
             noise_share = abs(cast(float, item["association_importance"])) / total
     return {
         "method": "validation permutation importance grouped by raw feature",
         "linear_coefficients": raw_coefficients,
         "values": values,
-        "noise_control_key": "quality.sample_interval_stddev_s",
+        "noise_control_key": NEGATIVE_CONTROL_KEY,
         "noise_control_importance_share": noise_share,
         "interpretation": "feature contribution/association is not mechanical causality.",
     }
@@ -699,6 +700,7 @@ def _acceptance_state(
     candidates: tuple[CandidateEvaluation, ...],
     selected: CandidateEvaluation,
     test_metrics: dict[str, dict[str, Any]],
+    feature_importance: dict[str, Any],
     spec: ModelSpec,
 ) -> dict[str, Any]:
     labels = [row.target for row in dataset.rows]
@@ -732,6 +734,12 @@ def _acceptance_state(
         "test_f1_above_dummy": (selected_test.get("f1") or 0.0) > (dummy_test.get("f1") or 0.0),
         "test_support_sufficient": min(selected_test["class_support"].values())
         >= MINIMUM_TEST_CLASS_SUPPORT,
+        "negative_control_not_dominant": (
+            feature_importance.get("noise_control_key") == NEGATIVE_CONTROL_KEY
+            and feature_importance.get("noise_control_importance_share") is not None
+            and feature_importance["noise_control_importance_share"]
+            < NEGATIVE_CONTROL_DOMINANCE_LIMIT
+        ),
     }
     return {
         "state": ModelState.CANDIDATE.value
