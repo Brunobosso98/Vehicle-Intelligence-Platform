@@ -106,6 +106,24 @@ plus a JSON manifest and are atomically written under the fixed approved artifac
 components are constrained; output is capped at 64 MiB. Database reads are bounded to 100,000
 candidate pulls, 32 MiB of source feature payload and 200,000 lineage entities.
 
+## 9B candidate shortlist
+
+This is a domain and collection-readiness ranking for initial 9B experiments, not a model result or
+supervised feature selection. All history inputs must be strictly prior to the prediction row and
+compatible with its vehicle, effective configuration and modifications.
+
+| Rank | Candidate family      | Candidate inputs                                                                                             | Availability and leakage basis                                                                | Stability basis                                                                    |
+| ---: | --------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+|    1 | Thermal progression   | Prior-pull IAT start/delta, pre-pull thermal state, IAT recovery, prior thermal-pull count                   | IAT is broadly collectable; recovery and history use completed prior pulls only               | Canonical temperature units, bounded windows, explicit missingness                 |
+|    2 | Next-pull performance | Prior comparable pull duration, normalized RPM-interval times, rolling compatible performance                | Requires finalized prior pulls and their RPM/speed coverage; current-pull outcome is excluded | Reuses deterministic Phase 5 analytics and measured intervals                      |
+|    3 | Boost deviation       | Prior peak/mean boost, rise behavior, compatible-baseline deviation, prior boost-drop count                  | Boost pressure is source-dependent; only events strictly before cutoff are eligible           | Uses recorded pressure and prior compatible baselines; no target boost is inferred |
+|    4 | Fuel deviation        | Recorded rail-pressure minimum/delta/variability; actual-versus-commanded error only when both signals exist | Source-specific and often unavailable; missing signals remain unavailable                     | No universal pressure threshold or documentation-derived measured value            |
+|    5 | Data-quality gating   | Coverage, invalid/missing counts, maximum gap, sample-interval variability, availability bitmap              | Available from observed telemetry and quality metadata; cutoff applies to every source        | Deterministic counts/ratios support eligibility and confidence analysis            |
+
+9B should re-rank these inputs against actual source coverage, temporal safety, semantic relevance and
+stability before model experiments. No target labels or target-performance measurements informed
+this shortlist. It does not claim fleet representativeness or predictive validity.
+
 ## Operations and failure recovery
 
 `scripts/generate_features.py` accepts one session, an optional aware cutoff, a 1–100 pull limit
