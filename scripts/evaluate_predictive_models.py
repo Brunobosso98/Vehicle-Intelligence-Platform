@@ -527,6 +527,14 @@ async def evaluate() -> dict[str, Any]:
                     f"{task.value} irrelevant negative control dominates feature importance",
                 )
                 async with database.session() as db:
+                    registered_model_id = (
+                        await db.execute(
+                            text(
+                                "SELECT ml_model_id FROM ml_model_versions WHERE id=:id"
+                            ),
+                            {"id": result.model_version_id},
+                        )
+                    ).scalar_one()
                     registered_dataset = (
                         await db.execute(
                             text(
@@ -596,6 +604,7 @@ async def evaluate() -> dict[str, Any]:
                         "artifact_bytes_determinism_claimed": False,
                     },
                     "training_run_id": str(result.run_id),
+                    "model_id": str(registered_model_id),
                     "model_version_id": str(result.model_version_id),
                     "artifact": {
                         "path": result.artifact.relative_path,
