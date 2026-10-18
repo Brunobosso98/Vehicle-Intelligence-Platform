@@ -20,6 +20,7 @@ from vehicle_platform.analytics.domain import (
     percentile,
     pull_profile,
     repeated_pulls,
+    rpm_interval_elapsed,
     spearman,
     trend,
 )
@@ -124,6 +125,34 @@ def test_pull_metrics_units_curves_events_and_intervals() -> None:
     assert (
         acceleration_interval(make_pull("a").samples, 1, 50, AnalyticsConfig())["sufficiency"]
         == Sufficiency.INSUFFICIENT
+    )
+
+
+def test_rpm_interval_requires_monotonic_covered_samples_and_bounded_gaps() -> None:
+    samples = tuple(
+        Sample(START + timedelta(seconds=index), rpm, {"engine.rpm": rpm})
+        for index, rpm in enumerate((2000, 2500, 3000, 3500, 4000))
+    )
+    measured = rpm_interval_elapsed(samples, 2500, 3500, AnalyticsConfig())
+    assert measured["sufficiency"] is Sufficiency.SUFFICIENT
+    assert measured["seconds_per_1000_rpm"] == pytest.approx(2.0)
+
+    non_monotonic = tuple(
+        Sample(START + timedelta(seconds=index), rpm, {"engine.rpm": rpm})
+        for index, rpm in enumerate((2000, 3000, 2800, 4000))
+    )
+    assert (
+        rpm_interval_elapsed(non_monotonic, 2500, 3500, AnalyticsConfig())["sufficiency"]
+        is Sufficiency.INSUFFICIENT
+    )
+
+    sparse = (
+        Sample(START, 2000, {"engine.rpm": 2000}),
+        Sample(START + timedelta(seconds=2), 4000, {"engine.rpm": 4000}),
+    )
+    assert (
+        rpm_interval_elapsed(sparse, 2500, 3500, AnalyticsConfig())["sufficiency"]
+        is Sufficiency.INSUFFICIENT
     )
 
 

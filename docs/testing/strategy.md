@@ -166,3 +166,17 @@ requires delivered role spans and actual Prometheus series. These gates are part
 and the canonical `full-validation` workflow, which repeats acceptance/browser gates in fresh
 state and includes supervisor outcome in final enforcement. The traceability ledger and acceptance
 report distinguish development evidence from exact final committed-head verification.
+
+## Phase 9A feature and dataset gates
+
+`make test-features` exercises the pure registry/calculation, unit, quality, missing-value,
+temporal/horizon, lineage, split, profile, manifest and export contracts. The independent
+`make phase9a-acceptance` seeds multiple vehicles, configurations and sessions in fresh disposable
+TimescaleDB, calls the actual feature and dataset services, and records the acceptance profile and
+reproducibility metrics. `make test-feature-integration` separately verifies revision 0013,
+persistence, version separation, cutoff/history SQL, concurrent idempotency, batch failure and
+dataset rebuilds. `make benchmark-features` measures 100 or more real persisted synthetic pulls,
+dataset materialization time, throughput and process/Python memory. `make feature-observability`
+checks live feature/dataset counters and spans plus entity-label redaction. The five targets are
+part of `make verify`; each database-backed target creates and removes an isolated TimescaleDB
+project. No paid Phase 7D run or Phase 8 embedding operation is invoked.

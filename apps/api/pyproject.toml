@@ -41,6 +41,7 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S106"]
+"tests/integration/test_zzz_features.py" = ["E501"] # SQL fixtures kept readable beside the setup data
 "migrations/**" = ["E501"]
 "src/vehicle_platform/api/routes.py" = ["E501", "B008", "S608"]
 "src/vehicle_platform/telemetry/domain.py" = ["S311"] # deterministic fixtures, not security
@@ -52,6 +53,8 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/acquisition/service.py" = ["E501"] # bounded SQL and versioned envelopes kept reviewable
 "src/vehicle_platform/acquisition/worker.py" = ["E501"] # bounded SQL kept intact for transaction review
 "src/vehicle_platform/acquisition/collector.py" = ["E501"] # stable spool wire lines remain single records
+"src/vehicle_platform/features/datasets.py" = ["E501"] # SQL kept intact for lineage review
+"src/vehicle_platform/features/service.py" = ["E501"] # temporal SQL kept intact for review
 "src/vehicle_platform/acquisition/cli.py" = ["B008"] # Typer declarative option definitions
 [tool.mypy]
 python_version = "3.12"
@@ -77,6 +80,8 @@ omit = [
  "*/vehicle_platform/analysis/service.py", # derived persistence/idempotency requires real transaction semantics
  "*/vehicle_platform/events/service.py", # event persistence/idempotency requires real transaction semantics
  "*/vehicle_platform/analytics/service.py", # analytics SQL/idempotency requires real integration
+ "*/vehicle_platform/features/service.py", # versioned persistence/idempotency requires real database integration
+ "*/vehicle_platform/features/datasets.py", # ownership and cutoff queries require real database integration
 ]
 [tool.coverage.report]
 fail_under = 90

@@ -213,6 +213,23 @@ class Telemetry:
         )
         self.analytics_trend_builds = meter.create_counter("analytics.trend.builds")
         self.analytics_failures = meter.create_counter("analytics.failures")
+        # Phase 9A labels are bounded vocabularies; entity IDs are excluded.
+        self.feature_generation_runs = meter.create_counter(
+            "features.generation.runs", unit="{run}"
+        )
+        self.feature_sets_generated = meter.create_counter("features.sets", unit="{set}")
+        self.feature_generation_failures = meter.create_counter("features.generation.failures")
+        self.feature_generation_duration = meter.create_histogram(
+            "features.generation.duration", unit="s"
+        )
+        self.feature_null_values = meter.create_counter("features.values.null")
+        self.leakage_rejections = meter.create_counter("features.leakage.rejections")
+        self.dataset_builds = meter.create_counter("features.dataset.builds", unit="{build}")
+        self.dataset_rows = meter.create_counter("features.dataset.rows", unit="{row}")
+        self.dataset_exclusions = meter.create_counter("features.dataset.exclusions", unit="{row}")
+        self.dataset_build_duration = meter.create_histogram(
+            "features.dataset.build.duration", unit="s"
+        )
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

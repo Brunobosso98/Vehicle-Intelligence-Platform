@@ -166,3 +166,17 @@ an isolated fixture ledger. It proves instrumentation delivery, not OpenAI quali
 Its internal-only metrics listener runs in the disposable test container; production gains no new
 ingestion endpoint. `.validation/knowledge/observability/` contains backend-queryable proof and
 redaction checks; final committed-head delivery must still be repeated.
+
+## Phase 9A feature pipeline
+
+The feature pipeline exports bounded counters for generation runs, generated/reused FeatureSets,
+generation failures, null reasons by feature category, leakage rejections, dataset builds, dataset
+rows and excluded rows. Histograms record generation and dataset-build duration. Labels use only
+bounded outcome, error, feature-category, missing-reason and leakage-reason values; vehicle,
+configuration, session, pull, sample IDs, raw values, source text and SQL never become labels.
+
+Traces cover `features.generate`, configuration resolution, telemetry/history reads, computation
+and dataset build. Span attributes contain versions and aggregate counts only. `make
+feature-observability` performs real generation, a deliberate cutoff rejection and dataset build in
+a fresh disposable database, then asserts rendered metric series, expected spans and the absence
+of entity identifiers. It does not rely on configuration-only instrumentation claims.

@@ -133,7 +133,7 @@ unstructured output is hashed. Failed proposals remain untrusted diagnostic data
 never published findings or executable recipes. Fixed validation-rule codes and
 case/sequence correlation support reconstruction without exposing secrets.
 
-## Phase 8 documentary knowledge boundary (implementation checkpoint)
+## Phase 8 documentary knowledge boundary
 
 Retrieved source text has no authority over tools or application policy. Operator-reviewed immutable
 source snapshots carry verification and trust; unverified/quarantined/rejected/community sources do
@@ -171,5 +171,22 @@ The existing HTTP server already uses the unaffected stateless mode and a 64 KiB
 the dependency update removes the known affected SDK version. Focused MCP/knowledge tests and
 the Python dependency audit passed; complete exact-head regression remains required.
 Source-version revocation invalidates cached candidate selection before reuse. Dedicated SSRF,
-parser, injection, poisoning, applicability and spend tests exist; full security/end-to-end acceptance
-and delivery checks are still pending. See the Phase 8 acceptance checkpoint.
+parser, injection, poisoning, applicability and spend tests exist. See the completed corrected
+implementation evidence in the [Phase 8 acceptance report](../validation/phase-8-acceptance.md).
+
+## Phase 9A feature and dataset boundary
+
+Feature formulas are compiled trusted calculators registered by canonical key; no database text or
+operator request is evaluated as Python/SQL. Domain queries bind source values as parameters. The
+operator commands accept bounded session IDs, canonical feature keys and aware cutoffs, not raw
+SQL or arbitrary formulas. Feature generation caps each batch at 100 pulls and telemetry/history
+scans; dataset materialization caps candidate rows, source JSON payload and lineage entities.
+
+Dataset exports can only write into the fixed ignored `apps/api/.artifacts/phase9a/` directory.
+Export names are strict filename tokens, parent traversal is rejected, files are atomically
+replaced, and JSONL plus manifest are capped at 64 MiB. No dataset export endpoint or new public
+API is exposed. The local operator CLI relies on configured database access and OS access to the
+workspace; a future network admin surface must add operator authentication/authorization before
+exposure. Feature provenance retains source entity IDs in the database, while metric labels and
+trace attributes omit them. Missing fuel/sensor data remains null and cannot be supplied by RAG,
+stage labels or inferred targets. No model, diagnosis or vehicle-control path is part of this phase.

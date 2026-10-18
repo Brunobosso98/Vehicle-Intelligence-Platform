@@ -214,6 +214,19 @@ class LiveOBDSource(Protocol):
     def read(self) -> AsyncIterator[RawTelemetryRecord]: ...
 
 
+SYNTHETIC_TELEMETRY_SIGNALS = frozenset(
+    {
+        "engine.rpm",
+        "vehicle.speed",
+        "engine.boost_pressure",
+        "engine.throttle_position",
+        "engine.intake_air_temperature",
+        "engine.oil_temperature",
+        "engine.coolant_temperature",
+    }
+)
+
+
 class SyntheticTelemetrySource:
     def __init__(self, start: datetime, samples: int = 120, seed: int = 55) -> None:
         if start.tzinfo is None:

@@ -136,7 +136,7 @@ was not performed because the remaining API balance was insufficient. This does 
 a uniformly verified final-source real baseline. See the report for exact sources, costs
 and the separate final GitHub Actions status.
 
-## Phase 8 technical knowledge (in progress)
+## Phase 8 technical knowledge (complete)
 
 Phase 8 adds versioned PostgreSQL/pgvector documentary evidence alongside read-only MCP vehicle
 facts. The initial reviewed local corpus targets BMW F30 335i / N55. Unknown tuner/map details
@@ -147,4 +147,22 @@ See [architecture](docs/architecture/phase-8-technical-rag.md),
 [controlled ingestion](docs/runbooks/knowledge-ingestion.md) and
 [current acceptance](docs/validation/phase-8-acceptance.md). `make phase8-embed-corpus` is a
 dedicated explicitly confirmed paid operation under a cumulative USD 2 ceiling. Ordinary validation
-and the cache-only `make phase8-retrieval-eval` never buy embeddings. Phase 8 is NOT VERIFIED.
+and the cache-only `make phase8-retrieval-eval` never buy embeddings. Corrected implementation
+acceptance is recorded in [the Phase 8 report](docs/validation/phase-8-acceptance.md); its separate
+Phase 7D paid-suite caveat remains documented there.
+
+## Phase 9A feature engineering foundation
+
+Phase 9A adds a deterministic 76-definition feature registry, immutable feature-set versions,
+provenance and temporal cutoffs, configuration-aware history, a leakage-safe pull dataset builder,
+JSONL/manifest export, profiling and bounded operator CLIs. It does not train models, generate
+predictions, diagnose vehicle conditions, expose a public feature API or add a predictive UI.
+See the [architecture](docs/architecture/phase-9a-feature-engineering.md),
+[feature generation runbook](docs/runbooks/feature-generation.md),
+[dataset runbook](docs/runbooks/dataset-builder.md), and
+[acceptance report](docs/validation/phase-9a-acceptance.md).
+
+Run `make test-features`, `make test-feature-integration`, `make phase9a-acceptance`,
+`make benchmark-features`, and `make feature-observability` for focused gates. These use a fresh
+disposable TimescaleDB for database-backed checks. `make verify` includes all five Phase 9A gates.
+Phase 9B predictive models are next; 9C–9H remain deferred.

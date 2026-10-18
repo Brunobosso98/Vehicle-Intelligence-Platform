@@ -5,11 +5,14 @@ import os
 from pathlib import Path
 
 import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 pytestmark = pytest.mark.integration
 API = Path(__file__).resolve().parents[2]
+MIGRATION_HEAD = ScriptDirectory.from_config(Config(str(API / "alembic.ini"))).get_current_head()
 
 
 async def test_knowledge_upgrade_downgrade_reupgrade_preserves_vehicle_rows() -> None:
@@ -171,7 +174,7 @@ async def test_partial_corpus_does_not_replace_published_index() -> None:
                 async with database.session() as session:
                     assert (
                         await session.scalar(text("SELECT version_num FROM alembic_version"))
-                        == "0012"
+                        == MIGRATION_HEAD
                     )
                     assert (
                         await session.scalar(
