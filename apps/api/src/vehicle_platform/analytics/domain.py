@@ -307,6 +307,82 @@ def acceleration_interval(
     }
 
 
+def rpm_interval_elapsed(
+    samples: tuple[Sample, ...], start_rpm: float, end_rpm: float, config: AnalyticsConfig
+) -> dict[str, object]:
+    """Measure a continuous, increasing RPM interval using bounded linear crossings."""
+    if not math.isfinite(start_rpm) or not math.isfinite(end_rpm) or end_rpm <= start_rpm:
+        raise ValueError("RPM interval bounds must be finite and increasing")
+    ordered = tuple(sorted(samples, key=lambda sample: sample.observed_at))
+    points = [(sample.observed_at, sample.rpm) for sample in ordered if math.isfinite(sample.rpm)]
+    started: datetime | None = None
+    previous_at: datetime | None = None
+    previous_rpm: float | None = None
+    for at, rpm in points:
+        if previous_at is not None and previous_rpm is not None:
+            gap = (at - previous_at).total_seconds()
+            crosses_start = previous_rpm <= start_rpm <= rpm and rpm > previous_rpm
+            if crosses_start:
+                if not 0 < gap <= config.maximum_gap_seconds:
+                    return _insufficient_rpm_interval(start_rpm, end_rpm)
+                started = previous_at + (at - previous_at) * (
+                    (start_rpm - previous_rpm) / (rpm - previous_rpm)
+                )
+                if rpm >= end_rpm:
+                    ended = previous_at + (at - previous_at) * (
+                        (end_rpm - previous_rpm) / (rpm - previous_rpm)
+                    )
+                    elapsed = (ended - started).total_seconds()
+                    return {
+                        "start_rpm": start_rpm,
+                        "end_rpm": end_rpm,
+                        "elapsed_seconds": elapsed,
+                        "seconds_per_1000_rpm": elapsed * 1000 / (end_rpm - start_rpm),
+                        "method": "linear_boundary_interpolation",
+                        "sufficiency": Sufficiency.SUFFICIENT,
+                    }
+                previous_at, previous_rpm = at, rpm
+                break
+        previous_at, previous_rpm = at, rpm
+    if started is None or previous_at is None or previous_rpm is None:
+        return _insufficient_rpm_interval(start_rpm, end_rpm)
+
+    for at, rpm in points:
+        if at <= previous_at:
+            continue
+        gap = (at - previous_at).total_seconds()
+        if not 0 < gap <= config.maximum_gap_seconds or rpm < previous_rpm:
+            return _insufficient_rpm_interval(start_rpm, end_rpm)
+        if previous_rpm <= end_rpm <= rpm and rpm > previous_rpm:
+            ended = previous_at + (at - previous_at) * (
+                (end_rpm - previous_rpm) / (rpm - previous_rpm)
+            )
+            if ended <= started:
+                return _insufficient_rpm_interval(start_rpm, end_rpm)
+            elapsed = (ended - started).total_seconds()
+            return {
+                "start_rpm": start_rpm,
+                "end_rpm": end_rpm,
+                "elapsed_seconds": elapsed,
+                "seconds_per_1000_rpm": elapsed * 1000 / (end_rpm - start_rpm),
+                "method": "linear_boundary_interpolation",
+                "sufficiency": Sufficiency.SUFFICIENT,
+            }
+        previous_at, previous_rpm = at, rpm
+    return _insufficient_rpm_interval(start_rpm, end_rpm)
+
+
+def _insufficient_rpm_interval(start_rpm: float, end_rpm: float) -> dict[str, object]:
+    return {
+        "start_rpm": start_rpm,
+        "end_rpm": end_rpm,
+        "elapsed_seconds": None,
+        "seconds_per_1000_rpm": None,
+        "method": "linear_boundary_interpolation",
+        "sufficiency": Sufficiency.INSUFFICIENT,
+    }
+
+
 SIGNALS = {
     "boost": ("engine.boost_pressure", "Pa"),
     "iat": ("engine.intake_air_temperature", "K"),

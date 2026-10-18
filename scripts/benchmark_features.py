@@ -23,8 +23,10 @@ from vehicle_platform.features.registry import DEFAULT_REGISTRY
 from vehicle_platform.features.service import FeatureGenerationService
 from vehicle_platform.infrastructure.database import Database
 
+DATASET_BENCHMARK_MAX_PULLS = 100
 
-async def _seed(database: Database, count: int) -> tuple[UUID, datetime]:
+
+async def _seed(database: Database, count: int) -> tuple[UUID, datetime, list[UUID]]:
     now = datetime.now(UTC)
     start = now - timedelta(days=3)
     async with database.session() as db:
@@ -88,7 +90,7 @@ async def _seed(database: Database, count: int) -> tuple[UUID, datetime]:
         raise AssertionError(
             f"expected {count} synthetic pull rows; inserted {len(pull_ids)}"
         )
-    return session, start
+    return session, start, [UUID(str(pull_id)) for pull_id in pull_ids]
 
 
 async def main() -> None:
@@ -100,14 +102,33 @@ async def main() -> None:
         raise ValueError("FEATURE_BENCHMARK_PULLS must be between 100 and 1000")
     database = Database(Settings(database_url=SecretStr(url), environment="test"))
     try:
-        session_id, start = await _seed(database, count)
-        service = FeatureGenerationService(database)
+        _, start, pull_ids = await _seed(database, count)
+        stage_samples: dict[str, list[float]] = {
+            "database_read": [],
+            "compute": [],
+            "persistence": [],
+        }
+        service = FeatureGenerationService(
+            database,
+            stage_timing_observer=lambda stage, seconds: stage_samples[stage].append(
+                seconds
+            ),
+        )
         tracemalloc.start()
         started = perf_counter()
-        generated = await service.generate_session(session_id, max_pulls=100)
+        generated = 0
+        for pull_id in pull_ids:
+            generated_set = await service.generate_pull(pull_id)
+            generated += int(
+                generated_set.feature_set_version == service.version.version
+            )
         generation_seconds = perf_counter() - started
-        if generated["failed"] or generated["generated"] != count:
-            raise AssertionError(f"feature generation failed: {generated}")
+        if generated != count or any(
+            len(values) != count for values in stage_samples.values()
+        ):
+            raise AssertionError(
+                "feature generation or stage timing count differs from seed"
+            )
         builder = DatasetBuilder(database, DEFAULT_REGISTRY)
         definition = DatasetDefinition(
             name=f"phase9a-benchmark-{count}",
@@ -120,14 +141,16 @@ async def main() -> None:
                 "quality.observation_count",
                 "temporal_context.prior_pull_count",
             ),
-            observation_cutoff=datetime.now(UTC),
+            observation_cutoff=start
+            + timedelta(minutes=min(count, DATASET_BENCHMARK_MAX_PULLS))
+            - timedelta(microseconds=1),
             cutoff_policy=CutoffPolicy.ROW_END,
             minimum_quality=0.0,
             allow_configuration_mixing=True,
             source="synthetic",
         )
         materialize_started = perf_counter()
-        result = await builder.build(definition)
+        dataset_result = await builder.build(definition)
         materialize_seconds = perf_counter() - materialize_started
         _, peak_bytes = tracemalloc.get_traced_memory()
         report = {
@@ -135,15 +158,24 @@ async def main() -> None:
             "database": "disposable TimescaleDB",
             "pulls": count,
             "feature_definitions": len(DEFAULT_REGISTRY.list()),
-            "generated_feature_sets": generated["generated"],
+            "generated_feature_sets": generated,
             "feature_generation_seconds": generation_seconds,
             "feature_generation_pulls_per_second": count / generation_seconds,
-            "dataset_rows": len(result.rows),
-            "dataset_exclusions": len(result.exclusions),
+            "dataset_benchmark_pull_limit": min(count, DATASET_BENCHMARK_MAX_PULLS),
+            "stage_timings_seconds": {
+                stage: {
+                    "total": sum(values),
+                    "per_pull_mean": sum(values) / count,
+                    "observations": len(values),
+                }
+                for stage, values in sorted(stage_samples.items())
+            },
+            "dataset_rows": len(dataset_result.rows),
+            "dataset_exclusions": len(dataset_result.exclusions),
             "dataset_materialization_seconds": materialize_seconds,
-            "dataset_rows_per_second": len(result.rows)
+            "dataset_rows_per_second": len(dataset_result.rows)
             / max(materialize_seconds, 1e-9),
-            "dataset_checksum": result.checksum,
+            "dataset_checksum": dataset_result.checksum,
             "peak_python_bytes": peak_bytes,
             "max_process_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
             * 1024,

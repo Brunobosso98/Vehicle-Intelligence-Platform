@@ -86,6 +86,7 @@ async def main() -> None:
             "features.configuration_resolve",
             "features.telemetry_read",
             "features.compute",
+            "features.persistence",
             "features.dataset.build",
         }
         if not expected_spans <= span_names:

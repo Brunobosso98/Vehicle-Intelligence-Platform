@@ -12,7 +12,9 @@ from uuid import uuid4
 
 from pydantic import SecretStr
 from sqlalchemy import text
+from vehicle_platform.acquisition.adapters import PIDS
 from vehicle_platform.core.config import Settings
+from vehicle_platform.features.capabilities import feature_source_capability_matrix
 from vehicle_platform.features.datasets import DatasetBuilder, _valid_serialized_value
 from vehicle_platform.features.domain import (
     CutoffPolicy,
@@ -25,6 +27,7 @@ from vehicle_platform.features.service import (
     FeatureLeakageRejected,
 )
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY, SYNTHETIC_TELEMETRY_SIGNALS
 
 
 def _fixture_seed() -> Any:
@@ -96,6 +99,20 @@ async def evaluate() -> None:
             raise AssertionError(
                 "pull duration does not match the recorded pull interval"
             )
+        normalized_rpm_time = target.values["performance.rpm_3500_4500_s_per_1000rpm"]
+        rpm_value = normalized_rpm_time.value
+        if (
+            isinstance(rpm_value, bool)
+            or not isinstance(rpm_value, (int, float))
+            or abs(float(rpm_value) - 2.0) > 1e-9
+        ):
+            raise AssertionError(
+                "normalized RPM interval time differs from recorded RPM samples"
+            )
+        if target.values["thermal.pre_pull_iat_k"].value != 315:
+            raise AssertionError(
+                "pre-pull IAT did not use the latest observed pre-pull sample"
+            )
         if target.values["boost_air.pressure_max"].value != 108_000:
             raise AssertionError("boost peak does not match canonical Pa samples")
         fuel = target.values["fuel.rail_pressure_mean"]
@@ -137,7 +154,7 @@ async def evaluate() -> None:
 
         alternate = FeatureGenerationService(database)
         alternate.version = type(service.version)(
-            version="phase9a-pull-v1-acceptance",
+            version="phase9a-pull-v2-acceptance",
             definitions=service.version.definitions,
             generator_version=service.version.generator_version,
             source_schema_version=service.version.source_schema_version,
@@ -232,6 +249,7 @@ async def evaluate() -> None:
                 "pulls": 5,
                 "event_cases": 2,
                 "future_ingestion_sample": True,
+                "non_boundary_pre_pull_thermal_sample": True,
                 "unavailable_fuel_case": True,
                 "poor_quality_case": True,
             },
@@ -242,6 +260,8 @@ async def evaluate() -> None:
                 "repeat and concurrent generation deterministic/idempotent",
                 "different version persisted separately",
                 "thermal, performance and boost values match recorded units/data",
+                "normalized RPM interval timing uses bounded monotonic Phase 5 analytics",
+                "pre-pull thermal features use latest cutoff-eligible vehicle telemetry",
                 "unavailable fuel stays null with unavailable_signal reason",
                 "future-ingested sample and future-created event excluded",
                 "future pull rejected by observation cutoff",
@@ -258,19 +278,17 @@ async def evaluate() -> None:
             "feature_set_version": service.version.version,
             "feature_set_version_checksum": service.version.checksum,
             "feature_count": len(DEFAULT_REGISTRY.list()),
-            "feature_availability_matrix": [
+            "feature_availability_matrix": feature_source_capability_matrix(
+                DEFAULT_REGISTRY.list(),
                 {
-                    "key": item.key,
-                    "category": item.category.value,
-                    "unit": item.unit,
-                    "availability": item.availability.value,
-                    "required_signals": list(item.required_signals),
-                    "optional_signals": list(item.optional_signals),
-                    "minimum_quality": item.minimum_quality,
-                    "nullable": item.nullable,
-                }
-                for item in DEFAULT_REGISTRY.list()
-            ],
+                    "synthetic_generator": SYNTHETIC_TELEMETRY_SIGNALS,
+                    "csv_replay": frozenset(SIGNAL_BY_KEY),
+                    "generic_obd_ii": frozenset(pid.signal for pid in PIDS),
+                    "richer_future_source": None,
+                },
+                conditional_sources=frozenset({"csv_replay"}),
+                preflight_sources=frozenset({"generic_obd_ii"}),
+            ),
             "acceptance_dataset_profile": dataset_a.profile,
             "manifest": dataset_a.manifest,
         }

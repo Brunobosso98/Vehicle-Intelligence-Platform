@@ -42,11 +42,24 @@ canonical SI units: temperature K, pressure Pa, speed m/s, acceleration m/s², t
 speed RPM and percent as percentage points. The feature's definition records units; conversion for
 presentation is not part of the persisted feature vector.
 
-The initial registry has 76 definitions: thermal 22, boost/air 14, quality 14, fuel 9,
-raw context 7, history 5, performance 3 and temporal context 2. `SESSION` and `PULL` remain
+The current registry has 79 definitions: thermal 22, boost/air 14, quality 14, fuel 9,
+raw context 7, history 5, performance 6 and temporal context 2. `SESSION` and `PULL` remain
 taxonomy categories; current definitions are assigned to their semantic family and are scoped to
 pull/vehicle/configuration. There are no session-category-only definitions yet. The feature keys
 with `boost_air` use the same canonical boost/air family.
+
+Performance features reuse the analytics domain's bounded monotonic crossing logic for three
+fixed 1,000-RPM bands: 2,500–3,500, 3,500–4,500 and 4,500–5,500 RPM. Values are seconds per
+1,000 RPM. A feature stays unavailable when the input lacks a boundary crossing, has a gap above
+the configured maximum, or reverses RPM before completing the interval.
+
+Each definition also carries an acquisition class in its versioned manifest. `CORE` has no
+specific telemetry signal dependency, `OPTIONAL` depends only on standard generic OBD-II PIDs,
+and `SOURCE_SPECIFIC` needs at least one signal outside that generic set. The acceptance profile
+emits a machine-readable feature-by-source matrix for the synthetic generator, CSV replay,
+generic OBD-II, and a richer future source. CSV entries are conditional on mapped input columns;
+generic OBD-II entries still require per-vehicle preflight. The matrix describes signal-set
+compatibility and does not guarantee a live source can provide a measurement.
 
 `FeatureSetVersion` hashes ordered definitions plus generator/source-schema versions and
 selection, quality and temporal policies. Reusing a version with a different checksum raises a
@@ -54,6 +67,10 @@ conflict; formula or policy changes require a new version. Feature vectors are i
 keyed by vehicle, pull, version and source snapshot hash. A recompute over identical source
 content reuses the same row; changed source content creates a separate snapshot and leaves the
 older row intact.
+
+The current generator, source-snapshot shape and registry are recorded under
+`phase9a-pull-v2` (`phase9a-feature-generator-v2`, `canonical-telemetry-v2`). The previously
+persisted `phase9a-pull-v1` definitions and snapshots remain immutable.
 
 Each feature value stores its value or explicit missing reason, unit, quality, availability time,
 source window, source signal/entity IDs and calculation details. FeatureSet provenance adds the
@@ -78,6 +95,13 @@ and have compatible active modifications. Future pulls, late-created events, fut
 samples, and mismatched ownership are rejected or excluded with a bounded reason code. No history
 crosses vehicle/configuration boundaries.
 
+Pre-pull IAT, oil and coolant evidence uses the latest vehicle sample observed strictly before the
+pull start within a five-minute lookback, with sample observation, ingestion and owning session
+creation constrained by the cutoff. It is stored separately from current-pull observations, so it
+does not affect pull coverage or quality aggregates. A latest invalid-quality pre-pull sample stays
+invalid rather than falling back to an older good value. These rows are part of the source hash and
+feature provenance. If no bounded pre-pull observation exists, the thermal feature is unavailable.
+
 Definitions classify values as pre-event, during-window, post-window or historical-only. Dataset
 cutoff policies are row start, row end or a global cutoff; the builder selects the latest feature
 snapshot that is valid for that row and cutoff. Horizon metadata supports next pull, next session,
@@ -99,7 +123,9 @@ row/time/entity distributions, missingness, quality, exclusions, source role, JS
 dataset checksum. The checksum covers the dataset definition, row identities and feature values,
 missingness, source hashes and sorted exclusions. Statistical profiling reports null rates,
 numeric quantiles/min/max/mean/dispersion, categorical counts, quality, time/configuration/vehicle
-distributions, and possible extremes without deleting outliers.
+distributions, quality-failure exclusions, and possible extremes without deleting outliers.
+Numeric synthetic extremes are marked `synthetic_boundary`; real or imported extremes are marked
+`possible_real_extreme` for review.
 
 Chronological and walk-forward split helpers preserve ordering. Exports use canonical JSON Lines
 plus a JSON manifest and are atomically written under the fixed approved artifact directory. Path
@@ -136,8 +162,10 @@ before writing its bounded export files.
 
 The pipeline adds bounded OpenTelemetry counters/histograms for generation, nulls, leakage
 rejections, dataset rows/exclusions and durations. Generation spans separate configuration
-resolution, telemetry reads and calculation. Feature and dataset spans carry counts and version,
-not vehicle IDs, raw samples, credentials or SQL. See the
+resolution, telemetry reads, calculation and persistence. The benchmark records database-read,
+feature-compute and persistence time separately for each generated pull, along with total generation,
+dataset materialization and memory. Feature and dataset spans carry counts and version, not vehicle
+IDs, raw samples, credentials or SQL. See the
 [feature generation runbook](../runbooks/feature-generation.md),
 [dataset runbook](../runbooks/dataset-builder.md),
 [Phase 9A acceptance](../validation/phase-9a-acceptance.md), and

@@ -48,6 +48,12 @@ class TemporalAvailability(StrEnum):
     HISTORICAL_ONLY = "historical_only"
 
 
+class AcquisitionClass(StrEnum):
+    CORE = "CORE"
+    OPTIONAL = "OPTIONAL"
+    SOURCE_SPECIFIC = "SOURCE_SPECIFIC"
+
+
 class MissingReason(StrEnum):
     UNAVAILABLE_SIGNAL = "unavailable_signal"
     INSUFFICIENT_COVERAGE = "insufficient_coverage"
@@ -123,6 +129,7 @@ class FeatureDefinition:
     scope: EntityScope
     required_signals: tuple[str, ...] = ()
     optional_signals: tuple[str, ...] = ()
+    acquisition_class: AcquisitionClass = AcquisitionClass.CORE
     minimum_quality: float = 0.0
     algorithm_id: str = "vehicle-platform.feature"
     algorithm_version: str = "1"
@@ -158,6 +165,7 @@ class FeatureDefinition:
             "scope": self.scope.value,
             "required_signals": list(self.required_signals),
             "optional_signals": list(self.optional_signals),
+            "acquisition_class": self.acquisition_class.value,
             "minimum_quality": self.minimum_quality,
             "algorithm_id": self.algorithm_id,
             "algorithm_version": self.algorithm_version,

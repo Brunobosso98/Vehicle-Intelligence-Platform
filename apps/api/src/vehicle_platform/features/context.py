@@ -59,6 +59,7 @@ class FeatureContext:
     signal_coverage: dict[str, float]
     frame_count: int
     quality_metadata: dict[str, Any] = field(default_factory=dict)
+    pre_pull_samples: tuple[TelemetryFeatureSample, ...] = ()
 
     @property
     def pull_id(self) -> str:
@@ -85,6 +86,23 @@ class FeatureContext:
     ) -> tuple[TelemetryFeatureSample, ...]:
         source = self.valid_samples if valid_only else self.raw_samples
         return tuple(item for item in source if item.signal == signal)
+
+    def pre_pull_for_signal(
+        self, signal: str, *, valid_only: bool = False
+    ) -> tuple[TelemetryFeatureSample, ...]:
+        source = self.pre_pull_samples
+        if valid_only:
+            source = tuple(item for item in source if item.quality == "valid")
+        return tuple(
+            sorted(
+                (item for item in source if item.signal == signal),
+                key=lambda item: (
+                    item.observed_at,
+                    item.sequence_number if item.sequence_number is not None else -1,
+                    item.sample_id,
+                ),
+            )
+        )
 
     def make_value(
         self,
@@ -116,7 +134,15 @@ class FeatureContext:
             available_at=availability,
             source_window_start=source_window_start or (min(starts) if starts else None),
             source_window_end=source_window_end or (max(starts) if starts else None),
-            source_signals=definition.required_signals + definition.optional_signals,
+            source_signals=tuple(
+                dict.fromkeys(
+                    (
+                        *definition.required_signals,
+                        *definition.optional_signals,
+                        *(item.signal for item in selected),
+                    )
+                )
+            ),
             source_entities=tuple(
                 dict.fromkeys((self.pull_id,) if source_entities is None else source_entities)
             ),

@@ -8,9 +8,11 @@ from vehicle_platform.analytics.domain import (
     PullInput,
     Sample,
     acceleration_interval,
+    rpm_interval_elapsed,
 )
 from vehicle_platform.features.context import FeatureContext, TelemetryFeatureSample
 from vehicle_platform.features.domain import (
+    AcquisitionClass,
     EntityScope,
     FeatureCategory,
     FeatureDefinition,
@@ -20,6 +22,26 @@ from vehicle_platform.features.domain import (
     TemporalAvailability,
 )
 from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
+
+STANDARD_OBD_SIGNALS = frozenset(
+    {
+        "engine.rpm",
+        "vehicle.speed",
+        "engine.throttle_position",
+        "engine.intake_air_temperature",
+        "engine.coolant_temperature",
+    }
+)
+ALL_CANONICAL_SIGNALS = tuple(sorted(SIGNAL_BY_KEY))
+
+
+def _acquisition_class(signals: tuple[str, ...]) -> AcquisitionClass:
+    if not signals:
+        return AcquisitionClass.CORE
+    if set(signals) <= STANDARD_OBD_SIGNALS:
+        return AcquisitionClass.OPTIONAL
+    return AcquisitionClass.SOURCE_SPECIFIC
+
 
 FeatureCalculator = Callable[[FeatureContext, FeatureDefinition], FeatureValue]
 
@@ -281,9 +303,7 @@ def _simple_calculator(key: str) -> FeatureCalculator:
                 details={"history_window_count": context.prior_pull_count},
             )
         if key == "thermal.pre_pull_iat_k":
-            return _prior_or_pre_value(
-                context, definition, "engine.intake_air_temperature", pre=True
-            )
+            return _pre_pull_value(context, definition, "engine.intake_air_temperature")
         if key == "thermal.pull_to_pull_iat_delta_k":
             return _pull_to_pull_iat_delta(context, definition)
         if key.startswith("thermal.recovery_") or key.endswith("_recovery_delta_k"):
@@ -304,6 +324,8 @@ def _simple_calculator(key: str) -> FeatureCalculator:
             return _speed_interval(context, definition)
         if key == "performance.relative_to_prior_mean_pct":
             return _performance_relative(context, definition)
+        if key.startswith("performance.rpm_"):
+            return _rpm_interval(context, definition, key)
         if key.startswith("boost_air.throttle_closure_fraction"):
             return _throttle_closure(context, definition)
         if key.startswith("boost_air.history_deviation"):
@@ -441,47 +463,28 @@ def _median(values: list[float]) -> float:
     return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2
 
 
-def _prior_or_pre_value(
-    context: FeatureContext, definition: FeatureDefinition, signal: str, *, pre: bool
-) -> FeatureValue:
-    rows = context.for_signal(signal)
-    if pre:
-        rows = tuple(item for item in rows if item.observed_at <= context.start)
-    if rows:
-        selected = rows[-1]
-        return context.make_value(
-            definition,
-            selected.value,
-            samples=(selected,),
-            source_window_start=selected.observed_at,
-            source_window_end=selected.observed_at,
-        )
-    return _prior_end_value(context, definition, signal)
-
-
-def _prior_end_value(
+def _pre_pull_value(
     context: FeatureContext, definition: FeatureDefinition, signal: str
 ) -> FeatureValue:
-    prior = context.prior_pulls[0] if context.prior_pulls else None
-    if prior is None:
-        return context.missing(definition, MissingReason.NOT_APPLICABLE)
-    rows = tuple(
-        item for item in prior.samples if item.signal == signal and item.quality == "valid"
-    )
+    rows = context.pre_pull_for_signal(signal)
     if not rows:
         return context.missing(
-            definition, MissingReason.UNAVAILABLE_SIGNAL, source_entities=(prior.id,)
+            definition, MissingReason.UNAVAILABLE_SIGNAL, details={"signal": signal}
         )
     selected = rows[-1]
+    if selected.quality != "valid":
+        return context.missing(
+            definition,
+            MissingReason.INVALID_QUALITY,
+            details={"signal": signal, "sample_quality": selected.quality},
+        )
     return context.make_value(
         definition,
         selected.value,
         samples=(selected,),
-        source_entities=(prior.id,),
-        available_at=max(selected.available_at, prior.row["created_at"]),
         source_window_start=selected.observed_at,
         source_window_end=selected.observed_at,
-        details={"source_pull_id": prior.id},
+        details={"source": "latest observed vehicle telemetry before pull start"},
     )
 
 
@@ -509,9 +512,14 @@ def _thermal_recovery(
     prior_rows = tuple(
         item for item in prior.samples if item.signal == signal and item.quality == "valid"
     )
-    current_rows = tuple(
-        item for item in context.for_signal(signal) if item.observed_at <= context.start
-    )
+    current_rows = context.pre_pull_for_signal(signal)
+    if current_rows and current_rows[-1].quality != "valid":
+        return context.missing(
+            definition,
+            MissingReason.INVALID_QUALITY,
+            source_entities=(prior.id,),
+            details={"signal": signal, "sample_quality": current_rows[-1].quality},
+        )
     if not prior_rows or not current_rows:
         return context.missing(
             definition, MissingReason.UNAVAILABLE_SIGNAL, source_entities=(prior.id,)
@@ -602,6 +610,40 @@ def _speed_interval(context: FeatureContext, definition: FeatureDefinition) -> F
         source_window_start=context.start,
         source_window_end=context.end,
         details={"calculation": "Phase 5 acceleration_interval", "speed_bounds_kmh": [60, 100]},
+    )
+
+
+def _rpm_interval(context: FeatureContext, definition: FeatureDefinition, key: str) -> FeatureValue:
+    bounds = {
+        "performance.rpm_2500_3500_s_per_1000rpm": (2500.0, 3500.0),
+        "performance.rpm_3500_4500_s_per_1000rpm": (3500.0, 4500.0),
+        "performance.rpm_4500_5500_s_per_1000rpm": (4500.0, 5500.0),
+    }.get(key)
+    if bounds is None:
+        raise ValueError("unknown RPM interval feature")
+    pull_input = _pull_input(context.pull, context.valid_samples)
+    if pull_input is None:
+        return context.missing(definition, MissingReason.INSUFFICIENT_COVERAGE)
+    result = rpm_interval_elapsed(pull_input.samples, bounds[0], bounds[1], AnalyticsConfig())
+    value = result.get("seconds_per_1000_rpm")
+    if not isinstance(value, (int, float)):
+        return context.missing(
+            definition,
+            MissingReason.INSUFFICIENT_COVERAGE,
+            details={"sufficiency": result.get("sufficiency"), "rpm_bounds": list(bounds)},
+        )
+    return context.make_value(
+        definition,
+        float(value),
+        samples=context.valid_samples,
+        available_at=max(context.end, context.pull["created_at"]),
+        source_window_start=context.start,
+        source_window_end=context.end,
+        details={
+            "calculation": "Phase 5 bounded monotonic RPM interval",
+            "rpm_bounds": list(bounds),
+            "seconds_per_1000_rpm": float(value),
+        },
     )
 
 
@@ -758,11 +800,18 @@ def _definition(
     *,
     scope: EntityScope = EntityScope.PULL,
     signal: str | None = None,
+    signals: tuple[str, ...] = (),
+    optional_signals: tuple[str, ...] = (),
     availability: TemporalAvailability = TemporalAvailability.DURING_WINDOW,
     minimum_quality: float = 0.0,
     bounds: tuple[float | None, float | None] | None = None,
     optional_signal: bool = False,
 ) -> FeatureDefinition:
+    if signal is not None and signals:
+        raise ValueError("use either signal or signals, not both")
+    required = signals or (() if signal is None or optional_signal else (signal,))
+    optional = optional_signals or ((signal,) if signal is not None and optional_signal else ())
+    dependencies = tuple(dict.fromkeys((*required, *optional)))
     return FeatureDefinition(
         key=key,
         name=key.replace(".", " ").replace("_", " ").title(),
@@ -771,8 +820,9 @@ def _definition(
         unit=unit,
         dtype=dtype,
         scope=scope,
-        required_signals=() if signal is None or optional_signal else (signal,),
-        optional_signals=(signal,) if signal is not None and optional_signal else (),
+        required_signals=required,
+        optional_signals=optional,
+        acquisition_class=_acquisition_class(dependencies),
         minimum_quality=minimum_quality,
         algorithm_id=f"vehicle-platform.{key}",
         algorithm_version="1",
@@ -944,6 +994,33 @@ def _registry_entries() -> tuple[tuple[FeatureDefinition, FeatureCalculator], ..
             EntityScope.PULL,
             TemporalAvailability.POST_WINDOW,
             None,
+        ),
+        (
+            "performance.rpm_2500_3500_s_per_1000rpm",
+            FeatureDType.FLOAT,
+            "s/1000rpm",
+            FeatureCategory.PERFORMANCE,
+            EntityScope.PULL,
+            TemporalAvailability.POST_WINDOW,
+            (0, None),
+        ),
+        (
+            "performance.rpm_3500_4500_s_per_1000rpm",
+            FeatureDType.FLOAT,
+            "s/1000rpm",
+            FeatureCategory.PERFORMANCE,
+            EntityScope.PULL,
+            TemporalAvailability.POST_WINDOW,
+            (0, None),
+        ),
+        (
+            "performance.rpm_4500_5500_s_per_1000rpm",
+            FeatureDType.FLOAT,
+            "s/1000rpm",
+            FeatureCategory.PERFORMANCE,
+            EntityScope.PULL,
+            TemporalAvailability.POST_WINDOW,
+            (0, None),
         ),
         (
             "thermal.pre_pull_iat_k",
@@ -1210,29 +1287,62 @@ def _registry_entries() -> tuple[tuple[FeatureDefinition, FeatureCalculator], ..
         calc = (
             _engine_code_calculator if key == "raw_context.engine_code" else _simple_calculator(key)
         )
+        required_signals, optional_signals = _context_signal_dependencies(key)
         entries.append(
             (
-                FeatureDefinition(
+                _definition(
                     key=key,
-                    name=key.replace(".", " ").replace("_", " ").title(),
-                    description=(
-                        f"Deterministic {key.replace('.', ' ')} from canonical source context."
-                    ),
                     category=category,
                     unit=context_unit,
                     dtype=dtype,
                     scope=scope,
-                    minimum_quality=0.0,
-                    algorithm_id=f"vehicle-platform.{key}",
-                    algorithm_version="1",
+                    signals=required_signals,
+                    optional_signals=optional_signals,
                     availability=availability,
+                    minimum_quality=0.0,
                     bounds=bounds,
-                    tags=("phase9a",),
                 ),
                 calc,
             )
         )
     return tuple(entries)
+
+
+def _context_signal_dependencies(key: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    rpm_speed = ("engine.rpm", "vehicle.speed")
+    dependencies: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+        "performance.speed_60_100_kmh_s": (rpm_speed, ()),
+        "performance.relative_to_prior_mean_pct": (rpm_speed, ()),
+        "performance.rpm_2500_3500_s_per_1000rpm": (("engine.rpm",), ()),
+        "performance.rpm_3500_4500_s_per_1000rpm": (("engine.rpm",), ()),
+        "performance.rpm_4500_5500_s_per_1000rpm": (("engine.rpm",), ()),
+        "thermal.pre_pull_iat_k": (("engine.intake_air_temperature",), ()),
+        "thermal.pull_to_pull_iat_delta_k": (("engine.intake_air_temperature",), ()),
+        "thermal.iat_recovery_delta_k": (("engine.intake_air_temperature",), ()),
+        "thermal.oil_recovery_delta_k": (("engine.oil_temperature",), ()),
+        "history.prior_performance_mean_s": (rpm_speed, ()),
+        "history.prior_performance_variance_s2": (rpm_speed, ()),
+        "history.prior_boost_mean_pa": (("engine.boost_pressure",), ()),
+        "history.prior_fuel_mean_pa": (("fuel.high_pressure",), ()),
+        "boost_air.throttle_closure_fraction": (("engine.throttle_position",), ()),
+        "boost_air.history_deviation_pa": (("engine.boost_pressure",), ()),
+        "fuel.history_deviation_pa": (("fuel.high_pressure",), ()),
+    }
+    if key in {
+        "quality.observation_count",
+        "quality.valid_observation_count",
+        "quality.invalid_observation_count",
+        "quality.duplicate_timestamp_count",
+        "quality.signal_coverage_ratio",
+        "quality.missing_sample_count",
+        "quality.max_gap_s",
+        "quality.median_sample_interval_s",
+        "quality.sample_interval_stddev_s",
+        "quality.stuck_signal_count",
+        "quality.available_signals",
+    }:
+        return (), ALL_CANONICAL_SIGNALS
+    return dependencies.get(key, ((), ()))
 
 
 _ENTRIES = _registry_entries()

@@ -116,7 +116,7 @@ async def _seed(database: Database) -> dict[str, object]:
                 "second",
                 vehicles["a"],
                 config_a,
-                start + timedelta(seconds=20),
+                start + timedelta(seconds=15),
                 start + timedelta(seconds=30),
             ),
             (
@@ -265,6 +265,59 @@ async def _seed(database: Database) -> dict[str, object]:
                         "hash": future_id,
                     },
                 )
+        for suffix, observed, ingested, signal, value, unit, sequence in (
+            (
+                "pre-pull-iat",
+                start + timedelta(seconds=19),
+                start + timedelta(seconds=19),
+                "engine.intake_air_temperature",
+                315.0,
+                "K",
+                1,
+            ),
+            (
+                "late-pre-pull-iat",
+                start + timedelta(seconds=19, milliseconds=500),
+                start + timedelta(seconds=25),
+                "engine.intake_air_temperature",
+                999.0,
+                "K",
+                2,
+            ),
+            (
+                "pre-pull-oil",
+                start + timedelta(seconds=19),
+                start + timedelta(seconds=19),
+                "engine.oil_temperature",
+                340.0,
+                "K",
+                1,
+            ),
+        ):
+            sample_id = hashlib.sha256(f"{suffix}:{vehicles['a']}".encode()).hexdigest()
+            await db.execute(
+                text(
+                    "INSERT INTO telemetry_samples(sample_id,vehicle_id,session_id,observed_at,ingested_at,"
+                    "signal_key,numeric_value,normalized_unit,raw_signal,raw_value,source,source_record_id,"
+                    "sequence_number,quality,schema_version,content_hash) VALUES(:sample,:vehicle,:session,"
+                    ":observed,:ingested,:signal,:value,:unit,:signal,:raw,'synthetic',:record,:sequence,"
+                    "'valid',1,:hash)"
+                ),
+                {
+                    "sample": sample_id,
+                    "vehicle": vehicles["a"],
+                    "session": session_ids["second"],
+                    "observed": observed,
+                    "ingested": ingested,
+                    "signal": signal,
+                    "value": value,
+                    "unit": unit,
+                    "raw": str(value),
+                    "record": suffix,
+                    "sequence": sequence,
+                    "hash": sample_id,
+                },
+            )
         run_id = (
             await db.execute(
                 text(
@@ -327,7 +380,11 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
         fixture = await _seed(database)
         pulls = fixture["pulls"]
         assert isinstance(pulls, dict)
-        service = FeatureGenerationService(database)
+        stage_timings: list[tuple[str, float]] = []
+        service = FeatureGenerationService(
+            database,
+            stage_timing_observer=lambda stage, seconds: stage_timings.append((stage, seconds)),
+        )
         preview = await service.estimate_session(fixture["sessions"]["first"], max_pulls=2)
         assert preview["candidate_pulls"] == 2
         assert preview["expected_new_feature_sets"] == 2
@@ -347,11 +404,19 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
         assert same_p2_a.id == same_p2_b.id
         assert same_p2_a.source_hash == same_p2_b.source_hash
         target = await service.generate_pull(pulls["p3"])
+        early_cutoff = await service.generate_pull(
+            pulls["p3"], fixture["start"] + timedelta(seconds=20, milliseconds=500)
+        )
         next_configuration = await service.generate_pull(pulls["p4"])
         poor_quality = await service.generate_pull(pulls["p5"])
 
         assert first.values["fuel.rail_pressure_mean"].value is not None
         assert target.values["thermal.iat_delta_k"].value == 4
+        assert target.values["thermal.pre_pull_iat_k"].value == 315
+        assert target.values["thermal.iat_recovery_delta_k"].value == -11
+        assert target.values["performance.rpm_3500_4500_s_per_1000rpm"].value == 2
+        assert early_cutoff.values["thermal.pre_pull_iat_k"].value == 315
+        assert early_cutoff.source_hash != target.source_hash
         assert target.values["history.prior_boost_mean_pa"].value is not None
         assert target.values["temporal_context.prior_pull_count"].value == 2
         assert target.values["history.prior_event_count"].value == 1
@@ -360,8 +425,14 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
         assert next_configuration.configuration_id == fixture["configurations"]["b"]
         assert next_configuration.values["temporal_context.prior_pull_count"].value == 0
         assert poor_quality.quality_metadata["pull_completeness"] == 0.25
+        assert {stage for stage, _ in stage_timings} >= {
+            "database_read",
+            "compute",
+            "persistence",
+        }
+        assert all(seconds >= 0 for _, seconds in stage_timings)
 
-        isolated_version = replace(service.version, version="phase9a-pull-v1-integration")
+        isolated_version = replace(service.version, version="phase9a-pull-v2-integration")
         isolated_service = FeatureGenerationService(database)
         isolated_service.version = isolated_version
         isolated = await isolated_service.generate_pull(pulls["p3"])

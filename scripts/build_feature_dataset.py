@@ -67,7 +67,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--feature-version", default="phase9a-pull-v1")
+    parser.add_argument("--feature-version", default="phase9a-pull-v2")
     parser.add_argument(
         "--features", required=True, help="comma-separated canonical feature keys"
     )

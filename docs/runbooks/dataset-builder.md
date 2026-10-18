@@ -7,7 +7,7 @@ not a public HTTP export and accepts no SQL, expressions or unbounded output pat
 apps/api/.venv/bin/python scripts/build_feature_dataset.py \
   --name n55-next-pull-baseline \
   --version v1 \
-  --feature-version phase9a-pull-v1 \
+  --feature-version phase9a-pull-v2 \
   --features raw_context.engine_code,thermal.iat_delta_k,quality.signal_coverage_ratio \
   --cutoff 2026-10-18T12:00:00Z \
   --cutoff-policy row_end \

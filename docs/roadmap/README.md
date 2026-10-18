@@ -64,7 +64,7 @@ caveat remains separately documented.
 
 ## Phase 9A implementation checkpoint
 
-The 9A branch defines 76 deterministic features, immutable version identity and provenance,
+The 9A branch defines 79 deterministic features, immutable version identity and provenance,
 cutoff-aware pull generation, temporal/leakage validation, bounded reproducible datasets, operator
 CLIs, profiling and observability. It has no model, prediction, public feature API or predictive UI.
 The local independent evaluator, disposable integration, 100-pull benchmark and observability gate

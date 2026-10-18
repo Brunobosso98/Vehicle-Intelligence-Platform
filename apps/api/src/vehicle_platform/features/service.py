@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
-from datetime import UTC, datetime
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from typing import Any, cast
 from uuid import UUID
@@ -26,9 +27,10 @@ from vehicle_platform.infrastructure.database import Database
 from vehicle_platform.observability.telemetry import Telemetry
 from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
 
-GENERATOR_VERSION = "phase9a-feature-generator-v1"
-SOURCE_SCHEMA_VERSION = "canonical-telemetry-v1"
-FEATURE_SET_VERSION = "phase9a-pull-v1"
+GENERATOR_VERSION = "phase9a-feature-generator-v2"
+SOURCE_SCHEMA_VERSION = "canonical-telemetry-v2"
+FEATURE_SET_VERSION = "phase9a-pull-v2"
+PRE_PULL_LOOKBACK = timedelta(minutes=5)
 MAX_FEATURE_OBSERVATIONS = 50_000
 MAX_HISTORY_CANDIDATES = 1_000
 MAX_HISTORY_PULLS = 20
@@ -59,6 +61,7 @@ def default_feature_version(registry: FeatureRegistry = DEFAULT_REGISTRY) -> Fea
         quality_policy={"minimum_signal_coverage": 0.5, "interpolation": "none"},
         temporal_policy={
             "observation_cutoff": "observed_at_and_ingested_at_must_not_exceed_cutoff",
+            "pre_pull_telemetry": "latest_vehicle_sample_per_thermal_signal_within_5m_before_pull_start",
             "history": "strictly_prior_pull_start_and_same_vehicle_configuration_and_modifications",
             "event": "event_interval_and_created_at_must_not_exceed_cutoff",
         },
@@ -134,14 +137,21 @@ class FeatureGenerationService:
         database: Database,
         telemetry: Telemetry | None = None,
         registry: FeatureRegistry = DEFAULT_REGISTRY,
+        *,
+        stage_timing_observer: Callable[[str, float], None] | None = None,
     ) -> None:
         self.database = database
         self.telemetry = telemetry
         self.registry = registry
+        self.stage_timing_observer = stage_timing_observer
         self.tracer = (
             telemetry.tracer if telemetry else trace.get_tracer("vehicle_platform.features")
         )
         self.version = default_feature_version(registry)
+
+    def _observe_stage(self, stage: str, started: float) -> None:
+        if self.stage_timing_observer is not None:
+            self.stage_timing_observer(stage, max(0.0, perf_counter() - started))
 
     async def ensure_version(self) -> UUID:
         async with self.database.session() as db:
@@ -203,6 +213,7 @@ class FeatureGenerationService:
         try:
             with self.tracer.start_as_current_span("features.generate") as root:
                 async with self.database.session() as db:
+                    database_read_started = perf_counter()
                     version_id = await self._ensure_version(db)
                     cutoff = observation_cutoff
                     pull, session, vehicle = await self._load_owner_context(db, pull_id)
@@ -222,6 +233,7 @@ class FeatureGenerationService:
                         ) = await self._resolve_context(db, pull, session, vehicle, cutoff)
                     with self.tracer.start_as_current_span("features.telemetry_read"):
                         current_rows = await self._load_pull_samples(db, pull, cutoff)
+                        pre_pull_rows = await self._load_pre_pull_samples(db, pull, cutoff)
                         candidates, all_history_mods = await self._load_history_candidates(
                             db, pull, config_id, cutoff
                         )
@@ -236,6 +248,8 @@ class FeatureGenerationService:
                             db, compatible[:MAX_HISTORY_PULLS], cutoff
                         )
                         events = await self._load_prior_events(db, pull, config_id, cutoff)
+                    self._observe_stage("database_read", database_read_started)
+                    compute_started = perf_counter()
                     context = self._build_context(
                         pull=pull,
                         session=session,
@@ -243,6 +257,7 @@ class FeatureGenerationService:
                         configuration=configuration,
                         modifications=mods,
                         current_rows=current_rows,
+                        pre_pull_rows=pre_pull_rows,
                         prior_pulls=prior_pulls,
                         prior_pull_count=len(compatible),
                         session_prior_pull_count=sum(
@@ -264,6 +279,7 @@ class FeatureGenerationService:
                         configuration,
                         mods,
                         current_rows,
+                        pre_pull_rows,
                         compatible,
                         prior_pulls,
                         events,
@@ -282,46 +298,50 @@ class FeatureGenerationService:
                             "generator_version": self.version.generator_version,
                         }
                     )
+                    self._observe_stage("compute", compute_started)
+                    persistence_started = perf_counter()
                     lock = int(
                         stable_hash(
                             [context.pull_id, self.version.version, cutoff.isoformat(), source_hash]
                         )[:16],
                         16,
                     ) & ((1 << 63) - 1)
-                    await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock})
-                    inserted = (
-                        await db.execute(
-                            text(
-                                "INSERT INTO feature_sets(vehicle_id,configuration_id,session_id,pull_id,"
-                                "entity_scope,feature_set_version_id,source_window_start,source_window_end,"
-                                "observation_cutoff,feature_values,quality_metadata,provenance,source_hash,"
-                                "provenance_hash,generator_version) VALUES(:vehicle,:configuration,:session,:pull,"
-                                "'pull',:version,:source_start,:source_end,:cutoff,CAST(:values AS jsonb),"
-                                "CAST(:quality AS jsonb),CAST(:provenance AS jsonb),:source_hash,:provenance_hash,:generator) "
-                                "ON CONFLICT ON CONSTRAINT uq_feature_set_identity DO NOTHING RETURNING id,generated_at"
-                            ),
-                            {
-                                "vehicle": UUID(context.vehicle_id),
-                                "configuration": UUID(config_id) if config_id else None,
-                                "session": UUID(context.session_id),
-                                "pull": UUID(context.pull_id),
-                                "version": version_id,
-                                "source_start": pull["started_at"],
-                                "source_end": max(
-                                    pull["started_at"], min(pull["ended_at"], cutoff)
+                    with self.tracer.start_as_current_span("features.persistence") as span:
+                        await db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": lock})
+                        inserted = (
+                            await db.execute(
+                                text(
+                                    "INSERT INTO feature_sets(vehicle_id,configuration_id,session_id,pull_id,"
+                                    "entity_scope,feature_set_version_id,source_window_start,source_window_end,"
+                                    "observation_cutoff,feature_values,quality_metadata,provenance,source_hash,"
+                                    "provenance_hash,generator_version) VALUES(:vehicle,:configuration,:session,:pull,"
+                                    "'pull',:version,:source_start,:source_end,:cutoff,CAST(:values AS jsonb),"
+                                    "CAST(:quality AS jsonb),CAST(:provenance AS jsonb),:source_hash,:provenance_hash,:generator) "
+                                    "ON CONFLICT ON CONSTRAINT uq_feature_set_identity DO NOTHING RETURNING id,generated_at"
                                 ),
-                                "cutoff": cutoff,
-                                "values": canonical_json(
-                                    {key: value.manifest() for key, value in values.items()}
-                                ),
-                                "quality": canonical_json(context.quality_metadata),
-                                "provenance": canonical_json(provenance),
-                                "source_hash": source_hash,
-                                "provenance_hash": provenance_hash,
-                                "generator": self.version.generator_version,
-                            },
-                        )
-                    ).one_or_none()
+                                {
+                                    "vehicle": UUID(context.vehicle_id),
+                                    "configuration": UUID(config_id) if config_id else None,
+                                    "session": UUID(context.session_id),
+                                    "pull": UUID(context.pull_id),
+                                    "version": version_id,
+                                    "source_start": pull["started_at"],
+                                    "source_end": max(
+                                        pull["started_at"], min(pull["ended_at"], cutoff)
+                                    ),
+                                    "cutoff": cutoff,
+                                    "values": canonical_json(
+                                        {key: value.manifest() for key, value in values.items()}
+                                    ),
+                                    "quality": canonical_json(context.quality_metadata),
+                                    "provenance": canonical_json(provenance),
+                                    "source_hash": source_hash,
+                                    "provenance_hash": provenance_hash,
+                                    "generator": self.version.generator_version,
+                                },
+                            )
+                        ).one_or_none()
+                        span.set_attribute("feature_set_version", self.version.version)
                     if inserted is None:
                         existing = (
                             (
@@ -387,6 +407,7 @@ class FeatureGenerationService:
                             started_at=request_started_at,
                         )
                         await db.commit()
+                    self._observe_stage("persistence", persistence_started)
                     root.set_attribute("feature_set_version", self.version.version)
                     root.set_attribute("feature_count", len(values))
                     root.set_attribute("null_count", counts["nulls"])
@@ -678,6 +699,45 @@ class FeatureGenerationService:
             raise FeatureGenerationLimitError("pull exceeds 50000 selected telemetry observations")
         return [_sample(row) for row in rows]
 
+    async def _load_pre_pull_samples(
+        self, db: AsyncSession, pull: dict[str, Any], cutoff: datetime
+    ) -> list[TelemetryFeatureSample]:
+        rows = (
+            (
+                await db.execute(
+                    text(
+                        "SELECT DISTINCT ON (signal_key) sample_id,observed_at,ingested_at,signal_key,"
+                        "numeric_value,normalized_unit,quality,content_hash,sequence_number "
+                        "FROM telemetry_samples JOIN driving_sessions s "
+                        "ON s.id=telemetry_samples.session_id AND s.vehicle_id=telemetry_samples.vehicle_id "
+                        "AND s.created_at<=:cutoff AND s.started_at<=:cutoff "
+                        "WHERE telemetry_samples.vehicle_id=:vehicle "
+                        "AND observed_at>=:lookback AND observed_at<:start "
+                        "AND observed_at<=:cutoff AND ingested_at<=:cutoff "
+                        "AND signal_key=ANY(:signals) "
+                        "ORDER BY signal_key,observed_at DESC,COALESCE(sequence_number,-1) DESC,sample_id DESC"
+                    ),
+                    {
+                        "vehicle": pull["vehicle_id"],
+                        "lookback": pull["started_at"] - PRE_PULL_LOOKBACK,
+                        "start": pull["started_at"],
+                        "cutoff": cutoff,
+                        "signals": [
+                            "engine.intake_air_temperature",
+                            "engine.oil_temperature",
+                            "engine.coolant_temperature",
+                        ],
+                    },
+                )
+            )
+            .mappings()
+            .all()
+        )
+        return sorted(
+            (_sample(row) for row in rows),
+            key=lambda item: (item.observed_at, item.signal, item.sample_id),
+        )
+
     async def _load_history_candidates(
         self,
         db: AsyncSession,
@@ -901,6 +961,7 @@ class FeatureGenerationService:
         configuration: dict[str, Any] | None,
         modifications: list[dict[str, Any]],
         current_rows: list[TelemetryFeatureSample],
+        pre_pull_rows: list[TelemetryFeatureSample],
         prior_pulls: tuple[HistoricalPull, ...],
         prior_pull_count: int,
         session_prior_pull_count: int,
@@ -977,6 +1038,7 @@ class FeatureGenerationService:
             signal_coverage=coverage,
             frame_count=frame_count,
             quality_metadata=quality,
+            pre_pull_samples=tuple(pre_pull_rows),
         )
 
     def _source_payload(
@@ -987,6 +1049,7 @@ class FeatureGenerationService:
         configuration: dict[str, Any] | None,
         modifications: list[dict[str, Any]],
         current_rows: list[TelemetryFeatureSample],
+        pre_pull_rows: list[TelemetryFeatureSample],
         candidates: list[dict[str, Any]],
         prior_pulls: tuple[HistoricalPull, ...],
         events: tuple[dict[str, Any], ...],
@@ -1016,6 +1079,7 @@ class FeatureGenerationService:
             },
             "pull": self._pull_source(pull),
             "telemetry": [self._sample_source(item) for item in current_rows],
+            "pre_pull_telemetry": [self._sample_source(item) for item in pre_pull_rows],
             "prior_candidates": [
                 {
                     "id": str(item["id"]),

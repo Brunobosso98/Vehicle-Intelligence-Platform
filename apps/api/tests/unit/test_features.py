@@ -3,6 +3,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from vehicle_platform.acquisition.adapters import PIDS
+from vehicle_platform.features.capabilities import feature_source_capability_matrix
 from vehicle_platform.features.context import FeatureContext, HistoricalPull, TelemetryFeatureSample
 from vehicle_platform.features.datasets import (
     _atomic_write,
@@ -14,6 +16,7 @@ from vehicle_platform.features.datasets import (
     walk_forward_windows,
 )
 from vehicle_platform.features.domain import (
+    AcquisitionClass,
     CutoffPolicy,
     DatasetDefinition,
     EntityScope,
@@ -30,7 +33,12 @@ from vehicle_platform.features.domain import (
     TemporalAvailability,
     stable_hash,
 )
-from vehicle_platform.features.registry import DEFAULT_REGISTRY, FeatureRegistry, validate_value
+from vehicle_platform.features.registry import (
+    DEFAULT_REGISTRY,
+    STANDARD_OBD_SIGNALS,
+    FeatureRegistry,
+    validate_value,
+)
 from vehicle_platform.features.service import default_feature_version
 from vehicle_platform.telemetry.domain import SIGNAL_BY_KEY
 
@@ -55,6 +63,7 @@ def context(
     *,
     prior: tuple[HistoricalPull, ...] = (),
     events: tuple[dict[str, object], ...] = (),
+    pre_pull_samples: tuple[TelemetryFeatureSample, ...] = (),
 ) -> FeatureContext:
     pull = {
         "id": "pull-current",
@@ -98,6 +107,7 @@ def context(
             "pull_completeness": 1.0,
             "data_role": "synthetic",
         },
+        pre_pull_samples=pre_pull_samples,
     )
 
 
@@ -149,7 +159,7 @@ def test_feature_definition_enforces_key_unit_and_quality() -> None:
 def test_default_registry_is_complete_and_versioned_deterministically() -> None:
     version_a = default_feature_version()
     version_b = default_feature_version()
-    assert len(DEFAULT_REGISTRY.list()) == 76
+    assert len(DEFAULT_REGISTRY.list()) == 79
     assert version_a.checksum == version_b.checksum
     assert version_a.manifest() == version_b.manifest()
     assert {item.category for item in DEFAULT_REGISTRY.list()} >= {
@@ -162,6 +172,46 @@ def test_default_registry_is_complete_and_versioned_deterministically() -> None:
         FeatureCategory.HISTORY,
         FeatureCategory.TEMPORAL_CONTEXT,
     }
+
+
+def test_feature_acquisition_classes_and_source_matrix_match_signal_support() -> None:
+    obd_signals = frozenset(pid.signal for pid in PIDS)
+    assert obd_signals == STANDARD_OBD_SIGNALS
+    definitions = DEFAULT_REGISTRY.list()
+    for item in definitions:
+        signals = set(item.required_signals + item.optional_signals)
+        expected = (
+            AcquisitionClass.CORE
+            if not signals
+            else AcquisitionClass.OPTIONAL
+            if signals <= obd_signals
+            else AcquisitionClass.SOURCE_SPECIFIC
+        )
+        assert item.acquisition_class is expected
+
+    matrix = feature_source_capability_matrix(
+        definitions,
+        {"generic_obd_ii": obd_signals, "richer_future_source": None},
+        preflight_sources=frozenset({"generic_obd_ii"}),
+    )
+    by_key = {item["key"]: item for item in matrix}
+    assert len(matrix) == len(definitions)
+    assert (
+        by_key["performance.pull_duration_s"]["source_capabilities"]["generic_obd_ii"]["status"]
+        == "core"
+    )
+    assert (
+        by_key["performance.speed_60_100_kmh_s"]["source_capabilities"]["generic_obd_ii"]["status"]
+        == "supported_signals_require_preflight"
+    )
+    assert (
+        by_key["fuel.rail_pressure_mean"]["source_capabilities"]["generic_obd_ii"]["status"]
+        == "unsupported_signal_set"
+    )
+    assert (
+        by_key["fuel.rail_pressure_mean"]["source_capabilities"]["richer_future_source"]["status"]
+        == "capability_report_required"
+    )
 
 
 def test_feature_version_rejects_duplicate_keys_and_naive_timestamp() -> None:
@@ -331,6 +381,61 @@ def test_history_uses_only_prior_samples_and_source_ids() -> None:
     assert result["temporal_context.prior_pull_count"].value == 1
 
 
+def test_pre_pull_thermal_features_use_latest_evidence_and_preserve_quality() -> None:
+    older = sample("iat-old", "engine.intake_air_temperature", 300, START - timedelta(minutes=2))
+    latest = sample(
+        "iat-current", "engine.intake_air_temperature", 315, START - timedelta(seconds=1)
+    )
+    value = DEFAULT_REGISTRY.compute(
+        context((), pre_pull_samples=(latest, older)), ("thermal.pre_pull_iat_k",)
+    )["thermal.pre_pull_iat_k"]
+    assert value.value == 315
+    assert value.source_signals == ("engine.intake_air_temperature",)
+    assert value.source_window_start == latest.observed_at
+    assert value.source_window_end == latest.observed_at
+
+    invalid_latest = TelemetryFeatureSample(
+        sample_id="iat-invalid",
+        observed_at=START - timedelta(milliseconds=500),
+        ingested_at=START - timedelta(milliseconds=500),
+        signal="engine.intake_air_temperature",
+        value=999,
+        unit="K",
+        quality="invalid",
+        content_hash="iat-invalid",
+    )
+    invalid = DEFAULT_REGISTRY.compute(
+        context((), pre_pull_samples=(latest, invalid_latest)), ("thermal.pre_pull_iat_k",)
+    )["thermal.pre_pull_iat_k"]
+    assert invalid.value is None
+    assert invalid.missing_reason is MissingReason.INVALID_QUALITY
+
+
+def test_performance_feature_provenance_includes_actual_source_signals() -> None:
+    rows = tuple(
+        item
+        for index in range(5)
+        for item in (
+            sample(
+                f"rpm-{index}",
+                "engine.rpm",
+                2000 + index * 1000,
+                START + timedelta(seconds=index),
+            ),
+            sample(
+                f"speed-{index}",
+                "vehicle.speed",
+                15 + index * 3.75,
+                START + timedelta(seconds=index),
+            ),
+        )
+    )
+    value = DEFAULT_REGISTRY.compute(context(rows), ("performance.speed_60_100_kmh_s",))[
+        "performance.speed_60_100_kmh_s"
+    ]
+    assert set(value.source_signals) >= {"engine.rpm", "vehicle.speed"}
+
+
 def test_unavailable_calculation_becomes_explicit_computation_error() -> None:
     broken = definition("quality.broken", "ratio")
     from vehicle_platform.features.registry import FeatureRegistry
@@ -495,6 +600,43 @@ def test_dataset_splits_profiles_and_checksums_are_stable() -> None:
     assert first == second
     assert first["vehicle_distribution"] == {"vehicle-0": 3, "vehicle-1": 3}
     assert stable_hash(first) == stable_hash(second)
+
+
+def test_profile_classifies_synthetic_extremes_and_quality_exclusions() -> None:
+    feature = definition("quality.ratio", "ratio", bounds=(0, 1))
+    dataset = DatasetDefinition(
+        "outlier-profile", "v1", EntityScope.PULL, "phase9a-pull-v2", (feature.key,), START
+    )
+    values = (0.0, 0.1, 0.2, 0.2, 0.3, 100.0)
+    rows = tuple(
+        {
+            "row_id": f"row-{index}",
+            "observation_cutoff": (START + timedelta(days=index)).isoformat(),
+            "vehicle_id": "vehicle-a",
+            "configuration_id": "configuration-a",
+            "features": {feature.key: value},
+            "missing": {},
+            "quality": {"pull_completeness": 1.0, "data_role": "synthetic"},
+        }
+        for index, value in enumerate(values)
+    )
+    exclusions = ({"pull_id": "pull-low", "reason": "minimum_quality_not_met"},)
+    synthetic = profile_dataset(rows, (feature,), dataset, exclusions=exclusions)
+    assert any(item["classification"] == "synthetic_boundary" for item in synthetic["outliers"])
+    assert synthetic["quality_stats"]["excluded_quality_row_count"] == 1
+    assert synthetic["quality_stats"]["excluded_quality_rows"] == [
+        {
+            "row_id": "pull-low",
+            "classification": "quality_failure",
+            "reason": "minimum_quality_not_met",
+        }
+    ]
+
+    real_rows = tuple(
+        {**row, "quality": {**row["quality"], "data_role": "real_vehicle"}} for row in rows
+    )
+    real = profile_dataset(real_rows, (feature,), dataset)
+    assert any(item["classification"] == "possible_real_extreme" for item in real["outliers"])
 
 
 def test_export_write_is_atomic_and_rejects_path_traversal(tmp_path) -> None:
@@ -919,7 +1061,18 @@ def test_registry_validation_and_unavailable_context_paths() -> None:
     prior_with_iat = HistoricalPull(prior_row, (prior_iat,), "configuration-a")
     at_start = sample("current-iat-at-start", "engine.intake_air_temperature", 305, START)
     recovery = DEFAULT_REGISTRY.compute(
-        context((at_start,), prior=(prior_with_iat,)),
+        context(
+            (at_start,),
+            prior=(prior_with_iat,),
+            pre_pull_samples=(
+                sample(
+                    "pre-pull-iat",
+                    "engine.intake_air_temperature",
+                    305,
+                    START - timedelta(milliseconds=1),
+                ),
+            ),
+        ),
         ("thermal.iat_recovery_delta_k", "thermal.pull_to_pull_iat_delta_k"),
     )
     assert recovery["thermal.iat_recovery_delta_k"].value == 15

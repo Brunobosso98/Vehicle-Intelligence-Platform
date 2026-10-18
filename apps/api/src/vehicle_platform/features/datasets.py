@@ -415,7 +415,7 @@ class DatasetBuilder:
         )
         if len({item["row_id"] for item in rows}) != len(rows):
             raise DatasetValidationError("dataset row identity collision")
-        profile = profile_dataset(rows, selected, definition)
+        profile = profile_dataset(rows, selected, definition, exclusions=exclusions)
         excluded_counts = dict(sorted(Counter(item["reason"] for item in exclusions).items()))
         checksum_payload = {
             "definition_checksum": definition.checksum,
@@ -662,6 +662,8 @@ def _lineage_is_safe(
                 "temporal_context.pull_order_index",
                 "temporal_context.prior_pull_count",
                 "thermal.recovery_",
+                "thermal.iat_recovery_delta_k",
+                "thermal.oil_recovery_delta_k",
                 "thermal.pull_to_pull",
                 "performance.relative_to_prior",
                 "boost_air.history_",
@@ -1016,9 +1018,14 @@ def _prior_count_from_row(row: dict[str, Any]) -> int:
 
 
 def profile_dataset(
-    rows: Iterable[dict[str, Any]], selected: tuple[Any, ...], definition: DatasetDefinition
+    rows: Iterable[dict[str, Any]],
+    selected: tuple[Any, ...],
+    definition: DatasetDefinition,
+    *,
+    exclusions: Iterable[dict[str, str]] = (),
 ) -> dict[str, Any]:
     data = tuple(rows)
+    excluded = tuple(exclusions)
     by_feature: dict[str, Any] = {}
     outliers: list[dict[str, Any]] = []
     for feature in selected:
@@ -1061,7 +1068,11 @@ def profile_dataset(
                             "row_id": row["row_id"],
                             "feature": feature.key,
                             "value": value,
-                            "classification": "possible_real_extreme",
+                            "classification": (
+                                "synthetic_boundary"
+                                if row["quality"].get("data_role") == "synthetic"
+                                else "possible_real_extreme"
+                            ),
                         }
                     )
         else:
@@ -1118,6 +1129,21 @@ def profile_dataset(
                 sorted(
                     Counter(str(row["quality"].get("data_role", "unknown")) for row in data).items()
                 )
+            ),
+            "excluded_quality_row_count": sum(
+                item["reason"] == "minimum_quality_not_met" for item in excluded
+            ),
+            "excluded_quality_rows": sorted(
+                (
+                    {
+                        "row_id": item["pull_id"],
+                        "classification": "quality_failure",
+                        "reason": item["reason"],
+                    }
+                    for item in excluded
+                    if item["reason"] == "minimum_quality_not_met"
+                ),
+                key=lambda item: (item["row_id"], item["reason"]),
             ),
         },
         "outliers": sorted(outliers, key=lambda item: (item["feature"], item["row_id"])),
