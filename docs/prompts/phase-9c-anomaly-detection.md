@@ -245,3 +245,282 @@ Only when every mandatory gate truly passes, end the report with:
 Otherwise honestly end with:
 `PHASE 9C — ANOMALY DETECTION: NOT VERIFIED`
 and enumerate exact unresolved blockers. Keep working on fixable failures instead of ending early.
+
+
+---
+
+# Detailed engineering contract — mandatory implementation addendum
+
+Sections 19–80 refine, rather than supersede, Sections 1–18. They are **normative acceptance requirements**. When a repository convention differs from an illustrative class or command name, retain the established convention and document the mapping. Prefer functioning, tested domain behavior to superficial class-count or file-count compliance.
+
+## 19. Phase boundaries and expected delivery graph
+
+```text
+Recorded vehicle telemetry + sessions + pulls
+  -> Phase 9A immutable feature snapshots and eligible cutoff
+  -> source/capability/quality/compatibility validator
+  -> chronological reference cohort materialization
+  -> versioned transparent statistical baseline
+     + versioned nonlinear unsupervised candidate
+  -> validation-only decision threshold policy
+  -> trusted bounded offline detector artifacts
+  -> AFTER_PULL_OFFLINE batch evaluation
+  -> internal immutable AnomalyFinding + provenance + abstention
+  -> independent engineering evaluation and reports
+
+Deferred: HTTP/streaming inference, MCP/agents, PredictionEvidence UI,
+calibrated risk probability, user alerts, continuous retraining, production fleet operations.
+```
+
+Make the actual repository architecture authoritative for module placement, but maintain the ownership boundary. Do not expose a public detector through existing MCP tools accidentally.
+
+## 20. Primary user scenarios and non-goals
+
+The engine must answer: "Was this observed pull unusual relative to a defensible historical/reference cohort?" and "What measurable feature deviations explain the flag descriptively?" It must also clearly answer "Insufficient evidence" when appropriate. It cannot answer "Which part will fail?" or "What should the driver change?" Model output should be suitable for later investigation, not presented as a mechanical instruction.
+
+## 21. Statistical meaning of an anomaly
+
+Differentiate **point anomaly** (single unusual observation), **contextual anomaly** (unusual under comparable context), **collective pattern** (sequence of unusual observations), and **data-quality failure** (not a valid observation). Define which of the first three are actually implemented. Do not call all anomalous readings persistent failures. If temporal pattern detection is deferred, mark it as deferred instead of quietly treating one point as a sequence.
+
+## 22. Coarse vs specific features
+
+Each detector must declare a bounded, semantically motivated set of existing canonical feature keys. Do not throw all 79 features, identifiers and quality counters into a model by default. Include explicit measurement units and missingness policies. Prevent a feature from simultaneously serving as a quality-exclusion flag and the main evidence of a physical malfunction without documenting the distinction.
+
+## 23. Minimum approved detector families
+
+Implement thermal, boost/air, performance, and fuel only when data supports them. Optionally provide multivariate composite scoring as a separate detector definition. The reference for each detector must list exact feature keys and expected availability. Fuel pressure is never inferred from boost, throttle or RPM. Do not infer engine health from generic ECU labels.
+
+## 24. Vehicle/configuration partition key
+
+The cohort resolver must derive effective configuration from Phase 9A provenance and modification history at observation cutoff. Validate compatible vehicle, recorded setup, installed modifications, input units and source capabilities. Version the compatibility predicate and prove it forbids pairing a pre-modification pull with post-modification baseline without explicit compatible rationale.
+
+## 25. Generic OBD-II capability contract
+
+Existing Phase 9A capability matrix must be consulted. Generic OBD-II may expose RPM/speed/throttle and selected temperatures but not necessarily boost, IAT, fuel rail pressure, commanded pressure or accurate torque. Missing hardware signals yield explicit unsupported/unavailable states. An advertised signal is not assumed actually sampled; verify observed coverage in the selected window.
+
+## 26. Multi-vehicle applicability
+
+The architecture must handle arbitrary vehicles and future workshop use. Same-vehicle comparable configuration baseline should be the default. A cross-vehicle cohort, if added, must be explicitly versioned, segmented by compatible measurable context and thoroughly evaluated on held-out vehicle(s). Never infer that a reference learned from an N55 BMW applies universally to a different engine.
+
+## 27. Quality gating precedence
+
+Run source eligibility, temporal/cutoff, compatibility, row/schema validity, feature coverage, reference support and artifact compatibility checks in a documented order. When multiple failures apply, return a deterministic primary abstention reason and optional bounded secondary reasons. Low-quality data is **not** automatically anomalous vehicle behavior.
+
+## 28. Temporal observation semantics
+
+Declare a single timezone-aware `observation_cutoff` per scoring request and per persisted finding. Verify recorded-at/ingested-at and source-event availability consistently with Phase 9A policy; event creation time cannot retroactively enter a prior snapshot. An after-pull observed value is allowed only after its own availability time and before cutoff, never from future pulls or 9B targets.
+
+## 29. Reference cohort leakage controls
+
+Exclude current row, future rows, duplicate replay lineages, same physical observation under different IDs, and target-source derived rows. Document how session grouping reduces correlated train/test contamination. Filtering only by a timestamp on the feature row is insufficient when a source row was ingested late or a modification was created after cutoff.
+
+## 30. Reference freshness and support
+
+A cohort policy shall define min eligible pulls, min independent sessions, adequate chronological span, maximum allowed staleness when meaningful, and max supported rows. Do not set ungrounded hard minimums under a pretense of universally valid automotive science. Document engineering defaults, test low-support abstention, and permit policy version changes without mutating old detector identities.
+
+## 31. Distribution shifts and operating context
+
+Thermal/environment/vehicle-configuration variations can be legitimate. Document which contextual features are available to restrict or stratify comparisons and which are deliberately not observable. If ambient temperature, elevation, fuel type, gear, driving mode or slope is absent, do not invent it. Limit conclusions rather than smuggling missing context into a universal baseline.
+
+## 32. Robust baseline mathematics
+
+Use a documented transparent robust statistic, for example `median` with scaled `MAD = median(|x - median(x)|)`. If using robust z-score, define `z = (x - median)/(1.4826 * MAD)` for nonzero MAD. Define explicitly what happens for MAD=0 or near-zero: safe IQR/scale floor, constant-feature exclusion, or deterministic abstention. Do not divide by zero or amplify floating-point noise into spurious anomalies. For each feature state whether high, low or bidirectional deviation is relevant, or choose bidirectional unless justified.
+
+## 33. Baseline score aggregation
+
+Aggregate per-feature deviations with a named finite bounded function such as weighted max or robust quantile, not an unexplained sum of arbitrary different units. Normalize with training-only statistics, track contributing feature count and avoid score inflation solely because one detector family has more available features. Preserve exact score orientation: greater means more statistically unusual.
+
+## 34. Nonlinear candidate bounds
+
+Isolation Forest or a comparably established allowlisted algorithm is acceptable. Lock seed, number of estimators, max samples, feature count, scoring conversion, bounded fit runtime and thread count. Record library version, contamination/threshold semantics and reference cohort checksums. Never let user-supplied class import strings, arbitrary Python pipeline definitions or model blobs instantiate the estimator.
+
+## 35. Nonlinear score transformation
+
+Isolation Forest's raw `score_samples` / `decision_function` direction must be converted to explicit **higher = more anomalous** semantics, with exact reproducible transform. Do not treat the numeric output as probability, severity of a mechanical issue or calibrated likelihood. Save the transform version with the detector.
+
+## 36. Missing-value policy
+
+Per feature distinguish unavailable sensor, insufficient window, invalid sample, not applicable, low coverage and ordinary observed valid zero where physically meaningful. Imputation, if employed for the nonlinear candidate, must be fitted on TRAIN only, accompanied by missingness indicators and allowed only for optional features with adequate coverage. Missing mandatory physical features cause abstention, not a fabricated normal or abnormal reading.
+
+## 37. Value and unit validation
+
+Reject nonfinite values, incompatible units/dtypes, invalid physical sentinels and impossible timestamps. Do not hardcode universal tuning/engine limits or clamp genuine but unusual valid measurements to make models perform better. Respect Phase 9A canonical units, including Kelvin and Pascal where used. Distinguish negative physical pressure delta (potentially valid representation) from invalid absolute pressure according to existing signal contract.
+
+## 38. Pure fit/transform/score separation
+
+Extract pure or narrowly scoped domain routines with deterministic inputs, plus infrastructure adapters for DB/artifacts. A fitted detector must never modify its training distribution while scoring. Expose internal tested functions for fitting, scoring and constructing immutable finding data without making them externally callable API endpoints.
+
+## 39. Train, validation and test partitioning
+
+Split chronologically at whole-session level, with no overlapping observation windows. Fit preprocessing and detectors using TRAIN reference only. Select hyperparameters and threshold using VALIDATION only. Hold TEST untouched until all choices are frozen. Add a walk-forward or expanding-window mode and explicitly handle folds with insufficient independent sessions.
+
+## 40. Legitimate data without anomaly labels
+
+An unsupervised historical reference contains data whose true health state is unknown; the absence of an event is not proof of a healthy engine. Control contaminated reference assumptions, mark the engineering scope, and do not train directly on an oracle of "normal failure-free vehicle" unless the fixture is explicitly synthetic and thus limited.
+
+## 41. Threshold policy
+
+Define separately:
+- score threshold construction (e.g. training-reference robust cutoffs or validated clean-reference quantile);
+- threshold selection process (no test optimization);
+- family-specific optional thresholds and exclusions;
+- change/versioning rules;
+- what "ANOMALOUS" means.
+
+If engineering synthetic clean validation labels are used to enforce a false-positive budget, preserve those labels outside the model matrix and disclose that synthetic acceptance is privileged. Do not tune using final test injections and then pretend it was blind.
+
+## 42. Detector candidate selection
+
+Always report transparent baseline and nonlinear model results. Define a deterministic predeclared selection policy: acceptable false-positive/abstention coverage floors first, injected-scenario detection performance second, simplicity and runtime on ties. If data support is insufficient for nonlinear model but baseline is valid, report that outcome honestly. Do not silently force Isolation Forest as winner.
+
+## 43. Comparative synthetic stress suite
+
+Generate nominal profiles and independent hidden interventions for thermal, boost, performance, fuel and mixed cases. Interventions must change observable source telemetry/feature behavior, not directly write a score or label. Maintain semantic plausibility and both easy and subtle examples. Injected oracle classes are evaluation metadata only and must not become model features.
+
+## 44. Confounders and hard negatives
+
+Include: elevated IAT with otherwise compatible performance, fuel deviation without boost change, boost fluctuation without performance degradation, naturally different post-modification behavior that requires segregation, cold-start or environmental context shift, and occasional sparse sensor readings. Evaluate these separately rather than count them as easy positive injections.
+
+## 45. Independent held-out scenarios
+
+Keep an unseen perturbation pattern, severity mix, or generator mode out of model fitting and validation. Do not select model family or threshold by test scores. Show scenario-level metrics with exact support, including cases where recall is poor. A perfect synthetic score caused by a trivial signature must be flagged as suspicious rather than celebrated as real-world proof.
+
+## 46. Held-out vehicles and configurations
+
+Evaluate at least one entirely unseen vehicle/profile and one unseen effective configuration where reference support permits. If same-vehicle-only baseline cannot score a held-out new vehicle, **correctly abstain** and report coverage rather than cheating by cross-vehicle data leakage. Separate detection accuracy among scored cases from abstention and applicability rates.
+
+## 47. Evaluation denominators
+
+For each family report eligible reference rows, held-out candidate rows, scored rows, not-evaluable rows, abstained rows by reason, true/false positives/negatives where oracle exists, precision, recall, F1, normal false-positive rate, anomaly coverage, and support. Undefined metrics should be explicit `UNDEFINED` or `INSUFFICIENT_SUPPORT`, never silently converted to zero.
+
+## 48. Metric philosophy
+
+Anomalies are not mechanical failures. Oracle precision/recall on synthetic perturbations measures recovery of synthetic patterns only. In unlabeled real data, report anomaly rates and quality/coverage, not ground-truth sensitivity/specificity. Avoid statements about real-world "accuracy" without verified labels and sampling methodology.
+
+## 49. Predeclared acceptance floors
+
+Before inspecting held-out results, write a small machine-readable acceptance policy with bounded fixture-specific limits for clean false-positive rate, injected-family recall, minimum family support, abstention fidelity, deterministic replay and artifact validity. Document why floors are reasonable. Failed thresholds cannot be loosened after test inspection just to turn red green; improving fixture diversity is not grounds for discarding difficult cases.
+
+## 50. Persistent finding identity
+
+Use an idempotency identity based on detector version, frozen observation FeatureSet/reference identity, cutoff, scope and algorithm/threshold version. Upserting a logically new result over an immutable old finding is forbidden. Concurrent retry of identical input should reuse the same committed evidence or report a deterministic conflict. Ensure DB constraints prevent duplicate logical findings.
+
+## 51. Finding contract and reason codes
+
+Persist both score and decision threshold plus units of interpretation. Bounded evidence must include detector family, cohort support/reference interval, source role, exact input feature snapshot, missing/invalid reasons and top measured-vs-reference differences. Reasons must be programmatic enumerations with stable definitions and be tested for correct precedence.
+
+## 52. Statistical contribution explanation
+
+For the transparent baseline, record strongest normalized signed deviations and units. For Isolation Forest, if listing such deviations as explanations, explicitly say they are **descriptive comparisons** and do not mathematically decompose forest score or prove causes. Never claim "turbo is failing because boost differs" from an unsupervised score.
+
+## 53. Persistence transaction boundaries
+
+Detector artifact staging, registry row creation and finding writes must not leave a healthy registered version pointing at a missing/corrupt file. Use established staged/verified artifact pattern from 9B, mark failure states, recover safe retries, and test interrupted execution. Avoid accidental distributed transaction claims when storage spans filesystem and DB.
+
+## 54. Immutability vs supersession
+
+A revised threshold, cohort selection, algorithm, library version, schema, source capability or normalization needs a new version/checksum where it affects semantics. A later retrospective cutoff must create a new derivation, not rewrite earlier knowledge. Preserve old findings for forensic comparison.
+
+## 55. Artifact serialization
+
+Only internally generated allowlisted trusted-code artifacts, stored at a fixed internal root and checksum validated, may be read. Bounded size and atomic rename required. Record schema order/dtypes/units, model family, preprocessing version, pinned dependencies, source role and reference checksum. Reject arbitrary uploaded joblib/pickle and document their code-execution risk.
+
+## 56. Operator CLI ergonomics
+
+Provide clear `--help`, dry-run/validation path if project conventions support it, explicit UTC/offset aware cutoffs, detector family selection, source-role and bounded batch scope. Avoid unbounded synchronous database scans. Nonzero exit status on invalid run or failed acceptance. Structured safe summaries must not print raw VIN, customer data, secrets or giant feature matrices.
+
+## 57. Data lifecycle and export
+
+Keep reproducibility manifests and detailed evaluator results under ignored validation paths while checked-in reports summarize material facts. Avoid tracking generated artifacts, large customer datasets or credential-bearing telemetry. File exports, if any, are bound in size, safely escaped and rooted under a controlled directory.
+
+## 58. Resource budgeting
+
+Set finite defaults/maxima for reference rows, batch score rows, features per detector, candidate count, hyperparameters, wall time, memory-sensitive processing and artifact size. Streaming or batched DB access should be used rather than loading arbitrary unlimited fleets into RAM. Report the values chosen and why they are viable for CI.
+
+## 59. Observability dimensions
+
+Permitted metric labels: detector family, algorithm family, decision/state, bounded reason code, source role, success/failure; no raw vehicle/session/pull IDs, VIN, model checksums, feature values or arbitrary high-cardinality labels. Traces may carry bounded internal correlation IDs if current observability policy permits; keep metrics safe. Verify scrape and spans against actual operations.
+
+## 60. Benchmark separation
+
+Measure fit/reference materialization, preprocessing, offline scoring, persistence and reload separately, with peak RSS, artifact bytes and per-detector counts. Benchmark both nominal and mixed anomaly batches, including abstentions. Clearly distinguish synthetic workstation throughput from measured production performance, without invented SLA.
+
+## 61. Source ownership and database migrations
+
+Inspect migration head before writing. Add a new revision with a correct down_revision chain; never hardcode revision `0015` if another migration has landed. Add foreign keys, unique constraints, bounded enums and indexes justified by actual run/lookup patterns; document downgrade loss for new 9C records. Historical Phase 9B rows must survive migrations untouched.
+
+## 62. Real imported telemetry smoke
+
+If an actual project-local imported fixture exists, run a non-destructive compatibility smoke on a disposable copy where possible. Real data may have little or no eligible fuel/performance coverage. Report exact counts and abstention, but do not manufacture labels or infer validation accuracy. If no imported dataset is available, state so explicitly.
+
+## 63. Failure taxonomy
+
+Use controlled errors for `INSUFFICIENT_REFERENCE`, `UNSUPPORTED_SOURCE`, `SCHEMA_MISMATCH`, `VERSION_MISMATCH`, `ARTIFACT_CORRUPTED`, `LOW_QUALITY`, `DATA_LEAKAGE_BLOCKED`, `RESOURCE_LIMIT` and infrastructure issues. Do not swallow exceptions and return a misleading healthy result. Log aggregate reason/state, not telemetry content.
+
+## 64. Unit test matrix
+
+Cover every deterministic transform, context resolver, missing-signal route, MAD-zero case, signed deviation orientation, cutoff, family-specific rule, immutable checksum, artifact rejection, incomplete reference, schema mismatch and idempotency. Use property-based tests only if already supported and cost-effective; otherwise deterministic explicit edge fixtures.
+
+## 65. Integration test matrix
+
+On disposable migrated TimescaleDB test 9A FeatureSet consumption, cutoff-aware cohort selection, configuration/modification lineage, multi-session history, late ingestion, pool transaction boundaries, concurrent runs, immutable references, duplicate scoring, migration round trip and no mutation of Phase 3/9B data. Test rollback of failed writes.
+
+## 66. Independent evaluator independence
+
+The acceptance evaluator must execute the real training/scoring/persistence code path, but assertions should independently calculate expected fixture counts and hidden injection oracle judgments. It must not simply compare a function's returned status to that same function's chosen expected status. Produce per-case receipts with no private data.
+
+## 67. Leakage adversaries
+
+Introduce deliberate source manipulations: a future after-pull feature before cutoff, label-derived field, session/vehicle ID surrogate, target pull label, post-cutoff modification, late-ingested supposedly older sample, and synthetic oracle scenario identifier. Each must fail or be excluded before influencing fit or score, with independent assertion.
+
+## 68. Non-fabrication adversaries
+
+Provide data where fuel signal never existed, an optional signal was declared but not observed, timestamps are duplicated, one observation is NaN, and a pre-pull feature is unavailable. Verify null/abstention and honest report. No default zero or older "last good" substitution to make a missing measurement look normal.
+
+## 69. Determinism adversaries
+
+Repeat fitting twice under same spec/dataset/seed/dependency versions. Compare reference row order/checksum, fitted decision structure or scores within strict tolerance, chosen threshold, finding identities and statuses. Reorder insertion and rows to ensure deterministic sorted handling. Byte-equal joblib is not required unless demonstrated.
+
+## 70. Regression and compatibility matrix
+
+Run and record `make phase9a-acceptance`, `make phase9b-acceptance`, Phase 3 event tests, Phase 5 analytics, Phase 6 MCP, Phase 7 deterministic agent evaluations and Phase 8 RAG acceptance along with `make verify` or its current canonical successor. Do not claim a pass merely because a prior PR did. Existing real-model paid-suite caveats are historical, not permission to fabricate new evidence.
+
+## 71. CI gate expectations
+
+Final pushed SHA should have current GitHub workflow equivalents for API/Web quality, integration & browser E2E, canonical Docker/full-stack acceptance, image/security/dependency scan and Python + JS/TS CodeQL. For a 9C-specific job, report its actual workflow run. Evidence must refer to the exact final candidate SHA; if checks are rerun on a previous SHA, they are non-authoritative.
+
+## 72. Documentation example scenarios
+
+Include operator-oriented example tables: eligible compatible pull with normal score, thermal anomaly, absent fuel signal, sparse reference abstention, post-modification baseline reset, corrupted artifact rejection and same-input retry. Each explanation must say "engineering statistical deviation, not a confirmed fault".
+
+## 73. Documentation of alternatives
+
+Record why the transparent baseline and selected unsupervised method were chosen compared with plausible alternatives; trade off interpretability, robustness, small cohorts, contamination, scaling, source coverage, compute and licensing/maintenance burden. Avoid importing a second heavyweight ML stack just for Phase 9C.
+
+## 74. ADR for score lifecycle
+
+Document choice of relative score transform, cohort strategy and threshold/freeze/version semantics. Explain that Phase 9G future calibration and drift operations do not retroactively endow Phase 9C scores with validated probabilities or real-world risk confidence.
+
+## 75. ADR for Phase 3/9B coexistence
+
+Document distinct evidence sources: Phase 3 deterministic rules/events; Phase 9B supervised NEXT_PULL label classifiers; Phase 9C retrospective unsupervised observed deviations. Any correlation between an event, predictive score and anomaly score should be an offline comparison rather than counting three independent proofs of a single mechanical issue.
+
+## 76. Scope freeze at PR completion
+
+The PR must modify only necessary Phase 9C functionality, shared genuine bug fixes and documentation updates. Never build Phase 9D serving or Phase 9F tool wiring "while here." If a shared 9A/9B bug fix is required, preserve versioned semantics, add regression proof and clearly disclose its impact.
+
+## 77. Review checklist before PR
+
+Review all changed files for accidental credential leak, developer-local paths, test artifacts, unsupported real-world claims, insecure joblib deserialization, large uncontrolled SQL/CPU work, future data leaks, brittle CI test fixtures, mismatched docs, hidden feature schema assumptions and silently changed Phase 9A/9B versions. Include findings and fixes in the PR body.
+
+## 78. Git hygiene and handoff
+
+Use the existing remote branch. Commit coherent changes; prefer readable commits over one huge unreviewable blob. Before final sign-off check clean `git status`, `git log -1`, upstream SHA equality, PR diff relative to main, and branch checks. Do not auto-merge or enable auto-merge. Return links and exact SHA.
+
+## 79. Honest completion statuses
+
+Complete means working code + verified executed acceptance + exact-head required CI. If local validation passes but CI is pending/blocked, say `NOT VERIFIED` with precise pending checks. If Docker, API funds or platform infrastructure are unavailable, investigate safer equivalent validation without falsely equating it to required full-stack proof. No fabricated 100% results or cherry-picked success.
+
+## 80. End-to-end acceptance narrative
+
+The final report must tell an auditable story of: canonical telemetry -> Phase 9A source FeatureSet -> eligibility and cohort selection -> immutable reference + temporal split -> fit/validate two approaches -> freeze detector version/threshold -> held-out offline scoring -> persist immutable finding/abstention -> reproduce and tamper-check -> benchmark/trace -> full legacy regression -> exact-head GitHub checks. Supply hard numbers **observed from executed runs**, exact commands and links, and retain all caveats. Keep this delivery limited to Phase 9C.
