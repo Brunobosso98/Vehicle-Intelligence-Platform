@@ -91,8 +91,9 @@ Phase 7B implements a bounded investigation workflow. Its semantic needs resolve
 known canonical signals and existing Phase 4 recipe/preflight contracts. Approval precedes
 acquisition readiness; finalized session linkage creates a separate grounded follow-up run.
 Phase 7C and Phase 8 are complete; Phase 7D retains its operator-accepted unified-final-suite
-caveat. Evidence is in their validation reports. Phase 9A and 9B are merged; Phase 9C is the
-current offline implementation. It owns statistical deviation scoring only and does not replace
+caveat. Evidence is in their validation reports. Phase 9A and 9B are merged; the Phase 9C
+implementation at `c4da7f5` passed canonical full-validation and all CI/Security checks on open PR #43.
+It owns statistical deviation scoring only and does not replace
 Phase 3 factual events, Phase 9B next-pull labels, or future 9D–9H boundaries.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 

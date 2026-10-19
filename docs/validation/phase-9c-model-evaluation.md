@@ -8,6 +8,29 @@ finding tables. Scenario metadata is evaluation-only: it is not written to sourc
 to fit or score. These measurements describe recovery of synthetic patterns, not mechanical
 ground truth, real-car sensitivity, fault probability or diagnostic quality.
 
+## Exact-head GitHub acceptance and benchmark
+
+The canonical `full-validation` run
+[39311720740](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39311720740)
+passed on PR #43 head `c4da7f5df85f6a91e7add628e41c03885bd5f049`. Its downloadable artifact is
+`phase-0-full-validation-c4da7f5df85f6a91e7add628e41c03885bd5f049` (ID `12218816453`); the
+embedded Phase 9C acceptance receipt reports 153 generated FeatureSets, 40 reference rows, 37
+detection runs, 581 findings, 6.161 seconds for feature generation, zero checked-out DB
+connections before close, and 223,465,472 bytes peak evaluator RSS. All predeclared fixture floors,
+including the walk-forward fold, passed. These are synthetic CI engineering results, not a claim of
+real-vehicle accuracy.
+
+The same exact-head artifact's direct thermal scorer measurements are:
+
+| Method           | Nominal 1,000 scored |                   Mixed 1,000 requested | Nominal rate | Mixed rate | Artifact | Traced one-score allocation |
+| ---------------- | -------------------: | --------------------------------------: | -----------: | ---------: | -------: | --------------------------: |
+| Robust MAD       |  1,000 in 0.045451 s | 900 scored, 100 abstained in 0.044900 s |   22,001.5/s | 20,044.4/s |  1,037 B |                     9,951 B |
+| Isolation Forest | 1,000 in 11.412964 s | 900 scored, 100 abstained in 9.867187 s |       87.6/s |     91.2/s | 79,283 B |                   675,101 B |
+
+In the mixed batch Robust MAD flagged all 300 synthetic deviations; Isolation Forest scored all
+300 as inliers. The detector choice remains validation-only and favors Robust MAD for every family.
+The full Phase 9C results and limitations below remain bounded to this controlled fixture.
+
 The first comparison fits eight chronological reference sessions (40 pull FeatureSets), selects
 the method and threshold on validation session 9, and then opens sessions 12 and 13. The test
 folds contain 14 and 16 pulls respectively. Two clean recovery sessions separate validation
@@ -163,7 +186,9 @@ reference policy. No imported labels or accuracy metrics were available.
 
 ## Performance, artifacts and observability
 
-The direct thermal scorer benchmark uses a held-out clean inlier: 1,000 nominal rows and a mixed
+The following table preserves earlier local workstation measurements from a dirty worktree; it is
+not tied to the exact GitHub Actions head above. The exact-head CI measurements are the receipt for
+PR #43. The direct thermal scorer benchmark uses a held-out clean inlier: 1,000 nominal rows and a mixed
 1,000-row batch of 600 clean rows, 300 telemetry perturbations and 100 required-feature
 abstentions. Results are offline workstation measurements, not a production SLO. The IF candidate
 scored the 300 mild benchmark perturbations as inliers; Robust MAD flagged all 300. This agrees

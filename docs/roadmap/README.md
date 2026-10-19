@@ -14,7 +14,7 @@
 - Phase 8 — Technical RAG & Knowledge Intelligence (complete; see acceptance report)
 - Phase 9A — Feature Engineering Foundation (complete; see acceptance report)
 - Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
-- Phase 9C — Anomaly Detection (implementation in progress; exact-head gates pending)
+- Phase 9C — Anomaly Detection (VERIFIED at implementation SHA `c4da7f5`; PR #43 open and unmerged)
 - Phase 9D — Prediction Service (planned)
 - Phase 9E — PredictionEvidence (planned)
 - Phase 9F — Agent Integration (planned)
@@ -33,14 +33,14 @@ This is not a claim of uniform final-source real verification. Final GitHub Acti
 remain separately recorded in the [evaluation report](../validation/phase-7d-real-evaluation.md)
 and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
 feature and dataset foundation; Phase 9B consumes that foundation for offline supervised next-pull
-evaluation. Phases 9C–9H remain deferred.
+evaluation. Phase 9C adds verified offline anomaly scoring. Phases 9D–9H remain planned.
 
 # Current phase
 
 Phases 0–6 passed canonical acceptance. The Phase 7A agent consumes MCP facts and validates
 structured claims. The [Phase 7A gate](../validation/phase-7a-acceptance.md) records executed
 checkpoint evidence and identifies the exact-head delivery receipts.
-Unsupported diagnosis, proven root-cause interpretation, predictive models and future infrastructure remain deferred.
+Diagnosis, proven root-cause interpretation, online prediction services and future infrastructure remain deferred.
 
 ## Phase 7C implementation
 
@@ -87,5 +87,7 @@ support, and freezes method/threshold choices from validation sessions before th
 It does not replace Phase 3 factual event rules or reuse Phase 9B supervised model labels. Follow
 the [architecture](../architecture/phase-9c-anomaly-detection.md), [runbook](../runbooks/anomaly-detection.md),
 the [acceptance report](../validation/phase-9c-acceptance.md), [model evaluation](../validation/phase-9c-model-evaluation.md),
-and [traceability ledger](../validation/phase-9c-traceability-ledger.md). PR-head gates remain pending
-until the final exact-SHA CI receipts are recorded.
+and [traceability ledger](../validation/phase-9c-traceability-ledger.md). PR #43 is open and
+unmerged. Implementation SHA `c4da7f5df85f6a91e7add628e41c03885bd5f049` passed the canonical
+full-validation workflow and all CI/Security checks; run links and artifact evidence are recorded
+in the acceptance report. Phases 9D–9H remain planned and unimplemented.

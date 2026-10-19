@@ -11,18 +11,29 @@ ancestor `105ef5a12f055558c55d87204f3ea5a91af73a13`. Schema change `0015_anomaly
 additive. The acceptance wrapper upgraded from `0014` to head, downgraded to `0014`, and re-upgraded
 to head in a disposable TimescaleDB before evaluation.
 
-| Check                             | Result                                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------- |
-| Focused Phase 9C unit suite       | PASS; `make test-anomalies`, 31 tests                                                 |
-| `make phase9c-acceptance`         | PASS; migration round trip and independent evaluator completed                        |
-| Imported-data compatibility smoke | PASS; 264 features generated; eight fits explicitly rejected for insufficient support |
-| Local canonical gate coverage     | PASS by staged continuation; see regression note below                                |
-| Exact PR-head GitHub checks       | Pending                                                                               |
+| Check                             | Result                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Focused Phase 9C unit suite       | PASS; 31 anomaly tests in the exact-head `quality` job                                         |
+| Disposable DB and evaluator       | PASS; migration round trip, synthetic floors, leakage, artifact, replay and persistence checks |
+| Imported-data compatibility smoke | PASS locally; 264 features generated; eight fits explicitly rejected for insufficient support  |
+| Canonical full validation         | PASS on implementation SHA `c4da7f5`; Docker/full-stack and Phase 0–9C gates                   |
+| CI and Security                   | PASS on implementation SHA `c4da7f5`; quality, E2E, CodeQL, dependency review and Security     |
 
-The latest Phase 9C acceptance produced `.validation/phase9c/acceptance.json` locally. The JSON is
-ignored build evidence; the summarized metrics are in the [model evaluation report](phase-9c-model-evaluation.md).
-Final delivery records the tested commit and exact PR-head checks separately so a dirty-worktree
-run is not presented as a commit-tied receipt.
+The authoritative exact-head receipt is the GitHub Actions artifact from `full-validation` run
+[39311720740](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39311720740),
+artifact `phase-0-full-validation-c4da7f5df85f6a91e7add628e41c03885bd5f049` (artifact ID
+`12218816453`). It records commit `c4da7f5df85f6a91e7add628e41c03885bd5f049`, `execution_state=PASS`,
+153 FeatureSets, 37 detection runs and 581 findings. The artifact summary marks the full gate,
+database/migrations, E2E, security, observability and Phase 9A/9B/9C pipelines `PASS`.
+
+PR [#43](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/43) targets `main`,
+is open and unmerged. Exact-head CI run
+[39311720209](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39311720209)
+passed `quality` and `integration-e2e`; Security run
+[39311720627](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39311720627)
+passed Security, both CodeQL analyses and dependency review. The canonical full-validation run
+took 36m56s. These checks are tied to the exact implementation SHA above; the documentation-only PR update
+will receive its own GitHub checks.
 
 ## Implemented checks
 
@@ -56,7 +67,7 @@ passed in the first run. This is completed gate-by-gate coverage; a single unint
 run is not claimed. The local receipts were created from a dirty worktree and therefore
 are not represented as commit-tied evidence.
 
-The canonical GitHub `full-validation` workflow is the Docker/full-stack executor; its receipt must
-match the final pushed SHA. The PR targets `main` and remains unmerged for the user.
+The canonical GitHub `full-validation` workflow is the Docker/full-stack executor and passed on the
+recorded head. The PR targets `main` and remains unmerged for the user.
 
 See the [traceability ledger](phase-9c-traceability-ledger.md) for section-by-section coverage.
