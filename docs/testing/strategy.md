@@ -180,3 +180,22 @@ dataset materialization time, throughput and process/Python memory. `make featur
 checks live feature/dataset counters and spans plus entity-label redaction. The five targets are
 part of `make verify`; each database-backed target creates and removes an isolated TimescaleDB
 project. No paid Phase 7D run or Phase 8 embedding operation is invoked.
+
+## Phase 9C anomaly gates
+
+`make test-anomalies` runs deterministic detector, cutoff, quality, abstention, artifact and
+threshold unit coverage. `make phase9c-acceptance` creates an isolated TimescaleDB, upgrades from
+revision 0014 through 0015, downgrades and re-upgrades, then generates canonical Phase 9A
+FeatureSets and exercises persisted Phase 9C fitting, validation-only threshold selection,
+held-out scoring, replay identity, artifact tampering, immutable findings, observability and a
+1,000-observation per-method benchmark. An expanding-window check scores session 12 with a model
+frozen on session 9, then validates a later model on session 12 before opening session 13 as its
+test. Clean-control false-positive rates and cross-family injection alarms are reported separately.
+The gate is part of `make verify`
+and the canonical `full-validation` workflow. Synthetic results are engineering-fixture evidence,
+not real-vehicle accuracy. There is no checked-in imported telemetry fixture. For Phase 9C, a
+read-only export of the local development database's CSV sessions was scrubbed and loaded into a
+disposable database. Canonical features generated for all 96 imported sessions and all 264 pulls;
+detector fitting correctly rejected all family/method attempts because no exact cohort met the
+minimum reference support. This was a compatibility and abstention smoke only, with no labels,
+scored model or accuracy claim. Exact counts and scope are in the [Phase 9C evaluation report](../validation/phase-9c-model-evaluation.md).

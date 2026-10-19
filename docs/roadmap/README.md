@@ -12,9 +12,9 @@
 - Phase 7C — Specialist Agent Orchestration (VERIFIED; PR #35 canonical exact-head gates passed)
 - Phase 7D — Real Model Validation & Agent Reliability Baseline (completed with operator-accepted validation caveat; see report)
 - Phase 8 — Technical RAG & Knowledge Intelligence (complete; see acceptance report)
-- Phase 9A — Feature Engineering Foundation (implementation complete; exact-head gates pending)
-- Phase 9B — Predictive Models (offline implementation; exact-head gates pending)
-- Phase 9C — Anomaly Detection (planned)
+- Phase 9A — Feature Engineering Foundation (complete; see acceptance report)
+- Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
+- Phase 9C — Anomaly Detection (implementation in progress; exact-head gates pending)
 - Phase 9D — Prediction Service (planned)
 - Phase 9E — PredictionEvidence (planned)
 - Phase 9F — Agent Integration (planned)
@@ -69,10 +69,23 @@ The 9A branch defines 79 deterministic features, immutable version identity and 
 cutoff-aware pull generation, temporal/leakage validation, bounded reproducible datasets, operator
 CLIs, profiling and observability. It has no model, prediction, public feature API or predictive UI.
 The local independent evaluator, disposable integration, 100-pull benchmark and observability gate
-are recorded in the [Phase 9A acceptance report](../validation/phase-9a-acceptance.md). Exact-head
-GitHub checks and the current PR state determine final completion.
+are recorded in the [Phase 9A acceptance report](../validation/phase-9a-acceptance.md); Phase 9A is
+merged and complete. Phase 9B is also merged and complete as an offline supervised evaluation
+foundation, with its scope and evidence in the [architecture](../architecture/phase-9b-predictive-models.md)
+and [acceptance report](../validation/phase-9b-acceptance.md). Neither phase serves online predictions
+or diagnoses vehicle conditions.
 
-The Phase 9 sequence is deliberately separated: 9B offline predictive models; 9C anomaly detection; 9D
+The Phase 9 sequence is deliberately separated: 9B offline predictive models; 9C offline anomaly detection; 9D
 prediction service; 9E PredictionEvidence; 9F agent integration; 9G evaluation/calibration; 9H
-predictive intelligence UI. Phase 9B is documented in the [architecture](../architecture/phase-9b-predictive-models.md)
-and [acceptance report](../validation/phase-9b-acceptance.md); it adds no online prediction or diagnosis.
+predictive intelligence UI.
+
+## Phase 9C implementation
+
+Phase 9C builds offline statistical deviation detectors over canonical 9A FeatureSets. It keeps
+vehicle/configuration/modification/source cohorts isolated, requires temporal and independent-session
+support, and freezes method/threshold choices from validation sessions before the held-out test.
+It does not replace Phase 3 factual event rules or reuse Phase 9B supervised model labels. Follow
+the [architecture](../architecture/phase-9c-anomaly-detection.md), [runbook](../runbooks/anomaly-detection.md),
+the [acceptance report](../validation/phase-9c-acceptance.md), [model evaluation](../validation/phase-9c-model-evaluation.md),
+and [traceability ledger](../validation/phase-9c-traceability-ledger.md). PR-head gates remain pending
+until the final exact-SHA CI receipts are recorded.

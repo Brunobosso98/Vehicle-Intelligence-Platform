@@ -18,11 +18,16 @@ from vehicle_platform.acquisition.recipes import BY_KEY, BY_OBJECTIVE, RECIPES
 from vehicle_platform.acquisition.stream import BoundedSpool, RawTelemetryMessage
 
 
-def test_provisional_window_is_event_time_bounded_without_discarding_canonical_input() -> None:
+def test_provisional_window_is_event_time_bounded_without_discarding_canonical_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from vehicle_platform.acquisition.worker import StreamConsumer
     from vehicle_platform.analysis.domain import Observation
     from vehicle_platform.core.config import Settings
 
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://vehicle:test-only@127.0.0.1:65432/vehicle_test"
+    )
     worker = StreamConsumer(Mock(), Settings())
     acquisition_id = uuid4()
     newest = datetime(2026, 1, 1, tzinfo=UTC)

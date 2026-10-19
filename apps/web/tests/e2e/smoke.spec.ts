@@ -640,7 +640,9 @@ test("Phase 4 browser reconciles streamed provisional findings to canonical resu
   ).toBeVisible();
   await expect(live.getByLabel("Actual signal quality")).toBeVisible();
   await expect(
-    live.getByText(/^Collector: (connected|disconnected)$/),
+    live.getByText(
+      /^Collector: (connected|disconnected|silent|stalled|not reported)$/,
+    ),
   ).toBeVisible();
   await expect(
     live.getByRole("img", { name: "engine.rpm provisional time-series chart" }),

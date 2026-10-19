@@ -9,6 +9,7 @@ Required branch: `codex/phase-9c-anomaly-detection`.
 Immutable baseline at branch creation: merged `main` SHA `105ef5a12f055558c55d87204f3ea5a91af73a13` (Phase 9B PR #42); Phase 9A PR #41 is also merged.
 
 Phase 9 plan:
+
 - 9A Feature Engineering Foundation — complete
 - 9B Predictive Models — complete
 - **9C Anomaly Detection — THIS TASK**
@@ -43,26 +44,29 @@ A Phase 3 rule-triggered event is different from a Phase 9C model anomaly. Retai
 ## 4. Hard scope boundaries
 
 Implement in 9C:
+
 - governed anomaly detector definitions;
 - versioned offline reference datasets and detector fits;
 - baseline statistical detector plus a bounded nonlinear unsupervised candidate;
 - contextual anomaly evaluation using appropriate vehicle/configuration/history cohorts;
 - offline batch scoring with quality and abstention states;
-- immutable anomaly finding records, explanation-oriented feature contribution metadata *as descriptive associations only*, references and checksums;
+- immutable anomaly finding records, explanation-oriented feature contribution metadata _as descriptive associations only_, references and checksums;
 - independent fixture acceptance, benchmarks, tests, observability, runbooks, model/detector cards, traceability ledger.
 
 Do NOT implement:
+
 - public online prediction/scoring API or automatic streaming service (9D);
 - PredictionEvidence unified/public contract (9E);
 - MCP, agent/supervisor integration (9F);
 - fleet deployment, drift operations or probabilistic calibration program (9G/10);
 - predictive user UI or alert badges (9H);
 - automatic production promotion, retraining, intervention, notifications, ECU write/control, tuning advice, component diagnostics or RUL estimates.
-An **internal offline AnomalyFinding** is allowed in 9C; it is not the future 9E `PredictionEvidence` contract.
+  An **internal offline AnomalyFinding** is allowed in 9C; it is not the future 9E `PredictionEvidence` contract.
 
 ## 5. Detection goals and scenarios
 
 At minimum cover 4 signal families whenever the source supports them:
+
 1. thermal behavior: IAT start/delta, recovery and comparable historic pull trends;
 2. boost/air behavior: peak/mean/rise and deviations in context;
 3. performance: comparable 3,500–4,500 RPM interval behavior and robust comparable baseline;
@@ -75,12 +79,13 @@ Examples must include: atypical thermal rise with otherwise normal boost; boost 
 ## 6. Versioned domain contracts
 
 Define stable, strict schemas, names adapted to repository conventions, for:
+
 - `AnomalyDetectorDefinition`: key, method/family, intent, feature keys, units, expected temporal availability, source capability policy, cohort policy, quality policy, seed, fit parameters, normalization policy, scoring version, thresholds/decision policy, checksums and lifecycle status.
 - `AnomalyReferenceDataset`: immutable Phase 9A dataset definition/checksum, cutoff, feature/version/schema, cohort identity and compatibility predicates, selected row lineage, quality and exclusions, source roles, temporal bounds, fingerprints.
 - `AnomalyDetectorVersion`: detector definition/version/checksum, algorithm/library versions, reference checksum, fitted preprocessing and artifact checksum, training/source role, acceptance state, performance/validation metadata.
 - `AnomalyDetectionRun`: run ID, immutable inputs, cutoff, outputs, counters, timing, algorithm checksum and failure state.
 - `AnomalyFinding`: source FeatureSet/pull/session/vehicle/configuration identity, detector version, observation cutoff, score and direction, decision/status, family, reference cohort summary, features observed/absent, coverage, top associated deviations, reason codes and complete provenance. Include status such as `ANOMALOUS`, `INLIER`, `INSUFFICIENT_REFERENCE`, `INSUFFICIENT_SIGNAL`, `LOW_QUALITY`, `INCOMPATIBLE_CONTEXT`, `UNSUPPORTED_SOURCE`, `NOT_EVALUABLE`.
-Use existing storage abstractions when possible; avoid duplicated Phase 9B tables or ML registries. Add migrations additively after current head; do not edit old migrations. All persisted immutable contracts must have DB/test enforcement and versioned changes rather than silent mutation.
+  Use existing storage abstractions when possible; avoid duplicated Phase 9B tables or ML registries. Add migrations additively after current head; do not edit old migrations. All persisted immutable contracts must have DB/test enforcement and versioned changes rather than silent mutation.
 
 ## 7. Temporal safety and data boundaries
 
@@ -115,6 +120,7 @@ Prevent trivial duplicated/repeated alerts from similar highly correlated deviat
 Unsupervised detectors do not require defect labels to train. To test engineering behavior use controlled synthetic injection/scenario fixtures with **hidden anomaly injection metadata for evaluation only**. Never allow injection identifiers, scenario labels, future labels or synthetic condition flags into fitting or scoring features.
 
 Compare robust baseline and IsolationForest to:
+
 - clean nominal normal data across multiple valid configurations;
 - thermal-only, boost-only, fuel-only, performance-only perturbations;
 - multivariate subtle departures;
@@ -138,6 +144,7 @@ Evaluation should report injection-detection recall, precision/F1 where defined,
 ## 12. CLI and persistence
 
 Implement bounded operator-only commands using project conventions, such as:
+
 - `make test-anomalies`;
 - `make phase9c-acceptance`;
 - `make phase9c-detect` or a safe explicit fit/score CLI;
@@ -151,6 +158,7 @@ Add additive migration and validate fresh upgrade, current Phase 9B head -> new 
 ## 13. Tests and independent acceptance
 
 Tests must include, at minimum:
+
 - family-specific normal/anomaly decisions and deterministic fixtures;
 - missing/unsupported fuel and other sensors, zero/negative/invalid values, null reasons, units;
 - corrupted/late/future input and observation cutoff enforcement;
@@ -178,6 +186,7 @@ Metrics should include fit/score run state and duration, rows eligible/excluded,
 ## 15. Documentation and traceability
 
 Produce and maintain:
+
 - `docs/architecture/phase-9c-anomaly-detection.md`;
 - `docs/validation/phase-9c-acceptance.md`;
 - `docs/validation/phase-9c-model-evaluation.md`;
@@ -199,7 +208,7 @@ Update stale roadmap Phase 9A/9B "pending" statements to their actually merged s
 5. Fix actual regressions without falsifying acceptance. If blocked externally, record exact unmet checks, not success.
 6. Commit on required branch, working tree clean, push to origin, ensure remote HEAD == final local SHA.
 7. Open a PR targeting `main` with summary, design decisions, migration(s), example fixture evidence, detector comparison, false-positive/abstention data, limits, benchmark, all test metrics, security and remote exact-SHA CI receipts. Do not merge: USER merges manually.
-8. After any subsequent fix, rerun relevant gates for the *new* exact final SHA. Check CI quality, integration/E2E, canonical Docker/full-stack, security, CodeQL Python/JS/TS, dependency review and any 9C-specific jobs, resolving failures under your control.
+8. After any subsequent fix, rerun relevant gates for the _new_ exact final SHA. Check CI quality, integration/E2E, canonical Docker/full-stack, security, CodeQL Python/JS/TS, dependency review and any 9C-specific jobs, resolving failures under your control.
 
 ## 17. Definition of done — checklist
 
@@ -227,6 +236,7 @@ Update stale roadmap Phase 9A/9B "pending" statements to their actually merged s
 ## 18. Final report contract
 
 Return in concise but evidence-rich form:
+
 1. required branch, baseline and final SHA;
 2. PR URL/state, migration ID(s);
 3. implemented detector families and approaches, source/horizon/quality policies;
@@ -245,7 +255,6 @@ Only when every mandatory gate truly passes, end the report with:
 Otherwise honestly end with:
 `PHASE 9C — ANOMALY DETECTION: NOT VERIFIED`
 and enumerate exact unresolved blockers. Keep working on fixable failures instead of ending early.
-
 
 ---
 
@@ -361,6 +370,7 @@ An unsupervised historical reference contains data whose true health state is un
 ## 41. Threshold policy
 
 Define separately:
+
 - score threshold construction (e.g. training-reference robust cutoffs or validated clean-reference quantile);
 - threshold selection process (no test optimization);
 - family-specific optional thresholds and exclusions;

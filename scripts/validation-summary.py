@@ -19,6 +19,7 @@ labels = {
     "Phase 7C supervisor": "SUPERVISOR",
     "Phase 7D deterministic harness": "PHASE7D",
     "Phase 8 technical knowledge": "KNOWLEDGE",
+    "Phase 9A/9B/9C offline pipelines": "PHASE9",
 }
 outcome_status = {
     "success": "PASS",

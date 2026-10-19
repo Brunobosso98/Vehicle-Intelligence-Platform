@@ -208,3 +208,17 @@ The impact is constrained by the supported local profile. All published observab
 checked-in configuration enables no TLS or HTTP/2 listener. This reduces the relevant exposure to
 local callers and the isolated Compose network; it does not make the scanner finding disappear.
 Each pinned image remains scheduled for replacement and a fresh full scan before the short expiry.
+
+## 2026-10-19 Alpine expat refresh
+
+A refreshed Trivy 0.75.0 database identified `CVE-2026-77214` in `libexpat` 2.8.5-r0 in the
+cached local TimescaleDB and Kafka images. Alpine 3.23 and 3.24 publish the fixed `libexpat`
+2.9.0-r0 package. Both image build recipes now install that exact package version after their
+Alpine upgrade step. The rebuilt TimescaleDB and Kafka images both scan with zero High/Critical
+findings. The immutable upstream TimescaleDB scan remains retained separately and does not
+represent the hardened local runtime.
+
+Trivy's default Java database mirror returned an image-pull credential error in this environment.
+The security script now selects the official GHCR Java database repository explicitly, matching the
+GHCR source already used for Trivy's vulnerability database. The full local `make security` gate
+passed with this source on 2026-10-19.

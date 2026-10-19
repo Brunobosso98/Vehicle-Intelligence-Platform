@@ -2,6 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/lib/wait-http.sh
+# These probes target services bound to loopback; never route them through an HTTP proxy.
+export NO_PROXY="${NO_PROXY:+${NO_PROXY},}localhost,127.0.0.1,::1"
+export no_proxy="${no_proxy:+${no_proxy},}localhost,127.0.0.1,::1"
 mkdir -p .validation/summary
 curl -fsS http://127.0.0.1:8000/health/live > .validation/summary/api-live.json
 curl -fsS http://127.0.0.1:8000/health/ready > .validation/summary/api-ready.json
