@@ -13,11 +13,11 @@ to head in a disposable TimescaleDB before evaluation.
 
 | Check                             | Result                                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------- |
-| Focused Phase 9C unit suite       | Pending full local regression command below                                           |
+| Focused Phase 9C unit suite       | PASS; `make test-anomalies`, 31 tests                                                 |
 | `make phase9c-acceptance`         | PASS; migration round trip and independent evaluator completed                        |
 | Imported-data compatibility smoke | PASS; 264 features generated; eight fits explicitly rejected for insufficient support |
-| `make verify`                     | Pending                                                                               |
-| Exact PR-head GitHub checks       | Pending push and PR creation                                                          |
+| Local canonical gate coverage     | PASS by staged continuation; see regression note below                               |
+| Exact PR-head GitHub checks       | Pending                                                                               |
 
 The latest Phase 9C acceptance produced `.validation/phase9c/acceptance.json` locally. The JSON is
 ignored build evidence; the summarized metrics are in the [model evaluation report](phase-9c-model-evaluation.md).
@@ -47,8 +47,16 @@ before engine close.
 
 ## Regression and handoff status
 
-The full local regression result and final commit are added after `make verify` completes. The
-canonical GitHub `full-validation` workflow is the Docker/full-stack executor; its receipt must
+The first local `make verify` run passed through Phase 9A and stopped at Phase 9B because the
+validation wrapper did not export the recorded Git SHA. The wrapper was corrected and
+`make phase9b-acceptance` passed in isolation. The remaining gates were then resumed individually:
+anomaly tests, Phase 9C acceptance, stream recovery, stack and E2E checks, live-stream benchmark,
+security, observability and documentation all passed. Earlier gates through Phase 9A had already
+passed in the first run. This is completed gate-by-gate coverage; a single uninterrupted `make verify`
+run is not claimed. The local receipts were created from a dirty worktree and therefore
+are not represented as commit-tied evidence.
+
+The canonical GitHub `full-validation` workflow is the Docker/full-stack executor; its receipt must
 match the final pushed SHA. The PR targets `main` and remains unmerged for the user.
 
 See the [traceability ledger](phase-9c-traceability-ledger.md) for section-by-section coverage.
