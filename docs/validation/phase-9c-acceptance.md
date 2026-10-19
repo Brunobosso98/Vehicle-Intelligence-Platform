@@ -16,7 +16,7 @@ to head in a disposable TimescaleDB before evaluation.
 | Focused Phase 9C unit suite       | PASS; `make test-anomalies`, 31 tests                                                 |
 | `make phase9c-acceptance`         | PASS; migration round trip and independent evaluator completed                        |
 | Imported-data compatibility smoke | PASS; 264 features generated; eight fits explicitly rejected for insufficient support |
-| Local canonical gate coverage     | PASS by staged continuation; see regression note below                               |
+| Local canonical gate coverage     | PASS by staged continuation; see regression note below                                |
 | Exact PR-head GitHub checks       | Pending                                                                               |
 
 The latest Phase 9C acceptance produced `.validation/phase9c/acceptance.json` locally. The JSON is
