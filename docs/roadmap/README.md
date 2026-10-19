@@ -13,7 +13,7 @@
 - Phase 7D — Real Model Validation & Agent Reliability Baseline (completed with operator-accepted validation caveat; see report)
 - Phase 8 — Technical RAG & Knowledge Intelligence (complete; see acceptance report)
 - Phase 9A — Feature Engineering Foundation (implementation complete; exact-head gates pending)
-- Phase 9B — Predictive Models (next)
+- Phase 9B — Predictive Models (offline implementation; exact-head gates pending)
 - Phase 9C — Anomaly Detection (planned)
 - Phase 9D — Prediction Service (planned)
 - Phase 9E — PredictionEvidence (planned)
@@ -32,7 +32,8 @@ Phase 7D is closed by operator acceptance: all 120 slots have PASS across rounds
 This is not a claim of uniform final-source real verification. Final GitHub Actions results
 remain separately recorded in the [evaluation report](../validation/phase-7d-real-evaluation.md)
 and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
-feature and dataset foundation; 9B–9H remain deferred until 9A final-head acceptance is complete.
+feature and dataset foundation; Phase 9B consumes that foundation for offline supervised next-pull
+evaluation. Phases 9C–9H remain deferred.
 
 # Current phase
 
@@ -71,6 +72,7 @@ The local independent evaluator, disposable integration, 100-pull benchmark and 
 are recorded in the [Phase 9A acceptance report](../validation/phase-9a-acceptance.md). Exact-head
 GitHub checks and the current PR state determine final completion.
 
-The Phase 9 sequence is deliberately separated: 9B predictive models; 9C anomaly detection; 9D
+The Phase 9 sequence is deliberately separated: 9B offline predictive models; 9C anomaly detection; 9D
 prediction service; 9E PredictionEvidence; 9F agent integration; 9G evaluation/calibration; 9H
-predictive intelligence UI. No later subphase is implemented by 9A.
+predictive intelligence UI. Phase 9B is documented in the [architecture](../architecture/phase-9b-predictive-models.md)
+and [acceptance report](../validation/phase-9b-acceptance.md); it adds no online prediction or diagnosis.

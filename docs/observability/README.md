@@ -180,3 +180,15 @@ and dataset build. Span attributes contain versions and aggregate counts only. `
 feature-observability` performs real generation, a deliberate cutoff rejection and dataset build in
 a fresh disposable database, then asserts rendered metric series, expected spans and the absence
 of entity identifiers. It does not rely on configuration-only instrumentation claims.
+
+## Phase 9B offline model pipeline
+
+The model pipeline exports bounded training-run and failure counters, label exclusions, candidate
+and evaluation counts, dataset-row histograms, candidate-training duration and artifact-size
+histograms. Labels contain only task, candidate family, model state and bounded reason categories;
+dataset/model identifiers, checksums, VINs, vehicle/configuration/session/pull IDs, feature values,
+raw samples and credentials are excluded. Traces cover dataset materialization, label generation,
+temporal splitting, leakage validation, candidate training, validation selection, final test
+evaluation, artifact staging and model registration. `make model-observability` runs the disposable
+acceptance and checks rendered metrics, observed spans and entity-ID exclusion. Evidence is written
+to ignored `.validation/phase9b/acceptance.json`.

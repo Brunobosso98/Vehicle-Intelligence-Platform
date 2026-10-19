@@ -230,6 +230,18 @@ class Telemetry:
         self.dataset_build_duration = meter.create_histogram(
             "features.dataset.build.duration", unit="s"
         )
+        # Phase 9B labels are bounded task, candidate family, and outcome vocabularies.
+        # Dataset/model IDs, VINs, pull IDs, and checksums must never be metric attributes.
+        self.training_runs = meter.create_counter("ml.training.runs", unit="{run}")
+        self.training_failures = meter.create_counter("ml.training.failures", unit="{failure}")
+        self.label_exclusions = meter.create_counter("ml.labels.exclusions", unit="{row}")
+        self.candidate_models = meter.create_counter("ml.candidate.models", unit="{model}")
+        self.model_evaluations = meter.create_counter("ml.model.evaluations", unit="{evaluation}")
+        self.dataset_rows_training = meter.create_histogram("ml.dataset.rows", unit="{row}")
+        self.candidate_training_duration = meter.create_histogram(
+            "ml.candidate.training.duration", unit="s"
+        )
+        self.model_artifact_size = meter.create_histogram("ml.artifact.size", unit="By")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

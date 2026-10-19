@@ -28,3 +28,13 @@ scans every exact Compose image into `.validation/security/images`, then evaluat
 `scripts/security-policy.py`. Policy decisions are emitted under `.validation/security/policy` so an
 accepted High remains visible in evidence. The reduced target does not imply that image security
 passed; image results remain `CI REQUIRED` outside Docker-capable CI.
+
+Phase 9B pins and locks scikit-learn and its runtime dependencies. The artifact store accepts only a
+fixed estimator-family allowlist, writes atomically under the fixed ignored
+`apps/api/.artifacts/phase9b/` root, caps files at 50 MiB, and verifies path, checksum, registry
+identity, task/spec, runtime libraries and exact schema before loading. Joblib has pickle semantics:
+the loader is restricted to application-created, registry-backed files and must never accept
+caller-supplied artifacts. Offline inference validates feature order, units, missingness and
+quality. Training is CLI-only and refuses a production environment; no network serving or vehicle
+control is introduced. See the [Phase 9B architecture](../architecture/phase-9b-predictive-models.md)
+and [artifact ADR](../adr/0034-internal-model-artifacts.md).
