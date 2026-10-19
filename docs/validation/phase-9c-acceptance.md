@@ -35,6 +35,15 @@ passed Security, both CodeQL analyses and dependency review. The canonical full-
 took 36m56s. These checks are tied to the exact implementation SHA above; the documentation-only PR update
 will receive its own GitHub checks.
 
+The follow-up full-validation run
+[39318460562](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/39318460562)
+reached its configured 60-minute job limit during the Phase 9B acceptance and canceled the remaining
+Phase 9 checks. Its artifact records Phase 0–8 as `PASS` and Phase 9 as `NOT RUN`; the job log shows
+Phase 9A completed and all 59 Phase 9B unit tests passed before cancellation. The unfinished targeted
+work was then run locally on that same commit: `make phase9b-acceptance` passed in 106.9 seconds,
+`make test-anomalies` passed all 31 tests, and `make phase9c-acceptance` returned `PASS`. The full
+workflow timeout is raised to 90 minutes so the canonical rerun can finish the complete sequence.
+
 ## Implemented checks
 
 - Four separate families: thermal, boost/air, performance and fuel.
