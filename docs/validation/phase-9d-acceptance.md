@@ -26,20 +26,20 @@ HTTP access requires a high-entropy bearer token and a configured trusted privat
 
 All scores below came from the controlled deterministic synthetic engineering fixture. The three supervised results matched the direct offline `offline_predict` score, threshold and decision; each test also confirmed concurrent identical replay returned one receipt:
 
-| 9B task | Score | Threshold | Decision | Direct offline equality |
-| --- | ---: | ---: | --- | --- |
-| `NEXT_PULL_FUEL_DEVIATION` | 0.43708480469450384 | 0.4 | true | Pass |
-| `NEXT_PULL_PERFORMANCE_DEGRADATION` | 0.8055818793149994 | 0.45 | true | Pass |
-| `NEXT_PULL_THERMAL_DEGRADATION` | 0.15729718872208986 | 0.5 | false | Pass |
+| 9B task                             |               Score | Threshold | Decision | Direct offline equality |
+| ----------------------------------- | ------------------: | --------: | -------- | ----------------------- |
+| `NEXT_PULL_FUEL_DEVIATION`          | 0.43708480469450384 |       0.4 | true     | Pass                    |
+| `NEXT_PULL_PERFORMANCE_DEGRADATION` |  0.8055818793149994 |      0.45 | true     | Pass                    |
+| `NEXT_PULL_THERMAL_DEGRADATION`     | 0.15729718872208986 |       0.5 | false    | Pass                    |
 
 Each of the four 9C families matched the canonical `AnomalyService.score_detector_version` finding, run, score/threshold and status. The robust-MAD validation threshold was 3.5 for each family:
 
-| 9C family | Score | Status | Result |
-| --- | ---: | --- | --- |
-| `boost_air` | 0.3372453797382976 | `INLIER` | Direct 9C equality |
-| `fuel` | 1.3489815189531904 | `INLIER` | Direct 9C equality |
-| `performance` | 0.0 | `INLIER` | Direct 9C equality |
-| `thermal` | unavailable | `ABSTAINED_INSUFFICIENT_SIGNAL` | Direct 9C abstention equality |
+| 9C family     |              Score | Status                          | Result                        |
+| ------------- | -----------------: | ------------------------------- | ----------------------------- |
+| `boost_air`   | 0.3372453797382976 | `INLIER`                        | Direct 9C equality            |
+| `fuel`        | 1.3489815189531904 | `INLIER`                        | Direct 9C equality            |
+| `performance` |                0.0 | `INLIER`                        | Direct 9C equality            |
+| `thermal`     |        unavailable | `ABSTAINED_INSUFFICIENT_SIGNAL` | Direct 9C abstention equality |
 
 Coverage was 5/5 scored for every eligible supervised task, 5/5 for `boost_air`, 4/4 for fuel anomaly and 5/5 for performance anomaly. Thermal anomaly had 5/5 authorized and admitted requests and abstained on all five for insufficient signal. Separate missing-fuel, missing-as-of-FeatureSet and low-quality cases abstained. No eligible request failed in the coverage set.
 

@@ -16,11 +16,11 @@ The final machine report is `validation-artifacts/phase9d/acceptance.json` from 
 
 All three supervised tasks matched direct offline inference; concurrent identical replay returned the same receipt:
 
-| Task | Score | Threshold | Decision | Direct equality |
-| --- | ---: | ---: | --- | --- |
-| `NEXT_PULL_FUEL_DEVIATION` | 0.43708480469450384 | 0.4 | true | Pass |
-| `NEXT_PULL_PERFORMANCE_DEGRADATION` | 0.8055818793149994 | 0.45 | true | Pass |
-| `NEXT_PULL_THERMAL_DEGRADATION` | 0.15729718872208986 | 0.5 | false | Pass |
+| Task                                |               Score | Threshold | Decision | Direct equality |
+| ----------------------------------- | ------------------: | --------: | -------- | --------------- |
+| `NEXT_PULL_FUEL_DEVIATION`          | 0.43708480469450384 |       0.4 | true     | Pass            |
+| `NEXT_PULL_PERFORMANCE_DEGRADATION` |  0.8055818793149994 |      0.45 | true     | Pass            |
+| `NEXT_PULL_THERMAL_DEGRADATION`     | 0.15729718872208986 |       0.5 | false    | Pass            |
 
 All four anomaly families matched direct 9C output. Threshold was 3.5 for each robust-MAD detector; `boost_air`, `fuel` and `performance` returned `INLIER` scores 0.3372453797382976, 1.3489815189531904 and 0.0 respectively. `thermal` returned no score and `ABSTAINED_INSUFFICIENT_SIGNAL`, matching the canonical 9C result. Coverage was 5/5 for each supervised task, 5/5 for boost-air anomaly, 4/4 for fuel anomaly, 5/5 for performance anomaly and 0/5 scored for thermal anomaly (all five abstained for insufficient signal). Separate missing-fuel, missing-as-of-FeatureSet and low-quality examples abstained.
 
