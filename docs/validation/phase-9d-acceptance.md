@@ -1,8 +1,10 @@
 # Phase 9D acceptance record
 
-Status: local Phase 9D and full ordered acceptance targets passed on the working tree based on
-`e438bc1fc8c30acc940f0368fe42d8037a298b0e`. The final commit, exact-head CI, required PR checks
-and open-PR state remain pending; Phase 9D is **not yet verified**.
+Status: local Phase 9D and full ordered acceptance targets passed against implementation commit
+`2d6a23a9785a42306a4d35a905c9bd10a1e922a5`. PR [#44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44)
+is open against `main` and remains unmerged. Its exact-head checks are authoritative; this report
+metadata update will produce a new PR head, so verification requires checks to pass on that final
+head. Phase 9D is **not yet verified**.
 
 ## Scope and baseline
 
@@ -23,16 +25,16 @@ offline inference helpers, performs a 0015 → 0016 → 0015 → 0016 compatibil
 checks auth, approvals, temporal boundaries, artifact tampering, idempotency, immutable receipts,
 resource bounds and observability.
 
-| Gate                                     | Required evidence                | State                                                             |
-| ---------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
-| Focused unit suite                       | `make test-prediction-service`   | PASS locally; 35 tests                                            |
-| API quality/type/coverage                | `make check-api`                 | PASS locally; 1,192 tests, 95.24% line, 90.16% branch coverage    |
-| Generated contract consistency           | `make contracts-check`           | PASS locally                                                      |
-| Disposable database evaluator            | `make phase9d-acceptance`        | PASS locally; exact-head CI pending                               |
-| Cloud-compatible prior-phase regressions | `make verify-cloud`              | PASS locally                                                      |
-| Ordered Docker/full-stack/security suite | `make verify` targets            | PASS locally as ordered targets; wrapper caveat below; CI pending |
-| CodeQL/dependency review                 | Required PR checks               | CI REQUIRED; exact-head run pending                               |
-| PR state                                 | PR open, target `main`, unmerged | Pending                                                           |
+| Gate                                     | Required evidence                | State                                                                                 |
+| ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
+| Focused unit suite                       | `make test-prediction-service`   | PASS locally; 35 tests                                                                |
+| API quality/type/coverage                | `make check-api`                 | PASS locally; 1,192 tests, 95.24% line, 90.16% branch coverage                        |
+| Generated contract consistency           | `make contracts-check`           | PASS locally                                                                          |
+| Disposable database evaluator            | `make phase9d-acceptance`        | PASS locally; exact-head CI pending                                                   |
+| Cloud-compatible prior-phase regressions | `make verify-cloud`              | PASS locally                                                                          |
+| Ordered Docker/full-stack/security suite | `make verify` targets            | PASS locally as ordered targets; wrapper caveat below; CI pending                     |
+| CodeQL/dependency review                 | Required PR checks               | CI REQUIRED; exact-head run pending                                                   |
+| PR state                                 | PR open, target `main`, unmerged | PASS; [PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44) |
 
 Local evaluator receipt: `.validation/phase9d/acceptance.json` (`execution_state=PASS`, 49 receipts,
 8 approved bindings). The run preserved digests for all 17 legacy tables through
@@ -78,5 +80,7 @@ ordered targets were completed. Phase 4 recovery was rerun with loopback added t
 the inherited proxy returned 403 for a local request. The final exact-head GitHub workflow remains
 required and is the authoritative full-validation result.
 
-Update this report with the final commit SHA, PR URL/state, command receipts, exact-head workflow
-URLs and every blocked gate after those checks finish.
+The exact-head check status and workflow run links are tracked in the [PR #44 checks view](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44#checks).
+The first check set is for implementation commit `2d6a23a9785a42306a4d35a905c9bd10a1e922a5`;
+it is superseded when this metadata update is committed. Re-evaluate every required gate on the
+final PR head before marking this delivery verified.
