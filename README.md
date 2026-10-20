@@ -167,5 +167,16 @@ Run `make test-features`, `make test-feature-integration`, `make phase9a-accepta
 disposable TimescaleDB for database-backed checks. `make verify` includes all five Phase 9A gates.
 Phase 9B adds only the offline supervised model-training and evaluation foundation for observable
 next-pull behavior. It does not diagnose failures, serve predictions, or control the vehicle.
-Phases 9C–9H remain deferred. See the [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
-[training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md).
+The Phase 9C implementation at `c4da7f5` is **VERIFIED**; its canonical full-validation, CI and
+Security checks passed on open PR #43. It adds offline anomaly scoring against exact same-vehicle/configuration/source
+references. Scores are statistical deviations, not fault diagnoses or failure probabilities.
+Phase 9D–9H remain planned. See the [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
+[training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
+plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
+[runbook](docs/runbooks/anomaly-detection.md), [acceptance report](docs/validation/phase-9c-acceptance.md),
+[model evaluation](docs/validation/phase-9c-model-evaluation.md), and
+[traceability ledger](docs/validation/phase-9c-traceability-ledger.md).
+
+Run `make test-anomalies` and `make phase9c-acceptance` for focused 9C checks. The acceptance
+uses a fresh disposable TimescaleDB and records controlled synthetic evidence under ignored
+`.validation/phase9c/`.

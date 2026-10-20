@@ -11,7 +11,7 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: phase4-stack-acceptance phase1-acceptance phase2-acceptance phases-0-5-acceptance help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check test-features phase9a-acceptance test-feature-integration benchmark-features feature-observability test-models phase9b-acceptance phase9b-train benchmark-models model-observability
+.PHONY: phase4-stack-acceptance phase1-acceptance phase2-acceptance phases-0-5-acceptance help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check test-features phase9a-acceptance test-feature-integration benchmark-features feature-observability test-models phase9b-acceptance phase9b-train benchmark-models model-observability test-anomalies phase9c-acceptance benchmark-anomalies anomaly-observability
 help:
 	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
@@ -38,12 +38,12 @@ format:
 	$(API)/ruff format apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	pnpm format
 typecheck:
-	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py
 	pnpm --filter @vehicle-platform/web typecheck
 check-api:
 	$(API)/ruff check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/ruff format --check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
-	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py
 	$(API)/pytest apps/api/tests/unit --cov=vehicle_platform --cov-config=apps/api/pyproject.toml --cov-branch --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
 	$(API)/python scripts/check_coverage.py
 check-web:
@@ -121,6 +121,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) phase8-acceptance test-knowledge-e2e benchmark-knowledge knowledge-observability
 	$(MAKE) phase9a-acceptance test-features test-feature-integration benchmark-features feature-observability
 	$(MAKE) test-models phase9b-acceptance
+	$(MAKE) test-anomalies phase9c-acceptance
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -180,7 +181,8 @@ phase7c-acceptance:
 test-supervisor-e2e: build
 	bash scripts/mcp-validation.sh scripts/supervisor_browser_e2e.py
 benchmark-supervisor:
-	bash scripts/mcp-validation.sh scripts/benchmark_supervisor.py
+	# Concurrent tool fan-out can exceed the default 25s deadline on local Docker.
+	VIP_AGENT_SPECIALIST_TIMEOUT=45 bash scripts/mcp-validation.sh scripts/benchmark_supervisor.py
 supervisor-observability: containers
 	bash scripts/mcp-validation.sh scripts/observability_supervisor.py
 
@@ -243,3 +245,12 @@ benchmark-models: phase9b-acceptance
 	$(API)/python scripts/benchmark_predictive_models.py
 model-observability: phase9b-acceptance
 	$(API)/python scripts/check_ml_observability.py
+
+test-anomalies:
+	$(API)/pytest apps/api/tests/unit/test_anomalies.py
+phase9c-acceptance:
+	bash scripts/phase9c-validation.sh
+benchmark-anomalies:
+	bash scripts/phase9c-validation.sh
+anomaly-observability:
+	bash scripts/phase9c-validation.sh

@@ -192,3 +192,14 @@ temporal splitting, leakage validation, candidate training, validation selection
 evaluation, artifact staging and model registration. `make model-observability` runs the disposable
 acceptance and checks rendered metrics, observed spans and entity-ID exclusion. Evidence is written
 to ignored `.validation/phase9b/acceptance.json`.
+
+## Phase 9C offline anomaly pipeline
+
+The anomaly service records bounded fit/run state and duration, eligible reference rows and
+exclusions by reason, finding counts by family/method/status, score/threshold distributions and
+artifact bytes. Traces separate reference materialization and eligibility, fit, artifact staging
+and validation, validation threshold selection, target materialization, observation scoring and
+finding persistence. Labels use fixed family, method, lifecycle, status and reason vocabularies;
+they never contain vehicle, VIN, configuration, session, pull, FeatureSet or artifact IDs. The
+independent disposable evaluator verifies actual span capture, rendered anomaly metrics and entity-ID
+absence. Evidence is written beneath ignored `.validation/phase9c/`.

@@ -28,6 +28,7 @@ dependencies = [
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"
 vehicle-mcp = "vehicle_platform.mcp.cli:main"
+vehicle-anomaly = "vehicle_platform.anomalies.cli:main"
 [dependency-groups]
 dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
@@ -56,6 +57,8 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/acquisition/collector.py" = ["E501"] # stable spool wire lines remain single records
 "src/vehicle_platform/features/datasets.py" = ["E501"] # SQL kept intact for lineage review
 "src/vehicle_platform/features/service.py" = ["E501"] # temporal SQL kept intact for review
+"src/vehicle_platform/anomalies/registry.py" = ["E501"] # bounded immutable registry SQL kept intact for review
+"src/vehicle_platform/anomalies/repository.py" = ["E501"] # cutoff and payload preflight SQL kept intact for review
 "src/vehicle_platform/acquisition/cli.py" = ["B008"] # Typer declarative option definitions
 [tool.mypy]
 python_version = "3.12"
@@ -90,6 +93,11 @@ omit = [
  "*/vehicle_platform/ml/registry.py", # immutable model persistence is exercised by DB acceptance
  "*/vehicle_platform/ml/synthetic.py", # canonical telemetry fixture uses real feature generation
  "*/vehicle_platform/ml/artifacts.py", # registry-backed artifact loading is exercised by DB acceptance
+ "*/vehicle_platform/anomalies/repository.py", # exact-cohort SQL queries run against disposable TimescaleDB
+ "*/vehicle_platform/anomalies/registry.py", # immutable version and run persistence require real transactions
+ "*/vehicle_platform/anomalies/service.py", # orchestration and idempotency are exercised by DB acceptance
+ "*/vehicle_platform/anomalies/artifacts.py", # registry-backed artifact loading is exercised by DB acceptance
+ "*/vehicle_platform/anomalies/cli.py", # process entrypoint is covered by CLI acceptance commands
 ]
 [tool.coverage.report]
 fail_under = 90

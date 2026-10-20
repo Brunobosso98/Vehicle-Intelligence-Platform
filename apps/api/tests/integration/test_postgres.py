@@ -131,6 +131,12 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "supervised_dataset_rows",
             "ml_model_versions",
             "training_runs",
+            "anomaly_detector_definitions",
+            "anomaly_reference_datasets",
+            "anomaly_reference_rows",
+            "anomaly_detector_versions",
+            "anomaly_detection_runs",
+            "anomaly_findings",
         }
         assert await connection.scalar(
             text(

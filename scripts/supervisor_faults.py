@@ -183,7 +183,9 @@ async def fault_scenarios(url, stack, fixture, score, counters, execution_score)
             identifier = created.json()["id"]
             task = service.tasks[UUID(identifier)]
             if mode in {"parallel", "cancel"}:
-                async with asyncio.timeout(10):
+                # Allow slow full-stack scheduling while staying below the
+                # specialist timeout, so both provider calls can reach the gate.
+                async with asyncio.timeout(20):
                     await provider.ready.wait()
                 assert provider.entered == {Specialist.PERFORMANCE, Specialist.THERMAL}
                 if mode == "cancel":

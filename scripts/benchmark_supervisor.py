@@ -13,6 +13,9 @@ from supervisor_fixtures import seed_supervisor
 
 async def main():
     url = os.environ["TEST_DATABASE_URL"]
+    specialist_timeout_seconds = float(
+        os.environ.get("VIP_AGENT_SPECIALIST_TIMEOUT", "25")
+    )
     fixture = await seed_supervisor(url)
     measurements = []
     async with (
@@ -137,6 +140,7 @@ async def main():
                 "supervisor_benchmark": "PASS",
                 "provider": "deterministic",
                 "concurrent_runs": 4,
+                "specialist_timeout_seconds": specialist_timeout_seconds,
                 "memory_method": "Linux /proc/PID/status VmRSS snapshot for API and MCP, not peak or per-request allocation",
                 "real_model_latency_measured": False,
                 "real_cost": None,

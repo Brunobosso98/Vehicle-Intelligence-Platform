@@ -242,6 +242,24 @@ class Telemetry:
             "ml.candidate.training.duration", unit="s"
         )
         self.model_artifact_size = meter.create_histogram("ml.artifact.size", unit="By")
+        # Phase 9C labels are closed detector-family, method, lifecycle and status vocabularies.
+        # Never add vehicle, configuration, session, pull, reference or artifact IDs here.
+        self.anomaly_fit_runs = meter.create_counter("anomaly.detector.fits", unit="{fit}")
+        self.anomaly_detection_runs = meter.create_counter("anomaly.detection.runs", unit="{run}")
+        self.anomaly_findings = meter.create_counter("anomaly.findings", unit="{finding}")
+        self.anomaly_fit_duration = meter.create_histogram(
+            "anomaly.detector.fit.duration", unit="s"
+        )
+        self.anomaly_detection_duration = meter.create_histogram(
+            "anomaly.detection.duration", unit="s"
+        )
+        self.anomaly_artifact_size = meter.create_histogram("anomaly.artifact.size", unit="By")
+        self.anomaly_reference_rows = meter.create_histogram("anomaly.reference.rows", unit="{row}")
+        self.anomaly_reference_exclusions = meter.create_counter(
+            "anomaly.reference.exclusions", unit="{row}"
+        )
+        self.anomaly_score = meter.create_histogram("anomaly.score")
+        self.anomaly_threshold = meter.create_histogram("anomaly.threshold")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

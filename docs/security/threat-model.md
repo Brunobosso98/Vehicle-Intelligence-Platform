@@ -190,3 +190,21 @@ workspace; a future network admin surface must add operator authentication/autho
 exposure. Feature provenance retains source entity IDs in the database, while metric labels and
 trace attributes omit them. Missing fuel/sensor data remains null and cannot be supplied by RAG,
 stage labels or inferred targets. No model, diagnosis or vehicle-control path is part of this phase.
+
+## Phase 9C offline anomaly detection
+
+The operator CLI refuses the production environment and has no HTTP, MCP, agent or streaming entry
+point. Reference and score selection require aware cutoffs and fixed-size bounds; references are
+restricted to one vehicle, effective configuration, modification set, source type and role. Feature
+values must be Phase 9A versions available by the cutoff. Future, duplicate, invalid, low-quality,
+missing required-signal and incompatible-context inputs abstain instead of being treated as normal
+or anomalous.
+
+Joblib is trusted code. Phase 9C writes only to the fixed ignored
+`apps/api/.artifacts/phase9c/` root, caps artifacts at 50 MiB, writes atomically, and loads only
+registry-backed detector versions after checking path, checksum, schema, definition and estimator
+allowlist. Caller-supplied paths, pickle payloads and dynamic estimator imports are not accepted.
+Reference sets, detector versions, runs and findings are immutable in the database; run-scoped
+finding identities prevent overlapping batches from reusing a record owned by another run. The
+independent acceptance exercises path traversal, tampering and database immutability. Metrics and
+traces omit VINs, vehicle/session/pull IDs, raw telemetry, matrices, checksums and credentials.

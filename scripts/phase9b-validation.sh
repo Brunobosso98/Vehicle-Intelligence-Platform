@@ -27,7 +27,8 @@ export ENVIRONMENT=test
   .venv/bin/alembic upgrade head)
 evidence=.validation/phase9b
 mkdir -p "$evidence"
-git rev-parse HEAD > "$evidence/commit.txt"
+export GIT_COMMIT_SHA="$(git rev-parse HEAD)"
+printf '%s\n' "$GIT_COMMIT_SHA" > "$evidence/commit.txt"
 if [[ "$entrypoint" == "pytest" ]]; then
   apps/api/.venv/bin/pytest "$@" | tee "$evidence/integration.log"
 else

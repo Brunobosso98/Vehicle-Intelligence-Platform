@@ -18,8 +18,9 @@ but was also built with an older Go toolchain.
 
 Build `vehicle-platform-timescaledb:local` from the exact official TimescaleDB 2.30.2 PostgreSQL 17
 digest. Remove only the unused `timescaledb-parallel-copy` executable. Rebuild gosu 1.19 from its
-checksum-verified source archive and rebuild timescaledb-tune 0.19.0 with a pinned patched Go 1.26.6
-builder. Replace those two helper binaries, apply the available targeted libexpat update, and keep
+checksum-verified source archive and rebuild timescaledb-tune 0.19.0 with a pinned patched Go 1.26.9
+builder. Replace those two helper binaries, install the fixed Alpine `libexpat` version `2.9.0-r0`,
+and keep
 all compilers and source outside the final stage. Run the final database container as the inherited
 `postgres` user; the official image prepares the data directory for that UID, while gosu remains
 available for compatibility with the inherited entrypoint.

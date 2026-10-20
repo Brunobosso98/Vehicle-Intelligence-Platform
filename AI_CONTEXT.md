@@ -8,6 +8,12 @@
 - `apps/api/src/vehicle_platform/analysis`: deterministic pull and segment analysis.
 - `apps/api/src/vehicle_platform/events`: factual event detectors and evidence.
 - `apps/api/src/vehicle_platform/analytics`: Phase 5 comparisons, baselines and trends.
+- `apps/api/src/vehicle_platform/features`: Phase 9A versioned canonical feature generation,
+  provenance, cutoffs, dataset materialization, profiling and export.
+- `apps/api/src/vehicle_platform/ml`: Phase 9B supervised next-pull labels, splits, training,
+  trusted artifacts and offline model registry.
+- `apps/api/src/vehicle_platform/anomalies`: Phase 9C detector definitions, eligible reference
+  cohorts, offline fitting/scoring, artifact validation and immutable findings.
 - `apps/api/src/vehicle_platform/acquisition`: read-only hardware collection and streaming.
   `capabilities.py` reads authenticated collector capability snapshots or operator-attested
   local preflight reports for the same vehicle/configuration/source; a recorded session alone
@@ -27,6 +33,9 @@
   bounded public stream event tables.
 - `apps/api/migrations/versions/0010_investigation.py`: additive source preflight,
   investigation plan, session-link and replay event tables.
+- `apps/api/migrations/versions/0013_feature_datasets.py`,
+  `0014_predictive_models.py`, and `0015_anomaly_detection.py`: additive Phase 9A/9B/9C
+  persistence. Phase 9C findings and reference rows are immutable.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
@@ -40,6 +49,10 @@
   `scripts/agent_browser_e2e.py`: bounded local HTTP runtime and actual MCP/API/browser gates.
 - `scripts/evaluate_investigation.py`: independent disposable database HTTP/MCP golden
   investigation and follow-up evaluator, including an explicit finalized-session fixture.
+- `scripts/evaluate_anomaly_detection.py`, `scripts/phase9c-validation.sh`: independent
+  disposable-DB Phase 9C evaluator and upgrade/downgrade/re-upgrade wrapper.
+- `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
+  artifact, threshold and bounded-input unit tests.
 - `scripts/investigation_browser_e2e.py`, `apps/web/tests/e2e/investigation.spec.ts`:
   browser journey for review, explicit approval, real Phase 4 synthetic capture through
   Kafka and the stream consumer, finalized session linkage, grounded follow-up, evidence
@@ -77,9 +90,11 @@ No vehicle control, unsupported diagnosis or RAG functionality is implemented.
 Phase 7B implements a bounded investigation workflow. Its semantic needs resolve only through
 known canonical signals and existing Phase 4 recipe/preflight contracts. Approval precedes
 acquisition readiness; finalized session linkage creates a separate grounded follow-up run.
-Phase 7C specialists and Phase 8 RAG remain deferred. Checkpoint evidence is in
-docs/validation/phase-7b-acceptance.md and its traceability ledger; the exact final-SHA receipt
-belongs in the open PR after local and remote gates finish.
+Phase 7C and Phase 8 are complete; Phase 7D retains its operator-accepted unified-final-suite
+caveat. Evidence is in their validation reports. Phase 9A and 9B are merged; the Phase 9C
+implementation at `c4da7f5` passed canonical full-validation and all CI/Security checks on open PR #43.
+It owns statistical deviation scoring only and does not replace
+Phase 3 factual events, Phase 9B next-pull labels, or future 9D–9H boundaries.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -87,64 +102,20 @@ See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-
 Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`,
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
-The canonical GitHub `full-validation` workflow includes the Phase 7B investigation acceptance,
-real capture browser journey, benchmark, observability and a clean-state repeat at the PR SHA.
+The canonical GitHub `full-validation` workflow covers the completed Phase 7/8/9A/9B gates; Phase
+9C adds `make test-anomalies` and `make phase9c-acceptance`. Docker-dependent checks require the
+canonical Docker runner. Do not claim a gate passed without its executed receipt.
 
-## Phase 8 implementation in progress
+## Current implementation map
 
-- `apps/api/src/vehicle_platform/knowledge`: documentary trust/applicability contracts,
-  safe controlled source acquisition and structure-aware extraction. It owns knowledge data,
-  never observed vehicle facts; source documents stay in ignored `.knowledge/` storage.
-- `apps/api/migrations/versions/0011_technical_knowledge.py`: additive source/document/index
-  versioning, chunk FTS, pgvector embeddings, source conflicts and retrieval audit.
-- `apps/api/migrations/versions/0012_knowledge_metadata_versions.py`: permits immutable
-  applicability/source-verification revisions with unchanged text, preserving embedding reuse.
-- `docs/adr/0030-technical-knowledge-storage-and-provenance.md`: PostgreSQL/vector,
-  evidence and trust boundaries, copyright handling and embedding identity decisions.
-
-Phase 8 is under implementation and is not verified. Phase 7C is delivered; Phase 7D retains
-its operator-accepted unified-final-suite caveat. The older feature-map references to deferred
-7C describe historical 7B delivery, not the current baseline.
-
-- `scripts/evaluate_knowledge.py`: independent disposable PostgreSQL/pgvector core retrieval
-  evaluator with clearly synthetic free vectors; full Phase 8 hybrid acceptance remains pending.
-- `docs/knowledge/n55-source-research.md`, `n55-source-manifest.json`: controlled public-source
-  research, provenance, copyright decisions and unresolved calibration/source conflicts.
-- `docs/architecture/phase-8-technical-rag.md`, `docs/validation/phase-8-acceptance.md` and its
-  traceability ledger: current implementation boundaries and incomplete mandatory gates.
-
-- `knowledge/routes.py`: bounded source/document/index catalog, MCP-scoped query and
-  vehicle-isolated retrieval inspection; source acquisition remains operator-only.
-- `knowledge/tools.py`, `knowledge/grounding.py`: application-owned specialist topic policy,
-  vehicle/knowledge/hybrid request planning and validated documentary-reference rendering.
-- `apps/web/src/components/knowledge-workspace.tsx`: engineering corpus catalog and citation
-  inspection, shared with the agent workspace's distinct Knowledge Evidence presentation.
-
-- `scripts/evaluate_knowledge_retrieval.py`, `docs/knowledge/n55-retrieval-golden.json`: 60 authored
-  source-relevance/applicability cases; cache-only real evaluation and separately labelled free
-  synthetic-vector experiments. Neither evaluation mode calls OpenAI.
-- `scripts/prepare_knowledge_corpus.py`, `scripts/phase8_embed.py`: reviewed local corpus
-  reconstruction and explicitly confirmed paid embedding with persistent cumulative spend ledger,
-  changed-text reuse and atomic complete-corpus publication.
-- `docs/runbooks/knowledge-ingestion.md`, `knowledge-refresh.md`: acquisition/review, immutable
-  versions, budget/cache recovery and controlled operator-reviewed refresh.
-- `knowledge/queries.py`: cache-only query embeddings by default; explicit paid-query opt-in uses
-  the same durable USD 2 ledger and fixed model/dimensions. Test applications deny paid queries
-  regardless of inherited flags. Query/cache SQLite I/O runs outside the event loop.
-- `scripts/benchmark_knowledge.py`, `observability_knowledge.py`, `knowledge_browser_e2e.py`,
-  `apps/web/tests/e2e/knowledge.spec.ts`: disposable retrieval benchmark, delivered retrieval/MCP
-  tracing and metrics, and actual browser/API/MCP source/citation/gap journeys.
-- `scripts/knowledge_ingestion_probe.py`, `infra/docker/observability/prometheus-knowledge.yaml`:
-  disposable operator instrumentation probe. Its SDK transport is synthetic and cannot access
-  the network; its separate fixture ledger never replaces the operator's cumulative paid ledger.
-- `scripts/check_knowledge_security.py`: exact raw-source checksum review before narrowly scoped
-  publisher-token scan exceptions; streaming actual-key checks across local corpus artifacts.
-
-- Phase 8 real embedding checkpoint (2026-10-15): local confirmed smoke/build and zero-call
-  cache resume executed within USD 2; sixty real-vector cases passed with runtime cache-only
-  query encoding. Detailed cost/quality receipts and remaining gates are in
-  `docs/validation/phase-8-acceptance.md`. This does not establish final committed-head acceptance.
-- `scripts/refresh_knowledge_source.py`: operator-only source acquisition into immutable refresh
-  candidates, checksum-bound review decisions and reconstruction manifests. It cannot replace
-  approved raw files, the current corpus or an active database index. Reviewed reconstruction
-  and complete atomic publication remain separate explicit commands.
+- Phase 8 knowledge retrieval lives in `apps/api/src/vehicle_platform/knowledge`; its source
+  documents and local index remain separate from observed vehicle facts.
+- Phase 9A features and datasets live in `features`; Phase 9B supervised labels and training live
+  in `ml`. Both are merged offline foundations.
+- Phase 9C anomalies reads only canonical 9A FeatureSets, keeps one vehicle/configuration/
+  modification/source cohort, and persists statistical findings without fault diagnosis. No 9C
+  agent, MCP, API, streaming, production promotion, or predictive UI integration exists.
+- Phase 9C architecture, ADRs 0035–0038, runbook, acceptance report, evaluation report, model
+  cards and traceability ledger live under `docs/architecture`, `docs/adr`, `docs/runbooks`,
+  `docs/validation` and `docs/ml/anomaly-detectors`.
+- Phases 9D–9H remain planned.

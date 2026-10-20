@@ -2,6 +2,7 @@ FROM docker.io/apache/kafka:4.2.2@sha256:1213eb3943d551e5ed1fca7a4e109001cee3577
 
 USER root
 RUN apk upgrade --no-cache libexpat \
+ && apk add --no-cache 'libexpat=2.9.0-r0' \
  && wget -q https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.21.7/jackson-core-2.21.7.jar -O /tmp/jackson-core.jar \
  && wget -q https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.21.7/jackson-databind-2.21.7.jar -O /tmp/jackson-databind.jar \
  && wget -q https://repo.maven.apache.org/maven2/at/yawk/lz4/lz4-java/1.11.4/lz4-java-1.11.4.jar -O /tmp/lz4-java.jar \
