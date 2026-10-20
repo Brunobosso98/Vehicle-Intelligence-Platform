@@ -1909,6 +1909,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "scikit-learn" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "threadpoolctl" },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1946,6 +1947,7 @@ requires-dist = [
     { name = "python-multipart", specifier = "==0.0.31" },
     { name = "scikit-learn", specifier = "==1.9.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.54" },
+    { name = "threadpoolctl", specifier = "==3.7.0" },
     { name = "typer", specifier = "==0.21.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.54.0" },
 ]

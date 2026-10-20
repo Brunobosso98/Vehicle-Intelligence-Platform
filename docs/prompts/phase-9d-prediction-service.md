@@ -26,6 +26,7 @@ This is the FIRST controlled service boundary around offline intelligence. It is
 ## 2. Read authoritative prior phase artifacts
 
 Inspect, not merely summarize:
+
 - docs/prompts/phase-9a-feature-engineering-foundation.md and 9A architecture/acceptance;
 - docs/prompts/phase-9b-predictive-models.md and 9B architecture, model cards, evaluator, registry, artifacts and offline_predict;
 - docs/prompts/phase-9c-anomaly-detection.md and 9C architecture, detector cards, service, registry, artifacts, evaluators and accepted threshold model;
@@ -48,6 +49,7 @@ Only genuine persisted FeatureSets produced through validated Phase 9A generatio
 ## 5. Existing Phase 9B supervised contract
 
 9B owns THREE next-compatible-pull engineering classification tasks:
+
 - NEXT_PULL_THERMAL_DEGRADATION;
 - NEXT_PULL_PERFORMANCE_DEGRADATION;
 - NEXT_PULL_FUEL_DEVIATION (source limited).
@@ -83,13 +85,13 @@ No ECU flash, coding, actuators, tuning, vehicle commands, unsafe modifications,
 Create a new narrowly scoped module following project conventions, tentatively vehicle_platform.predictions or vehicle_platform.prediction_service. It orchestrates the existing 9A/9B/9C domains, never copies their formulas or forks their registries.
 
 Suggested flow:
-  HTTP request + auth/rate/body admission
-    -> explicit serving binding lookup and authorization
-    -> vehicle/pull scope, cutoff, snapshot and compatibility checks
-    -> registered immutable artifact load / verify
-    -> bounded 9B offline_predict or 9C offline scoring
-    -> append-only durable prediction receipt or explicit abstention
-    -> sanitized typed response and metrics.
+HTTP request + auth/rate/body admission
+-> explicit serving binding lookup and authorization
+-> vehicle/pull scope, cutoff, snapshot and compatibility checks
+-> registered immutable artifact load / verify
+-> bounded 9B offline_predict or 9C offline scoring
+-> append-only durable prediction receipt or explicit abstention
+-> sanitized typed response and metrics.
 
 ## 11. Existing API security limitation
 
@@ -130,6 +132,7 @@ The API uses async Python; sklearn/IsolationForest and joblib loading can block.
 ## 18. API surface (typed and minimal)
 
 Implement a stable, versioned engineering namespace consistent with existing FastAPI conventions. Suggested endpoints:
+
 - GET /api/v1/prediction-service/versions — list ONLY explicitly serve-approved versions and bounded safe metadata;
 - POST /api/v1/prediction-service/next-pull — authenticated 9B supervised inference;
 - POST /api/v1/prediction-service/anomalies — authenticated 9C after-pull scoring;
@@ -170,6 +173,7 @@ Approval applies to a specific exact version/checksum, task/family, source role,
 ## 24. Readiness and approval safeguards
 
 Before approval inspect:
+
 - valid registered immutable 9B or 9C version with present trusted artifact;
 - acceptable model/detector evaluation state and documented limitations;
 - schema, source capability and cutoff support;
@@ -471,6 +475,7 @@ Run canonical regressions for Phases 0–8, specifically Phase 6 MCP isolation, 
 ## 97. Make targets
 
 Add appropriate repository-conventional targets, tentatively:
+
 - make test-prediction-service;
 - make phase9d-acceptance;
 - make benchmark-prediction-service;
@@ -487,6 +492,7 @@ Before final benchmark, predeclare specific engineering limits that can be measu
 ## 99. Documentation artifacts
 
 Create/update:
+
 - docs/architecture/phase-9d-prediction-service.md;
 - docs/validation/phase-9d-acceptance.md;
 - docs/validation/phase-9d-model-serving-evaluation.md;
@@ -508,6 +514,7 @@ Include exact operator steps: enable controlled test mode with a locally generat
 ## 102. Human-readable interpretations
 
 Examples must identify scores as engineering values:
+
 - a NEXT_PULL observable outcome classifier's score reflects a learned pattern under controlled training data, not real-world failure risk;
 - a 9C anomaly score is relative statistical unusualness;
 - abstention means the service lacks enough compatible evidence, not "vehicle healthy";
@@ -536,6 +543,7 @@ Create focused unit tests for flags/auth, enum validation, approval and binding 
 ## 108. Independent DB + HTTP acceptance cases
 
 The evaluator must independently assert:
+
 - effective gate is disabled without explicit config;
 - secret rejects unauthorized requests before data work;
 - explicit approved version needed for serving;
@@ -557,6 +565,7 @@ From clean disposable infrastructure run migrations, 9A generation, 9B artifact 
 ## 111. Git and final exact-head verification
 
 After the final implementation change:
+
 1. Capture exact commit SHA, clean git status and branch ahead/behind.
 2. Run all relevant deterministic local checks on the final code.
 3. Push to codex/phase-9d-prediction-service, verify remote SHA exactly matches.
@@ -613,6 +622,7 @@ Include: overview and exact scope boundaries; target/base SHA; migrations; API s
 ## 116. Final report contract
 
 Return real executed evidence for:
+
 1. branch, baseline, final SHA and PR URL/state;
 2. migration ID and table/state machine design;
 3. exact operator enablement/auth/access and production guard;

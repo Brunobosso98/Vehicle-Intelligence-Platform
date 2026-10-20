@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from ipaddress import ip_network
 from typing import Literal
 from urllib.parse import parse_qs, urlparse
 
@@ -18,6 +19,18 @@ class Settings(BaseSettings):
     kafka_bootstrap_servers: str = Field(default="broker:9092", min_length=1, max_length=255)
     acquisition_token_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
     acquisition_batch_limit: int = Field(default=500, ge=1, le=5000)
+    prediction_service_enabled: bool = False
+    prediction_operator_token: SecretStr | None = None
+    prediction_trusted_networks: str = Field(
+        default="127.0.0.0/8,::1/128", min_length=3, max_length=512
+    )
+    prediction_max_body_bytes: int = Field(default=4096, ge=512, le=16384)
+    prediction_max_concurrent_requests: int = Field(default=8, ge=1, le=32)
+    prediction_max_cpu_concurrency: int = Field(default=2, ge=1, le=4)
+    prediction_requests_per_minute: int = Field(default=30, ge=1, le=300)
+    prediction_request_timeout_seconds: float = Field(default=8, gt=0, le=30)
+    prediction_body_timeout_seconds: float = Field(default=2, gt=0, le=10)
+    prediction_max_future_cutoff_seconds: int = Field(default=5, ge=0, le=60)
 
     @field_validator("git_sha", "build_timestamp", mode="before")
     @classmethod
@@ -57,8 +70,41 @@ class Settings(BaseSettings):
                 raise ValueError("OTLP endpoint must be HTTP(S) with host and no credentials")
         return value
 
+    @field_validator("prediction_trusted_networks")
+    @classmethod
+    def private_prediction_networks(cls, value: str) -> str:
+        networks = [part.strip() for part in value.split(",") if part.strip()]
+        if not networks or len(networks) > 16:
+            raise ValueError("Prediction trusted networks must contain 1 to 16 private CIDRs")
+        normalized: list[str] = []
+        for item in networks:
+            try:
+                network = ip_network(item, strict=False)
+            except ValueError as error:
+                raise ValueError("Prediction trusted network CIDR is invalid") from error
+            if (
+                not (network.is_private or network.is_loopback or network.is_link_local)
+                or network.is_multicast
+                or network.is_unspecified
+            ):
+                raise ValueError("Prediction serving cannot trust a public network")
+            normalized.append(str(network))
+        return ",".join(dict.fromkeys(normalized))
+
     @model_validator(mode="after")
     def production(self) -> "Settings":
+        if self.prediction_service_enabled:
+            if self.environment == "production":
+                raise ValueError("Prediction Service cannot be enabled in production")
+            if self.environment not in {"development", "test"}:
+                raise ValueError("Prediction Service is restricted to controlled environments")
+            if self.prediction_operator_token is None:
+                raise ValueError("Enabled Prediction Service requires an operator token")
+            token = self.prediction_operator_token.get_secret_value()
+            if len(token) < 43 or any(character.isspace() for character in token):
+                raise ValueError(
+                    "Prediction operator token must be at least 43 non-space characters"
+                )
         if self.environment == "production":
             url = urlparse(self.database_url.get_secret_value())
             if not url.password or url.password in {"local-development-only", "changeme"}:

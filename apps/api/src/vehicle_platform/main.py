@@ -1,6 +1,7 @@
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import cast
 
 from fastapi import FastAPI
 from sqlalchemy.pool import NullPool
@@ -30,6 +31,12 @@ from vehicle_platform.knowledge.repository import KnowledgeRepository
 from vehicle_platform.knowledge.retrieval import KnowledgeService
 from vehicle_platform.knowledge.routes import knowledge_router
 from vehicle_platform.observability.telemetry import Telemetry
+from vehicle_platform.predictions.budgets import (
+    PredictionBudgetState,
+    PredictionRequestBudgetMiddleware,
+)
+from vehicle_platform.predictions.routes import prediction_router
+from vehicle_platform.predictions.service import PredictionService
 
 
 class PlatformAPI(FastAPI):
@@ -51,6 +58,16 @@ def create_app(
     publisher = AcquisitionPublisher(config)
     agent_config = AgentSettings()
     agent_database = Database(config, command_timeout=3, pool_pre_ping=False, poolclass=NullPool)
+    prediction_database = (
+        Database(
+            config,
+            command_timeout=config.prediction_request_timeout_seconds,
+            pool_pre_ping=False,
+            poolclass=NullPool,
+        )
+        if config.prediction_service_enabled
+        else None
+    )
     if config.environment == "production" and agent_config.provider == "deterministic":
         raise ValueError("Deterministic agent provider is restricted to development/test")
 
@@ -94,6 +111,14 @@ def create_app(
         InvestigationRepository(agent_service.repository, signals),
         AcquisitionCapabilitySource(database or agent_database),
     )
+    # The disabled service is unreachable behind admission middleware; retaining its router
+    # keeps the OpenAPI contract stable without opening a second database pool.
+    prediction_service = PredictionService(
+        config,
+        prediction_database if prediction_database is not None else cast(Database, dependency),
+        telemetry=signals,
+    )
+    prediction_budget_state = PredictionBudgetState()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -104,6 +129,9 @@ def create_app(
             await agent_service.close()
             await query_encoder.close()
             await publisher.close()
+            await prediction_service.close()
+            if prediction_database is not None:
+                await prediction_database.close()
             if database is not None:
                 await database.close()
             await agent_database.close()
@@ -117,9 +145,18 @@ def create_app(
     )
     app.state.telemetry = signals
     app.state.acquisition_publisher = publisher
+    app.state.prediction_service = prediction_service
+    app.state.prediction_budget_state = prediction_budget_state
     app.add_middleware(ResourceBudgetMiddleware)
     app.add_middleware(AgentRequestBudgetMiddleware)
+    app.add_middleware(
+        PredictionRequestBudgetMiddleware,
+        settings=config,
+        telemetry=signals,
+        state=prediction_budget_state,
+    )
     app.include_router(router(config, dependency, signals))
+    app.include_router(prediction_router(prediction_service))
     app.state.knowledge_service = knowledge_service
     app.include_router(knowledge_router(knowledge_service, agent_service))
     app.state.agent_service = agent_service

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -95,12 +96,14 @@ class AnomalyService:
         registry: AnomalyRegistry | None = None,
         artifacts: ArtifactStore | None = None,
         telemetry: Any | None = None,
+        inference_worker: Callable[..., Awaitable[Any]] | None = None,
     ) -> None:
         self.database = database
         self.repository = repository or AnomalyDataRepository(database)
         self.registry = registry or AnomalyRegistry(database)
         self.artifacts = artifacts or ArtifactStore()
         self.telemetry = telemetry
+        self.inference_worker = inference_worker
 
     async def fit_detector_version(
         self,
@@ -297,9 +300,16 @@ class AnomalyService:
             DetectorLifecycle.ACCEPTED.value,
         }:
             with self._span("anomaly.artifact.validation", definition):
-                registered_artifact = await self.artifacts.load_registered(
-                    self.database, str(detector_version_id)
-                )
+                if self.inference_worker is None:
+                    registered_artifact = await self.artifacts.load_registered(
+                        self.database, str(detector_version_id)
+                    )
+                else:
+                    registered_artifact = await self.artifacts.load_registered(
+                        self.database,
+                        str(detector_version_id),
+                        worker=self.inference_worker,
+                    )
             definition = registered_artifact.definition
         elif metadata["state"] != DetectorLifecycle.REJECTED.value:
             raise AnomalyArtifactError(
@@ -388,12 +398,21 @@ class AnomalyService:
                     )
                 else:
                     with self._span("anomaly.observation.score", definition):
-                        finding = score_observation(
-                            definition,
-                            registered_artifact.fitted,
-                            observation,
-                            observation_cutoff=observation_cutoff,
-                        )
+                        if self.inference_worker is None:
+                            finding = score_observation(
+                                definition,
+                                registered_artifact.fitted,
+                                observation,
+                                observation_cutoff=observation_cutoff,
+                            )
+                        else:
+                            finding = await self.inference_worker(
+                                score_observation,
+                                definition,
+                                registered_artifact.fitted,
+                                observation,
+                                observation_cutoff=observation_cutoff,
+                            )
             identity = finding_idempotency_key(
                 detector_version_id=detector_version_id,
                 observation=observation,

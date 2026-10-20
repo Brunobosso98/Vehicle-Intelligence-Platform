@@ -14,6 +14,8 @@
   trusted artifacts and offline model registry.
 - `apps/api/src/vehicle_platform/anomalies`: Phase 9C detector definitions, eligible reference
   cohorts, offline fitting/scoring, artifact validation and immutable findings.
+- `apps/api/src/vehicle_platform/predictions`: Phase 9D controlled HTTP inference, explicit
+  serving approvals, request budgets, trusted 9B/9C adapters and immutable response receipts.
 - `apps/api/src/vehicle_platform/acquisition`: read-only hardware collection and streaming.
   `capabilities.py` reads authenticated collector capability snapshots or operator-attested
   local preflight reports for the same vehicle/configuration/source; a recorded session alone
@@ -36,6 +38,8 @@
 - `apps/api/migrations/versions/0013_feature_datasets.py`,
   `0014_predictive_models.py`, and `0015_anomaly_detection.py`: additive Phase 9A/9B/9C
   persistence. Phase 9C findings and reference rows are immutable.
+- `apps/api/migrations/versions/0016_prediction_service.py`: additive immutable Phase 9D serving
+  bindings, lifecycle events and minimal prediction receipts.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
@@ -51,6 +55,8 @@
   investigation and follow-up evaluator, including an explicit finalized-session fixture.
 - `scripts/evaluate_anomaly_detection.py`, `scripts/phase9c-validation.sh`: independent
   disposable-DB Phase 9C evaluator and upgrade/downgrade/re-upgrade wrapper.
+- `scripts/evaluate_prediction_service.py`, `scripts/phase9d-validation.sh`: independent
+  disposable-DB Phase 9D real-HTTP evaluator, migration round trip and serving-boundary checks.
 - `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
   artifact, threshold and bounded-input unit tests.
 - `scripts/investigation_browser_e2e.py`, `apps/web/tests/e2e/investigation.spec.ts`:
@@ -91,10 +97,11 @@ Phase 7B implements a bounded investigation workflow. Its semantic needs resolve
 known canonical signals and existing Phase 4 recipe/preflight contracts. Approval precedes
 acquisition readiness; finalized session linkage creates a separate grounded follow-up run.
 Phase 7C and Phase 8 are complete; Phase 7D retains its operator-accepted unified-final-suite
-caveat. Evidence is in their validation reports. Phase 9A and 9B are merged; the Phase 9C
-implementation at `c4da7f5` passed canonical full-validation and all CI/Security checks on open PR #43.
-It owns statistical deviation scoring only and does not replace
-Phase 3 factual events, Phase 9B next-pull labels, or future 9D–9H boundaries.
+caveat. Evidence is in their validation reports. Phase 9A, 9B and 9C are merged; Phase 9C at
+`c4da7f5` passed canonical full-validation and all CI/Security checks before PR #43 merged into
+baseline `7fc4c59`. Phase 9C owns statistical deviation scoring only and does not replace Phase 3
+factual events or Phase 9B next-pull labels. Phase 9D implementation is in progress and is not
+verified until the exact open PR head passes required gates.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -102,9 +109,11 @@ See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-
 Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`,
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
-The canonical GitHub `full-validation` workflow covers the completed Phase 7/8/9A/9B gates; Phase
-9C adds `make test-anomalies` and `make phase9c-acceptance`. Docker-dependent checks require the
-canonical Docker runner. Do not claim a gate passed without its executed receipt.
+The canonical GitHub `full-validation` workflow covers the completed Phase 7/8/9A/9B/9C gates;
+Phase 9C adds `make test-anomalies` and `make phase9c-acceptance`. Phase 9D adds
+`make test-prediction-service` and `make phase9d-acceptance`; its acceptance and canonical
+Docker/full-stack checks require the Docker runner. Do not claim a gate passed without its executed
+receipt.
 
 ## Current implementation map
 
@@ -118,4 +127,9 @@ canonical Docker runner. Do not claim a gate passed without its executed receipt
 - Phase 9C architecture, ADRs 0035–0038, runbook, acceptance report, evaluation report, model
   cards and traceability ledger live under `docs/architecture`, `docs/adr`, `docs/runbooks`,
   `docs/validation` and `docs/ml/anomaly-detectors`.
-- Phases 9D–9H remain planned.
+- Phase 9D serves approved 9B/9C versions through disabled-by-default controlled routes. It has no
+  production enablement, public tenancy, arbitrary feature inputs, training, agent, MCP or UI path.
+  Architecture, ADRs 0039–0042, runbook, acceptance/evaluation reports and traceability ledger are
+  documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Exact
+  PR-head gates are pending; 9D is not verified.
+- Phases 9E–9H remain planned.

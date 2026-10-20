@@ -203,3 +203,14 @@ finding persistence. Labels use fixed family, method, lifecycle, status and reas
 they never contain vehicle, VIN, configuration, session, pull, FeatureSet or artifact IDs. The
 independent disposable evaluator verifies actual span capture, rendered anomaly metrics and entity-ID
 absence. Evidence is written beneath ignored `.validation/phase9c/`.
+
+## Phase 9D controlled prediction service
+
+The serving boundary records bounded request/receipt counts, admission denials, in-flight work,
+approval transitions, artifact-load duration and request duration. Labels use only endpoint,
+result kind, status and reason categories. Spans cover admission, binding resolution, FeatureSet
+lookup, artifact verification, supervised/anomaly scoring and receipt persistence. Logs include
+bounded categorical request context only; tokens, VINs, entity IDs, feature values, source or
+provenance hashes, and artifact paths are excluded. The independent HTTP evaluator checks actual
+spans and rendered metrics and measures latency/RSS as observations, not fixed cross-machine SLAs.
+Evidence is written beneath ignored `.validation/phase9d/`.

@@ -199,3 +199,22 @@ disposable database. Canonical features generated for all 96 imported sessions a
 detector fitting correctly rejected all family/method attempts because no exact cohort met the
 minimum reference support. This was a compatibility and abstention smoke only, with no labels,
 scored model or accuracy claim. Exact counts and scope are in the [Phase 9C evaluation report](../validation/phase-9c-model-evaluation.md).
+
+## Phase 9D controlled serving gates
+
+`make test-prediction-service` exercises disabled-by-default behavior, production refusal, bearer
+authorization before body parsing, private-peer enforcement, request/body/rate/concurrency budgets,
+timeouts, disconnect cancellation, inference worker limits, replay identity and typed contracts.
+`make phase9d-acceptance` uses a clean disposable database starting at `0015`, generates persisted
+Phase 9A features, creates real registered Phase 9B/9C artifacts, explicitly approves test
+bindings, and calls the actual FastAPI routes. It checks exact offline equivalence, cutoff and
+source/configuration isolation, no implicit feature generation, late-arriving telemetry and
+metadata, explicit abstentions, activation/revocation/rollback races, artifact tampering,
+idempotency, immutable receipts, persistence recovery, traces and bounded-load observations.
+
+The evaluator performs an `0015 → 0016 → 0015 → 0016` migration round trip and compares digests of
+the pre-existing 9A/9B/9C tables. `make verify-cloud` runs cloud-compatible deterministic
+regressions; database-backed acceptance, canonical full-stack validation, and security checks that
+need Docker are CI REQUIRED when no Docker daemon is available. Synthetic fixtures prove service
+integration only. They do not establish real-car accuracy or mechanical condition. Evidence and
+logs are written to ignored `.validation/phase9d/` and uploaded by the canonical workflow.

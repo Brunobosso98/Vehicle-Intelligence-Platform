@@ -6,7 +6,7 @@ import os
 import re
 import sys
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -150,7 +150,11 @@ class ArtifactStore:
             path.unlink()
 
     async def load_registered(
-        self, database: Database, model_version_id: str
+        self,
+        database: Database,
+        model_version_id: str,
+        *,
+        worker: Callable[..., Awaitable[Any]] | None = None,
     ) -> TrustedModelArtifact:
         async with database.session() as db:
             row = (
@@ -168,6 +172,12 @@ class ArtifactStore:
             )
         if row is None:
             raise ArtifactValidationError("model version is not registered")
+        load = self._load_registered_row
+        if worker is not None:
+            return cast(TrustedModelArtifact, await worker(load, dict(row)))
+        return load(dict(row))
+
+    def _load_registered_row(self, row: dict[str, Any]) -> TrustedModelArtifact:
         if row["state"] != "CANDIDATE":
             raise ArtifactValidationError("only internally registered candidate artifacts can load")
         task = MLTask(str(row["task"]))

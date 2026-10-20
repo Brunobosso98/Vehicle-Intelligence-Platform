@@ -1,5 +1,6 @@
 import importlib
 import json
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +21,10 @@ def cli(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[4] / "scripts"))
     module = importlib.import_module("phase7d_eval")
     return module
+
+
+def _use_fresh_test_rates(cli, monkeypatch):
+    monkeypatch.setattr(cli, "Rates", lambda: Rates(verified_on=date.today().isoformat()))
 
 
 @pytest.mark.parametrize(
@@ -332,6 +337,7 @@ def test_invalid_affected_selection_sends_no_paid_calls(cli, monkeypatch, tmp_pa
 def test_affected_schedule_is_explicit_bounded_and_not_full_acceptance(
     cli, monkeypatch, tmp_path, capsys
 ):
+    _use_fresh_test_rates(cli, monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -435,6 +441,7 @@ def test_operator_budget_progress_is_eval_only(cli, monkeypatch, tmp_path, mode)
 def test_operator_budget_progress_preserves_hard_limit_and_explicit_identity(
     cli, monkeypatch, tmp_path, capsys
 ):
+    _use_fresh_test_rates(cli, monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -497,6 +504,7 @@ def test_invalid_exact_slots_send_no_paid_calls(cli, monkeypatch, tmp_path, slot
 
 
 def test_exact_slots_preserve_passed_repeats(cli, monkeypatch, tmp_path, capsys):
+    _use_fresh_test_rates(cli, monkeypatch)
     monkeypatch.setattr(
         "sys.argv",
         [

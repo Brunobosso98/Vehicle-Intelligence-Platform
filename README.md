@@ -167,10 +167,12 @@ Run `make test-features`, `make test-feature-integration`, `make phase9a-accepta
 disposable TimescaleDB for database-backed checks. `make verify` includes all five Phase 9A gates.
 Phase 9B adds only the offline supervised model-training and evaluation foundation for observable
 next-pull behavior. It does not diagnose failures, serve predictions, or control the vehicle.
-The Phase 9C implementation at `c4da7f5` is **VERIFIED**; its canonical full-validation, CI and
-Security checks passed on open PR #43. It adds offline anomaly scoring against exact same-vehicle/configuration/source
-references. Scores are statistical deviations, not fault diagnoses or failure probabilities.
-Phase 9D–9H remain planned. See the [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
+Phase 9C at `c4da7f5` is **VERIFIED** and merged into baseline `7fc4c59` after PR #43 passed its
+canonical full-validation, CI and Security checks. It adds offline anomaly scoring against exact
+same-vehicle/configuration/source references. Scores are statistical deviations, not fault
+diagnoses or failure probabilities. Phase 9D implementation is in progress and remains
+unverified until the exact PR-head gates pass; 9E–9H remain planned. See the
+[Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
 [runbook](docs/runbooks/anomaly-detection.md), [acceptance report](docs/validation/phase-9c-acceptance.md),
@@ -180,3 +182,15 @@ plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md
 Run `make test-anomalies` and `make phase9c-acceptance` for focused 9C checks. The acceptance
 uses a fresh disposable TimescaleDB and records controlled synthetic evidence under ignored
 `.validation/phase9c/`.
+
+## Phase 9D controlled prediction service
+
+Phase 9D adds authenticated, bounded HTTP inference for explicitly approved Phase 9B supervised
+models and Phase 9C anomaly detectors, with durable immutable receipts. It is disabled by default,
+restricted to development/test, and cannot be enabled in production. It does not add public or
+multi-tenant authorization. Engineering scores are not failure probabilities or diagnoses. See the
+[architecture](docs/architecture/phase-9d-prediction-service.md),
+[operator runbook](docs/runbooks/prediction-service.md),
+[acceptance record](docs/validation/phase-9d-acceptance.md),
+[evaluation](docs/validation/phase-9d-model-serving-evaluation.md), and
+[traceability ledger](docs/validation/phase-9d-traceability-ledger.md).

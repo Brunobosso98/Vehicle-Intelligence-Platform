@@ -596,6 +596,40 @@
         "title": "AnalyticsResultResponse",
         "type": "object"
       },
+      "AnomalyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "detector_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Detector Version Id"
+          },
+          "family": {
+            "enum": ["thermal", "boost_air", "performance", "fuel"],
+            "title": "Family",
+            "type": "string"
+          },
+          "observation_cutoff": {
+            "format": "date-time",
+            "title": "Observation Cutoff",
+            "type": "string"
+          },
+          "pull_id": { "format": "uuid", "title": "Pull Id", "type": "string" },
+          "source_role": { "$ref": "#/components/schemas/SourceRole" },
+          "vehicle_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Vehicle Id"
+          }
+        },
+        "required": ["pull_id", "observation_cutoff", "source_role", "family"],
+        "title": "AnomalyRequest",
+        "type": "object"
+      },
       "Answer": {
         "additionalProperties": false,
         "properties": {
@@ -3077,6 +3111,15 @@
         "title": "LoggingRecipeResponse",
         "type": "object"
       },
+      "MLTask": {
+        "enum": [
+          "NEXT_PULL_THERMAL_DEGRADATION",
+          "NEXT_PULL_PERFORMANCE_DEGRADATION",
+          "NEXT_PULL_FUEL_DEVIATION"
+        ],
+        "title": "MLTask",
+        "type": "string"
+      },
       "Match": {
         "additionalProperties": false,
         "properties": {
@@ -3230,6 +3273,36 @@
         "title": "ModificationCreate",
         "type": "object"
       },
+      "NextPullRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "model_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Model Version Id"
+          },
+          "observation_cutoff": {
+            "format": "date-time",
+            "title": "Observation Cutoff",
+            "type": "string"
+          },
+          "pull_id": { "format": "uuid", "title": "Pull Id", "type": "string" },
+          "source_role": { "$ref": "#/components/schemas/SourceRole" },
+          "task": { "$ref": "#/components/schemas/MLTask" },
+          "vehicle_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Vehicle Id"
+          }
+        },
+        "required": ["pull_id", "observation_cutoff", "source_role", "task"],
+        "title": "NextPullRequest",
+        "type": "object"
+      },
       "NumericFact": {
         "additionalProperties": false,
         "properties": {
@@ -3292,6 +3365,320 @@
         },
         "required": ["key", "recipe_key"],
         "title": "ObjectiveResponse",
+        "type": "object"
+      },
+      "PredictionBindingResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "activation_event_id": {
+            "format": "uuid",
+            "title": "Activation Event Id",
+            "type": "string"
+          },
+          "artifact_checksum": {
+            "title": "Artifact Checksum",
+            "type": "string"
+          },
+          "binding_id": {
+            "format": "uuid",
+            "title": "Binding Id",
+            "type": "string"
+          },
+          "detector_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Detector Version Id"
+          },
+          "environment": { "title": "Environment", "type": "string" },
+          "feature_set_checksum": {
+            "title": "Feature Set Checksum",
+            "type": "string"
+          },
+          "feature_set_version": {
+            "title": "Feature Set Version",
+            "type": "string"
+          },
+          "model_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Model Version Id"
+          },
+          "result_kind": { "title": "Result Kind", "type": "string" },
+          "schema_checksum": { "title": "Schema Checksum", "type": "string" },
+          "scope": { "title": "Scope", "type": "string" },
+          "source_role": { "title": "Source Role", "type": "string" },
+          "subject_key": { "title": "Subject Key", "type": "string" }
+        },
+        "required": [
+          "binding_id",
+          "result_kind",
+          "subject_key",
+          "source_role",
+          "environment",
+          "scope",
+          "model_version_id",
+          "detector_version_id",
+          "artifact_checksum",
+          "feature_set_version",
+          "feature_set_checksum",
+          "schema_checksum",
+          "activation_event_id"
+        ],
+        "title": "PredictionBindingResponse",
+        "type": "object"
+      },
+      "PredictionLineage": {
+        "additionalProperties": false,
+        "properties": {
+          "anomaly_finding_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Anomaly Finding Id"
+          },
+          "anomaly_run_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Anomaly Run Id"
+          },
+          "feature_set_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Feature Set Id"
+          }
+        },
+        "title": "PredictionLineage",
+        "type": "object"
+      },
+      "PredictionQuality": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Coverage",
+            "type": "number"
+          },
+          "expected_feature_count": {
+            "maximum": 128,
+            "minimum": 0,
+            "title": "Expected Feature Count",
+            "type": "integer"
+          },
+          "missing_reason_counts": {
+            "additionalProperties": {
+              "maximum": 128,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxProperties": 16,
+            "title": "Missing Reason Counts",
+            "type": "object"
+          },
+          "observed_feature_count": {
+            "maximum": 128,
+            "minimum": 0,
+            "title": "Observed Feature Count",
+            "type": "integer"
+          },
+          "quality_class": {
+            "enum": ["high", "degraded", "insufficient", "unavailable"],
+            "title": "Quality Class",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality_class",
+          "observed_feature_count",
+          "expected_feature_count",
+          "coverage"
+        ],
+        "title": "PredictionQuality",
+        "type": "object"
+      },
+      "PredictionResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "anomaly_score": {
+            "anyOf": [{ "minimum": 0, "type": "number" }, { "type": "null" }],
+            "title": "Anomaly Score"
+          },
+          "decision": {
+            "anyOf": [
+              { "type": "boolean" },
+              { "enum": ["ANOMALOUS", "INLIER"], "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Decision"
+          },
+          "detector_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Detector Version Id"
+          },
+          "effective_cutoff": {
+            "anyOf": [
+              { "format": "date-time", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Effective Cutoff"
+          },
+          "engineering_validation_score": {
+            "anyOf": [
+              { "maximum": 1, "minimum": 0, "type": "number" },
+              { "type": "null" }
+            ],
+            "title": "Engineering Validation Score"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "enum": ["thermal", "boost_air", "performance", "fuel"],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Family"
+          },
+          "feature_set_version": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Feature Set Version"
+          },
+          "horizon": {
+            "enum": ["NEXT_PULL", "AFTER_PULL_OFFLINE"],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "interpretation": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "limitation": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Limitation",
+            "type": "string"
+          },
+          "lineage": { "$ref": "#/components/schemas/PredictionLineage" },
+          "model_version_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Model Version Id"
+          },
+          "quality": { "$ref": "#/components/schemas/PredictionQuality" },
+          "reason_code": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Reason Code"
+          },
+          "receipt_id": {
+            "format": "uuid",
+            "title": "Receipt Id",
+            "type": "string"
+          },
+          "requested_cutoff": {
+            "format": "date-time",
+            "title": "Requested Cutoff",
+            "type": "string"
+          },
+          "result_type": {
+            "enum": ["next_pull", "anomaly"],
+            "title": "Result Type",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "phase9d-prediction-response-v1",
+            "default": "phase9d-prediction-response-v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "score_is_probability": {
+            "const": false,
+            "default": false,
+            "title": "Score Is Probability",
+            "type": "boolean"
+          },
+          "source_role": { "$ref": "#/components/schemas/SourceRole" },
+          "status": { "$ref": "#/components/schemas/PredictionStatus" },
+          "task": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/MLTask" },
+              { "type": "null" }
+            ]
+          },
+          "threshold": {
+            "anyOf": [{ "minimum": 0, "type": "number" }, { "type": "null" }],
+            "title": "Threshold"
+          }
+        },
+        "required": [
+          "result_type",
+          "horizon",
+          "status",
+          "receipt_id",
+          "requested_cutoff",
+          "source_role",
+          "interpretation",
+          "limitation",
+          "quality",
+          "lineage"
+        ],
+        "title": "PredictionResponse",
+        "type": "object"
+      },
+      "PredictionStatus": {
+        "enum": [
+          "READY_SCORE",
+          "ABSTAINED_INSUFFICIENT_SIGNAL",
+          "ABSTAINED_LOW_QUALITY",
+          "ABSTAINED_INSUFFICIENT_REFERENCE",
+          "ABSTAINED_INCOMPATIBLE_CONTEXT",
+          "ABSTAINED_UNSUPPORTED_SOURCE",
+          "ABSTAINED_CUTOFF"
+        ],
+        "title": "PredictionStatus",
+        "type": "string"
+      },
+      "PredictionVersionsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionBindingResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": { "title": "Limit", "type": "integer" },
+          "offset": { "title": "Offset", "type": "integer" },
+          "schema_version": {
+            "default": "phase9d-serving-versions-v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": ["items", "limit", "offset"],
+        "title": "PredictionVersionsResponse",
         "type": "object"
       },
       "PreflightRequest": {
@@ -4267,6 +4654,17 @@
         ],
         "title": "SourceConflict",
         "type": "object"
+      },
+      "SourceRole": {
+        "enum": [
+          "synthetic",
+          "real_vehicle",
+          "imported",
+          "imported_fixture",
+          "mixed"
+        ],
+        "title": "SourceRole",
+        "type": "string"
       },
       "SourceStatus": {
         "enum": ["VERIFIED", "UNVERIFIED", "QUARANTINED", "REJECTED"],
@@ -5480,6 +5878,9 @@
         "title": "VersionRequest",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "PredictionOperatorBearer": { "scheme": "bearer", "type": "http" }
     }
   },
   "info": { "title": "Vehicle Intelligence Platform", "version": "0.1.0" },
@@ -6903,6 +7304,362 @@
           }
         },
         "summary": "Preflight Logging Recipe"
+      }
+    },
+    "/api/v1/prediction-service/anomalies": {
+      "post": {
+        "operationId": "prediction_service_anomalies",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "maxLength": 128, "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AnomalyRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PredictionResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Anomalies",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/next-pull": {
+      "post": {
+        "operationId": "prediction_service_next_pull",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "maxLength": 128, "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NextPullRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PredictionResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Next Pull",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/runs/{receipt_id}": {
+      "get": {
+        "operationId": "prediction_service_receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PredictionResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Receipt",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/versions": {
+      "get": {
+        "operationId": "prediction_service_versions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 10000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionVersionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Versions",
+        "tags": ["prediction-service"]
       }
     },
     "/api/v1/pulls": {

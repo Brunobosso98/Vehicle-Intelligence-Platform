@@ -7,6 +7,7 @@ from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.api.contracts import ErrorDetail, ErrorResponse
 from vehicle_platform.infrastructure.database import DependencyUnavailable
 from vehicle_platform.observability.telemetry import Telemetry
+from vehicle_platform.predictions.domain import PredictionError
 
 
 def response(request: Request, status: int, code: str, message: str) -> JSONResponse:
@@ -16,6 +17,26 @@ def response(request: Request, status: int, code: str, message: str) -> JSONResp
 
 
 def register_errors(app: FastAPI, telemetry: Telemetry) -> None:
+    @app.exception_handler(PredictionError)
+    async def prediction_error(request: Request, exc: PredictionError) -> JSONResponse:
+        telemetry.prediction_failures.add(
+            1,
+            {
+                "endpoint": getattr(request.state, "prediction_endpoint", "unknown"),
+                "status": str(exc.status_code),
+                "reason": exc.code.lower(),
+            },
+        )
+        telemetry.log(
+            "prediction.request.failed",
+            getattr(request.state, "request_id", "unavailable"),
+            error_code=exc.code,
+            prediction_endpoint=getattr(request.state, "prediction_endpoint", "unknown"),
+            prediction_status=str(exc.status_code),
+            prediction_reason=exc.code.lower(),
+        )
+        return response(request, exc.status_code, exc.code, exc.message)
+
     @app.exception_handler(AgentError)
     async def agent_error(request: Request, exc: AgentError) -> JSONResponse:
         telemetry.log(
@@ -65,6 +86,15 @@ def register_errors(app: FastAPI, telemetry: Telemetry) -> None:
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> JSONResponse:
+        if getattr(request.state, "prediction_endpoint", None) is not None:
+            telemetry.prediction_failures.add(
+                1,
+                {
+                    "endpoint": request.state.prediction_endpoint,
+                    "status": "500",
+                    "reason": "internal_error",
+                },
+            )
         telemetry.log(
             "request.failed",
             getattr(request.state, "request_id", "unavailable"),
