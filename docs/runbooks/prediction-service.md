@@ -50,6 +50,10 @@ curl --fail-with-body http://127.0.0.1:8000/api/v1/prediction-service/next-pull 
   -H "Authorization: Bearer $PREDICTION_OPERATOR_TOKEN" \
   -H 'Content-Type: application/json' -H 'Idempotency-Key: local-run-0001' \
   --data '{"pull_id":"PULL_UUID","vehicle_id":"VEHICLE_UUID","observation_cutoff":"2026-01-01T12:00:00Z","source_role":"synthetic","task":"NEXT_PULL_THERMAL_DEGRADATION"}'
+curl --fail-with-body http://127.0.0.1:8000/api/v1/prediction-service/anomalies \
+  -H "Authorization: Bearer $PREDICTION_OPERATOR_TOKEN" \
+  -H 'Content-Type: application/json' -H 'Idempotency-Key: local-run-0002' \
+  --data '{"pull_id":"PULL_UUID","vehicle_id":"VEHICLE_UUID","observation_cutoff":"2026-01-01T12:00:00Z","source_role":"synthetic","family":"boost_air"}'
 curl --fail-with-body http://127.0.0.1:8000/api/v1/prediction-service/runs/RECEIPT_UUID \
   -H "Authorization: Bearer $PREDICTION_OPERATOR_TOKEN"
 ```
@@ -61,9 +65,31 @@ maintenance urgency, or vehicle safety from a score.
 
 ## Revoke, roll back, and troubleshoot
 
-`revoke` prevents new inference and receipt replay against the binding. `rollback` appends an event
-that restores a previously approved binding in the same slot; it does not delete or edit history.
-Use `vehicle-prediction list` to inspect active bindings and the database receipt IDs for audit.
+`revoke` prevents new inference and receipt replay against the binding. A request for a slot with no
+other active version returns a sanitized `409 PREDICTION_NO_UNIQUE_ACTIVE_VERSION`. `rollback`
+targets a previously approved binding whose latest event is `SUPERSEDED`; it appends a
+`ROLLED_BACK` event and supersedes the currently active binding. It does not delete or edit history.
+Use `vehicle-prediction list` to inspect active bindings. Save the `binding_id` emitted by `approve`
+and `event_id` from each state change in the operator's review record.
+
+```bash
+apps/api/.venv/bin/vehicle-prediction list --kind next_pull --source-role synthetic
+apps/api/.venv/bin/vehicle-prediction revoke --binding-id ACTIVE_BINDING_UUID \
+  --reason "Revoke the reviewed synthetic test binding" --operator-id local-operator \
+  --yes --confirm-environment development
+# Repeat the same authorized next-pull request above: expect HTTP 409 with
+# PREDICTION_NO_UNIQUE_ACTIVE_VERSION when no other version is active.
+apps/api/.venv/bin/vehicle-prediction rollback --binding-id SUPERSEDED_BINDING_UUID \
+  --reason "Restore the previously reviewed synthetic test version" --operator-id local-operator \
+  --yes --confirm-environment development
+apps/api/.venv/bin/vehicle-prediction list --kind next_pull --source-role synthetic
+```
+
+Use a `SUPERSEDED_BINDING_UUID` captured from its earlier approval/activation output and operator
+audit record; `list` shows active bindings only. A revoked binding cannot be used as a rollback
+target; review the candidate and its immutable history before restoring a prior version. The test
+evaluator confirms that revocation blocks new inference and replay, and that rollback restores an
+earlier reviewed binding in the same slot.
 
 Common responses:
 

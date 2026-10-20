@@ -100,8 +100,8 @@ Phase 7C and Phase 8 are complete; Phase 7D retains its operator-accepted unifie
 caveat. Evidence is in their validation reports. Phase 9A, 9B and 9C are merged; Phase 9C at
 `c4da7f5` passed canonical full-validation and all CI/Security checks before PR #43 merged into
 baseline `7fc4c59`. Phase 9C owns statistical deviation scoring only and does not replace Phase 3
-factual events or Phase 9B next-pull labels. Phase 9D implementation is in progress and is not
-verified until the exact open PR head passes required gates.
+factual events or Phase 9B next-pull labels. Phase 9D is VERIFIED on the final exact head of open,
+unmerged PR #44; current SHA and exact-head receipts are linked from the PR checks.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -109,11 +109,11 @@ See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-
 Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`,
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
-The canonical GitHub `full-validation` workflow covers the completed Phase 7/8/9A/9B/9C gates;
+The canonical GitHub `full-validation` workflow covers completed Phase 7/8/9A/9B/9C/9D gates;
 Phase 9C adds `make test-anomalies` and `make phase9c-acceptance`. Phase 9D adds
 `make test-prediction-service` and `make phase9d-acceptance`; its acceptance and canonical
-Docker/full-stack checks require the Docker runner. Do not claim a gate passed without its executed
-receipt.
+Docker/full-stack checks require the Docker runner. Exact-head receipts are linked from PR #44.
+Do not claim a gate passed without its executed receipt.
 
 ## Current implementation map
 
@@ -130,6 +130,7 @@ receipt.
 - Phase 9D serves approved 9B/9C versions through disabled-by-default controlled routes. It has no
   production enablement, public tenancy, arbitrary feature inputs, training, agent, MCP or UI path.
   Architecture, ADRs 0039–0042, runbook, acceptance/evaluation reports and traceability ledger are
-  documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Exact
-  PR-head gates are pending; 9D is not verified.
+  documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Phase 9D
+  is VERIFIED on the final exact head of open, unmerged PR #44; current check receipts are linked
+  from the PR.
 - Phases 9E–9H remain planned.

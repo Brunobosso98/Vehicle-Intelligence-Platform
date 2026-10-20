@@ -15,7 +15,7 @@
 - Phase 9A — Feature Engineering Foundation (complete; see acceptance report)
 - Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
 - Phase 9C — Anomaly Detection (VERIFIED; merged baseline `7fc4c59` after PR #43)
-- Phase 9D — Prediction Service (implementation in progress; exact-head validation pending)
+- Phase 9D — Prediction Service (VERIFIED on the final exact head of open, unmerged PR #44)
 - Phase 9E — PredictionEvidence (planned)
 - Phase 9F — Agent Integration (planned)
 - Phase 9G — Evaluation / Calibration (planned)
@@ -34,8 +34,9 @@ remain separately recorded in the [evaluation report](../validation/phase-7d-rea
 and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
 feature and dataset foundation; Phase 9B consumes that foundation for offline supervised next-pull
 evaluation. Phase 9C adds verified offline anomaly scoring. Phase 9D adds an explicitly approved,
-disabled-by-default controlled serving boundary; it is not verified until its final PR-head gates
-pass. Phases 9E–9H remain planned.
+disabled-by-default controlled serving boundary and passed its final exact PR-head gates; the final
+SHA and check receipts are in [PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44).
+Phases 9E–9H remain planned.
 
 # Current phase
 
@@ -101,5 +102,6 @@ The [Phase 9D architecture](../architecture/phase-9d-prediction-service.md),
 [acceptance record](../validation/phase-9d-acceptance.md),
 [serving evaluation](../validation/phase-9d-model-serving-evaluation.md), and
 [traceability ledger](../validation/phase-9d-traceability-ledger.md) define the controlled API,
-approval state, evidence limits and gates. The implementation is not verified until its exact
-open, unmerged PR head passes all required checks. No public production service is implied.
+approval state, evidence limits and gates. Phase 9D is verified on its exact open, unmerged PR head;
+the current receipts are linked from [PR #44 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44#checks).
+No public production service is implied.

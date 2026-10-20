@@ -170,8 +170,9 @@ next-pull behavior. It does not diagnose failures, serve predictions, or control
 Phase 9C at `c4da7f5` is **VERIFIED** and merged into baseline `7fc4c59` after PR #43 passed its
 canonical full-validation, CI and Security checks. It adds offline anomaly scoring against exact
 same-vehicle/configuration/source references. Scores are statistical deviations, not fault
-diagnoses or failure probabilities. Phase 9D implementation is in progress and remains
-unverified until the exact PR-head gates pass; 9E–9H remain planned. See the
+diagnoses or failure probabilities. Phase 9D is verified on the final exact head of open, unmerged
+[PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44); its checks view
+contains the current SHA and exact-head receipts. Phases 9E–9H remain planned. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
