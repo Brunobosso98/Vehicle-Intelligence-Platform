@@ -53,7 +53,7 @@ Request fingerprints bind the request kind, subject, active binding and event, e
 
 ## Resource, benchmark and observability results
 
-The evaluator measured 42 calls: p50 0.564905 s, p95 2.058472 s and p99 2.146723 s. These fixture measurements are observations, not an SLA. A 10-request burst produced eight 200 responses and two bounded 429 responses; peak admitted concurrency was eight with two CPU workers. Maximum pull batch size was one. Fifteen artifact files totaled 363,460 bytes; the largest was 133,058 bytes (configured artifact limit 52,428,800 bytes). RSS was 388,984 KiB before and 391,836 KiB after serving. Configured request timeout was eight seconds and body wait was two seconds.
+The final exact-head evaluator measured 42 calls: p50 0.670610 s, p95 2.461566 s and p99 2.481882 s. These fixture measurements are observations, not an SLA. A 10-request burst produced eight 200 responses and two bounded 429 responses; peak admitted concurrency was eight with two CPU workers. Maximum pull batch size was one. Fifteen artifact files totaled 363,460 bytes; the largest was 133,058 bytes (configured artifact limit 52,428,800 bytes). RSS was 388,984 KiB before and 391,836 KiB after serving. Configured request timeout was eight seconds and body wait was two seconds.
 
 Metrics and traces covered request admission/denial, binding resolution, FeatureSet lookup, artifact verification, model/anomaly scoring, 9C finding persistence and receipt persistence. Evaluator assertions confirmed entity IDs and operator tokens were excluded from metrics. Cardinality uses bounded kind/status/reason labels; logs omit VINs, telemetry, feature values, tokens, checksums and artifact paths.
 
