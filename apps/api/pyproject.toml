@@ -22,7 +22,7 @@ dependencies = [
  "langgraph==1.2.14",
  "jsonschema==4.26.0",
  "langchain-core==1.6.7",
- "pypdf==6.20.1",
+ "pypdf==6.21.1",
  "scikit-learn==1.9.1",
  "threadpoolctl==3.7.0",
 ]
