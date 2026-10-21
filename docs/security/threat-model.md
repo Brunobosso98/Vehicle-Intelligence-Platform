@@ -245,7 +245,10 @@ verification audits. A 50 MiB cap and two bounded worker slots protect artifact 
 untrusted joblib payload is loaded. The trusted application/database can still be privileged and
 rewrite all records, so SHA-256 values establish consistency rather than signatures. Metrics and
 traces use finite labels and omit vehicle/receipt IDs, VINs, hashes, feature values, paths and
-tokens. The disposable evaluator attempts source/artifact tampering, orphan/oversize/duplicate
-inserts, partial transaction failure, replay flooding and unauthorized access; it never targets
-retained local or production data. See the [Phase 9E architecture](../architecture/phase-9e-prediction-evidence.md)
+tokens. A 10,001-row bounded scan compares current 9C reference row/session counts to the frozen
+manifest; a post-cutoff appended row fails independent verification. A same-pull 9B/9C case proves
+shared telemetry remains separate evidence with separate claim scopes. The disposable evaluator
+attempts source/artifact tampering, orphan/oversize/duplicate inserts, partial transaction failure,
+replay flooding and unauthorized access; it never targets retained local or production data. See
+the [Phase 9E architecture](../architecture/phase-9e-prediction-evidence.md)
 and [acceptance report](../validation/phase-9e-acceptance.md).

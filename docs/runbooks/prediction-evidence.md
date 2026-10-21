@@ -56,6 +56,9 @@ verification gaps without upgrading the original result.
 
 Run `make test-prediction-evidence` for pure contracts. Run `make phase9e-acceptance` only on the
 isolated disposable Compose database; its evaluator temporarily corrupts a fixture FeatureSet and
-artifact, restores each in a `finally` block, then checks database immutability and rollback. Never
-run its tamper procedure against a development, imported or production database. Save reports only
-under ignored `.validation/phase9e/`.
+artifact, restores each in a `finally` block, inserts a cutoff-late telemetry sample and modification,
+and appends a cutoff-late 9C reference row to prove the verifier rejects changed source counts. The
+late rows stay inside the disposable database, which the wrapper removes. It also materializes 9B
+and 9C evidence for the same pull and checks that the bundles and claim horizons remain separate.
+Never run its tamper procedure against a development, imported or production database. Save reports
+only under ignored `.validation/phase9e/`.

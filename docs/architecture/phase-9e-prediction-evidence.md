@@ -42,7 +42,13 @@ Facts preserve source authority, units, quality, missing reason, observation/ava
 source window. Only facts eligible at the frozen cutoff can be emitted. NEXT_PULL evidence never
 reads or exposes the future target outcome. 9C reference facts come from the frozen reference
 summary and recorded finding, not from a newly fitted detector or a download of the reference
-matrix.
+matrix. Before hashing the reference lineage, the verifier counts at most 10,001 stored rows and
+their distinct sessions, then compares those bounded counts to the frozen 9C manifest. An appended
+post-cutoff reference row fails source verification without loading the reference matrix.
+
+9B NEXT_PULL and 9C AFTER_PULL_OFFLINE results may use the same pull and FeatureSet. Each remains a
+separate receipt, evidence root, source graph, score and claim horizon. Shared input is correlation,
+not independent corroboration or a combined confidence value.
 
 Completeness and integrity are separate. An abstention remains an abstention. Source mismatch,
 unsupported schema, unavailable sources and artifact unavailability cannot become affirmative

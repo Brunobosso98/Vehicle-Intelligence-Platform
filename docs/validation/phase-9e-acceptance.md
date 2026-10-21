@@ -1,59 +1,35 @@
 # Phase 9E acceptance
 
-This report defines the acceptance gate for the implementation branch. It is not a claim that
-Phase 9E has passed final-head validation. The disposable database evaluator writes its actual
-results to ignored `.validation/phase9e/acceptance.json`; the canonical GitHub workflow uploads that
-directory and ties the result to the tested commit SHA.
+The authoritative implementation scope is [the 134-section Phase 9E prompt](../prompts/phase-9e-prediction-evidence.md). This report records the focused disposable-database acceptance and its caveats. The final commit SHA, PR state, required exact-head checks and canonical validation artifact are recorded in the [PR #45 handoff and checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/45#checks); an earlier SHA is never treated as proof for a later head.
 
-## Executed local checks
+## Focused local result
 
-Docker is reachable in WSL (`docker info --format '{{.ServerVersion}}'` returned `29.8.2` on
-2026-10-21). The following local checks completed successfully against the implementation working
-tree:
+On 2026-10-21, `bash scripts/phase9e-validation.sh` completed successfully in a fresh, isolated TimescaleDB Compose project. The evaluator emitted `status=PASS` for 11 evidence receipts: three supervised 9B tasks, four 9C families, three additional abstentions and one same-pull 9B/9C correlation case. Seven bundles retained `READY_SCORE`; four retained abstention. The run includes upgrade/downgrade/re-upgrade through migration 0017, actual FastAPI routes, source verification, integrity adversaries, concurrency and observability assertions.
 
-- `make verify-cloud`: passed, including Ruff, format, mypy, 1,216 API unit tests (96.44% line and
-  91.04% branch coverage), Web lint/typecheck and 52 tests (94.74% line coverage), generated
-  contracts, documentation checks, Prettier, production build, Phase 0–5 evaluations/benchmarks,
-  Gitleaks, dependency scanning and containerized Trivy filesystem scanning.
-- `make test-integration`: 13 passed; telemetry persisted and replayed 100,002 samples, with zero
-  new rows on replay.
-- `make containers` and `make security`: passed after rebuilding the API and Web images. Trivy
-  reported zero Critical findings; all High findings were covered by the checked-in risk
-  acceptance.
-- `make phase9e-acceptance`: passed on the working tree in a prior run: 10 receipt types, three
-  supervised tasks, four anomaly families, three abstentions, integrity controls, and observability
-  checks. The ignored receipt contains the SHA from before the final small type-safety corrections;
-  rerun it after commit to bind acceptance to the final source SHA.
+The ignored local receipt is `.validation/phase9e/acceptance.json`. Its `git_sha` is `09ca5a480b8d14176bb7e8f51ecb1b503020315f`, the checkout HEAD recorded while the tested working tree contained uncommitted changes. Treat this as focused working-tree evidence, not exact-commit proof. The final canonical workflow runs the same evaluator against the pushed SHA and uploads its commit-bound artifact. We did not restart the already-passing broad local suites for this correction.
 
-These local results do not replace required checks on the pushed PR head. The canonical Docker/full-
-stack, browser, image-security and observability receipts must be tied to that exact SHA before
-calling this phase VERIFIED. The acceptance fixtures are synthetic and make no real-world model
-accuracy claim.
+`git diff --check` and targeted Ruff checks for the modified Python files passed. Earlier local checks remain historical evidence on their recorded source: `make verify-cloud` (1,216 API tests and 52 Web tests), `make test-integration` (13 passed), `make containers`, and `make security`. They were not rerun after the Phase 9E changes. Exact final-head regression and security status must be read from PR #45.
 
-## Required disposable acceptance
+## Scenarios and measured bounds
 
-`make phase9e-acceptance` starts an isolated TimescaleDB Compose project, upgrades through 0016,
-creates real 9A/9B/9C records and approved 9D receipts, then exercises the actual FastAPI routes.
-The independent oracle compares source-row hashes, version/checksum references, prediction fields,
-feature values/units, cutoffs, frozen anomaly references, graph edges and source reachability.
-It round-trips migration 0017 and compares every Phase 0–9D table digest.
+The evaluator trains and approves the existing 9B/9C fixture versions, creates real 9D receipts, and independently compares source rows, checksums, cutoffs and graph relationships. It exercises:
 
-The gate requires three supervised tasks, four anomaly families, abstention and missing-FeatureSet
-cases; 10-way idempotent materialization; bounded 100-way replay/admission; active and revoked
-historical evidence reads; unauthenticated/query/cookie/public/disabled/production controls; safe
-projection and body bounds; feature/artifact tamper detection and restoration; normalized-row
-immutability; orphan/duplicate/oversize/rollback database controls; independent verification
-audits; and delivered bounded metrics and spans.
+- `0016 -> 0017 -> 0016 -> 0017`, fresh upgrade and unchanged digests for 27 Phase 0–9D tables;
+- three scored `NEXT_PULL` tasks, four 9C anomaly families, low-quality/missing-fuel/missing-FeatureSet abstentions, and a 9B/9C pair that shares one FeatureSet but retains independent receipts, evidence IDs, scores, claims and horizons;
+- a target pull beginning after the 9B input cutoff, with 48 observed target measurements after cutoff; target pull and FeatureSet IDs are absent from all supervised evidence;
+- late-ingested telemetry with an old observation time and a modification created after cutoff with an earlier effective date; the frozen FeatureSet ID, values and hashes remain unchanged and neither late record enters the same-pull bundles;
+- a valid 9C reference row appended after the original cutoff; verification rejects the changed frozen counts with `FAILED_SOURCE_MISMATCH` / `PROVENANCE_MISMATCH`;
+- 10 concurrent same-receipt requests with one evidence identity, and a 100-request replay/admission burst with 16 accepted replays and 84 bounded 429 responses;
+- source, finding, model/detector artifact, missing artifact, database outage, timeout, immutability, rollback, audit-cap, authentication, peer-scope and safe-projection controls.
 
-`make benchmark-prediction-evidence` prints the measured cold build, warm replay, concurrency,
-response size, RSS and observed DB-session results from the acceptance receipt. These are fixture
-measurements, not production latency or model-accuracy SLAs. `make prediction-evidence-observability`
-checks the recorded actual metric and span receipts, including identifier redaction.
+The observed graph limits are 32 nodes, 64 edges, 48 facts and 16 gaps; the persisted/HTTP manifest cap is 65,536 bytes. The run's largest projection was 2,317 bytes, maximum checked-out database sessions were 10, and observed RSS delta was 138,228 KiB. The mixed HTTP handler sample reported p50 0.00291 s and p95 2.38745 s; it includes cold materialization, replay and admission paths and is not a build-only SLA. No production latency or real-world accuracy is claimed.
 
-## Final-head verification record
+Metrics and traces are checked for bounded labels and absence of vehicle/evidence identifiers. The report lists the exact metrics and spans. Error, migration, lineage, benchmark and security details are preserved in the acceptance JSON rather than summarized as a generic “confidence” score.
 
-PR #45 final-head validation is pending for the commit produced from these results. Do not mark this
-phase VERIFIED until the pushed branch SHA equals the PR head SHA and the exact commit has
-successful required quality, integration/E2E, Security, CodeQL, dependency-review and canonical
-Docker/full-validation checks. After any fix, use the new SHA and its new receipts. Record the final
-commit SHA, workflow URLs, artifact name and any validation caveat here once those checks finish.
+## Boundaries and exact-head result
+
+All fixtures are synthetic. No real-car validation, fleet accuracy, calibration, diagnosis, causal claim or ECU control is established. Optional imported-data smoke (§126) is `NOT RUN` because no sanitized, eligible imported cohort was available; its reference support was not weakened to manufacture one.
+
+The [traceability ledger](phase-9e-traceability-ledger.md) maps all 134 specification sections. Phase 9F agents, 9G calibration and 9H UI remain absent. PR #45 must remain open and unmerged until the user reviews the report and merges manually. Its current body records the exact SHA and direct required-check URLs after those checks finish.
+
+Reproduce the focused database gate with `bash scripts/phase9e-validation.sh` (Docker required). The canonical GitHub `full-validation` workflow also runs the focused unit suite, disposable acceptance, benchmark and observability targets. Do not substitute an older green run for the current PR head.

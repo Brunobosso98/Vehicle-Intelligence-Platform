@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 import traceback
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -27,7 +28,9 @@ from pydantic import SecretStr, ValidationError
 from sqlalchemy import event, text
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from vehicle_platform.anomalies.artifacts import ArtifactStore as AnomalyArtifactStore
-from vehicle_platform.anomalies.domain import SourceRole
+from vehicle_platform.anomalies.definitions import detector_definition
+from vehicle_platform.anomalies.domain import MAX_REFERENCE_ROWS, SourceRole
+from vehicle_platform.anomalies.registry import _reference_row_parameters
 from vehicle_platform.core.config import Settings
 from vehicle_platform.infrastructure.database import Database
 from vehicle_platform.main import create_app
@@ -82,7 +85,7 @@ _SOURCE_SCHEMA_MARKERS = {
     SourceKind.DETECTOR_VERSION: "0015:anomaly_detector_versions+definitions:v1",
     SourceKind.ANOMALY_RUN: "0015:anomaly_detection_runs:v1",
     SourceKind.ANOMALY_FINDING: "0015:anomaly_findings:v1",
-    SourceKind.REFERENCE_DATASET: "0015:anomaly_reference_datasets:v1",
+    SourceKind.REFERENCE_DATASET: "0015:anomaly_reference_datasets+bounded-row-counts:v2",
 }
 
 
@@ -484,6 +487,22 @@ async def _oracle_bundle(
                 )
             }
             reference["id"] = reference_id
+            counts = await _row(
+                database,
+                "SELECT count(*)::integer AS row_count,"
+                "count(DISTINCT session_id)::integer AS session_count FROM ("
+                "SELECT session_id FROM anomaly_reference_rows "
+                "WHERE reference_dataset_id=:id LIMIT :limit) bounded_rows",
+                {"id": reference_id, "limit": MAX_REFERENCE_ROWS + 1},
+            )
+            reference["observed_row_count"] = int(counts["row_count"])
+            reference["observed_session_count"] = int(counts["session_count"])
+            _assert(
+                reference["observed_row_count"] == int(detector["row_count"])
+                and reference["observed_session_count"]
+                == int(detector["session_count"]),
+                "9C frozen reference row/session counts differ from its manifest",
+            )
             expected[SourceKind.REFERENCE_DATASET] = reference_id
             expected_checksums[SourceKind.REFERENCE_DATASET] = sha256(reference)
         if finding_id is not None and run_id is not None:
@@ -543,6 +562,79 @@ async def _oracle_bundle(
             _assert(summary["row_count"] > 0, "9C frozen reference summary is empty")
     _assert_graph_oracle(bundle, expected, expected_checksums)
     return {"receipt": receipt, "response": response, "expected_nodes": expected}
+
+
+async def _select_pull_with_future_target(
+    database: Database, fixture: Any
+) -> dict[str, Any]:
+    targets = await phase9d._select_pull(database, fixture)
+    async with database.session() as db:
+        rows = (
+            (
+                await db.execute(
+                    text(
+                        "SELECT p.id,p.vehicle_id,p.ended_at,fs.id AS feature_set_id,"
+                        "fs.observation_cutoff,fs.quality_metadata "
+                        "FROM pulls p JOIN feature_sets fs ON fs.pull_id=p.id "
+                        "WHERE fs.entity_scope='pull' ORDER BY p.started_at,p.id"
+                    )
+                )
+            )
+            .mappings()
+            .all()
+        )
+    fixture_pull_ids = {str(value) for value in fixture.pull_ids}
+    eligible = None
+    for row in rows:
+        quality = (
+            row["quality_metadata"] if isinstance(row["quality_metadata"], dict) else {}
+        )
+        if (
+            "fuel.high_pressure" not in quality.get("available_signals", [])
+            or float(quality.get("pull_completeness", 0.0)) < 0.75
+            or int(quality.get("duplicate_timestamp_count", 0)) != 0
+            or str(row["id"]) not in fixture_pull_ids
+        ):
+            continue
+        async with database.session() as db:
+            future_target = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT target_pull_id,target_feature_set_id,target_started_at,"
+                            "input_available_at FROM supervised_dataset_rows "
+                            "WHERE input_feature_set_id=:feature_set "
+                            "AND target_started_at>input_available_at "
+                            "AND input_available_at>=:source_cutoff "
+                            "ORDER BY target_started_at LIMIT 1"
+                        ),
+                        {
+                            "feature_set": row["feature_set_id"],
+                            "source_cutoff": row["observation_cutoff"],
+                        },
+                    )
+                )
+                .mappings()
+                .first()
+            )
+        if future_target is not None:
+            eligible = {
+                **dict(row),
+                "future_target": dict(future_target),
+                "evidence_cutoff": future_target["input_available_at"],
+            }
+            break
+    if eligible is None:
+        raise ValueError(
+            "no eligible 9B source pull has a future target after its cutoff"
+        )
+    _assert(
+        eligible["observation_cutoff"]
+        <= eligible["evidence_cutoff"]
+        < eligible["future_target"]["target_started_at"],
+        "9B source cutoff cannot precede its recorded future target",
+    )
+    return {**targets, "eligible": eligible}
 
 
 async def _materialize(
@@ -722,7 +814,7 @@ async def evaluate() -> dict[str, Any]:
             primary, _secondary, anomaly_context = await phase9d._train_detectors(
                 database, telemetry, root / "phase9c"
             )
-            targets = await phase9d._select_pull(database, fixture)
+            targets = await _select_pull_with_future_target(database, fixture)
             legacy_before = await _legacy_digests(database)
             await database.close()
             shutdown_telemetry_once()
@@ -936,7 +1028,12 @@ async def evaluate() -> dict[str, Any]:
                     eligible = targets["eligible"]
                     pull_id = UUID(str(eligible["id"]))
                     vehicle_id = UUID(str(eligible["vehicle_id"]))
-                    cutoff = datetime.now(UTC)
+                    cutoff = eligible["evidence_cutoff"]
+                    future_target = eligible["future_target"]
+                    _assert(
+                        cutoff < future_target["target_started_at"],
+                        "9B acceptance cutoff does not precede its recorded target pull",
+                    )
                     receipts: dict[str, dict[str, Any]] = {}
                     for task in MLTask:
                         response = await client.post(
@@ -979,6 +1076,57 @@ async def evaluate() -> dict[str, Any]:
                             response.status_code == 200, f"9D {family} receipt failed"
                         )
                         receipts[f"anomaly:{family}"] = response.json()
+
+                    correlation_response = await client.post(
+                        "/api/v1/prediction-service/next-pull",
+                        json={
+                            "pull_id": str(anomaly_pull.pull_id),
+                            "vehicle_id": str(anomaly_pull.vehicle_id),
+                            "observation_cutoff": anomaly_cutoff.isoformat(),
+                            "source_role": "synthetic",
+                            "task": MLTask.PERFORMANCE_DEGRADATION.value,
+                        },
+                        headers=headers,
+                    )
+                    _assert(
+                        correlation_response.status_code == 200
+                        and correlation_response.json()["status"]
+                        == PredictionStatus.READY_SCORE.value,
+                        "same-pull 9B prediction did not produce a score",
+                    )
+                    receipts["correlation:next_pull"] = correlation_response.json()
+
+                    snapshot_before_late_records = (
+                        await prediction_service.repository.feature_snapshot(
+                            anomaly_pull.pull_id, anomaly_cutoff
+                        )
+                    )
+                    if snapshot_before_late_records is None:
+                        raise AssertionError(
+                            "same-pull cutoff sentinel has no 9A FeatureSet"
+                        )
+                    late_records = await phase9d._inject_late_records(
+                        database, snapshot_before_late_records, anomaly_cutoff
+                    )
+                    snapshot_after_late_records = (
+                        await prediction_service.repository.feature_snapshot(
+                            anomaly_pull.pull_id, anomaly_cutoff
+                        )
+                    )
+                    _assert(
+                        snapshot_after_late_records is not None
+                        and snapshot_after_late_records.feature_set_id
+                        == snapshot_before_late_records.feature_set_id
+                        and snapshot_after_late_records.source_hash
+                        == snapshot_before_late_records.source_hash
+                        and snapshot_after_late_records.provenance_hash
+                        == snapshot_before_late_records.provenance_hash
+                        and snapshot_after_late_records.values
+                        == snapshot_before_late_records.values
+                        and snapshot_after_late_records.current_modification_ids
+                        == snapshot_before_late_records.current_modification_ids,
+                        "late telemetry or modification changed the frozen 9A snapshot",
+                    )
 
                     missing_pull = targets["missing_fuel"]
                     missing_response = await client.post(
@@ -1251,6 +1399,97 @@ async def evaluate() -> dict[str, Any]:
                                 "fact_count": len(bundle.facts),
                                 "lineage_equal": True,
                             }
+                        elif key == "correlation:next_pull":
+                            supervised_bundle = bundle
+                            anomaly_bundle = source_bundles["anomaly:performance"]
+                            supervised_feature = next(
+                                node.source_entity_id
+                                for node in supervised_bundle.nodes
+                                if node.source_kind is SourceKind.FEATURE_SET
+                            )
+                            anomaly_feature = next(
+                                node.source_entity_id
+                                for node in anomaly_bundle.nodes
+                                if node.source_kind is SourceKind.FEATURE_SET
+                            )
+                            supervised_receipts = [
+                                node
+                                for node in supervised_bundle.nodes
+                                if node.source_kind is SourceKind.PREDICTION_RECEIPT
+                            ]
+                            anomaly_receipts = [
+                                node
+                                for node in anomaly_bundle.nodes
+                                if node.source_kind is SourceKind.PREDICTION_RECEIPT
+                            ]
+                            _assert(
+                                supervised_feature == anomaly_feature,
+                                "same-pull 9B and 9C evidence did not share its FeatureSet",
+                            )
+                            _assert(
+                                len(supervised_receipts) == len(anomaly_receipts) == 1
+                                and supervised_receipts[0].source_entity_id
+                                == UUID(str(receipt["receipt_id"]))
+                                and anomaly_receipts[0].source_entity_id
+                                == UUID(
+                                    str(receipts["anomaly:performance"]["receipt_id"])
+                                )
+                                and supervised_bundle.evidence_id
+                                != anomaly_bundle.evidence_id,
+                                "same-pull 9B/9C outputs were conflated",
+                            )
+                            _assert(
+                                not any(
+                                    node.source_kind
+                                    in {
+                                        SourceKind.DETECTOR_VERSION,
+                                        SourceKind.ANOMALY_FINDING,
+                                        SourceKind.ANOMALY_RUN,
+                                    }
+                                    for node in supervised_bundle.nodes
+                                )
+                                and not any(
+                                    node.source_kind is SourceKind.MODEL_VERSION
+                                    for node in anomaly_bundle.nodes
+                                ),
+                                "9B and 9C source families crossed evidence boundaries",
+                            )
+                            _assert(
+                                all(
+                                    claim.scope.result_type.value == "next_pull"
+                                    and claim.scope.horizon.value == "NEXT_PULL"
+                                    for claim in supervised_bundle.claims
+                                )
+                                and all(
+                                    claim.scope.result_type.value == "anomaly"
+                                    and claim.scope.horizon.value
+                                    == "AFTER_PULL_OFFLINE"
+                                    for claim in anomaly_bundle.claims
+                                ),
+                                "9B/9C claims crossed result or horizon scope",
+                            )
+                            _assert(
+                                supervised_bundle.prediction.score
+                                == receipt["engineering_validation_score"]
+                                and anomaly_bundle.prediction.score
+                                == receipts["anomaly:performance"]["anomaly_score"],
+                                "correlated sources replaced their independent scores",
+                            )
+                            report["correlated_sources"] = {
+                                "same_pull_id": str(anomaly_pull.pull_id),
+                                "shared_feature_set_id": str(supervised_feature),
+                                "next_pull_receipt_id": str(
+                                    supervised_bundle.receipt_id
+                                ),
+                                "anomaly_receipt_id": str(anomaly_bundle.receipt_id),
+                                "next_pull_evidence_id": str(
+                                    supervised_bundle.evidence_id
+                                ),
+                                "anomaly_evidence_id": str(anomaly_bundle.evidence_id),
+                                "distinct_receipts_and_bundles": True,
+                                "claim_scopes_separate": True,
+                                "scores_kept_separate": True,
+                            }
                         elif key.startswith("anomaly:"):
                             family = key.split(":", 1)[1]
                             report["anomaly_families"][family] = {
@@ -1292,6 +1531,74 @@ async def evaluate() -> dict[str, Any]:
                                 bundle.prediction.score is None,
                                 "abstention was upgraded to a score",
                             )
+
+                    target_measurement_count = await _row(
+                        database,
+                        "SELECT count(*)::integer AS measurement_count "
+                        "FROM telemetry_samples ts JOIN pulls p ON p.session_id=ts.session_id "
+                        "WHERE p.id=:pull AND ts.observed_at>:cutoff "
+                        "AND ts.observed_at BETWEEN p.started_at AND p.ended_at",
+                        {
+                            "pull": UUID(str(future_target["target_pull_id"])),
+                            "cutoff": cutoff,
+                        },
+                    )
+                    supervised_bundles = [source_bundles[task.value] for task in MLTask]
+                    target_pull_id = str(future_target["target_pull_id"])
+                    target_feature_set_id = str(future_target["target_feature_set_id"])
+                    target_ids_absent = all(
+                        target_pull_id
+                        not in json.dumps(item.model_dump(mode="json"), sort_keys=True)
+                        and target_feature_set_id
+                        not in json.dumps(item.model_dump(mode="json"), sort_keys=True)
+                        for item in supervised_bundles
+                    )
+                    _assert(
+                        int(target_measurement_count["measurement_count"]) > 0,
+                        "future target pull has no observed measurements after the 9B cutoff",
+                    )
+                    _assert(
+                        target_ids_absent,
+                        "future target identity leaked into 9B evidence",
+                    )
+                    correlated_serialization = json.dumps(
+                        source_bundles["correlation:next_pull"].model_dump(mode="json"),
+                        sort_keys=True,
+                    ) + json.dumps(
+                        source_bundles["anomaly:performance"].model_dump(mode="json"),
+                        sort_keys=True,
+                    )
+                    _assert(
+                        late_records["sample_id"] not in correlated_serialization
+                        and late_records["modification_id"]
+                        not in correlated_serialization,
+                        "post-cutoff telemetry or modification entered same-pull evidence",
+                    )
+                    report["cutoff_sentinel"] = {
+                        "supervised_input_cutoff": cutoff.isoformat(),
+                        "future_target_started_at": future_target[
+                            "target_started_at"
+                        ].isoformat(),
+                        "target_starts_after_cutoff": True,
+                        "future_target_measurements_after_cutoff": int(
+                            target_measurement_count["measurement_count"]
+                        ),
+                        "future_target_pull_and_feature_set_absent_from_9b_evidence": True,
+                        "late_sample_id": late_records["sample_id"],
+                        "late_sample_observed_at": late_records[
+                            "observed_at"
+                        ].isoformat(),
+                        "late_sample_ingested_at": late_records[
+                            "ingested_at"
+                        ].isoformat(),
+                        "late_modification_id": late_records["modification_id"],
+                        "late_modification_created_at": late_records[
+                            "modification_created_at"
+                        ].isoformat(),
+                        "late_sources_absent_from_same_pull_evidence": True,
+                        "frozen_feature_set_values_and_hashes_unchanged": True,
+                        "all_computed_features_at_or_before_each_cutoff": True,
+                    }
 
                     # Idempotent sequential replay after all records exist.
                     replay_payload, replay_duration = await _materialize(
@@ -1877,6 +2184,123 @@ async def evaluate() -> dict[str, Any]:
                         constraint_checks
                     )
 
+                    performance_bundle = source_bundles["anomaly:performance"]
+                    performance_detector_id = next(
+                        node.source_entity_id
+                        for node in performance_bundle.nodes
+                        if node.source_kind is SourceKind.DETECTOR_VERSION
+                    )
+                    frozen_reference = await _row(
+                        database,
+                        "SELECT d.family,d.method,rd.id AS reference_id,rd.row_count,"
+                        "rd.observation_cutoff AS reference_cutoff "
+                        "FROM anomaly_detector_versions dv "
+                        "JOIN anomaly_detector_definitions d ON d.id=dv.detector_definition_id "
+                        "JOIN anomaly_reference_datasets rd ON rd.id=dv.reference_dataset_id "
+                        "WHERE dv.id=:id",
+                        {"id": performance_detector_id},
+                    )
+                    reference_definition = detector_definition(
+                        frozen_reference["family"], frozen_reference["method"]
+                    )
+                    performance_cutoff = datetime.fromisoformat(
+                        receipts["anomaly:performance"]["requested_cutoff"].replace(
+                            "Z", "+00:00"
+                        )
+                    )
+                    late_reference_cutoff = max(
+                        datetime.now(UTC),
+                        performance_cutoff,
+                        frozen_reference["reference_cutoff"],
+                    ) + timedelta(seconds=1)
+                    late_reference_row = None
+                    for candidate in (
+                        pull
+                        for session_pulls in primary.pulls_by_session
+                        for pull in session_pulls
+                    ):
+                        candidate_rows = await prediction_service.anomaly_service.repository.load_targets(
+                            (candidate.pull_id,),
+                            late_reference_cutoff,
+                            reference_definition,
+                        )
+                        if not candidate_rows:
+                            continue
+                        already_frozen = await _row(
+                            database,
+                            "SELECT count(*)::integer AS row_count "
+                            "FROM anomaly_reference_rows "
+                            "WHERE reference_dataset_id=:reference AND feature_set_id=:feature_set",
+                            {
+                                "reference": frozen_reference["reference_id"],
+                                "feature_set": candidate_rows[0].feature_set_id,
+                            },
+                        )
+                        if int(already_frozen["row_count"]) == 0:
+                            late_reference_row = candidate_rows[0]
+                            break
+                    if late_reference_row is None:
+                        raise AssertionError(
+                            "no valid 9A source row is available for the post-cutoff 9C sentinel"
+                        )
+                    late_reference_row = replace(
+                        late_reference_row,
+                        row_id=sha256(
+                            {
+                                "sentinel": "phase9e-postcutoff-reference-row",
+                                "reference": str(frozen_reference["reference_id"]),
+                                "feature_set": str(late_reference_row.feature_set_id),
+                            }
+                        ),
+                        observation_cutoff=late_reference_cutoff,
+                    )
+                    reference_params = _reference_row_parameters(
+                        frozen_reference["reference_id"],
+                        late_reference_row,
+                        reference_definition,
+                    )
+                    async with database.session() as db:
+                        await db.execute(
+                            text(
+                                "INSERT INTO anomaly_reference_rows(reference_dataset_id,row_id,feature_set_id,"
+                                "vehicle_id,configuration_id,session_id,pull_id,pull_started_at,pull_ended_at,"
+                                "observation_cutoff,source_role,source_type,source_hash,provenance_hash,"
+                                "modification_ids,available_signals,feature_values,feature_quality,"
+                                "feature_missing,feature_availability,quality_metadata) VALUES(:reference,:row_id,"
+                                ":feature_set,:vehicle,:configuration,:session,:pull,:started,:ended,:cutoff,:role,"
+                                ":source_type,:source_hash,:provenance_hash,CAST(:modifications AS jsonb),"
+                                "CAST(:signals AS jsonb),CAST(:values AS jsonb),CAST(:quality AS jsonb),"
+                                "CAST(:missing AS jsonb),CAST(:availability AS jsonb),CAST(:metadata AS jsonb))"
+                            ),
+                            reference_params,
+                        )
+                        await db.commit()
+                    post_cutoff_reference_verify = await client.post(
+                        f"/api/v1/prediction-service/evidence/{performance_bundle.evidence_id}/verify",
+                        json={},
+                        headers=headers,
+                    )
+                    post_cutoff_result = post_cutoff_reference_verify.json()
+                    _assert(
+                        post_cutoff_reference_verify.status_code == 200
+                        and post_cutoff_result["integrity"]
+                        == EvidenceIntegrity.FAILED_SOURCE_MISMATCH.value
+                        and "PROVENANCE_MISMATCH" in post_cutoff_result["reason_codes"],
+                        "post-cutoff 9C reference-row insertion was not detected",
+                    )
+                    report["integrity_controls"]["post_cutoff_reference_row"] = {
+                        "inserted_reference_row_id": late_reference_row.row_id,
+                        "inserted_feature_set_id": str(
+                            late_reference_row.feature_set_id
+                        ),
+                        "inserted_observation_cutoff": late_reference_cutoff.isoformat(),
+                        "frozen_reference_row_count": int(
+                            frozen_reference["row_count"]
+                        ),
+                        "verification_integrity": post_cutoff_result["integrity"],
+                        "reason_code": "PROVENANCE_MISMATCH",
+                    }
+
                     row_counts = {
                         "bundles": await _table_count(
                             database, "prediction_evidence_bundles", evidence_id
@@ -1972,10 +2396,6 @@ async def evaluate() -> dict[str, Any]:
                     report["binding_history"] = {
                         "revoked_binding_receipt": historical_receipt["receipt_id"],
                         "historical_evidence_readable": True,
-                    }
-                    report["cutoff_sentinel"] = {
-                        "all_computed_features_at_or_before_cutoff": True,
-                        "late_inserted_sample_and_modification": "delegated to Phase 9D acceptance regression",
                     }
                     report["database_counts"] = await phase9d._db_counts(database)
                     metrics_text = app.state.telemetry.render_metrics().decode("utf-8")

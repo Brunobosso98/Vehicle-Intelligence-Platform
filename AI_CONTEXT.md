@@ -110,7 +110,8 @@ factual events or Phase 9B next-pull labels. Phase 9D is VERIFIED on the final e
 unmerged PR #44; current SHA and exact-head receipts are linked from the PR checks.
 Phase 9E adds immutable cutoff-aware provenance for 9D receipts and preserves 9B `NEXT_PULL`
 and 9C `AFTER_PULL_OFFLINE` semantics. It adds no diagnosis, agent, MCP, UI, calibration or
-ECU-control path.
+ECU-control path. Its implementation and 134-section evidence report are on open, unmerged PR #45;
+use that PR's current exact-head checks and attached validation artifact for delivery status.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -119,7 +120,7 @@ Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
 The canonical GitHub `full-validation` workflow covers completed Phase 7/8/9A/9B/9C/9D gates and
-the in-progress Phase 9E database/HTTP evaluator;
+the Phase 9E database/HTTP evaluator;
 Phase 9C adds `make test-anomalies` and `make phase9c-acceptance`. Phase 9D adds
 `make test-prediction-service` and `make phase9d-acceptance`; its acceptance and canonical
 Docker/full-stack checks require the Docker runner. Exact-head receipts are linked from PR #44.
@@ -146,6 +147,7 @@ Do not claim a gate passed without its executed receipt.
   documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Phase 9D
   is VERIFIED on the final exact head of open, unmerged PR #44; current check receipts are linked
   from the PR.
-- Phase 9E is in implementation: migration 0017 adds immutable bundles, normalized lineage and
-  verification audits. Exact-head Docker/CI acceptance remains required.
+- Phase 9E adds migration 0017 with immutable bundles, normalized lineage and verification audits.
+  The implementation, 134-section ledger and acceptance report are on open, unmerged PR #45; use
+  its exact-head check receipts and attached report for current validation status.
 - Phases 9F–9H remain planned.

@@ -1,7 +1,7 @@
 # ADR 0043: Phase 9E immutable prediction evidence
 
-Status: accepted for Phase 9E implementation; final exact-head verification is recorded in the
-acceptance report.
+Status: accepted; implementation and validation are tracked on open PR #45. The current exact-head
+result is linked from the [acceptance report](../validation/phase-9e-acceptance.md).
 
 ## Context
 
@@ -16,7 +16,9 @@ artifacts unsafe to load.
   immutable 9D receipt. Supervised `NEXT_PULL` and anomaly `AFTER_PULL_OFFLINE` remain distinct.
 - Source resolution uses a repeatable-read, read-only transaction. It retains IDs and hashes
   internally, uses the original cutoff, validates 9A feature provenance and 9B/9C registry links,
-  and never trains or invokes online inference.
+  and never trains or invokes online inference. It bounds a 9C reference-row scan to 10,001 rows
+  and checks the observed row/session counts against the frozen parent manifest before accepting
+  its checksum; this detects appended rows without reading the reference feature matrix.
 - A versioned canonical JSON graph is stored in PostgreSQL with normalized source/node/edge/fact/gap
   rows. Logical identity excludes generation time; the content checksum includes it. Identical
   source snapshots replay deterministically. Changed sources conflict rather than overwrite.
@@ -27,6 +29,8 @@ artifacts unsafe to load.
 - Facts describe recorded observations and statistical associations only. Scores are never
   probabilities, model agreement is not independent corroboration, and evidence does not imply
   causation or diagnosis.
+- When 9B and 9C results share one pull/FeatureSet, retain separate receipt roots, scores, claims
+  and horizons. The shared source is recorded context, not an additional vote.
 
 ## Consequences
 

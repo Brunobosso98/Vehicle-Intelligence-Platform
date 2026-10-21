@@ -16,7 +16,7 @@
 - Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
 - Phase 9C — Anomaly Detection (VERIFIED; merged baseline `7fc4c59` after PR #43)
 - Phase 9D — Prediction Service (VERIFIED on the final exact head of open, unmerged PR #44)
-- Phase 9E — PredictionEvidence (implementation in progress; exact-head acceptance required)
+- Phase 9E — PredictionEvidence (implementation on open, unmerged PR #45; see its current exact-head receipts)
 - Phase 9F — Agent Integration (planned)
 - Phase 9G — Evaluation / Calibration (planned)
 - Phase 9H — Predictive Intelligence UI (planned)
@@ -36,8 +36,9 @@ feature and dataset foundation; Phase 9B consumes that foundation for offline su
 evaluation. Phase 9C adds verified offline anomaly scoring. Phase 9D adds an explicitly approved,
 disabled-by-default controlled serving boundary and passed its final exact PR-head gates; the final
 SHA and check receipts are in [PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44).
-Phase 9E is being implemented as a provenance layer over immutable 9D receipts. Phases 9F–9H
-remain planned.
+Phase 9E is delivered as a provenance layer over immutable 9D receipts; its implementation and
+acceptance report are on open, unmerged PR #45. Use the PR's current exact-head checks for delivery
+status. Phases 9F–9H remain planned.
 
 # Current phase
 

@@ -231,7 +231,11 @@ FeatureSet values/units, model labels, anomaly findings/reference cohorts and hi
 The database gate also exercises 10-way idempotency, a 100-request replay/admission burst,
 revoked historical reads, disabled/production/auth/peer/oversize boundaries, artifact and source
 tampering with restoration, immutability triggers, FK/size/duplicate/rollback constraints and
-actual metric/span delivery. `make benchmark-prediction-evidence` and
+actual metric/span delivery. Temporal sentinels prove that a target pull occurs after the 9B input
+cutoff, and exclude target IDs, late-ingested old samples, and retroactively installed but late
+created modifications from the frozen evidence. A same-pull 9B/9C case retains separate bundles and
+claims. A post-cutoff appended 9C reference row fails the bounded frozen row/session count check.
+`make benchmark-prediction-evidence` and
 `make prediction-evidence-observability` validate and report measurements from that same
 acceptance receipt. It records cold/warm latency, p50/p95, response bytes, RSS and checked-out DB
 sessions as fixture measurements without claiming production SLOs. Reports live in ignored

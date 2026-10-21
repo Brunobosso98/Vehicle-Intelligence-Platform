@@ -14,6 +14,7 @@ from uuid import UUID, uuid5
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from vehicle_platform.anomalies.domain import MAX_REFERENCE_ROWS
 from vehicle_platform.features.domain import stable_hash
 from vehicle_platform.features.registry import DEFAULT_REGISTRY
 from vehicle_platform.infrastructure.database import Database
@@ -49,7 +50,7 @@ _SOURCE_SCHEMA = {
     SourceKind.DETECTOR_VERSION: "0015:anomaly_detector_versions+definitions:v1",
     SourceKind.ANOMALY_RUN: "0015:anomaly_detection_runs:v1",
     SourceKind.ANOMALY_FINDING: "0015:anomaly_findings:v1",
-    SourceKind.REFERENCE_DATASET: "0015:anomaly_reference_datasets:v1",
+    SourceKind.REFERENCE_DATASET: "0015:anomaly_reference_datasets+bounded-row-counts:v2",
 }
 _ARTIFACT_CHECK_EXECUTOR = ThreadPoolExecutor(
     max_workers=2, thread_name_prefix="prediction-evidence-artifact-check"
@@ -276,7 +277,27 @@ class PredictionEvidenceRepository:
                             )
                         }
                         reference["id"] = reference_id
+                        reference_counts = await db.execute(
+                            text(
+                                "SELECT count(*)::integer AS row_count,"
+                                "count(DISTINCT session_id)::integer AS session_count "
+                                "FROM (SELECT session_id FROM anomaly_reference_rows "
+                                "WHERE reference_dataset_id=:id LIMIT :limit) bounded_rows"
+                            ),
+                            {"id": reference_id, "limit": MAX_REFERENCE_ROWS + 1},
+                        )
+                        observed_counts = reference_counts.mappings().one()
+                        reference["observed_row_count"] = int(observed_counts["row_count"])
+                        reference["observed_session_count"] = int(observed_counts["session_count"])
                         self._put(records, SourceKind.REFERENCE_DATASET, reference_id, reference)
+                        if (
+                            reference["observed_row_count"] > MAX_REFERENCE_ROWS
+                            or reference["observed_row_count"] != int(detector["row_count"])
+                            or reference["observed_session_count"] != int(detector["session_count"])
+                        ):
+                            return self._not_verifiable(
+                                records, response, EvidenceGapCode.PROVENANCE_MISMATCH, failed=True
+                            )
                         if (
                             detector["artifact_checksum"] != receipt["artifact_checksum"]
                             or detector["family"] != response.family
