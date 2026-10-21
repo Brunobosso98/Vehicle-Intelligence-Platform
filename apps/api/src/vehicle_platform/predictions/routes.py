@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Header, Query, Request, Security
@@ -9,6 +9,8 @@ from fastapi.security import HTTPBearer
 from pydantic import BaseModel, ConfigDict
 
 from vehicle_platform.api.contracts import ErrorResponse
+from vehicle_platform.prediction_evidence.domain import PredictionEvidenceProjection
+from vehicle_platform.prediction_evidence.service import PredictionEvidenceService
 from vehicle_platform.predictions.domain import AnomalyRequest, NextPullRequest, PredictionResponse
 from vehicle_platform.predictions.service import PredictionService
 
@@ -43,7 +45,23 @@ class PredictionVersionsResponse(BaseModel):
     offset: int
 
 
-def prediction_router(service: PredictionService) -> APIRouter:
+class PredictionEvidenceMaterializeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["phase9e-prediction-evidence-v1"] = "phase9e-prediction-evidence-v1"
+
+
+class PredictionEvidenceMaterializeResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    materialized: bool
+    evidence: PredictionEvidenceProjection
+
+
+def prediction_router(
+    service: PredictionService,
+    evidence_service: PredictionEvidenceService | None = None,
+) -> APIRouter:
     router = APIRouter(prefix="/api/v1/prediction-service", tags=["prediction-service"])
     error_responses: dict[int | str, dict[str, Any]] = {
         401: {"model": ErrorResponse},
@@ -122,6 +140,64 @@ def prediction_router(service: PredictionService) -> APIRouter:
     async def receipt(receipt_id: UUID, request: Request) -> PredictionResponse:
         request.state.prediction_endpoint = "receipt"
         return await service.receipt(receipt_id)
+
+    if evidence_service is not None:
+
+        @router.post(
+            "/runs/{receipt_id}/evidence",
+            response_model=PredictionEvidenceMaterializeResponse,
+            operation_id="prediction_service_materialize_evidence",
+            responses={**error_responses, 404: {"model": ErrorResponse}},
+            dependencies=[Security(_bearer)],
+        )
+        async def materialize_evidence(
+            receipt_id: UUID,
+            payload: PredictionEvidenceMaterializeRequest,
+            request: Request,
+            idempotency_key: Annotated[
+                str | None, Header(alias="Idempotency-Key", max_length=128)
+            ] = None,
+        ) -> PredictionEvidenceMaterializeResponse:
+            _validate_idempotency_key(idempotency_key)
+            request.state.prediction_endpoint = "evidence_materialize"
+            projection, created, _ = await evidence_service.materialize(
+                receipt_id, schema_version=payload.schema_version
+            )
+            return PredictionEvidenceMaterializeResponse(materialized=created, evidence=projection)
+
+        @router.get(
+            "/evidence/{evidence_id}",
+            response_model=PredictionEvidenceProjection,
+            operation_id="prediction_service_evidence",
+            responses={**error_responses, 404: {"model": ErrorResponse}},
+            dependencies=[Security(_bearer)],
+        )
+        async def evidence(evidence_id: UUID, request: Request) -> PredictionEvidenceProjection:
+            request.state.prediction_endpoint = "evidence_read"
+            return await evidence_service.read(evidence_id)
+
+        @router.get(
+            "/runs/{receipt_id}/evidence",
+            response_model=PredictionEvidenceProjection,
+            operation_id="prediction_service_receipt_evidence",
+            responses={**error_responses, 404: {"model": ErrorResponse}},
+            dependencies=[Security(_bearer)],
+        )
+        async def receipt_evidence(
+            receipt_id: UUID, request: Request
+        ) -> PredictionEvidenceProjection:
+            request.state.prediction_endpoint = "evidence_read"
+            return await evidence_service.read_for_receipt(receipt_id)
+
+        @router.post(
+            "/evidence/{evidence_id}/verify",
+            operation_id="prediction_service_verify_evidence",
+            responses={**error_responses, 404: {"model": ErrorResponse}},
+            dependencies=[Security(_bearer)],
+        )
+        async def verify_evidence(evidence_id: UUID, request: Request) -> Any:
+            request.state.prediction_endpoint = "evidence_verify"
+            return await evidence_service.verify(evidence_id)
 
     return router
 

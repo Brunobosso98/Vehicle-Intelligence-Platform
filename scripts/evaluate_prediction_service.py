@@ -666,8 +666,16 @@ async def evaluate() -> dict[str, Any]:
                         if path.startswith("/api/v1/prediction-service")
                     }
                     _assert(
-                        len(prediction_paths) == 4,
-                        "prediction HTTP contract is incomplete",
+                        {
+                            "/api/v1/prediction-service/versions",
+                            "/api/v1/prediction-service/next-pull",
+                            "/api/v1/prediction-service/anomalies",
+                            "/api/v1/prediction-service/runs/{receipt_id}",
+                            "/api/v1/prediction-service/runs/{receipt_id}/evidence",
+                            "/api/v1/prediction-service/evidence/{evidence_id}",
+                            "/api/v1/prediction-service/evidence/{evidence_id}/verify",
+                        }.issubset(prediction_paths),
+                        "prediction and evidence HTTP contract is incomplete",
                     )
                     _assert(
                         all(

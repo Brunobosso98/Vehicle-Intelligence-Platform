@@ -218,3 +218,22 @@ regressions; database-backed acceptance, canonical full-stack validation, and se
 need Docker are CI REQUIRED when no Docker daemon is available. Synthetic fixtures prove service
 integration only. They do not establish real-car accuracy or mechanical condition. Evidence and
 logs are written to ignored `.validation/phase9d/` and uploaded by the canonical workflow.
+
+## Phase 9E prediction evidence gates
+
+`make test-prediction-evidence` covers canonical hashes, strict manifests, cutoff eligibility,
+missingness, abstentions, safe projection, source mismatch and structured truncation. The
+independent `make phase9e-acceptance` uses a fresh disposable TimescaleDB upgraded through 0016,
+creates real 9A/9B/9C records and controlled 9D HTTP receipts, then round-trips 0017 before adding
+9E data. It compares legacy table digests, source row hashes, graph links, scores/thresholds,
+FeatureSet values/units, model labels, anomaly findings/reference cohorts and historical cutoffs.
+
+The database gate also exercises 10-way idempotency, a 100-request replay/admission burst,
+revoked historical reads, disabled/production/auth/peer/oversize boundaries, artifact and source
+tampering with restoration, immutability triggers, FK/size/duplicate/rollback constraints and
+actual metric/span delivery. `make benchmark-prediction-evidence` and
+`make prediction-evidence-observability` validate and report measurements from that same
+acceptance receipt. It records cold/warm latency, p50/p95, response bytes, RSS and checked-out DB
+sessions as fixture measurements without claiming production SLOs. Reports live in ignored
+`.validation/phase9e/` and are uploaded by `full-validation`. Without Docker, the database and
+canonical full-stack checks are CI REQUIRED.

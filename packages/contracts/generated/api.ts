@@ -356,6 +356,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/prediction-service/evidence/{evidence_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Evidence */
+    get: operations["prediction_service_evidence"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/evidence/{evidence_id}/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Verify Evidence */
+    post: operations["prediction_service_verify_evidence"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/prediction-service/next-pull": {
     parameters: {
       query?: never;
@@ -384,6 +418,24 @@ export interface paths {
     get: operations["prediction_service_receipt"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/runs/{receipt_id}/evidence": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Receipt Evidence */
+    get: operations["prediction_service_receipt_evidence"];
+    put?: never;
+    /** Materialize Evidence */
+    post: operations["prediction_service_materialize_evidence"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1667,6 +1719,12 @@ export interface components {
       /** Version */
       version: number;
     };
+    /**
+     * ArtifactAvailability
+     * @enum {string}
+     */
+    ArtifactAvailability:
+      "VERIFIED" | "NOT_APPLICABLE" | "UNAVAILABLE" | "CHECKSUM_MISMATCH";
     /** Ask */
     Ask: {
       /** Previous Run Id */
@@ -2287,32 +2345,53 @@ export interface components {
       /** Warnings */
       warnings?: string[];
     };
-    /** EvidenceGap */
-    EvidenceGap: {
-      category: components["schemas"]["GapType"];
-      /** Description */
-      description: string;
-      /** Hypothesis Ids */
-      hypothesis_ids?: string[];
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Required
-       * @default true
-       */
-      required: boolean;
-      /** Resolution Source */
-      resolution_source?: string | null;
-      /** Signal Need Ids */
-      signal_need_ids?: string[];
-      /** @default OPEN */
-      status: components["schemas"]["GapStatus"];
-      /** Why It Matters */
-      why_it_matters: string;
-    };
+    /**
+     * EvidenceCompleteness
+     * @enum {string}
+     */
+    EvidenceCompleteness: "COMPLETE" | "PARTIAL" | "ABSTAINED";
+    /**
+     * EvidenceGapCode
+     * @enum {string}
+     */
+    EvidenceGapCode:
+      | "NO_FEATURE_SET"
+      | "INPUT_ABSTAINED"
+      | "SIGNAL_UNAVAILABLE"
+      | "FEATURE_NOT_YET_OBSERVED"
+      | "LOW_QUALITY"
+      | "REFERENCE_INSUFFICIENT"
+      | "CONTEXT_INCOMPATIBLE"
+      | "UNKNOWN_CONFIG"
+      | "MODEL_ARTIFACT_UNAVAILABLE"
+      | "PROVENANCE_MISMATCH"
+      | "EVIDENCE_SOURCE_MISSING"
+      | "SOURCE_SCHEMA_MISMATCH"
+      | "CUTOFF_MISMATCH"
+      | "UNSUPPORTED_SOURCE"
+      | "AMBIGUOUS_ASSOCIATION"
+      | "INCOMPLETE_PROJECTION"
+      | "UNVERIFIED_SOURCE";
+    /**
+     * EvidenceHorizon
+     * @enum {string}
+     */
+    EvidenceHorizon: "NEXT_PULL" | "AFTER_PULL_OFFLINE";
+    /**
+     * EvidenceIntegrity
+     * @enum {string}
+     */
+    EvidenceIntegrity:
+      | "VERIFIED"
+      | "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+      | "FAILED_SOURCE_MISMATCH"
+      | "NOT_VERIFIABLE"
+      | "UNSUPPORTED_SCHEMA";
+    /**
+     * EvidenceResultKind
+     * @enum {string}
+     */
+    EvidenceResultKind: "next_pull" | "anomaly";
     /** Fact */
     Fact: {
       /** Path */
@@ -2568,7 +2647,7 @@ export interface components {
        */
       findings_summary: string;
       /** Gaps */
-      gaps?: components["schemas"]["EvidenceGap"][];
+      gaps?: components["schemas"]["vehicle_platform__agents__investigation__domain__EvidenceGap"][];
       /** Goal */
       goal: string;
       /** Hypotheses */
@@ -3086,6 +3165,114 @@ export interface components {
       source_role: string;
       /** Subject Key */
       subject_key: string;
+    };
+    /** PredictionEvidenceMaterializeRequest */
+    PredictionEvidenceMaterializeRequest: {
+      /**
+       * Schema Version
+       * @default phase9e-prediction-evidence-v1
+       * @constant
+       */
+      schema_version: "phase9e-prediction-evidence-v1";
+    };
+    /** PredictionEvidenceMaterializeResponse */
+    PredictionEvidenceMaterializeResponse: {
+      evidence: components["schemas"]["PredictionEvidenceProjection"];
+      /** Materialized */
+      materialized: boolean;
+    };
+    /** PredictionEvidenceProjection */
+    PredictionEvidenceProjection: {
+      artifact_availability: components["schemas"]["ArtifactAvailability"];
+      /** Available Signals */
+      available_signals?: string[];
+      /** Claims */
+      claims: {
+        [key: string]: unknown;
+      }[];
+      completeness: components["schemas"]["EvidenceCompleteness"];
+      /** Coverage */
+      coverage: number;
+      /**
+       * Cutoff
+       * Format: date-time
+       */
+      cutoff: string;
+      /** Decision */
+      decision: boolean | ("ANOMALOUS" | "INLIER") | null;
+      /** Duplicate Timestamp Count */
+      duplicate_timestamp_count?: number | null;
+      /** Edge Count */
+      edge_count: number;
+      /**
+       * Evidence Id
+       * Format: uuid
+       */
+      evidence_id: string;
+      /** Expected Feature Count */
+      expected_feature_count: number;
+      /** Fact Count */
+      fact_count: number;
+      /** Facts */
+      facts: {
+        [key: string]: unknown;
+      }[];
+      /** Family */
+      family: string | null;
+      /** Fingerprint */
+      fingerprint: string;
+      /** Gaps */
+      gaps: components["schemas"]["vehicle_platform__prediction_evidence__domain__EvidenceGap"][];
+      horizon: components["schemas"]["EvidenceHorizon"];
+      integrity: components["schemas"]["EvidenceIntegrity"];
+      /** Interpretation */
+      interpretation: string;
+      /** Invalid Observation Count */
+      invalid_observation_count?: number | null;
+      /** Limitations */
+      limitations: string[];
+      /** Missing Reason Counts */
+      missing_reason_counts?: {
+        [key: string]: number;
+      };
+      /** Node Count */
+      node_count: number;
+      /** Observed Feature Count */
+      observed_feature_count: number;
+      /** Omitted Count */
+      omitted_count: number;
+      /** Pull Completeness */
+      pull_completeness?: number | null;
+      /** Reason Code */
+      reason_code: string | null;
+      /**
+       * Receipt Id
+       * Format: uuid
+       */
+      receipt_id: string;
+      result_type: components["schemas"]["EvidenceResultKind"];
+      /**
+       * Schema Version
+       * @constant
+       */
+      schema_version: "phase9e-safe-projection-v1";
+      /** Score */
+      score: number | null;
+      /**
+       * Score Is Probability
+       * @default false
+       * @constant
+       */
+      score_is_probability: false;
+      source_role: components["schemas"]["SourceRole"];
+      /** Source Type */
+      source_type?: string | null;
+      /** Status */
+      status: string;
+      /** Task */
+      task: string | null;
+      /** Threshold */
+      threshold: number | null;
     };
     /** PredictionLineage */
     PredictionLineage: {
@@ -4418,6 +4605,40 @@ export interface components {
     VersionRequest: {
       /** Version */
       version: number;
+    };
+    /** EvidenceGap */
+    vehicle_platform__agents__investigation__domain__EvidenceGap: {
+      category: components["schemas"]["GapType"];
+      /** Description */
+      description: string;
+      /** Hypothesis Ids */
+      hypothesis_ids?: string[];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Required
+       * @default true
+       */
+      required: boolean;
+      /** Resolution Source */
+      resolution_source?: string | null;
+      /** Signal Need Ids */
+      signal_need_ids?: string[];
+      /** @default OPEN */
+      status: components["schemas"]["GapStatus"];
+      /** Why It Matters */
+      why_it_matters: string;
+    };
+    /** EvidenceGap */
+    vehicle_platform__prediction_evidence__domain__EvidenceGap: {
+      code: components["schemas"]["EvidenceGapCode"];
+      /** Reason Code */
+      reason_code?: string | null;
+      /** Source Node Id */
+      source_node_id?: string | null;
     };
   };
   responses: never;
@@ -5837,6 +6058,176 @@ export interface operations {
       };
     };
   };
+  prediction_service_evidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        evidence_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionEvidenceProjection"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_verify_evidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        evidence_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   prediction_service_next_pull: {
     parameters: {
       query?: never;
@@ -5935,6 +6326,182 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PredictionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_receipt_evidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionEvidenceProjection"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_materialize_evidence: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Idempotency-Key"?: string | null;
+      };
+      path: {
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PredictionEvidenceMaterializeRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionEvidenceMaterializeResponse"];
         };
       };
       /** @description Unauthorized */

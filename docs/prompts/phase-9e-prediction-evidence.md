@@ -7,7 +7,7 @@
 **This phase:** 9E PredictionEvidence, a distinct deterministic, auditable and bounded evidence contract.  
 **Future phases:** 9F Agent Integration; 9G Evaluation/Calibration; 9H Predictive UI; 10 MLOps; 11 Agent Evals; 12 Production Cloud Infrastructure.
 
-**Mission:** For every eligible immutable 9D prediction receipt, materialize and independently verify a versioned **PredictionEvidence** bundle that says exactly (a) what result was recorded, (b) what source facts and model/reference version it came from, (c) which measurement or statistical associations support the *description* of the result, (d) what gaps/conflicts/limits apply, and (e) whether its chain of custody remains verifiable. This is an evidence integrity/projection layer, not new prediction, probabilistic calibration, diagnosis, repair advice, agent wiring, RAG search, or predictive UI.
+**Mission:** For every eligible immutable 9D prediction receipt, materialize and independently verify a versioned **PredictionEvidence** bundle that says exactly (a) what result was recorded, (b) what source facts and model/reference version it came from, (c) which measurement or statistical associations support the _description_ of the result, (d) what gaps/conflicts/limits apply, and (e) whether its chain of custody remains verifiable. This is an evidence integrity/projection layer, not new prediction, probabilistic calibration, diagnosis, repair advice, agent wiring, RAG search, or predictive UI.
 
 The entire document is an authoritative execution contract. ALL numbered requirements are normative. Interpret illustrative filenames and endpoint spellings by existing repository conventions; never claim a function exists without inspecting the code. If a requirement is impossible because source data is absent, produce an explicit typed evidence gap and bounded failure/abstention, not invented evidence or changed earlier semantics.
 
@@ -29,7 +29,7 @@ The 9D \`PredictionResponse\` schema is \`phase9d-prediction-response-v1\`, with
 
 ## 5. Distinct result horizons
 
-\`NEXT_PULL\` from 9B refers to a future *observable outcome rule* compared with the known input pull; future target telemetry, actual target outcomes, target labels and leakage are forbidden as "evidence" for the prediction at original cutoff. \`AFTER_PULL_OFFLINE\` from 9C is a retrospective observed statistical deviation for a completed pull; it is not a forecast. Evidence schemas and renderer must retain this distinction throughout.
+\`NEXT_PULL\` from 9B refers to a future _observable outcome rule_ compared with the known input pull; future target telemetry, actual target outcomes, target labels and leakage are forbidden as "evidence" for the prediction at original cutoff. \`AFTER_PULL_OFFLINE\` from 9C is a retrospective observed statistical deviation for a completed pull; it is not a forecast. Evidence schemas and renderer must retain this distinction throughout.
 
 ## 6. Formal Definition of Done
 
@@ -141,7 +141,7 @@ Preserve original receipt response byte/semantic fingerprint, score, status, thr
 
 ## 33. Verification without prediction execution
 
-The 9E verifier checks source references, stored values, version compatibility and decision/threshold consistency; it MUST NOT retrain or call the online 9D inference endpoint to manufacture a fresh receipt. Optional offline equivalence checks are an *independent validation tool*, not a required read path that re-executes a revoked detector.
+The 9E verifier checks source references, stored values, version compatibility and decision/threshold consistency; it MUST NOT retrain or call the online 9D inference endpoint to manufacture a fresh receipt. Optional offline equivalence checks are an _independent validation tool_, not a required read path that re-executes a revoked detector.
 
 ## 34. Source snapshot consistency
 
@@ -478,6 +478,7 @@ If two model outputs derive from same 9A feature set, mark them separately or re
 ## 117. Documentation deliverables
 
 Create:
+
 - \`docs/architecture/phase-9e-prediction-evidence.md\`
 - \`docs/validation/phase-9e-acceptance.md\`
 - \`docs/validation/phase-9e-evidence-evaluation.md\`
@@ -485,7 +486,7 @@ Create:
 - \`docs/runbooks/prediction-evidence.md\`
 - supporting ADRs and security/threat model updates;
 - \`README.md\`, \`AI_CONTEXT.md\`, roadmap, testing, observability and generated contracts as relevant.
-Machine receipts must be saved under ignored \`.validation/phase9e/\`.
+  Machine receipts must be saved under ignored \`.validation/phase9e/\`.
 
 ## 118. ADR requirements
 
@@ -579,6 +580,7 @@ Explicitly prove 9E adds no MCP tool, LangGraph node, agent provider invocation,
 ## 134. Final report contract
 
 Deliver a concise but evidence-rich engineering handoff:
+
 1. repository branch, merged 9D baseline, final SHA, PR URL/state;
 2. actual new migration revision, schema names and immutable constraints;
 3. provenance graph / schemas and stable identity/hash algorithm;

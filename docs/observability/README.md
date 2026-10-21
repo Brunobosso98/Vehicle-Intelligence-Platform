@@ -214,3 +214,17 @@ bounded categorical request context only; tokens, VINs, entity IDs, feature valu
 provenance hashes, and artifact paths are excluded. The independent HTTP evaluator checks actual
 spans and rendered metrics and measures latency/RSS as observations, not fixed cross-machine SLAs.
 Evidence is written beneath ignored `.validation/phase9d/`.
+
+## Phase 9E prediction evidence
+
+The evidence service measures `prediction_evidence.operations`, `prediction_evidence.replays`,
+`prediction_evidence.gaps`, `prediction_evidence.duration` and
+`prediction_evidence.graph_size`. Labels use only operation/outcome, bounded gap reason and graph
+dimension. Spans cover source resolution, claim construction, canonical hashing, immutable
+persistence, safe projection, independent verification and audit append. IDs, VINs, checksums,
+artifact paths and feature values are excluded from metric labels and span attributes.
+
+`make prediction-evidence-observability` checks the actual 9E HTTP acceptance metrics and spans
+captured in `.validation/phase9e/acceptance.json`, including redaction. This check requires the
+preceding disposable-DB acceptance; a declared instrument or empty metrics endpoint is not proof of
+delivery.

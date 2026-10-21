@@ -16,6 +16,8 @@
   cohorts, offline fitting/scoring, artifact validation and immutable findings.
 - `apps/api/src/vehicle_platform/predictions`: Phase 9D controlled HTTP inference, explicit
   serving approvals, request budgets, trusted 9B/9C adapters and immutable response receipts.
+- `apps/api/src/vehicle_platform/prediction_evidence`: Phase 9E typed evidence graph, canonical
+  fingerprints, bounded safe projection, immutable receipt lineage and independent verification.
 - `apps/api/src/vehicle_platform/acquisition`: read-only hardware collection and streaming.
   `capabilities.py` reads authenticated collector capability snapshots or operator-attested
   local preflight reports for the same vehicle/configuration/source; a recorded session alone
@@ -40,6 +42,8 @@
   persistence. Phase 9C findings and reference rows are immutable.
 - `apps/api/migrations/versions/0016_prediction_service.py`: additive immutable Phase 9D serving
   bindings, lifecycle events and minimal prediction receipts.
+- `apps/api/migrations/versions/0017_prediction_evidence.py`: additive Phase 9E evidence bundles,
+  normalized lineage/facts/gaps and append-only verification audits.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
@@ -57,6 +61,8 @@
   disposable-DB Phase 9C evaluator and upgrade/downgrade/re-upgrade wrapper.
 - `scripts/evaluate_prediction_service.py`, `scripts/phase9d-validation.sh`: independent
   disposable-DB Phase 9D real-HTTP evaluator, migration round trip and serving-boundary checks.
+- `scripts/evaluate_prediction_evidence.py`, `scripts/phase9e-validation.sh`: independent
+  disposable-DB Phase 9E source/HTTP evaluator, migration round trip, immutability and budgets.
 - `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
   artifact, threshold and bounded-input unit tests.
 - `scripts/investigation_browser_e2e.py`, `apps/web/tests/e2e/investigation.spec.ts`:
@@ -102,6 +108,9 @@ caveat. Evidence is in their validation reports. Phase 9A, 9B and 9C are merged;
 baseline `7fc4c59`. Phase 9C owns statistical deviation scoring only and does not replace Phase 3
 factual events or Phase 9B next-pull labels. Phase 9D is VERIFIED on the final exact head of open,
 unmerged PR #44; current SHA and exact-head receipts are linked from the PR checks.
+Phase 9E adds immutable cutoff-aware provenance for 9D receipts and preserves 9B `NEXT_PULL`
+and 9C `AFTER_PULL_OFFLINE` semantics. It adds no diagnosis, agent, MCP, UI, calibration or
+ECU-control path.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -109,10 +118,14 @@ See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-
 Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`,
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
-The canonical GitHub `full-validation` workflow covers completed Phase 7/8/9A/9B/9C/9D gates;
+The canonical GitHub `full-validation` workflow covers completed Phase 7/8/9A/9B/9C/9D gates and
+the in-progress Phase 9E database/HTTP evaluator;
 Phase 9C adds `make test-anomalies` and `make phase9c-acceptance`. Phase 9D adds
 `make test-prediction-service` and `make phase9d-acceptance`; its acceptance and canonical
 Docker/full-stack checks require the Docker runner. Exact-head receipts are linked from PR #44.
+Phase 9E adds `make test-prediction-evidence`, `make phase9e-acceptance`,
+`make benchmark-prediction-evidence` and `make prediction-evidence-observability`; the database
+acceptance requires the Docker runner.
 Do not claim a gate passed without its executed receipt.
 
 ## Current implementation map
@@ -133,4 +146,6 @@ Do not claim a gate passed without its executed receipt.
   documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Phase 9D
   is VERIFIED on the final exact head of open, unmerged PR #44; current check receipts are linked
   from the PR.
-- Phases 9E–9H remain planned.
+- Phase 9E is in implementation: migration 0017 adds immutable bundles, normalized lineage and
+  verification audits. Exact-head Docker/CI acceptance remains required.
+- Phases 9F–9H remain planned.

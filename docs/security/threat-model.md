@@ -231,3 +231,21 @@ spoofing, public peers, tampered artifacts, unsafe source/context, late inputs, 
 receipt mutation and worker/request budgets. Full details are in the
 [Phase 9D architecture](../architecture/phase-9d-prediction-service.md) and
 [runbook](../runbooks/prediction-service.md).
+
+## Phase 9E prediction evidence
+
+Evidence routes inherit the Phase 9D private-peer, bearer-header, disabled-by-default, production
+denial, rate/body/concurrency and timeout controls. The evidence API accepts a receipt ID only; it
+cannot accept a new cutoff, raw feature vector, source path or artifact. Reads return a bounded
+redacted projection; internal lineage IDs and hashes remain inside controlled persistence. No
+vehicle/user ownership or tenant authorization is implied by an operator token.
+
+PostgreSQL rejects updates/deletes across evidence bundles, normalized graph/fact/source rows and
+verification audits. A 50 MiB cap and two bounded worker slots protect artifact checksum work; no
+untrusted joblib payload is loaded. The trusted application/database can still be privileged and
+rewrite all records, so SHA-256 values establish consistency rather than signatures. Metrics and
+traces use finite labels and omit vehicle/receipt IDs, VINs, hashes, feature values, paths and
+tokens. The disposable evaluator attempts source/artifact tampering, orphan/oversize/duplicate
+inserts, partial transaction failure, replay flooding and unauthorized access; it never targets
+retained local or production data. See the [Phase 9E architecture](../architecture/phase-9e-prediction-evidence.md)
+and [acceptance report](../validation/phase-9e-acceptance.md).

@@ -21,6 +21,7 @@ labels = {
     "Phase 8 technical knowledge": "KNOWLEDGE",
     "Phase 9A/9B/9C offline pipelines": "PHASE9",
     "Phase 9D controlled prediction service": "PHASE9D",
+    "Phase 9E prediction evidence": "PHASE9E",
 }
 outcome_status = {
     "success": "PASS",

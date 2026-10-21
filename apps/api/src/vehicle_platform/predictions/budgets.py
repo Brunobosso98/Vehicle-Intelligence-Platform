@@ -234,6 +234,10 @@ class PredictionRequestBudgetMiddleware:
     @staticmethod
     def _endpoint(scope: Scope) -> str:
         path = str(scope.get("path", "")).rstrip("/")
+        if path.endswith("/verify"):
+            return "evidence_verify"
+        if "/evidence" in path:
+            return "evidence"
         if path.endswith("/next-pull"):
             return "next_pull"
         if path.endswith("/anomalies"):
