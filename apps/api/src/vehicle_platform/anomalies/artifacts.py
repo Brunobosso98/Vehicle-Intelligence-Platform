@@ -5,6 +5,7 @@ import hmac
 import os
 import re
 import tempfile
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -156,6 +157,8 @@ class ArtifactStore:
         self,
         database: Database,
         detector_version_id: str,
+        *,
+        worker: Callable[..., Awaitable[Any]] | None = None,
     ) -> TrustedAnomalyArtifact:
         async with database.session() as db:
             row = (
@@ -178,6 +181,12 @@ class ArtifactStore:
             )
         if row is None:
             raise AnomalyArtifactError("detector version is not registered")
+        load = self._load_registered_row
+        if worker is not None:
+            return cast(TrustedAnomalyArtifact, await worker(load, dict(row)))
+        return load(dict(row))
+
+    def _load_registered_row(self, row: dict[str, Any]) -> TrustedAnomalyArtifact:
         if row["state"] not in {"CANDIDATE", "ACCEPTED"}:
             raise AnomalyArtifactError("detector version has no accepted fitted artifact")
         try:

@@ -339,6 +339,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/prediction-service/anomalies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Anomalies */
+    post: operations["prediction_service_anomalies"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/next-pull": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Next Pull */
+    post: operations["prediction_service_next_pull"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/runs/{receipt_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Receipt */
+    get: operations["prediction_service_receipt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Versions */
+    get: operations["prediction_service_versions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/pulls": {
     parameters: {
       query?: never;
@@ -1479,6 +1547,29 @@ export interface components {
       vehicle_id: string;
       /** Warnings */
       warnings: string[];
+    };
+    /** AnomalyRequest */
+    AnomalyRequest: {
+      /** Detector Version Id */
+      detector_version_id?: string | null;
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "thermal" | "boost_air" | "performance" | "fuel";
+      /**
+       * Observation Cutoff
+       * Format: date-time
+       */
+      observation_cutoff: string;
+      /**
+       * Pull Id
+       * Format: uuid
+       */
+      pull_id: string;
+      source_role: components["schemas"]["SourceRole"];
+      /** Vehicle Id */
+      vehicle_id?: string | null;
     };
     /** Answer */
     Answer: {
@@ -2827,6 +2918,14 @@ export interface components {
       /** Version */
       version: number;
     };
+    /**
+     * MLTask
+     * @enum {string}
+     */
+    MLTask:
+      | "NEXT_PULL_THERMAL_DEGRADATION"
+      | "NEXT_PULL_PERFORMANCE_DEGRADATION"
+      | "NEXT_PULL_FUEL_DEVIATION";
     /** Match */
     Match: {
       /**
@@ -2899,6 +2998,25 @@ export interface components {
       /** Removed At */
       removed_at?: string | null;
     };
+    /** NextPullRequest */
+    NextPullRequest: {
+      /** Model Version Id */
+      model_version_id?: string | null;
+      /**
+       * Observation Cutoff
+       * Format: date-time
+       */
+      observation_cutoff: string;
+      /**
+       * Pull Id
+       * Format: uuid
+       */
+      pull_id: string;
+      source_role: components["schemas"]["SourceRole"];
+      task: components["schemas"]["MLTask"];
+      /** Vehicle Id */
+      vehicle_id?: string | null;
+    };
     /** NumericFact */
     NumericFact: {
       /** Conditions */
@@ -2933,6 +3051,158 @@ export interface components {
       key: string;
       /** Recipe Key */
       recipe_key: string;
+    };
+    /** PredictionBindingResponse */
+    PredictionBindingResponse: {
+      /**
+       * Activation Event Id
+       * Format: uuid
+       */
+      activation_event_id: string;
+      /** Artifact Checksum */
+      artifact_checksum: string;
+      /**
+       * Binding Id
+       * Format: uuid
+       */
+      binding_id: string;
+      /** Detector Version Id */
+      detector_version_id: string | null;
+      /** Environment */
+      environment: string;
+      /** Feature Set Checksum */
+      feature_set_checksum: string;
+      /** Feature Set Version */
+      feature_set_version: string;
+      /** Model Version Id */
+      model_version_id: string | null;
+      /** Result Kind */
+      result_kind: string;
+      /** Schema Checksum */
+      schema_checksum: string;
+      /** Scope */
+      scope: string;
+      /** Source Role */
+      source_role: string;
+      /** Subject Key */
+      subject_key: string;
+    };
+    /** PredictionLineage */
+    PredictionLineage: {
+      /** Anomaly Finding Id */
+      anomaly_finding_id?: string | null;
+      /** Anomaly Run Id */
+      anomaly_run_id?: string | null;
+      /** Feature Set Id */
+      feature_set_id?: string | null;
+    };
+    /** PredictionQuality */
+    PredictionQuality: {
+      /** Coverage */
+      coverage: number;
+      /** Expected Feature Count */
+      expected_feature_count: number;
+      /** Missing Reason Counts */
+      missing_reason_counts?: {
+        [key: string]: number;
+      };
+      /** Observed Feature Count */
+      observed_feature_count: number;
+      /**
+       * Quality Class
+       * @enum {string}
+       */
+      quality_class: "high" | "degraded" | "insufficient" | "unavailable";
+    };
+    /** PredictionResponse */
+    PredictionResponse: {
+      /** Anomaly Score */
+      anomaly_score?: number | null;
+      /** Decision */
+      decision?: boolean | ("ANOMALOUS" | "INLIER") | null;
+      /** Detector Version Id */
+      detector_version_id?: string | null;
+      /** Effective Cutoff */
+      effective_cutoff?: string | null;
+      /** Engineering Validation Score */
+      engineering_validation_score?: number | null;
+      /** Family */
+      family?: ("thermal" | "boost_air" | "performance" | "fuel") | null;
+      /** Feature Set Version */
+      feature_set_version?: string | null;
+      /**
+       * Horizon
+       * @enum {string}
+       */
+      horizon: "NEXT_PULL" | "AFTER_PULL_OFFLINE";
+      /** Interpretation */
+      interpretation: string;
+      /** Limitation */
+      limitation: string;
+      lineage: components["schemas"]["PredictionLineage"];
+      /** Model Version Id */
+      model_version_id?: string | null;
+      quality: components["schemas"]["PredictionQuality"];
+      /** Reason Code */
+      reason_code?: string | null;
+      /**
+       * Receipt Id
+       * Format: uuid
+       */
+      receipt_id: string;
+      /**
+       * Requested Cutoff
+       * Format: date-time
+       */
+      requested_cutoff: string;
+      /**
+       * Result Type
+       * @enum {string}
+       */
+      result_type: "next_pull" | "anomaly";
+      /**
+       * Schema Version
+       * @default phase9d-prediction-response-v1
+       * @constant
+       */
+      schema_version: "phase9d-prediction-response-v1";
+      /**
+       * Score Is Probability
+       * @default false
+       * @constant
+       */
+      score_is_probability: false;
+      source_role: components["schemas"]["SourceRole"];
+      status: components["schemas"]["PredictionStatus"];
+      task?: components["schemas"]["MLTask"] | null;
+      /** Threshold */
+      threshold?: number | null;
+    };
+    /**
+     * PredictionStatus
+     * @enum {string}
+     */
+    PredictionStatus:
+      | "READY_SCORE"
+      | "ABSTAINED_INSUFFICIENT_SIGNAL"
+      | "ABSTAINED_LOW_QUALITY"
+      | "ABSTAINED_INSUFFICIENT_REFERENCE"
+      | "ABSTAINED_INCOMPATIBLE_CONTEXT"
+      | "ABSTAINED_UNSUPPORTED_SOURCE"
+      | "ABSTAINED_CUTOFF";
+    /** PredictionVersionsResponse */
+    PredictionVersionsResponse: {
+      /** Items */
+      items: components["schemas"]["PredictionBindingResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /**
+       * Schema Version
+       * @default phase9d-serving-versions-v1
+       */
+      schema_version: string;
     };
     /** PreflightRequest */
     PreflightRequest: {
@@ -3480,6 +3750,12 @@ export interface components {
         | "calibration"
         | "diagnostics";
     };
+    /**
+     * SourceRole
+     * @enum {string}
+     */
+    SourceRole:
+      "synthetic" | "real_vehicle" | "imported" | "imported_fixture" | "mixed";
     /**
      * SourceStatus
      * @enum {string}
@@ -5436,6 +5712,328 @@ export interface operations {
       };
       /** @description Not Found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_anomalies: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Idempotency-Key"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnomalyRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_next_pull: {
+    parameters: {
+      query?: never;
+      header?: {
+        "Idempotency-Key"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NextPullRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_receipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_versions: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionVersionsResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
         headers: {
           [name: string]: unknown;
         };

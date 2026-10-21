@@ -71,6 +71,11 @@ class JSONFormatter(logging.Formatter):
             "index_version",
             "candidates",
             "knowledge_gap",
+            "prediction_endpoint",
+            "prediction_status",
+            "prediction_reason",
+            "prediction_kind",
+            "prediction_event",
         ):
             value = getattr(record, key, None)
             if value is not None:
@@ -143,6 +148,21 @@ class Telemetry:
             ),
         )
         self.readiness_failures = meter.create_counter("service.readiness.failures")
+        # Phase 9D labels are bounded result and status vocabularies only.
+        self.prediction_requests = meter.create_counter("prediction_service.requests")
+        self.prediction_receipts = meter.create_counter("prediction_service.receipts")
+        self.prediction_failures = meter.create_counter("prediction_service.failures")
+        self.prediction_budget_denials = meter.create_counter("prediction_service.budget_denials")
+        self.prediction_approval_changes = meter.create_counter(
+            "prediction_service.approval_changes"
+        )
+        self.prediction_duration = meter.create_histogram("prediction_service.duration", unit="s")
+        self.prediction_artifact_load_duration = meter.create_histogram(
+            "prediction_service.artifact_load.duration", unit="s"
+        )
+        self.prediction_in_flight = meter.create_up_down_counter(
+            "prediction_service.requests.in_flight"
+        )
         # Labels are deliberately source/outcome only; never vehicle, VIN, session or sample IDs.
         self.imports = meter.create_counter("telemetry.imports", unit="{import}")
         self.import_rows = meter.create_counter("telemetry.import.rows", unit="{sample}")

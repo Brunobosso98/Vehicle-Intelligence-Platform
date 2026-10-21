@@ -32,9 +32,9 @@ No benchmarks are inferred from version selection. Minimize production dependenc
 non-obvious new requirements in the PR; prefer maintained packages and frozen installs.
 
 Phase 9C adds no direct package dependency. Its Isolation Forest uses the exact scikit-learn pin
-already introduced for Phase 9B; joblib and threadpoolctl are also reused from that offline ML
-foundation. The new console entry point is implemented in the existing API package and lock files
-remain unchanged.
+already introduced for Phase 9B. Phase 9D declares the already locked `threadpoolctl` package
+directly so serving can explicitly constrain numerical worker threads, and adds a local operator
+CLI entry point to the existing API package.
 
 Build backend: Hatchling 1.32.4 (exact pin, verified in installed build cache).
 

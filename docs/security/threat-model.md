@@ -208,3 +208,26 @@ Reference sets, detector versions, runs and findings are immutable in the databa
 finding identities prevent overlapping batches from reusing a record owned by another run. The
 independent acceptance exercises path traversal, tampering and database immutability. Metrics and
 traces omit VINs, vehicle/session/pull IDs, raw telemetry, matrices, checksums and credentials.
+
+## Phase 9D controlled prediction serving
+
+Phase 9D is disabled by default and settings reject enabling it in production. When explicitly
+enabled for development/test, a high-entropy operator bearer token is checked in outer ASGI
+middleware before request-body parsing or database access. Query, cookie and body credentials are
+not accepted. The runtime checks the actual peer address against configured private, loopback or
+link-local CIDRs and ignores forwarded headers. This remains operator access to a controlled local
+dataset, not user, tenant, or vehicle-owner authorization; public/shared deployment is prohibited.
+
+The serving binding pins one registered 9B/9C version, checksum, task/family, source role,
+environment and scope. Approval and lifecycle are append-only; new requests and replays check the
+current state. Artifacts load only through the existing trusted registry loaders. Request bodies,
+rate, concurrency, body wait, handler duration and CPU workers have explicit bounds. Scoring runs
+off the async event loop with fixed numerical thread counts and bounded cancellation handling.
+
+Receipts and events are immutable database records with bounded payload sizes. Responses and
+observability omit raw telemetry, VINs, private hashes, full feature matrices, artifact paths and
+secrets. The acceptance evaluator tests query/body/cookie credential attempts, forwarded-address
+spoofing, public peers, tampered artifacts, unsafe source/context, late inputs, replays, revocation,
+receipt mutation and worker/request budgets. Full details are in the
+[Phase 9D architecture](../architecture/phase-9d-prediction-service.md) and
+[runbook](../runbooks/prediction-service.md).

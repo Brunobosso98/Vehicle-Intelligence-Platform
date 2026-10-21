@@ -14,8 +14,8 @@
 - Phase 8 — Technical RAG & Knowledge Intelligence (complete; see acceptance report)
 - Phase 9A — Feature Engineering Foundation (complete; see acceptance report)
 - Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
-- Phase 9C — Anomaly Detection (VERIFIED at implementation SHA `c4da7f5`; PR #43 open and unmerged)
-- Phase 9D — Prediction Service (planned)
+- Phase 9C — Anomaly Detection (VERIFIED; merged baseline `7fc4c59` after PR #43)
+- Phase 9D — Prediction Service (VERIFIED on the final exact head of open, unmerged PR #44)
 - Phase 9E — PredictionEvidence (planned)
 - Phase 9F — Agent Integration (planned)
 - Phase 9G — Evaluation / Calibration (planned)
@@ -33,7 +33,10 @@ This is not a claim of uniform final-source real verification. Final GitHub Acti
 remain separately recorded in the [evaluation report](../validation/phase-7d-real-evaluation.md)
 and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
 feature and dataset foundation; Phase 9B consumes that foundation for offline supervised next-pull
-evaluation. Phase 9C adds verified offline anomaly scoring. Phases 9D–9H remain planned.
+evaluation. Phase 9C adds verified offline anomaly scoring. Phase 9D adds an explicitly approved,
+disabled-by-default controlled serving boundary and passed its final exact PR-head gates; the final
+SHA and check receipts are in [PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44).
+Phases 9E–9H remain planned.
 
 # Current phase
 
@@ -87,7 +90,18 @@ support, and freezes method/threshold choices from validation sessions before th
 It does not replace Phase 3 factual event rules or reuse Phase 9B supervised model labels. Follow
 the [architecture](../architecture/phase-9c-anomaly-detection.md), [runbook](../runbooks/anomaly-detection.md),
 the [acceptance report](../validation/phase-9c-acceptance.md), [model evaluation](../validation/phase-9c-model-evaluation.md),
-and [traceability ledger](../validation/phase-9c-traceability-ledger.md). PR #43 is open and
-unmerged. Implementation SHA `c4da7f5df85f6a91e7add628e41c03885bd5f049` passed the canonical
-full-validation workflow and all CI/Security checks; run links and artifact evidence are recorded
-in the acceptance report. Phases 9D–9H remain planned and unimplemented.
+and [traceability ledger](../validation/phase-9c-traceability-ledger.md). Implementation SHA
+`c4da7f5df85f6a91e7add628e41c03885bd5f049` passed the canonical full-validation workflow and all
+CI/Security checks before PR #43 merged into baseline `7fc4c59`; run links and artifact evidence
+are recorded in its acceptance report.
+
+## Phase 9D controlled serving
+
+The [Phase 9D architecture](../architecture/phase-9d-prediction-service.md),
+[runbook](../runbooks/prediction-service.md),
+[acceptance record](../validation/phase-9d-acceptance.md),
+[serving evaluation](../validation/phase-9d-model-serving-evaluation.md), and
+[traceability ledger](../validation/phase-9d-traceability-ledger.md) define the controlled API,
+approval state, evidence limits and gates. Phase 9D is verified on its exact open, unmerged PR head;
+the current receipts are linked from [PR #44 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44#checks).
+No public production service is implied.

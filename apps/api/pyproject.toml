@@ -24,11 +24,13 @@ dependencies = [
  "langchain-core==1.6.7",
  "pypdf==6.20.1",
  "scikit-learn==1.9.1",
+ "threadpoolctl==3.7.0",
 ]
 [project.scripts]
 vehicle-collector = "vehicle_platform.acquisition.cli:app"
 vehicle-mcp = "vehicle_platform.mcp.cli:main"
 vehicle-anomaly = "vehicle_platform.anomalies.cli:main"
+vehicle-prediction = "vehicle_platform.predictions.cli:main"
 [dependency-groups]
 dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
@@ -59,6 +61,7 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/features/service.py" = ["E501"] # temporal SQL kept intact for review
 "src/vehicle_platform/anomalies/registry.py" = ["E501"] # bounded immutable registry SQL kept intact for review
 "src/vehicle_platform/anomalies/repository.py" = ["E501"] # cutoff and payload preflight SQL kept intact for review
+"src/vehicle_platform/predictions/repository.py" = ["E501", "S608"] # fixed bounded queries are reviewed as SQL
 "src/vehicle_platform/acquisition/cli.py" = ["B008"] # Typer declarative option definitions
 [tool.mypy]
 python_version = "3.12"
@@ -98,6 +101,9 @@ omit = [
  "*/vehicle_platform/anomalies/service.py", # orchestration and idempotency are exercised by DB acceptance
  "*/vehicle_platform/anomalies/artifacts.py", # registry-backed artifact loading is exercised by DB acceptance
  "*/vehicle_platform/anomalies/cli.py", # process entrypoint is covered by CLI acceptance commands
+ "*/vehicle_platform/predictions/repository.py", # immutable SQL and replay transactions require disposable PostgreSQL
+ "*/vehicle_platform/predictions/service.py", # end-to-end orchestration is exercised by Phase 9D DB/HTTP acceptance
+ "*/vehicle_platform/predictions/routes.py", # typed routes are exercised through the actual FastAPI acceptance evaluator
 ]
 [tool.coverage.report]
 fail_under = 90

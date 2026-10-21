@@ -137,6 +137,9 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "anomaly_detector_versions",
             "anomaly_detection_runs",
             "anomaly_findings",
+            "prediction_serving_bindings",
+            "prediction_serving_events",
+            "prediction_receipts",
         }
         assert await connection.scalar(
             text(
