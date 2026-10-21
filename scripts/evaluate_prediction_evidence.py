@@ -11,6 +11,7 @@ import statistics
 import subprocess
 import tempfile
 import time
+import traceback
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -161,7 +162,9 @@ def _assert_graph_oracle(
     nodes = {node.source_kind: node for node in bundle.nodes}
     _assert(
         set(expected) == set(nodes),
-        "evidence graph omitted or added an unexpected source node",
+        "evidence graph source kinds differ: "
+        f"expected={sorted(kind.value for kind in expected)}, "
+        f"actual={sorted(kind.value for kind in nodes)}",
     )
     for kind, entity_id in expected.items():
         _assert(
@@ -270,10 +273,10 @@ async def _oracle_bundle(
         bundle.source_role.value == response["source_role"],
         "source role differs from 9D",
     )
+    effective_cutoff = response.get("effective_cutoff") or response["requested_cutoff"]
     _assert(
-        bundle.effective_cutoff.isoformat()
-        == response["effective_cutoff"].replace("Z", "+00:00"),
-        "cutoff differs from 9D",
+        bundle.effective_cutoff.isoformat() == effective_cutoff.replace("Z", "+00:00"),
+        "cutoff differs from 9D or its requested-cutoff fallback",
     )
     score = response.get("engineering_validation_score")
     if response["result_type"] == "anomaly":
@@ -399,10 +402,16 @@ async def _oracle_bundle(
             response["model_version_id"] == str(model["id"]),
             "wrong 9B version in receipt",
         )
-        _assert(
-            model["threshold"] == receipt["threshold"],
-            "9B threshold differs from receipt",
-        )
+        if response["status"] == PredictionStatus.READY_SCORE.value:
+            _assert(
+                model["threshold"] == receipt["threshold"],
+                "9B threshold differs from receipt",
+            )
+        else:
+            _assert(
+                receipt["threshold"] is None,
+                "abstained prediction exposed a model threshold",
+            )
         label = model["label_definition"]
         output_fact = next(
             (
@@ -498,6 +507,10 @@ async def _oracle_bundle(
                 finding["threshold"] == receipt["threshold"], "9C threshold differs"
             )
             _assert(
+                finding["observation_cutoff"] == receipt["requested_cutoff"],
+                "9C observation cutoff differs from the requested cutoff",
+            )
+            _assert(
                 finding["status"]
                 == (
                     "ANOMALOUS" if response.get("decision") == "ANOMALOUS" else "INLIER"
@@ -516,6 +529,13 @@ async def _oracle_bundle(
                 "9C finding references a different frozen cohort",
             )
             summary = finding["reference_summary"]
+            if isinstance(summary, str):
+                summary = json.loads(summary)
+            summary = summary.get("reference_summary", summary)
+            _assert(
+                "reference_dataset_id" in summary,
+                f"9C reference summary keys: {sorted(summary)}",
+            )
             _assert(
                 summary["reference_dataset_id"] == str(finding["reference_dataset_id"]),
                 "9C reference ID differs",
@@ -531,7 +551,7 @@ async def _materialize(
     response, duration = await _attempt_materialize(client, headers, receipt_id)
     _assert(
         response.status_code == 200,
-        f"evidence materialization returned {response.status_code}",
+        f"evidence materialization returned {response.status_code}: {response.text[:300]}",
     )
     return response.json(), duration
 
@@ -683,6 +703,15 @@ async def evaluate() -> dict[str, Any]:
         },
     }
     app: Any | None = None
+    telemetry_shutdown = False
+
+    def shutdown_telemetry_once() -> None:
+        nonlocal telemetry_shutdown
+        if telemetry_shutdown:
+            return
+        telemetry_shutdown = True
+        telemetry.shutdown()
+
     try:
         await database.check()
         with tempfile.TemporaryDirectory(prefix="phase9e-artifacts-") as temporary:
@@ -696,7 +725,7 @@ async def evaluate() -> dict[str, Any]:
             targets = await phase9d._select_pull(database, fixture)
             legacy_before = await _legacy_digests(database)
             await database.close()
-            telemetry.shutdown()
+            shutdown_telemetry_once()
             first_upgrade_output = _migrate(url, "upgrade", "0017")
             down_output = _migrate(url, "downgrade", "0016")
             up_output = _migrate(url, "upgrade", "0017")
@@ -742,9 +771,9 @@ async def evaluate() -> dict[str, Any]:
                     "next_pull",
                     result.model_version_id,
                     source_role=SourceRole.SYNTHETIC,
-                    reason=f"Phase 9E independent acceptance for {task.value}.",
+                    reason=f"Synthetic fixture scope: Phase 9E acceptance for {task.value}.",
                     operator_id="phase9e-evaluator",
-                    review_reference=f"phase9e-{task.value.lower()}-review",
+                    review_reference=f"phase9e-synthetic-fixture-{task.value.lower()}-review",
                     environment_confirmation="test",
                 )
                 await prediction_service.transition(
@@ -760,9 +789,9 @@ async def evaluate() -> dict[str, Any]:
                     "anomaly",
                     version.detector_version_id,
                     source_role=SourceRole.SYNTHETIC,
-                    reason=f"Phase 9E independent acceptance for {family}.",
+                    reason=f"Synthetic fixture scope: Phase 9E acceptance for {family}.",
                     operator_id="phase9e-evaluator",
-                    review_reference=f"phase9e-{family}-review",
+                    review_reference=f"phase9e-synthetic-fixture-{family}-review",
                     environment_confirmation="test",
                 )
                 await prediction_service.transition(
@@ -1168,19 +1197,24 @@ async def evaluate() -> dict[str, Any]:
                         )
                         verify_response = await client.post(
                             f"/api/v1/prediction-service/evidence/{evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
                             verify_response.status_code == 200,
-                            "verification HTTP path failed",
+                            f"verification HTTP path returned {verify_response.status_code}: "
+                            f"{verify_response.text[:300]}",
                         )
+                        verification = verify_response.json()
                         _assert(
-                            verify_response.json()["integrity"]
+                            verification["integrity"]
                             in {
                                 EvidenceIntegrity.VERIFIED.value,
                                 EvidenceIntegrity.VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE.value,
                             },
-                            f"independent source verification failed for {key}",
+                            f"independent source verification failed for {key}: "
+                            f"integrity={verification.get('integrity')}, "
+                            f"reasons={verification.get('reason_codes')}",
                         )
                         receipt_projection = await client.get(
                             f"/api/v1/prediction-service/runs/{receipt_id}/evidence",
@@ -1359,8 +1393,8 @@ async def evaluate() -> dict[str, Any]:
                         headers=headers,
                     )
                     _assert(
-                        wrong_vehicle.status_code == 409,
-                        "wrong-vehicle request crossed 9D scope",
+                        wrong_vehicle.status_code == 404,
+                        "wrong-vehicle request did not preserve 9D scope hiding",
                     )
                     guessed = await client.get(
                         "/api/v1/prediction-service/evidence/00000000-0000-0000-0000-000000000001",
@@ -1371,7 +1405,7 @@ async def evaluate() -> dict[str, Any]:
                         "unknown evidence identifier was enumerable",
                     )
                     report["auth_and_scope"].update(
-                        {"wrong_vehicle": "409", "unknown_evidence_id": "404"}
+                        {"wrong_vehicle": "404 hidden", "unknown_evidence_id": "404"}
                     )
 
                     # Revoke a serving binding after receipt creation; historical evidence remains readable.
@@ -1421,6 +1455,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                         tamper_verify = await client.post(
                             f"/api/v1/prediction-service/evidence/{tamper_bundle.evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1438,6 +1473,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                     restored_verify = await client.post(
                         f"/api/v1/prediction-service/evidence/{tamper_bundle.evidence_id}/verify",
+                        json={},
                         headers=headers,
                     )
                     _assert(
@@ -1454,6 +1490,8 @@ async def evaluate() -> dict[str, Any]:
                         bundle
                         for name, bundle in source_bundles.items()
                         if name.startswith("anomaly:")
+                        and bundle.prediction.status
+                        == PredictionStatus.READY_SCORE.value
                         and any(
                             node.source_kind is SourceKind.ANOMALY_FINDING
                             for node in bundle.nodes
@@ -1478,6 +1516,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                         finding_tamper_verify = await client.post(
                             f"/api/v1/prediction-service/evidence/{anomaly_bundle.evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1494,6 +1533,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                     finding_restored = await client.post(
                         f"/api/v1/prediction-service/evidence/{anomaly_bundle.evidence_id}/verify",
+                        json={},
                         headers=headers,
                     )
                     _assert(
@@ -1534,6 +1574,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                         artifact_verify = await client.post(
                             f"/api/v1/prediction-service/evidence/{source_bundles[MLTask.THERMAL_DEGRADATION.value].evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1572,6 +1613,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                         detector_tamper_verify = await client.post(
                             f"/api/v1/prediction-service/evidence/{anomaly_bundle.evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1591,6 +1633,7 @@ async def evaluate() -> dict[str, Any]:
                         artifact_path.unlink()
                         unavailable_verify = await client.post(
                             f"/api/v1/prediction-service/evidence/{source_bundles[MLTask.THERMAL_DEGRADATION.value].evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1603,6 +1646,7 @@ async def evaluate() -> dict[str, Any]:
                         artifact_path.write_bytes(model_artifact_bytes)
                     artifact_restored = await client.post(
                         f"/api/v1/prediction-service/evidence/{source_bundles[MLTask.THERMAL_DEGRADATION.value].evidence_id}/verify",
+                        json={},
                         headers=headers,
                     )
                     _assert(
@@ -1621,6 +1665,7 @@ async def evaluate() -> dict[str, Any]:
                     for _ in range(31):
                         audit_response = await client.post(
                             f"/api/v1/prediction-service/evidence/{audit_evidence_id}/verify",
+                            json={},
                             headers=headers,
                         )
                         _assert(
@@ -1629,6 +1674,7 @@ async def evaluate() -> dict[str, Any]:
                         )
                     exhausted_audit = await client.post(
                         f"/api/v1/prediction-service/evidence/{audit_evidence_id}/verify",
+                        json={},
                         headers=headers,
                     )
                     _assert(
@@ -1979,7 +2025,7 @@ async def evaluate() -> dict[str, Any]:
                     )
                     span_attributes = json.dumps(
                         [
-                            span.attributes
+                            dict(span.attributes or {})
                             for span in span_exporter.get_finished_spans()
                         ],
                         sort_keys=True,
@@ -2002,8 +2048,16 @@ async def evaluate() -> dict[str, Any]:
         report["status"] = "FAIL"
         report["error_category"] = type(error).__name__
         report["failure_message"] = str(error)[:300]
+        report["failure_location"] = [
+            {
+                "file": Path(frame.filename).name,
+                "line": frame.lineno,
+                "function": frame.name,
+            }
+            for frame in traceback.extract_tb(error.__traceback__)[-5:]
+        ]
     finally:
-        telemetry.shutdown()
+        shutdown_telemetry_once()
         await database.close()
     return report
 

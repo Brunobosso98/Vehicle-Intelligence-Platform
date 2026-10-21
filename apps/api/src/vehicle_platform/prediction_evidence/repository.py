@@ -131,6 +131,7 @@ class PredictionEvidenceRepository:
                         )
 
                     feature: dict[str, Any] | None = None
+                    as_of_modification_ids: list[str] = []
                     if receipt.get("feature_set_id") is not None:
                         feature_row = await self._one(
                             db,
@@ -179,7 +180,10 @@ class PredictionEvidenceRepository:
                             return self._not_verifiable(
                                 records, response, EvidenceGapCode.PROVENANCE_MISMATCH, failed=True
                             )
-                        if not await self._as_of_context_matches(db, feature, receipt):
+                        context_matches, as_of_modification_ids = await self._as_of_context_matches(
+                            db, feature, receipt
+                        )
+                        if not context_matches:
                             return self._not_verifiable(
                                 records, response, EvidenceGapCode.CONTEXT_INCOMPATIBLE, failed=True
                             )
@@ -208,7 +212,7 @@ class PredictionEvidenceRepository:
                         self._put(records, SourceKind.MODEL_VERSION, cast(UUID, model["id"]), model)
                         if (
                             model["task"] != (response.task.value if response.task else None)
-                            or model["threshold"] != response.threshold
+                            or not _model_threshold_matches_response(model, response)
                             or model["artifact_checksum"] != receipt["artifact_checksum"]
                             or not _model_schema_consistent(model)
                             or model["created_at"] > receipt["created_at"]
@@ -300,7 +304,7 @@ class PredictionEvidenceRepository:
                                 or cohort.get("source_role") != receipt["source_role"]
                                 or cohort.get("source_type") != feature["source_type"]
                                 or sorted(str(item) for item in cohort.get("modification_ids", []))
-                                != feature.get("as_of_modification_ids")
+                                != as_of_modification_ids
                             ):
                                 return self._not_verifiable(
                                     records,
@@ -680,17 +684,17 @@ class PredictionEvidenceRepository:
 
     async def _as_of_context_matches(
         self, db: Any, feature: dict[str, Any], receipt: dict[str, Any]
-    ) -> bool:
+    ) -> tuple[bool, list[str]]:
         if (
             feature["vehicle_id"] != feature["pull_vehicle_id"]
             or feature["vehicle_id"] != feature["session_vehicle_id"]
         ):
-            return False
+            return False, []
         role = _source_role(
             str(feature["source_type"]), _json_object(feature.get("quality_metadata"))
         )
         if role != receipt["source_role"]:
-            return False
+            return False, []
         provenance = _json_object(feature.get("provenance"))
         context = _json_object(provenance.get("source_context"))
         expected = context.get("active_modification_ids", [])
@@ -715,13 +719,12 @@ class PredictionEvidenceRepository:
         )
         observed = sorted(str(item) for item in rows)
         valid = len(rows) <= 1000 and sorted(str(item) for item in expected) == observed
-        feature["as_of_modification_ids"] = observed if valid else []
-        return valid
+        return valid, observed if valid else []
 
 
 def _decode_bundle(value: Any) -> PredictionEvidenceBundle:
     try:
-        bundle = PredictionEvidenceBundle.model_validate(_json_object(value))
+        bundle = PredictionEvidenceBundle.model_validate_json(canonical_json(_json_object(value)))
     except Exception as error:
         raise PredictionError(
             409,
@@ -874,6 +877,7 @@ def _response_decision_consistent(response: PredictionResponse) -> bool:
             response.decision is None
             and response.engineering_validation_score is None
             and response.anomaly_score is None
+            and (response.result_type != "next_pull" or response.threshold is None)
         )
     if response.threshold is None or response.decision is None:
         return False
@@ -887,6 +891,12 @@ def _response_decision_consistent(response: PredictionResponse) -> bool:
     score = response.anomaly_score
     expected = "ANOMALOUS" if score is not None and score > response.threshold else "INLIER"
     return score is not None and str(response.decision) == expected
+
+
+def _model_threshold_matches_response(model: dict[str, Any], response: PredictionResponse) -> bool:
+    if response.status.value == "READY_SCORE":
+        return model.get("threshold") == response.threshold
+    return response.threshold is None
 
 
 def _model_schema_consistent(model: dict[str, Any]) -> bool:
@@ -957,7 +967,7 @@ def _finding_matches_receipt(
         and finding["source_hash"] == receipt.get("feature_set_checksum")
         and finding["provenance_hash"] == receipt.get("feature_provenance_checksum")
         and finding["family"] == response.family
-        and finding["observation_cutoff"] == response.effective_cutoff
+        and finding["observation_cutoff"] == response.requested_cutoff
         and finding["score"] == score
         and finding["threshold"] == response.threshold
         and run["detector_version_id"] == finding["detector_version_id"]
@@ -984,6 +994,9 @@ def _finding_reference_matches(
     finding: dict[str, Any], detector: dict[str, Any], reference: dict[str, Any]
 ) -> bool:
     summary = _json_object(finding.get("reference_summary"))
+    nested_summary = _json_object(summary.get("reference_summary"))
+    if nested_summary:
+        summary = nested_summary
     reference_id = detector.get("reference_id")
     return (
         finding.get("reference_dataset_id") == reference_id

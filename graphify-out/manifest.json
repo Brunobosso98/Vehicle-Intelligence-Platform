@@ -354,9 +354,9 @@
     "semantic_hash": "769a82ead14a6e4549b56ea1e5277af1"
   },
   "apps/api/tests/integration/test_postgres.py": {
-    "mtime": 1792580860.274847,
-    "seen": 1792586127.2759266,
-    "ast_hash": "993f9ae6784dac96a335cbf966e4b1a5",
+    "mtime": 1792590290.9415355,
+    "seen": 1792591394.9539852,
+    "ast_hash": "649d5456d8fb486952ffde1ba7282835",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_acquisition.py": {
@@ -1518,15 +1518,15 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1792580863.48124,
-    "seen": 1792586127.2768123,
-    "ast_hash": "f401c9b06d89d27b2717bafb5dc1e19f",
+    "mtime": 1792593880.3380983,
+    "seen": 1792606437.7607517,
+    "ast_hash": "f41897b113f4d888177ff2be91aaa02a",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
-    "mtime": 1792580863.500083,
-    "seen": 1792586127.2768147,
-    "ast_hash": "d5a6298a6e70c4b8a956c17cd359dd04",
+    "mtime": 1792591529.3903558,
+    "seen": 1792606437.7607539,
+    "ast_hash": "2bc0a1ad6f25c2951de4c0a438f478d4",
     "semantic_hash": ""
   },
   "docs/security/threat-model.md": {
@@ -3312,9 +3312,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/builder.py": {
-    "mtime": 1792584422.579128,
-    "seen": 1792586127.2758815,
-    "ast_hash": "bf09430f1f4bf50eef5dbbf4465614ed",
+    "mtime": 1792596133.4371772,
+    "seen": 1792606437.7597923,
+    "ast_hash": "0b6bf5d3d9634ee835e05e7d411f2c2c",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/canonical.py": {
@@ -3336,9 +3336,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/repository.py": {
-    "mtime": 1792583401.1836045,
-    "seen": 1792586127.2758904,
-    "ast_hash": "647d37ec1e05b31d517c7391b4006017",
+    "mtime": 1792600616.5460043,
+    "seen": 1792606437.7598052,
+    "ast_hash": "896345f30b9919ed677e1c82d935083b",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/service.py": {
@@ -3348,21 +3348,21 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/verifier.py": {
-    "mtime": 1792587212.3486712,
-    "seen": 1792588090.940872,
-    "ast_hash": "008d85cfaeee18501ea96b6f5ba94282",
+    "mtime": 1792598184.6791186,
+    "seen": 1792606437.7598102,
+    "ast_hash": "9c91e216c1ab08ab08915cb44a9605df",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_prediction_evidence.py": {
-    "mtime": 1792587416.417453,
-    "seen": 1792588090.9411306,
-    "ast_hash": "7551d1218578f4dc56b50c5c2e914b8b",
+    "mtime": 1792598184.7121446,
+    "seen": 1792606437.7599592,
+    "ast_hash": "5cbbf431934530d21ab6998502aaec4d",
     "semantic_hash": ""
   },
   "scripts/evaluate_prediction_evidence.py": {
-    "mtime": 1792585328.8215914,
-    "seen": 1792586127.2763224,
-    "ast_hash": "1eea85929e245015b919185f4c80234a",
+    "mtime": 1792600616.5733745,
+    "seen": 1792606437.7602162,
+    "ast_hash": "829c7741b086d78b3457a2a259417ca3",
     "semantic_hash": ""
   },
   "scripts/phase9e-validation.sh": {
@@ -3402,9 +3402,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9e-acceptance.md": {
-    "mtime": 1792585143.09087,
-    "seen": 1792586127.2768886,
-    "ast_hash": "ae801d0d9af5e9aee37c5b1310b02b21",
+    "mtime": 1792605689.4913473,
+    "seen": 1792606437.7608323,
+    "ast_hash": "2898ff81a76e6e0e54f36b507c1930a0",
     "semantic_hash": ""
   },
   "docs/validation/phase-9e-evidence-evaluation.md": {

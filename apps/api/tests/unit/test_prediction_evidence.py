@@ -1,4 +1,5 @@
 import copy
+import json
 from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
@@ -58,6 +59,13 @@ from vehicle_platform.prediction_evidence.domain import (
     SourceKind,
     SourceRecordSnapshot,
 )
+from vehicle_platform.prediction_evidence.repository import (
+    _decode_bundle,
+    _finding_matches_receipt,
+    _finding_reference_matches,
+    _model_threshold_matches_response,
+    _response_decision_consistent,
+)
 from vehicle_platform.prediction_evidence.verifier import (
     _aware_datetime,
     _contribution_fact_matches,
@@ -111,7 +119,7 @@ def _source(
         feature_set_version="phase9a-pull-v2",
         decision=decision,
         engineering_validation_score=score,
-        threshold=threshold,
+        threshold=threshold if score is not None else None,
         interpretation="Engineering-validation score, not a real-world failure probability.",
         limitation="Controlled engineering output only.",
         quality=PredictionQuality(
@@ -193,9 +201,15 @@ def _anomaly_source(
             "observed_features": ["thermal.iat_delta_k"],
             "contributions": [contribution],
             "reference_summary": {
-                "row_count": 12,
-                "session_count": 4,
-                "observation_cutoff": _CUTOFF.isoformat(),
+                "schema_version": "phase9c-detection-run-v1",
+                "reference_summary": {
+                    "reference_dataset_id": str(dataset_id),
+                    "reference_checksum": "a" * 64,
+                    "cohort_checksum": "b" * 64,
+                    "row_count": 12,
+                    "session_count": 4,
+                    "observation_cutoff": _CUTOFF.isoformat(),
+                },
             },
         },
     )
@@ -260,6 +274,78 @@ def test_build_is_stable_and_excludes_generated_time_from_logical_identity() -> 
     assert all(
         fact.cutoff_eligible and fact.cutoff <= first.effective_cutoff for fact in first.facts
     )
+
+
+def test_stored_bundle_round_trips_from_jsonb_dict_and_json_text() -> None:
+    bundle = build_evidence(_source(), generated_at=_CUTOFF + timedelta(minutes=1))
+    body = canonical_json(bundle.model_dump(mode="json"))
+
+    assert _decode_bundle(json.loads(body)) == bundle
+    assert _decode_bundle(body) == bundle
+
+
+def test_reference_verifier_accepts_phase9c_nested_summary_and_flat_summary() -> None:
+    reference_id = uuid4()
+    reference = {
+        "id": reference_id,
+        "reference_checksum": "a" * 64,
+        "cohort_checksum": "b" * 64,
+        "row_count": 40,
+        "session_count": 8,
+    }
+    summary = {
+        "reference_dataset_id": str(reference_id),
+        "reference_checksum": reference["reference_checksum"],
+        "cohort_checksum": reference["cohort_checksum"],
+        "row_count": 40,
+        "session_count": 8,
+    }
+    detector = {"reference_id": reference_id}
+    finding = {"reference_dataset_id": reference_id, "reference_summary": summary}
+
+    assert _finding_reference_matches(finding, detector, reference)
+    finding["reference_summary"] = {"reference_summary": summary}
+    assert _finding_reference_matches(finding, detector, reference)
+
+
+def test_anomaly_finding_cutoff_binds_to_requested_not_feature_cutoff() -> None:
+    source = _anomaly_source()
+    response = source.response.model_copy(
+        update={"effective_cutoff": _CUTOFF - timedelta(minutes=1)}
+    )
+    finding_id, run_id = uuid4(), uuid4()
+    detector_id = response.detector_version_id
+    reference_id = uuid4()
+    feature_id = response.lineage.feature_set_id
+    finding = {
+        "id": finding_id,
+        "run_id": run_id,
+        "detector_version_id": detector_id,
+        "feature_set_id": feature_id,
+        "source_hash": "a" * 64,
+        "provenance_hash": "b" * 64,
+        "family": response.family,
+        "observation_cutoff": response.requested_cutoff,
+        "score": response.anomaly_score,
+        "threshold": response.threshold,
+        "status": "ANOMALOUS",
+        "reference_dataset_id": reference_id,
+    }
+    run = {
+        "id": run_id,
+        "detector_version_id": detector_id,
+        "reference_dataset_id": reference_id,
+    }
+    receipt = {
+        "anomaly_finding_id": finding_id,
+        "anomaly_run_id": run_id,
+        "detector_version_id": detector_id,
+        "feature_set_id": feature_id,
+        "feature_set_checksum": "a" * 64,
+        "feature_provenance_checksum": "b" * 64,
+    }
+
+    assert _finding_matches_receipt(finding, run, receipt, response)
 
 
 def test_late_ingested_feature_becomes_gap_and_never_a_fact() -> None:
@@ -825,6 +911,20 @@ def test_verifier_helpers_cover_prediction_graph_quality_and_contribution_checks
     abstained = _source(status=PredictionStatus.ABSTAINED_LOW_QUALITY).response
     assert _prediction_decision_consistent(abstained)
     assert not _prediction_decision_consistent(abstained.model_copy(update={"decision": False}))
+    assert not _prediction_decision_consistent(abstained.model_copy(update={"threshold": 0.6}))
+    assert _response_decision_consistent(abstained)
+    assert not _response_decision_consistent(abstained.model_copy(update={"threshold": 0.6}))
+    model = {"threshold": 0.6}
+    assert _model_threshold_matches_response(model, source.response)
+    assert _model_threshold_matches_response(model, abstained)
+    assert not _model_threshold_matches_response(
+        model, abstained.model_copy(update={"threshold": 0.6})
+    )
+    anomaly_abstention = _anomaly_source(
+        status=PredictionStatus.ABSTAINED_INSUFFICIENT_REFERENCE
+    ).response.model_copy(update={"threshold": 0.6})
+    assert _prediction_decision_consistent(anomaly_abstention)
+    assert _response_decision_consistent(anomaly_abstention)
     assert not _prediction_decision_consistent(
         source.response.model_copy(update={"threshold": None})
     )

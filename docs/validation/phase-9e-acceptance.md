@@ -7,15 +7,28 @@ directory and ties the result to the tested commit SHA.
 
 ## Executed local checks
 
-The current WSL session has no usable Docker daemon: `docker info` reports that Docker cannot be
-found in this WSL 2 distribution. `make bootstrap` passed after activating Node 24 and pnpm 11.19.0
-through nvm/corepack. Disposable-database, container, full-stack, browser, image-security and
-canonical observability results are **CI REQUIRED** until executed on the Docker-enabled runner.
+Docker is reachable in WSL (`docker info --format '{{.ServerVersion}}'` returned `29.8.2` on
+2026-10-21). The following local checks completed successfully against the implementation working
+tree:
 
-The focused `test_prediction_evidence.py` suite and targeted Ruff/Python compilation results are
-listed in the final task report with their exact commands. The full `make verify-cloud`, strict
-typecheck and generated-contract checks must be recorded only after execution. This paragraph must
-be updated from actual receipts before calling the final PR head verified.
+- `make verify-cloud`: passed, including Ruff, format, mypy, 1,216 API unit tests (96.44% line and
+  91.04% branch coverage), Web lint/typecheck and 52 tests (94.74% line coverage), generated
+  contracts, documentation checks, Prettier, production build, Phase 0–5 evaluations/benchmarks,
+  Gitleaks, dependency scanning and containerized Trivy filesystem scanning.
+- `make test-integration`: 13 passed; telemetry persisted and replayed 100,002 samples, with zero
+  new rows on replay.
+- `make containers` and `make security`: passed after rebuilding the API and Web images. Trivy
+  reported zero Critical findings; all High findings were covered by the checked-in risk
+  acceptance.
+- `make phase9e-acceptance`: passed on the working tree in a prior run: 10 receipt types, three
+  supervised tasks, four anomaly families, three abstentions, integrity controls, and observability
+  checks. The ignored receipt contains the SHA from before the final small type-safety corrections;
+  rerun it after commit to bind acceptance to the final source SHA.
+
+These local results do not replace required checks on the pushed PR head. The canonical Docker/full-
+stack, browser, image-security and observability receipts must be tied to that exact SHA before
+calling this phase VERIFIED. The acceptance fixtures are synthetic and make no real-world model
+accuracy claim.
 
 ## Required disposable acceptance
 
@@ -39,7 +52,8 @@ checks the recorded actual metric and span receipts, including identifier redact
 
 ## Final-head verification record
 
-Do not mark this phase VERIFIED until the pushed branch SHA equals the PR head SHA and the exact
-commit has successful required quality, integration/E2E, Security, CodeQL, dependency-review and
-canonical Docker/full-validation checks. After any fix, use the new SHA and its new receipts. Keep
-this section updated with the PR number, commit SHA, workflow URLs, artifact name and any caveat.
+PR #45 final-head validation is pending for the commit produced from these results. Do not mark this
+phase VERIFIED until the pushed branch SHA equals the PR head SHA and the exact commit has
+successful required quality, integration/E2E, Security, CodeQL, dependency-review and canonical
+Docker/full-validation checks. After any fix, use the new SHA and its new receipts. Record the final
+commit SHA, workflow URLs, artifact name and any validation caveat here once those checks finish.

@@ -422,6 +422,9 @@ def build_evidence(
             facts.extend(_anomaly_facts(contributions, node_ids, cutoff, len(facts)))
             reference = anomaly_payload.get("reference_summary", {})
             if isinstance(reference, dict):
+                nested_reference = reference.get("reference_summary")
+                if isinstance(nested_reference, dict):
+                    reference = nested_reference
                 for key in ("row_count", "session_count", "observation_cutoff"):
                     value = reference.get(key)
                     if value is None:

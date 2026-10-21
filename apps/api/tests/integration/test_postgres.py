@@ -140,6 +140,13 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "prediction_serving_bindings",
             "prediction_serving_events",
             "prediction_receipts",
+            "prediction_evidence_bundles",
+            "prediction_evidence_sources",
+            "prediction_evidence_nodes",
+            "prediction_evidence_edges",
+            "prediction_evidence_facts",
+            "prediction_evidence_gaps",
+            "prediction_evidence_verification_audits",
         }
         assert await connection.scalar(
             text(

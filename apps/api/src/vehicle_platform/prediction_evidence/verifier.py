@@ -174,6 +174,7 @@ def _prediction_decision_consistent(response: PredictionResponse) -> bool:
             response.decision is None
             and response.engineering_validation_score is None
             and response.anomaly_score is None
+            and (response.result_type != "next_pull" or response.threshold is None)
         )
     if response.threshold is None or response.decision is None:
         return False
@@ -269,6 +270,10 @@ def _facts_bind_source(bundle: PredictionEvidenceBundle, current: EvidenceSource
             if anomaly is None:
                 return False
             summary = anomaly.payload.get("reference_summary", {})
+            if isinstance(summary, dict):
+                nested_summary = summary.get("reference_summary")
+                if isinstance(nested_summary, dict):
+                    summary = nested_summary
             metadata = reference.payload if reference else {}
             property_name = fact.key.removeprefix("reference.")
             if not isinstance(summary, dict):
