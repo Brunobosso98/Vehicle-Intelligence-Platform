@@ -1,15 +1,15 @@
 # Phase 9F — Agent Integration (PredictionEvidence + MCP + LangGraph)
 
 **Repository:** Brunobosso98/Vehicle-Intelligence-Platform  
-**Required branch:** \`codex/phase-9f-agent-integration\`  
-**Merge baseline SHA:** \`466ce900988bd81e1d968eb319e970955b4011d7\` (Phase 9E PR #45 merged on 2026-10-22)  
+**Required branch:** `codex/phase-9f-agent-integration`  
+**Merge baseline SHA:** `466ce900988bd81e1d968eb319e970955b4011d7` (Phase 9E PR #45 merged on 2026-10-22)  
 **Previous phases:** 9A features; 9B next-pull classifiers; 9C anomaly detectors; 9D controlled serving; 9E immutable verified PredictionEvidence; Phases 6–8 read-only MCP, LangGraph specialists and trusted technical RAG.
 
 This Markdown is the **complete authoritative implementation, acceptance, safety and delivery contract**. Read EVERY section before editing code. Do not summarize away security requirements. The goal is a real deterministic, controlled **read-only** link from already created 9E PredictionEvidence to existing Phase 7A/7C AgentRun grounding and LangGraph specialists via a properly authorized MCP/evidence adapter, not a public diagnostics agent.
 
 ## Architectural non-negotiables
 
-\`\`\`text
+```text
 Phase 9A canonical source features and cutoffs
   -> Phase 9B NEXT_PULL model / Phase 9C AFTER_PULL_OFFLINE detector
   -> Phase 9D approved, disabled-by-default controlled serving receipt
@@ -22,7 +22,7 @@ Phase 9A canonical source features and cutoffs
        -> Supervisor + existing Phase 8 documentary evidence, kept separate
        -> application-rendered grounded answer with safe limitations
 DEFERRED: 9G calibration/drift, 9H predictive UI, MLOps/prod deployment, diagnosis, vehicle control.
-\`\`\`
+```
 
 **Safety caveat:** existing Phase 9D/9E is operator-only and cannot run in production; current Phase 7 user/vehicle account ownership is NOT general multi-tenant authorization. An MCP read credential is not automatic permission to read prediction evidence. If the intended bridge cannot preserve this boundary, FAIL CLOSED and leave the feature disabled rather than enabling an insecure production path.
 
