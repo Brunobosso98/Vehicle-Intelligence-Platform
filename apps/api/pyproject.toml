@@ -33,7 +33,7 @@ vehicle-anomaly = "vehicle_platform.anomalies.cli:main"
 vehicle-prediction = "vehicle_platform.predictions.cli:main"
 vehicle-prediction-evidence = "vehicle_platform.prediction_evidence.cli:main"
 [dependency-groups]
-dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
+dev = ["ruff==0.16.10", "mypy==2.4.0", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
 requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
