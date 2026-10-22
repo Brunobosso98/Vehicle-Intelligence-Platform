@@ -755,9 +755,7 @@ def _summarize_bundle_outcomes(
         "eligible_definition": "READY_SCORE + COMPLETE + VERIFIED source and verification integrity",
         "complete": completeness_counts.get(EvidenceCompleteness.COMPLETE.value, 0),
         "partial": completeness_counts.get(EvidenceCompleteness.PARTIAL.value, 0),
-        "abstained": completeness_counts.get(
-            EvidenceCompleteness.ABSTAINED.value, 0
-        ),
+        "abstained": completeness_counts.get(EvidenceCompleteness.ABSTAINED.value, 0),
         "failed": verification_integrity_counts.get(
             EvidenceIntegrity.FAILED_SOURCE_MISMATCH.value, 0
         ),
