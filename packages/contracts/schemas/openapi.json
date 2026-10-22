@@ -893,6 +893,16 @@
         "title": "ApprovalRequest",
         "type": "object"
       },
+      "ArtifactAvailability": {
+        "enum": [
+          "VERIFIED",
+          "NOT_APPLICABLE",
+          "UNAVAILABLE",
+          "CHECKSUM_MISMATCH"
+        ],
+        "title": "ArtifactAvailability",
+        "type": "string"
+      },
       "Ask": {
         "additionalProperties": false,
         "properties": {
@@ -2045,55 +2055,54 @@
         "title": "Evidence",
         "type": "object"
       },
-      "EvidenceGap": {
-        "additionalProperties": false,
-        "properties": {
-          "category": { "$ref": "#/components/schemas/GapType" },
-          "description": {
-            "maxLength": 300,
-            "minLength": 8,
-            "title": "Description",
-            "type": "string"
-          },
-          "hypothesis_ids": {
-            "items": { "format": "uuid", "type": "string" },
-            "maxItems": 5,
-            "title": "Hypothesis Ids",
-            "type": "array"
-          },
-          "id": { "format": "uuid", "title": "Id", "type": "string" },
-          "required": {
-            "default": true,
-            "title": "Required",
-            "type": "boolean"
-          },
-          "resolution_source": {
-            "anyOf": [
-              { "maxLength": 160, "type": "string" },
-              { "type": "null" }
-            ],
-            "title": "Resolution Source"
-          },
-          "signal_need_ids": {
-            "items": { "format": "uuid", "type": "string" },
-            "maxItems": 16,
-            "title": "Signal Need Ids",
-            "type": "array"
-          },
-          "status": {
-            "$ref": "#/components/schemas/GapStatus",
-            "default": "OPEN"
-          },
-          "why_it_matters": {
-            "maxLength": 300,
-            "minLength": 8,
-            "title": "Why It Matters",
-            "type": "string"
-          }
-        },
-        "required": ["id", "category", "description", "why_it_matters"],
-        "title": "EvidenceGap",
-        "type": "object"
+      "EvidenceCompleteness": {
+        "enum": ["COMPLETE", "PARTIAL", "ABSTAINED"],
+        "title": "EvidenceCompleteness",
+        "type": "string"
+      },
+      "EvidenceGapCode": {
+        "enum": [
+          "NO_FEATURE_SET",
+          "INPUT_ABSTAINED",
+          "SIGNAL_UNAVAILABLE",
+          "FEATURE_NOT_YET_OBSERVED",
+          "LOW_QUALITY",
+          "REFERENCE_INSUFFICIENT",
+          "CONTEXT_INCOMPATIBLE",
+          "UNKNOWN_CONFIG",
+          "MODEL_ARTIFACT_UNAVAILABLE",
+          "PROVENANCE_MISMATCH",
+          "EVIDENCE_SOURCE_MISSING",
+          "SOURCE_SCHEMA_MISMATCH",
+          "CUTOFF_MISMATCH",
+          "UNSUPPORTED_SOURCE",
+          "AMBIGUOUS_ASSOCIATION",
+          "INCOMPLETE_PROJECTION",
+          "UNVERIFIED_SOURCE"
+        ],
+        "title": "EvidenceGapCode",
+        "type": "string"
+      },
+      "EvidenceHorizon": {
+        "enum": ["NEXT_PULL", "AFTER_PULL_OFFLINE"],
+        "title": "EvidenceHorizon",
+        "type": "string"
+      },
+      "EvidenceIntegrity": {
+        "enum": [
+          "VERIFIED",
+          "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+          "FAILED_SOURCE_MISMATCH",
+          "NOT_VERIFIABLE",
+          "UNSUPPORTED_SCHEMA"
+        ],
+        "title": "EvidenceIntegrity",
+        "type": "string"
+      },
+      "EvidenceResultKind": {
+        "enum": ["next_pull", "anomaly"],
+        "title": "EvidenceResultKind",
+        "type": "string"
       },
       "Fact": {
         "additionalProperties": false,
@@ -2525,7 +2534,9 @@
             "type": "string"
           },
           "gaps": {
-            "items": { "$ref": "#/components/schemas/EvidenceGap" },
+            "items": {
+              "$ref": "#/components/schemas/vehicle_platform__agents__investigation__domain__EvidenceGap"
+            },
             "maxItems": 12,
             "title": "Gaps",
             "type": "array"
@@ -3429,6 +3440,256 @@
           "activation_event_id"
         ],
         "title": "PredictionBindingResponse",
+        "type": "object"
+      },
+      "PredictionEvidenceMaterializeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "phase9e-prediction-evidence-v1",
+            "default": "phase9e-prediction-evidence-v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "PredictionEvidenceMaterializeRequest",
+        "type": "object"
+      },
+      "PredictionEvidenceMaterializeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/PredictionEvidenceProjection"
+          },
+          "materialized": { "title": "Materialized", "type": "boolean" }
+        },
+        "required": ["materialized", "evidence"],
+        "title": "PredictionEvidenceMaterializeResponse",
+        "type": "object"
+      },
+      "PredictionEvidenceProjection": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_availability": {
+            "$ref": "#/components/schemas/ArtifactAvailability"
+          },
+          "available_signals": {
+            "items": { "type": "string" },
+            "maxItems": 32,
+            "title": "Available Signals",
+            "type": "array"
+          },
+          "claims": {
+            "items": { "additionalProperties": true, "type": "object" },
+            "maxItems": 8,
+            "title": "Claims",
+            "type": "array"
+          },
+          "completeness": {
+            "$ref": "#/components/schemas/EvidenceCompleteness"
+          },
+          "coverage": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Coverage",
+            "type": "number"
+          },
+          "cutoff": {
+            "format": "date-time",
+            "title": "Cutoff",
+            "type": "string"
+          },
+          "decision": {
+            "anyOf": [
+              { "type": "boolean" },
+              { "enum": ["ANOMALOUS", "INLIER"], "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Decision"
+          },
+          "duplicate_timestamp_count": {
+            "anyOf": [
+              { "maximum": 1000000, "minimum": 0, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Duplicate Timestamp Count"
+          },
+          "edge_count": {
+            "maximum": 64,
+            "minimum": 0,
+            "title": "Edge Count",
+            "type": "integer"
+          },
+          "evidence_id": {
+            "format": "uuid",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "expected_feature_count": {
+            "maximum": 128,
+            "minimum": 0,
+            "title": "Expected Feature Count",
+            "type": "integer"
+          },
+          "fact_count": {
+            "maximum": 48,
+            "minimum": 0,
+            "title": "Fact Count",
+            "type": "integer"
+          },
+          "facts": {
+            "items": { "additionalProperties": true, "type": "object" },
+            "maxItems": 48,
+            "title": "Facts",
+            "type": "array"
+          },
+          "family": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Family"
+          },
+          "fingerprint": {
+            "maxLength": 36,
+            "minLength": 12,
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/vehicle_platform__prediction_evidence__domain__EvidenceGap"
+            },
+            "maxItems": 16,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "horizon": { "$ref": "#/components/schemas/EvidenceHorizon" },
+          "integrity": { "$ref": "#/components/schemas/EvidenceIntegrity" },
+          "interpretation": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "invalid_observation_count": {
+            "anyOf": [
+              { "maximum": 1000000, "minimum": 0, "type": "integer" },
+              { "type": "null" }
+            ],
+            "title": "Invalid Observation Count"
+          },
+          "limitations": {
+            "items": { "type": "string" },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "missing_reason_counts": {
+            "additionalProperties": { "type": "integer" },
+            "maxProperties": 16,
+            "title": "Missing Reason Counts",
+            "type": "object"
+          },
+          "node_count": {
+            "maximum": 32,
+            "minimum": 1,
+            "title": "Node Count",
+            "type": "integer"
+          },
+          "observed_feature_count": {
+            "maximum": 128,
+            "minimum": 0,
+            "title": "Observed Feature Count",
+            "type": "integer"
+          },
+          "omitted_count": {
+            "maximum": 1000000,
+            "minimum": 0,
+            "title": "Omitted Count",
+            "type": "integer"
+          },
+          "pull_completeness": {
+            "anyOf": [
+              { "maximum": 1, "minimum": 0, "type": "number" },
+              { "type": "null" }
+            ],
+            "title": "Pull Completeness"
+          },
+          "reason_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Reason Code"
+          },
+          "receipt_id": {
+            "format": "uuid",
+            "title": "Receipt Id",
+            "type": "string"
+          },
+          "result_type": { "$ref": "#/components/schemas/EvidenceResultKind" },
+          "schema_version": {
+            "const": "phase9e-safe-projection-v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Score"
+          },
+          "score_is_probability": {
+            "const": false,
+            "default": false,
+            "title": "Score Is Probability",
+            "type": "boolean"
+          },
+          "source_role": { "$ref": "#/components/schemas/SourceRole" },
+          "source_type": {
+            "anyOf": [
+              { "maxLength": 24, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Type"
+          },
+          "status": { "title": "Status", "type": "string" },
+          "task": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Task"
+          },
+          "threshold": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Threshold"
+          }
+        },
+        "required": [
+          "schema_version",
+          "evidence_id",
+          "receipt_id",
+          "result_type",
+          "horizon",
+          "task",
+          "family",
+          "source_role",
+          "cutoff",
+          "status",
+          "reason_code",
+          "score",
+          "threshold",
+          "decision",
+          "completeness",
+          "integrity",
+          "coverage",
+          "observed_feature_count",
+          "expected_feature_count",
+          "artifact_availability",
+          "facts",
+          "gaps",
+          "claims",
+          "omitted_count",
+          "node_count",
+          "edge_count",
+          "fact_count",
+          "fingerprint",
+          "interpretation",
+          "limitations"
+        ],
+        "title": "PredictionEvidenceProjection",
         "type": "object"
       },
       "PredictionLineage": {
@@ -5877,6 +6138,79 @@
         "required": ["version"],
         "title": "VersionRequest",
         "type": "object"
+      },
+      "vehicle_platform__agents__investigation__domain__EvidenceGap": {
+        "additionalProperties": false,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/GapType" },
+          "description": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Description",
+            "type": "string"
+          },
+          "hypothesis_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 5,
+            "title": "Hypothesis Ids",
+            "type": "array"
+          },
+          "id": { "format": "uuid", "title": "Id", "type": "string" },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "resolution_source": {
+            "anyOf": [
+              { "maxLength": 160, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Resolution Source"
+          },
+          "signal_need_ids": {
+            "items": { "format": "uuid", "type": "string" },
+            "maxItems": 16,
+            "title": "Signal Need Ids",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GapStatus",
+            "default": "OPEN"
+          },
+          "why_it_matters": {
+            "maxLength": 300,
+            "minLength": 8,
+            "title": "Why It Matters",
+            "type": "string"
+          }
+        },
+        "required": ["id", "category", "description", "why_it_matters"],
+        "title": "EvidenceGap",
+        "type": "object"
+      },
+      "vehicle_platform__prediction_evidence__domain__EvidenceGap": {
+        "additionalProperties": false,
+        "properties": {
+          "code": { "$ref": "#/components/schemas/EvidenceGapCode" },
+          "reason_code": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Reason Code"
+          },
+          "source_node_id": {
+            "anyOf": [
+              { "maxLength": 80, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Node Id"
+          }
+        },
+        "required": ["code"],
+        "title": "EvidenceGap",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -7394,6 +7728,182 @@
         "tags": ["prediction-service"]
       }
     },
+    "/api/v1/prediction-service/evidence/{evidence_id}": {
+      "get": {
+        "operationId": "prediction_service_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionEvidenceProjection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Evidence",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/evidence/{evidence_id}/verify": {
+      "post": {
+        "operationId": "prediction_service_verify_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "evidence_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Evidence Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Prediction Service Verify Evidence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Verify Evidence",
+        "tags": ["prediction-service"]
+      }
+    },
     "/api/v1/prediction-service/next-pull": {
       "post": {
         "operationId": "prediction_service_next_pull",
@@ -7565,6 +8075,202 @@
         },
         "security": [{ "PredictionOperatorBearer": [] }],
         "summary": "Receipt",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/runs/{receipt_id}/evidence": {
+      "get": {
+        "operationId": "prediction_service_receipt_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionEvidenceProjection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Receipt Evidence",
+        "tags": ["prediction-service"]
+      },
+      "post": {
+        "operationId": "prediction_service_materialize_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "maxLength": 128, "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictionEvidenceMaterializeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionEvidenceMaterializeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Materialize Evidence",
         "tags": ["prediction-service"]
       }
     },

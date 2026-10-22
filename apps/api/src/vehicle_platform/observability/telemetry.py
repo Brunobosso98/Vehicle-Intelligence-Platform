@@ -163,6 +163,15 @@ class Telemetry:
         self.prediction_in_flight = meter.create_up_down_counter(
             "prediction_service.requests.in_flight"
         )
+        self.prediction_evidence_operations = meter.create_counter("prediction_evidence.operations")
+        self.prediction_evidence_replays = meter.create_counter("prediction_evidence.replays")
+        self.prediction_evidence_gaps = meter.create_counter("prediction_evidence.gaps")
+        self.prediction_evidence_duration = meter.create_histogram(
+            "prediction_evidence.duration", unit="s"
+        )
+        self.prediction_evidence_graph_size = meter.create_histogram(
+            "prediction_evidence.graph_size", unit="{item}"
+        )
         # Labels are deliberately source/outcome only; never vehicle, VIN, session or sample IDs.
         self.imports = meter.create_counter("telemetry.imports", unit="{import}")
         self.import_rows = meter.create_counter("telemetry.import.rows", unit="{sample}")

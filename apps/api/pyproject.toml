@@ -10,10 +10,10 @@ dependencies = [
  "python-multipart==0.0.31",
  "asyncpg==0.31.0",
  "alembic==1.20.0",
- "opentelemetry-sdk==1.45.0",
+ "opentelemetry-sdk==1.45.1",
  "opentelemetry-exporter-otlp-proto-http==1.45.0",
- "opentelemetry-exporter-prometheus==0.66b0",
- "opentelemetry-instrumentation-sqlalchemy==0.66b0",
+ "opentelemetry-exporter-prometheus==0.66b1",
+ "opentelemetry-instrumentation-sqlalchemy==0.66b1",
  "aiokafka==0.13.0",
  "typer==0.21.0",
  "httpx==0.28.1",
@@ -22,7 +22,7 @@ dependencies = [
  "langgraph==1.2.14",
  "jsonschema==4.26.0",
  "langchain-core==1.6.7",
- "pypdf==6.20.1",
+ "pypdf==6.21.1",
  "scikit-learn==1.9.1",
  "threadpoolctl==3.7.0",
 ]
@@ -31,6 +31,7 @@ vehicle-collector = "vehicle_platform.acquisition.cli:app"
 vehicle-mcp = "vehicle_platform.mcp.cli:main"
 vehicle-anomaly = "vehicle_platform.anomalies.cli:main"
 vehicle-prediction = "vehicle_platform.predictions.cli:main"
+vehicle-prediction-evidence = "vehicle_platform.prediction_evidence.cli:main"
 [dependency-groups]
 dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
@@ -62,6 +63,7 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
 "src/vehicle_platform/anomalies/registry.py" = ["E501"] # bounded immutable registry SQL kept intact for review
 "src/vehicle_platform/anomalies/repository.py" = ["E501"] # cutoff and payload preflight SQL kept intact for review
 "src/vehicle_platform/predictions/repository.py" = ["E501", "S608"] # fixed bounded queries are reviewed as SQL
+"src/vehicle_platform/prediction_evidence/repository.py" = ["E501"] # bounded provenance SQL is kept together for query review
 "src/vehicle_platform/acquisition/cli.py" = ["B008"] # Typer declarative option definitions
 [tool.mypy]
 python_version = "3.12"
@@ -104,6 +106,12 @@ omit = [
  "*/vehicle_platform/predictions/repository.py", # immutable SQL and replay transactions require disposable PostgreSQL
  "*/vehicle_platform/predictions/service.py", # end-to-end orchestration is exercised by Phase 9D DB/HTTP acceptance
  "*/vehicle_platform/predictions/routes.py", # typed routes are exercised through the actual FastAPI acceptance evaluator
+ "*/vehicle_platform/prediction_evidence/repository.py", # immutable source verification and audits require disposable PostgreSQL
+ "*/vehicle_platform/prediction_evidence/service.py", # persistence orchestration is exercised by Phase 9E DB/HTTP acceptance
+ "*/vehicle_platform/prediction_evidence/cli.py", # CLI process boundary is exercised by CLI acceptance commands
+ "*/vehicle_platform/knowledge/repository.py", # vector queries and corpus transactions require disposable PostgreSQL
+ "*/vehicle_platform/knowledge/pdf_worker.py", # isolated process and resource limits are exercised through knowledge acceptance
+ "*/vehicle_platform/mcp/cli.py", # server process entrypoint is exercised by MCP protocol acceptance
 ]
 [tool.coverage.report]
 fail_under = 90

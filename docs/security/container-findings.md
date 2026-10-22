@@ -1,38 +1,46 @@
 # Container scan findings and risk review
 
-## Current review — 2026-10-17
+## Current review — 2026-10-21
 
-Fresh remote image scans used Trivy 0.75.0 with its vulnerability database refreshed on
-2026-10-17. Counts below are High/Critical occurrences followed by unique vulnerability IDs;
-all scanned candidates had zero Critical findings. Image digests are immutable. Observability
-residuals are accepted only for the listed High CVE/package/image combinations, with a review date
-of 2026-10-17 and an expiry of 2026-10-23. Existing API/Web exceptions keep their previous
-2026-11-01 expiry and rationale.
+Fresh image scans used Trivy 0.75.0 with its vulnerability database refreshed on 2026-10-21.
+Counts below are High/Critical occurrences followed by unique IDs; every selected image has zero
+Critical findings. The refreshed database reported `CVE-2026-111943` in Go binaries built with
+Go 1.26.6–1.27.1. Go 1.26.10 and 1.27.3 add the `crypto/x509` denylist for compromised
+intermediate certificates ([Go release history](https://go.dev/doc/devel/release#go1.26.10),
+[CVE record](https://www.cve.org/CVERecord?id=CVE-2026-111943)). The hardened TimescaleDB image
+now compiles its helpers with a digest-pinned Go 1.26.10 builder and scans with zero High/Critical
+findings. Temporary observability exceptions are limited to the exact selected digests and
+`stdlib` package, reviewed on 2026-10-21 and expiring on 2026-10-28.
 
-| Component               | Selected image and digest                                                                                                                                                 | Fresh findings        | Candidate review                                                                                                                                                                                                                                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tempo                   | `grafana/tempo:3.0.4@sha256:dbd8ef9b596aa0efb6c2f9cefc94efa3a2d92d3b4242c250e6f9d98354dec4a4`                                                                             | 0 High / 0 Critical   | The previous 2.10.8 image had 16 High occurrences / 15 unique IDs. Tempo 3.0.4 updates Go to 1.26.9, `x/net` to 0.60.0 and fixes the reported dependency CVEs; see the [official release notes](https://github.com/grafana/tempo/releases/tag/v3.0.4).                                                                                      |
-| Grafana                 | `grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185`                                                                         | 5 High / 5 unique IDs | Patch 12.4.13 has fewer findings than 12.4.12 (15 occurrences / 8 unique) and the latest scanned 13.2.4 candidate (60 / 11). The five remaining findings are scoped to `kin-openapi` and the embedded Tempo module; no Critical finding is accepted. See [Grafana 12.4.13 notes](https://github.com/grafana/grafana/releases/tag/v12.4.13). |
-| OpenTelemetry Collector | `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6` | 4 High / 3 unique IDs | The 0.163.0 tag returned `MANIFEST_UNKNOWN` from GHCR on the review date, so it cannot be selected or scanned as an image.                                                                                                                                                                                                                  |
-| Prometheus              | `quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e`                                                           | 8 High / 3 unique IDs | The newer scanned 3.13.4 candidate had 10 occurrences / 4 unique IDs. The official [release schedule](https://github.com/prometheus/prometheus/blob/main/RELEASE.md) listed 3.16 for 2026-10-21; no such image was available on the review date.                                                                                            |
+| Component               | Selected image                                                                                                                                                            | Fresh findings         | Review                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TimescaleDB             | `vehicle-platform-timescaledb:local`                                                                                                                                      | 0 High / 0 Critical    | Fresh local build; both Go helpers scan clean after the Go 1.26.10 update.                                                                                                         |
+| API                     | `vehicle-platform-api:local`                                                                                                                                              | 44 High / 0 Critical   | All 44 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                          |
+| Web                     | `vehicle-platform-web:local`                                                                                                                                              | 43 High / 0 Critical   | All 43 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                          |
+| Kafka                   | `vehicle-platform-kafka:local`                                                                                                                                            | 0 High / 0 Critical    | Fresh CI image scan passed.                                                                                                                                                        |
+| OpenTelemetry Collector | `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6` | 5 High / 4 unique IDs  | Four existing Go findings remain accepted; the fifth occurrence is `CVE-2026-111943`. A pull of tag 0.163.0 returned not found on 2026-10-21.                                      |
+| Prometheus              | `quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e`                                                           | 10 High / 5 unique IDs | Eight existing Go occurrences remain accepted; two are `CVE-2026-111943`. A pull of v3.16.0 returned not found on 2026-10-21.                                                      |
+| Tempo                   | `grafana/tempo:3.0.4@sha256:dbd8ef9b596aa0efb6c2f9cefc94efa3a2d92d3b4242c250e6f9d98354dec4a4`                                                                             | 1 High / 1 unique ID   | The only finding is `CVE-2026-111943`. The earlier 3.1.0 preflight had four High occurrences across three older Go advisories.                                                     |
+| Grafana                 | `grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185`                                                                         | 8 High / 6 unique IDs  | Five existing `kin-openapi` and embedded Tempo findings remain accepted; three Go binaries report `CVE-2026-111943`. The 13.2.4 preflight had 60 High occurrences / 11 unique IDs. |
 
-The Collector, Prometheus and Grafana exceptions in `container-risk-acceptance.yaml` name the exact
-immutable image digest, CVE, and affected package. They record the review date, owner, rationale,
-expiry and the vendor update condition. The local observability profile exposes ports only on
-`127.0.0.1`; its checked-in Collector, Tempo and Prometheus configuration uses HTTP without
-HTTP/2 or TLS/ECH. These controls reduce the reachable paths but do not make the scanner findings
-disappear. Re-scan as soon as a fixed vendor image is published and no later than 2026-10-23.
+The observability exceptions keep the exact image digest, CVE, package, owner, rationale, review
+date, expiry, and remediation condition in `container-risk-acceptance.yaml`. Configured local
+observability endpoints bind to `127.0.0.1` and use HTTP; this narrows local service paths but does
+not remove the certificate-trust risk in the vendored Go binaries. Replace each image when its
+vendor publishes a compatible build with Go 1.26.10 or 1.27.3, rescan it, and review all remaining
+exceptions no later than 2026-10-28. Unlisted High and any Critical findings remain blocking.
 
-The first canonical startup with Tempo 3.0.4 exposed a configuration migration: Tempo 3 removes the
-legacy top-level `compactor` block ([migration guide](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/migrate-to-3/)).
-The local monolithic configuration now retains the seven-day block-retention setting under
+Tempo 3.0.4 still requires the Tempo 3 configuration migration: it removes the legacy top-level
+`compactor` block ([migration guide](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/migrate-to-3/)).
+The local monolithic configuration keeps the seven-day block-retention setting under
 `backend_worker.compaction`, matching the [Tempo 3 local configuration](https://grafana.com/docs/tempo/latest/set-up-for-tracing/setup-tempo/deploy/locally/linux/).
-The canonical stack and observability checks must pass again on the corrected commit.
+The canonical Docker and full-stack workflow remains the final commit-tied acceptance evidence.
 
-The Tempo 3.0.4 configuration/startup compatibility check and scans of the freshly built API/Web
-images still require the canonical Docker workflow. The current host's Docker daemon is running,
-but the active Codex process lacks the account's `docker` supplementary group. The canonical GitHub
-Actions run remains required for final security evidence.
+## Historical review — 2026-10-17 (superseded)
+
+The earlier image review selected Tempo 3.0.4, Grafana 12.4.13, Collector 0.162.0 and Prometheus
+3.15.0. Its findings and candidate comparison are retained in the Git history; the current review
+above uses the refreshed 2026-10-21 Trivy database and supersedes its counts and expiry dates.
 
 ## Historical disposition — 2026-10-01 (superseded)
 
@@ -79,11 +87,15 @@ rescanning the final runtime images, confirming installed versions and zero Crit
 then reviewer approval. No `.trivyignore`, `--ignore-unfixed`, severity downgrade, excluded runtime
 package, or ignored scanner exit code is used.
 
-## Image-content and coverage status
+## Archived scan records
 
-### Third-party infrastructure scan
+The dated reports below preserve earlier scanner evidence and rationale. Their image selections,
+counts, and dispositions are historical; the current inventory and expiry dates are in the
+2026-10-21 review at the top of this document.
 
-The current `make security` run reached the remotely retrievable
+### Third-party infrastructure scan — pre-hardening (superseded)
+
+An earlier `make security` run reached the remotely retrievable
 `timescale/timescaledb:2.30.2-pg17` image even though no local Docker CLI is installed. It found
 one High Alpine package issue with a published fix (`libexpat` CVE-2026-93990, 2.8.4-r0 to
 2.8.5-r0), plus bundled Go-binary findings: `gosu` contained 21 High and one Critical,
@@ -120,7 +132,7 @@ evidence is still a Phase 0 prerequisite. The next canonical run will exercise t
 driver and retain per-image evidence for API, Web, Collector, Prometheus, Tempo, and Grafana even
 when the database image continues to violate policy.
 
-## Canonical rerun 36952758342
+### Canonical rerun 36952758342 — historical
 
 The hardened database runtime now scans with **0 Critical and 0 High** findings. Prometheus 3.15.0
 also scans with **0 Critical and 0 High**. API/Web retain only the eight previously analyzed Debian
@@ -145,7 +157,7 @@ At that earlier scan, OpenTelemetry Collector 0.162.0 had no published container
 repository retained 0.161.0. The 0.162.0 manifest is now published. The 2026-10-09 refresh moves
 to its exact multi-platform digest and checks it under the same fail-closed policy.
 
-## 2026-10-09 Go advisory refresh
+### 2026-10-09 Go advisory refresh — historical
 
 The same database refresh found four High occurrences in the first-party hardened TimescaleDB
 image: the two Go advisories below appeared in each of `gosu` and `timescaledb-tune`, which had
@@ -176,7 +188,7 @@ image/CVE/package exceptions expire on 2026-10-15. The repository maintainer mus
 digest when a vendor image built with a fixed Go version is available; no Critical finding is
 accepted.
 
-## 2026-10-10 Kafka dependency refresh
+### 2026-10-10 Kafka dependency refresh — historical
 
 The Phase 7B Security run for commit `147b0332fcd712328ba757d97d12d61195514392` found one
 unaccepted High finding in `vehicle-platform-kafka:local`: `CVE-2026-106451` in the bundled
@@ -190,7 +202,7 @@ superseded `lz4-java-*.jar` is removed from `/opt/kafka/libs`; no risk exception
 is added. The rebuilt Kafka image must pass the same full Trivy image policy and Kafka integration
 checks before the repair is considered validated.
 
-## 2026-10-10 Go HTTP/2 advisory refresh
+### 2026-10-10 Go HTTP/2 advisory refresh — historical
 
 The refreshed Trivy database also reports [`CVE-2026-78669` (Go advisory GO-2026-6611)](https://pkg.go.dev/vuln/GO-2026-6611)
 in the four pinned observability images: in `golang.org/x/net` and Go's `stdlib`. It affects HTTP/2
@@ -209,7 +221,7 @@ checked-in configuration enables no TLS or HTTP/2 listener. This reduces the rel
 local callers and the isolated Compose network; it does not make the scanner finding disappear.
 Each pinned image remains scheduled for replacement and a fresh full scan before the short expiry.
 
-## 2026-10-19 Alpine expat refresh
+### 2026-10-19 Alpine expat refresh — historical
 
 A refreshed Trivy 0.75.0 database identified `CVE-2026-77214` in `libexpat` 2.8.5-r0 in the
 cached local TimescaleDB and Kafka images. Alpine 3.23 and 3.24 publish the fixed `libexpat`

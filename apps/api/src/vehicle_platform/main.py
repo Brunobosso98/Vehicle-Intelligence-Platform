@@ -31,6 +31,7 @@ from vehicle_platform.knowledge.repository import KnowledgeRepository
 from vehicle_platform.knowledge.retrieval import KnowledgeService
 from vehicle_platform.knowledge.routes import knowledge_router
 from vehicle_platform.observability.telemetry import Telemetry
+from vehicle_platform.prediction_evidence.service import PredictionEvidenceService
 from vehicle_platform.predictions.budgets import (
     PredictionBudgetState,
     PredictionRequestBudgetMiddleware,
@@ -118,6 +119,13 @@ def create_app(
         prediction_database if prediction_database is not None else cast(Database, dependency),
         telemetry=signals,
     )
+    prediction_evidence_service = PredictionEvidenceService(
+        prediction_database if prediction_database is not None else cast(Database, dependency),
+        model_artifacts=prediction_service.model_artifacts,
+        anomaly_artifacts=prediction_service.anomaly_artifacts,
+        telemetry=signals,
+        timeout_seconds=min(config.prediction_request_timeout_seconds, 6.0),
+    )
     prediction_budget_state = PredictionBudgetState()
 
     @asynccontextmanager
@@ -146,6 +154,7 @@ def create_app(
     app.state.telemetry = signals
     app.state.acquisition_publisher = publisher
     app.state.prediction_service = prediction_service
+    app.state.prediction_evidence_service = prediction_evidence_service
     app.state.prediction_budget_state = prediction_budget_state
     app.add_middleware(ResourceBudgetMiddleware)
     app.add_middleware(AgentRequestBudgetMiddleware)
@@ -156,7 +165,7 @@ def create_app(
         state=prediction_budget_state,
     )
     app.include_router(router(config, dependency, signals))
-    app.include_router(prediction_router(prediction_service))
+    app.include_router(prediction_router(prediction_service, prediction_evidence_service))
     app.state.knowledge_service = knowledge_service
     app.include_router(knowledge_router(knowledge_service, agent_service))
     app.state.agent_service = agent_service

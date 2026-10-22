@@ -195,3 +195,22 @@ multi-tenant authorization. Engineering scores are not failure probabilities or 
 [acceptance record](docs/validation/phase-9d-acceptance.md),
 [evaluation](docs/validation/phase-9d-model-serving-evaluation.md), and
 [traceability ledger](docs/validation/phase-9d-traceability-ledger.md).
+
+## Phase 9E prediction evidence
+
+Phase 9E adds immutable, cutoff-aware provenance for an existing Phase 9D receipt. Its typed graph
+links the original decision to the exact 9D approval event, 9A FeatureSet, 9B model or 9C
+finding/run/reference. Supervised `NEXT_PULL` and anomaly `AFTER_PULL_OFFLINE` remain separate.
+Scores remain engineering outputs, not mechanical failure probabilities or diagnoses. The service
+reuses 9D's controlled access boundary and adds no agent, MCP, predictive UI, calibration, public
+tenancy or ECU-control surface.
+
+See the [architecture](docs/architecture/phase-9e-prediction-evidence.md),
+[operator runbook](docs/runbooks/prediction-evidence.md),
+[acceptance report](docs/validation/phase-9e-acceptance.md),
+[evaluation narrative](docs/validation/phase-9e-evidence-evaluation.md),
+[traceability ledger](docs/validation/phase-9e-traceability-ledger.md) and
+[ADR 0043](docs/adr/0043-phase9e-prediction-evidence.md). Run
+`make test-prediction-evidence` for focused contracts and `make phase9e-acceptance` for the actual
+HTTP/database gate. The benchmark and observability targets consume the same ignored acceptance
+receipt. Docker-dependent results are CI REQUIRED without a usable Docker daemon.
