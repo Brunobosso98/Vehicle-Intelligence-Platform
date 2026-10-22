@@ -36,9 +36,19 @@ Separately, a valid 9C reference row is appended with a post-cutoff availability
 updated observed row/session counts differ from the frozen parent manifest, and independent 9E
 verification must return `FAILED_SOURCE_MISMATCH` with `PROVENANCE_MISMATCH`.
 
-The report records actual counts and values for receipts, bundles, nodes, edges, facts, gaps,
-completeness, integrity, replay latency/identity, 10- and 100-request behavior, response bytes,
-RSS and observed database sessions. It does not convert synthetic fixtures into claims about
+The report records each materialized receipt's evidence and source IDs, prediction status,
+completeness, integrity, quality coverage and gap codes, along with aggregate completeness,
+integrity and prediction-status counts.
+An `eligible` bundle requires an original `READY_SCORE`, `COMPLETE` completeness and both source
+and independent verification integrity `VERIFIED`. It distinguishes those bundles from partial
+bundles, abstained explanations, failed source verification, unsupported schemas and
+unavailable-artifact snapshots. Source verification adversaries are counted separately from the
+materialized bundle outcomes.
+
+Benchmark output includes total evaluator wall time and Python-process CPU time; the CPU figure
+excludes child processes. The configured CPU concurrency limit is two. The report also records
+receipts, nodes, edges, facts, gaps, replay latency/identity, 10- and 100-request behavior, response
+bytes, RSS and observed database sessions. It does not convert synthetic fixtures into claims about
 real-car reliability. Optional imported-data smoke is reported as `NOT_RUN` unless a sanitized
 eligible fixture and same-cohort reference support exist.
 

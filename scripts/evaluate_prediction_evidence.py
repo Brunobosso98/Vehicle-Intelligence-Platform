@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 import traceback
+from collections import Counter
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -39,6 +40,7 @@ from vehicle_platform.ml.domain import MLTask
 from vehicle_platform.observability.telemetry import Telemetry
 from vehicle_platform.prediction_evidence.canonical import sha256
 from vehicle_platform.prediction_evidence.domain import (
+    EvidenceCompleteness,
     EvidenceIntegrity,
     PredictionEvidenceBundle,
     SourceKind,
@@ -707,6 +709,110 @@ async def _table_count(database: Database, table: str, evidence_id: UUID) -> int
     return int(value or 0)
 
 
+def _summarize_bundle_outcomes(
+    bundles: dict[str, PredictionEvidenceBundle],
+    verification_outcomes: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    prediction_status_counts = Counter(
+        bundle.prediction.status for bundle in bundles.values()
+    )
+    completeness_counts = Counter(
+        bundle.completeness.value for bundle in bundles.values()
+    )
+    source_integrity_counts = Counter(
+        bundle.integrity.value for bundle in bundles.values()
+    )
+    verification_integrity_counts = Counter(
+        outcome["integrity"] for outcome in verification_outcomes.values()
+    )
+    gap_code_counts = Counter(
+        gap.code.value for bundle in bundles.values() for gap in bundle.gaps
+    )
+    gap_reason_counts = Counter(
+        gap.reason_code
+        for bundle in bundles.values()
+        for gap in bundle.gaps
+        if gap.reason_code is not None
+    )
+    return {
+        "receipt_count": len(bundles),
+        "prediction_status_counts": dict(sorted(prediction_status_counts.items())),
+        "completeness_counts": dict(sorted(completeness_counts.items())),
+        "source_integrity_counts": dict(sorted(source_integrity_counts.items())),
+        "verification_integrity_counts": dict(
+            sorted(verification_integrity_counts.items())
+        ),
+        "gap_code_counts": dict(sorted(gap_code_counts.items())),
+        "gap_reason_counts": dict(sorted(gap_reason_counts.items())),
+        "eligible": sum(
+            bundle.prediction.status == PredictionStatus.READY_SCORE.value
+            and bundle.completeness is EvidenceCompleteness.COMPLETE
+            and bundle.integrity.value == EvidenceIntegrity.VERIFIED.value
+            and verification_outcomes[key]["integrity"]
+            == EvidenceIntegrity.VERIFIED.value
+            for key, bundle in bundles.items()
+        ),
+        "eligible_definition": "READY_SCORE + COMPLETE + VERIFIED source and verification integrity",
+        "complete": completeness_counts.get(EvidenceCompleteness.COMPLETE.value, 0),
+        "partial": completeness_counts.get(EvidenceCompleteness.PARTIAL.value, 0),
+        "abstained": completeness_counts.get(
+            EvidenceCompleteness.ABSTAINED.value, 0
+        ),
+        "failed": verification_integrity_counts.get(
+            EvidenceIntegrity.FAILED_SOURCE_MISMATCH.value, 0
+        ),
+        "failed_source_verification": verification_integrity_counts.get(
+            EvidenceIntegrity.FAILED_SOURCE_MISMATCH.value, 0
+        ),
+        "not_verifiable": verification_integrity_counts.get(
+            EvidenceIntegrity.NOT_VERIFIABLE.value, 0
+        ),
+        "unsupported_schema": verification_integrity_counts.get(
+            EvidenceIntegrity.UNSUPPORTED_SCHEMA.value, 0
+        ),
+        "artifact_unavailable_snapshot": verification_integrity_counts.get(
+            EvidenceIntegrity.VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE.value, 0
+        ),
+        "bundles": {
+            key: {
+                "receipt_id": str(bundle.receipt_id),
+                "evidence_id": str(bundle.evidence_id),
+                "prediction_status": bundle.prediction.status,
+                "completeness": bundle.completeness.value,
+                "result_type": bundle.result_type.value,
+                "horizon": bundle.horizon.value,
+                "source_role": bundle.source_role.value,
+                "source_integrity": bundle.integrity.value,
+                "verification_integrity": verification_outcomes[key]["integrity"],
+                "verification_reason_codes": sorted(
+                    verification_outcomes[key]["reason_codes"]
+                ),
+                "source_quality": {
+                    "quality_class": bundle.source_summary.quality_class,
+                    "receipt_coverage": bundle.source_summary.receipt_coverage,
+                    "feature_coverage": bundle.source_summary.feature_coverage,
+                    "observed_feature_count": (
+                        bundle.source_summary.observed_feature_count
+                    ),
+                    "expected_feature_count": (
+                        bundle.source_summary.expected_feature_count
+                    ),
+                    "pull_completeness": bundle.source_summary.pull_completeness,
+                },
+                "gap_codes": sorted({gap.code.value for gap in bundle.gaps}),
+                "node_count": len(bundle.nodes),
+                "edge_count": len(bundle.edges),
+                "fact_count": len(bundle.facts),
+                "source_ids_by_kind": {
+                    node.source_kind.value: str(node.source_entity_id)
+                    for node in bundle.nodes
+                },
+            }
+            for key, bundle in sorted(bundles.items())
+        },
+    }
+
+
 def _sqlstate(error: DBAPIError) -> str | None:
     return getattr(error.orig, "sqlstate", None) or getattr(error.orig, "pgcode", None)
 
@@ -748,6 +854,8 @@ async def evaluate() -> dict[str, Any]:
     url = os.environ.get("TEST_DATABASE_URL", "")
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise ValueError("Phase 9E requires the disposable vehicle_test database")
+    evaluator_wall_started = time.perf_counter()
+    evaluator_cpu_started = time.process_time()
     token = "phase9e-" + secrets.token_urlsafe(48)
     settings = Settings(
         database_url=SecretStr(url),
@@ -789,6 +897,7 @@ async def evaluate() -> dict[str, Any]:
             "max_json_bytes": 65536,
             "max_artifact_bytes_hashed": 50 * 1024 * 1024,
             "concurrent_builds": 2,
+            "cpu_concurrency": settings.prediction_max_cpu_concurrency,
             "request_timeout_seconds": 8,
             "evidence_timeout_seconds": 6,
             "audit_records_per_evidence": 32,
@@ -1302,6 +1411,7 @@ async def evaluate() -> dict[str, Any]:
                         materialized[key] = payload
 
                     source_bundles: dict[str, PredictionEvidenceBundle] = {}
+                    verification_outcomes: dict[str, dict[str, Any]] = {}
                     for key, receipt in receipts.items():
                         receipt_id = UUID(str(receipt["receipt_id"]))
                         evidence_id = UUID(
@@ -1354,6 +1464,10 @@ async def evaluate() -> dict[str, Any]:
                             f"{verify_response.text[:300]}",
                         )
                         verification = verify_response.json()
+                        verification_outcomes[key] = {
+                            "integrity": verification["integrity"],
+                            "reason_codes": verification.get("reason_codes", []),
+                        }
                         _assert(
                             verification["integrity"]
                             in {
@@ -1387,10 +1501,18 @@ async def evaluate() -> dict[str, Any]:
                             report["supervised"][key] = {
                                 "receipt_id": str(receipt_id),
                                 "evidence_id": str(evidence_id),
+                                "feature_set_id": str(
+                                    expected_nodes[SourceKind.FEATURE_SET]
+                                ),
                                 "model_version_id": str(
                                     expected_nodes[SourceKind.MODEL_VERSION]
                                 ),
                                 "status": receipt["status"],
+                                "completeness": bundle.completeness.value,
+                                "integrity": bundle.integrity.value,
+                                "gap_codes": sorted(
+                                    {gap.code.value for gap in bundle.gaps}
+                                ),
                                 "score": receipt["engineering_validation_score"],
                                 "threshold": receipt["threshold"],
                                 "decision": receipt["decision"],
@@ -1486,6 +1608,72 @@ async def evaluate() -> dict[str, Any]:
                                     supervised_bundle.evidence_id
                                 ),
                                 "anomaly_evidence_id": str(anomaly_bundle.evidence_id),
+                                "next_pull_prediction_status": (
+                                    supervised_bundle.prediction.status
+                                ),
+                                "next_pull_score": supervised_bundle.prediction.score,
+                                "next_pull_threshold": (
+                                    supervised_bundle.prediction.threshold
+                                ),
+                                "next_pull_decision": (
+                                    supervised_bundle.prediction.decision
+                                ),
+                                "next_pull_model_version_id": str(
+                                    next(
+                                        node.source_entity_id
+                                        for node in supervised_bundle.nodes
+                                        if node.source_kind is SourceKind.MODEL_VERSION
+                                    )
+                                ),
+                                "next_pull_completeness": (
+                                    supervised_bundle.completeness.value
+                                ),
+                                "next_pull_integrity": (
+                                    supervised_bundle.integrity.value
+                                ),
+                                "anomaly_prediction_status": (
+                                    anomaly_bundle.prediction.status
+                                ),
+                                "anomaly_score": anomaly_bundle.prediction.score,
+                                "anomaly_threshold": (
+                                    anomaly_bundle.prediction.threshold
+                                ),
+                                "anomaly_decision": anomaly_bundle.prediction.decision,
+                                "anomaly_detector_version_id": str(
+                                    next(
+                                        node.source_entity_id
+                                        for node in anomaly_bundle.nodes
+                                        if node.source_kind
+                                        is SourceKind.DETECTOR_VERSION
+                                    )
+                                ),
+                                "anomaly_finding_id": str(
+                                    next(
+                                        node.source_entity_id
+                                        for node in anomaly_bundle.nodes
+                                        if node.source_kind
+                                        is SourceKind.ANOMALY_FINDING
+                                    )
+                                ),
+                                "anomaly_run_id": str(
+                                    next(
+                                        node.source_entity_id
+                                        for node in anomaly_bundle.nodes
+                                        if node.source_kind is SourceKind.ANOMALY_RUN
+                                    )
+                                ),
+                                "anomaly_reference_dataset_id": str(
+                                    next(
+                                        node.source_entity_id
+                                        for node in anomaly_bundle.nodes
+                                        if node.source_kind
+                                        is SourceKind.REFERENCE_DATASET
+                                    )
+                                ),
+                                "anomaly_completeness": (
+                                    anomaly_bundle.completeness.value
+                                ),
+                                "anomaly_integrity": anomaly_bundle.integrity.value,
                                 "distinct_receipts_and_bundles": True,
                                 "claim_scopes_separate": True,
                                 "scores_kept_separate": True,
@@ -1507,7 +1695,15 @@ async def evaluate() -> dict[str, Any]:
                                 "reference_dataset_id": str(
                                     expected_nodes.get(SourceKind.REFERENCE_DATASET)
                                 ),
+                                "feature_set_id": str(
+                                    expected_nodes[SourceKind.FEATURE_SET]
+                                ),
                                 "status": receipt["status"],
+                                "completeness": bundle.completeness.value,
+                                "integrity": bundle.integrity.value,
+                                "gap_codes": sorted(
+                                    {gap.code.value for gap in bundle.gaps}
+                                ),
                                 "score": receipt["anomaly_score"],
                                 "threshold": receipt["threshold"],
                                 "decision": receipt["decision"],
@@ -1531,6 +1727,23 @@ async def evaluate() -> dict[str, Any]:
                                 bundle.prediction.score is None,
                                 "abstention was upgraded to a score",
                             )
+
+                    report["bundle_outcomes"] = _summarize_bundle_outcomes(
+                        source_bundles, verification_outcomes
+                    )
+                    _assert(
+                        report["bundle_outcomes"]["receipt_count"] == len(receipts),
+                        "bundle outcome summary omitted a source receipt",
+                    )
+                    _assert(
+                        set(verification_outcomes) == set(source_bundles),
+                        "verification summary omitted a source receipt",
+                    )
+                    _assert(
+                        sum(report["bundle_outcomes"]["completeness_counts"].values())
+                        == len(receipts),
+                        "bundle completeness summary does not cover every receipt",
+                    )
 
                     target_measurement_count = await _row(
                         database,
@@ -2479,6 +2692,17 @@ async def evaluate() -> dict[str, Any]:
     finally:
         shutdown_telemetry_once()
         await database.close()
+        report.setdefault("benchmarks", {}).update(
+            {
+                "evaluator_elapsed_seconds": round(
+                    time.perf_counter() - evaluator_wall_started, 6
+                ),
+                "evaluator_process_cpu_seconds": round(
+                    time.process_time() - evaluator_cpu_started, 6
+                ),
+                "evaluator_cpu_scope": "python process only; child processes excluded",
+            }
+        )
     return report
 
 
