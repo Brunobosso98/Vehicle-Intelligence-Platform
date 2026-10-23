@@ -1,5 +1,6 @@
 from typing import Any, Literal
 from urllib.parse import urlparse
+from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,6 +17,13 @@ class AgentSettings(BaseSettings):
     api_key: SecretStr | None = None
     mcp_url: str = "http://127.0.0.1:8001/mcp"
     mcp_token: SecretStr | None = None
+    environment: Literal["development", "test", "production"] = "development"
+    prediction_service_enabled: bool = False
+    prediction_evidence_enabled: bool = False
+    prediction_capability_token: SecretStr | None = None
+    prediction_mcp_token: SecretStr | None = None
+    prediction_vehicle_ids: list[UUID] = Field(default_factory=list, max_length=64)
+    max_prediction_evidence_reads: int = Field(default=2, ge=1, le=4)
     investigation_token: SecretStr | None = None
     max_steps: int = Field(default=16, ge=2, le=32)
     max_tool_calls: int = Field(default=32, ge=4, le=32)
@@ -57,13 +65,46 @@ class AgentSettings(BaseSettings):
             raise ValueError("Enabled OpenAI agent requires VIP_AGENT_API_KEY and VIP_AGENT_MODEL")
         if self.enabled and not self.mcp_token:
             raise ValueError("Enabled agent requires VIP_AGENT_MCP_TOKEN")
+        if self.prediction_evidence_enabled:
+            if self.environment == "production" or self.environment not in {"development", "test"}:
+                raise ValueError("Prediction evidence is restricted to controlled environments")
+            if not self.prediction_service_enabled:
+                raise ValueError("Prediction evidence requires the controlled Prediction Service")
+            if self.prediction_capability_token is None or self.prediction_mcp_token is None:
+                raise ValueError("Prediction evidence requires separate operator and MCP tokens")
+            for token in (self.prediction_capability_token, self.prediction_mcp_token):
+                value = token.get_secret_value()
+                if len(value) < 43 or any(character.isspace() for character in value):
+                    raise ValueError("Prediction capability tokens must be high-entropy values")
+            if (
+                self.mcp_token
+                and self.mcp_token.get_secret_value()
+                == self.prediction_mcp_token.get_secret_value()
+            ):
+                raise ValueError("Prediction MCP token must be distinct from ordinary MCP read")
+            controlled = self.prediction_capability_token.get_secret_value()
+            predictive_mcp = self.prediction_mcp_token.get_secret_value()
+            if controlled == predictive_mcp or (
+                self.mcp_token and controlled == self.mcp_token.get_secret_value()
+            ):
+                raise ValueError("Operator capability and MCP credentials must be distinct")
+            if not self.prediction_vehicle_ids:
+                raise ValueError(
+                    "Prediction evidence requires an explicit controlled vehicle allowlist"
+                )
         return self
 
 
 def redact_data(value: Any, settings: AgentSettings) -> Any:
     """Redact only strings, preserving numeric facts and JSON structure."""
     if isinstance(value, str):
-        for secret in (settings.api_key, settings.mcp_token, settings.investigation_token):
+        for secret in (
+            settings.api_key,
+            settings.mcp_token,
+            settings.prediction_capability_token,
+            settings.prediction_mcp_token,
+            settings.investigation_token,
+        ):
             if secret and secret.get_secret_value():
                 value = value.replace(secret.get_secret_value(), "[redacted]")
         return value

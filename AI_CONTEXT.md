@@ -28,6 +28,8 @@
 - `apps/api/src/vehicle_platform/agents`: Phase 7A typed state/provider contracts, LangGraph
   orchestration through the official MCP client, temporal context, evidence/claim validation,
   agent-owned persistence, API/SSE and instrumentation.
+  Phase 9F adds controlled run-scoped reads of selected 9E evidence, private lineage mapping and
+  deterministic structural claim rendering.
   Persistence owns per-session connections without reuse and bounded driver cancellation cleanup.
 - `apps/api/src/vehicle_platform/agents/investigation`: Phase 7B public investigation types,
   lifecycle rules, semantic provider proposals, MCP-backed existing-evidence search, Phase 4
@@ -44,6 +46,8 @@
   bindings, lifecycle events and minimal prediction receipts.
 - `apps/api/migrations/versions/0017_prediction_evidence.py`: additive Phase 9E evidence bundles,
   normalized lineage/facts/gaps and append-only verification audits.
+- `apps/api/migrations/versions/0018_agent_prediction_lineage.py`: additive private mapping from
+  run-local Phase 9F evidence IDs to exact 9E source and receipt lineage.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
@@ -63,6 +67,10 @@
   disposable-DB Phase 9D real-HTTP evaluator, migration round trip and serving-boundary checks.
 - `scripts/evaluate_prediction_evidence.py`, `scripts/phase9e-validation.sh`: independent
   disposable-DB Phase 9E source/HTTP evaluator, migration round trip, immutability and budgets.
+- `scripts/evaluate_agent_prediction.py`: Phase 9F integration acceptance over synthetic 9B/9C/9D/9E
+  records inside the disposable Phase 9E database run.
+- `scripts/report_agent_prediction.py`: renders benchmark and observability views from the
+  exact-head Phase 9F receipt without deriving measurements.
 - `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
   artifact, threshold and bounded-input unit tests.
 - `scripts/investigation_browser_e2e.py`, `apps/web/tests/e2e/investigation.spec.ts`:
@@ -106,12 +114,15 @@ Phase 7C and Phase 8 are complete; Phase 7D retains its operator-accepted unifie
 caveat. Evidence is in their validation reports. Phase 9A, 9B and 9C are merged; Phase 9C at
 `c4da7f5` passed canonical full-validation and all CI/Security checks before PR #43 merged into
 baseline `7fc4c59`. Phase 9C owns statistical deviation scoring only and does not replace Phase 3
-factual events or Phase 9B next-pull labels. Phase 9D is VERIFIED on the final exact head of open,
-unmerged PR #44; current SHA and exact-head receipts are linked from the PR checks.
+factual events or Phase 9B next-pull labels. Phase 9D is merged and verified; historical exact-head
+receipts are in its acceptance record.
 Phase 9E adds immutable cutoff-aware provenance for 9D receipts and preserves 9B `NEXT_PULL`
 and 9C `AFTER_PULL_OFFLINE` semantics. It adds no diagnosis, agent, MCP, UI, calibration or
-ECU-control path. Its implementation and 134-section evidence report are on open, unmerged PR #45;
-use that PR's current exact-head checks and attached validation artifact for delivery status.
+ECU-control path. It is merged at baseline `466ce900988bd81e1d968eb319e970955b4011d7`; its
+acceptance report and 134-section ledger record historical Phase 9E proof.
+Phase 9F adds an explicitly selected, development/test-only agent read of verified 9E summaries
+through a dedicated MCP capability. It preserves the 9B/9C horizons, uses low-confidence fixed
+renderers and keeps exact source lineage out of provider input and public AgentRun snapshots.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
 
 ## Validation
@@ -120,13 +131,18 @@ Read `AGENTS.md` and scoped instructions. Use `make bootstrap`, `make check-api`
 `make check-web`, `make contracts-check`, `make docs-check`, and `make verify`.
 Without a usable Docker daemon, `make verify-cloud` applies and Docker gates are CI REQUIRED.
 The canonical GitHub `full-validation` workflow covers completed Phase 7/8/9A/9B/9C/9D gates and
-the Phase 9E database/HTTP evaluator;
+the Phase 9E/9F disposable database evaluators;
 Phase 9C adds `make test-anomalies` and `make phase9c-acceptance`. Phase 9D adds
 `make test-prediction-service` and `make phase9d-acceptance`; its acceptance and canonical
-Docker/full-stack checks require the Docker runner. Exact-head receipts are linked from PR #44.
+Docker/full-stack checks require the Docker runner. Historical exact-head receipts are in the 9D
+acceptance report.
 Phase 9E adds `make test-prediction-evidence`, `make phase9e-acceptance`,
 `make benchmark-prediction-evidence` and `make prediction-evidence-observability`; the database
 acceptance requires the Docker runner.
+Phase 9F adds `make test-prediction-agent-integration`, `make phase9f-acceptance`,
+`make benchmark-prediction-agent-integration` and `make prediction-agent-observability`. Acceptance
+runs in the Phase 9E disposable database and requires Docker. Its exact-head report is separate from
+the 9E evaluation result.
 Do not claim a gate passed without its executed receipt.
 
 ## Current implementation map
@@ -145,9 +161,13 @@ Do not claim a gate passed without its executed receipt.
   production enablement, public tenancy, arbitrary feature inputs, training, agent, MCP or UI path.
   Architecture, ADRs 0039–0042, runbook, acceptance/evaluation reports and traceability ledger are
   documented under `docs/architecture`, `docs/adr`, `docs/runbooks` and `docs/validation`. Phase 9D
-  is VERIFIED on the final exact head of open, unmerged PR #44; current check receipts are linked
-  from the PR.
+  is merged and verified; historical exact-head receipts are in its acceptance report.
 - Phase 9E adds migration 0017 with immutable bundles, normalized lineage and verification audits.
-  The implementation, 134-section ledger and acceptance report are on open, unmerged PR #45; use
-  its exact-head check receipts and attached report for current validation status.
-- Phases 9F–9H remain planned.
+  It is merged at the Phase 9F baseline; see the 134-section ledger and acceptance report for its
+  historical result.
+- Phase 9F adds a controlled agent read of selected 9E summaries through a dedicated MCP scope,
+  deterministic intent routing, structural claim validation and private lineage in migration 0018.
+  It adds no production enablement, diagnosis, collection or vehicle control. See the Phase 9F
+  architecture, runbook, ADR 0044, acceptance/evaluation records and 137-section traceability
+  ledger under `docs/`.
+- Phases 9G–9H remain planned.

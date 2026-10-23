@@ -93,9 +93,11 @@ All routes remain under the existing controlled `/api/v1/prediction-service` bou
 | `POST /evidence/{evidence_id}/verify` | Recheck frozen sources and append a verification audit |
 
 The same bearer-header, trusted-peer, disabled-by-default, production denial, body/rate/in-flight
-and request-timeout controls used by 9D apply. No fleet listing, public endpoint, user tenancy,
-MCP tool, agent node, RAG ingestion or predictive UI is added. The safe projection omits internal
-source IDs, source checksums, paths, matrices, tokens and private metadata.
+and request-timeout controls used by 9D apply. Phase 9E itself adds no fleet listing, public
+endpoint, user tenancy, agent node, RAG ingestion or predictive UI. A separate Phase 9F boundary
+can read selected safe summaries through authenticated, specially scoped MCP; it does not change
+9E ownership or write behavior. The operator projection omits internal source IDs, source checksums,
+paths, matrices, tokens and private metadata.
 
 The local operator CLI supports `build`, `verify` and `inspect`. Persistent build/verify requires a
 matching development/test environment confirmation and `--yes`; production is rejected.

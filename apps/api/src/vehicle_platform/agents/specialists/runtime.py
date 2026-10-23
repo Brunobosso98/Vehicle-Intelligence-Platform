@@ -35,6 +35,7 @@ from vehicle_platform.agents.specialists.routing import (
     decide,
     event_types,
     hints_for,
+    prediction_anomaly_pair_requested,
 )
 from vehicle_platform.agents.specialists.tool_scope import scoped_tool_definitions
 from vehicle_platform.agents.specialists.validation import (
@@ -50,6 +51,62 @@ if TYPE_CHECKING:
 
 
 ZERO_USAGE = Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0)
+
+
+def render_grounded_prediction_result(state: Execution, selected: list[Specialist]) -> bool:
+    report = state.run.supervisor
+    if report is None or report.routing.intent is not Intent.PREDICTION or state.context is None:
+        return False
+    prediction_sources = [
+        item
+        for item in state.registry.items.values()
+        if item.source_tool == "get_prediction_evidence"
+    ]
+    if len(prediction_sources) != 1:
+        return False
+    source_id = prediction_sources[0].id
+    grounded_findings = [
+        finding
+        for result in report.specialists
+        if result.status == "completed" and result.specialist in selected
+        for finding in result.findings
+        if finding.template == "prediction_result" and finding.evidence_ids == [source_id]
+    ]
+    if len(grounded_findings) != 1:
+        return False
+
+    from vehicle_platform.agents.grounding import validate
+
+    finding = grounded_findings[0]
+    state.final = validate(
+        Draft(
+            confidence="low",
+            claims=[
+                Claim(
+                    classification=finding.classification,
+                    template=finding.template,
+                    bindings=finding.bindings,
+                    evidence_ids=finding.evidence_ids,
+                )
+            ],
+            missing_evidence=[],
+        ),
+        state.registry,
+        state.context,
+    )
+    state.final.limitations = list(
+        dict.fromkeys(
+            [
+                *state.final.limitations,
+                *(
+                    warning
+                    for result in report.specialists
+                    for warning in result.data_quality_warnings
+                ),
+            ]
+        )
+    )[:32]
+    return True
 
 
 def quality_observation_bindings(finding: Finding, registry: EvidenceRegistry) -> list[Binding]:
@@ -278,6 +335,9 @@ class Supervisor:
                 proposal = RoutingProposal(intent=hints.intent or Intent.FACTUAL, usage=ZERO_USAGE)
             decision = decide(hints, proposal, state.context, self.settings.max_specialists)
         report = SupervisorReport(
+            prompt_version=(
+                "supervisor-v4" if state.ask.include_prediction_evidence else "supervisor-v3"
+            ),
             routing=decision,
             routing_usage=proposal.usage,
             routing_seconds=perf_counter() - started,
@@ -293,6 +353,9 @@ class Supervisor:
                 evidence_items=self.settings.max_evidence,
                 input_bytes=self.settings.max_input_bytes,
                 tool_result_bytes=self.settings.max_result_bytes,
+                prediction_evidence_reads=self.settings.max_prediction_evidence_reads
+                if state.ask.include_prediction_evidence
+                else 0,
             ),
         )
         report.configuration_hash = canonical_hash(
@@ -304,6 +367,12 @@ class Supervisor:
                 if state.knowledge_tools
                 else [],
                 "routing_hints": "1.5",
+                "prediction_intent_routing": "1.0",
+                "prediction_grounding": "prediction-agent-summary-v1",
+                "prediction_projection_quality_gate": "1.1",
+                "prediction_evidence_reads": self.settings.max_prediction_evidence_reads
+                if state.ask.include_prediction_evidence
+                else 0,
                 "mcp_context_instructions": "1.0",
                 "tool_error_feedback": "1.0",
                 "scoped_tool_schemas": "1.0",
@@ -339,6 +408,25 @@ class Supervisor:
             duration_seconds=report.routing_seconds,
         )
         await state.emit("routing_completed", decision.model_dump(mode="json"))
+        predictive_pair = prediction_anomaly_pair_requested(state.ask.question)
+        if hints.intent in {Intent.PREDICTION, Intent.ANOMALY} and (
+            state.prediction_error is not None or not decision.selected or predictive_pair
+        ):
+            from vehicle_platform.agents.grounding import prediction_answer
+
+            state.final = prediction_answer(
+                state.registry,
+                state.context,
+                hints.intent.value,
+                error=state.prediction_error,
+                question=state.ask.question,
+            )
+            report.sufficiency = (
+                Sufficiency.INSUFFICIENT if state.final.missing_evidence else Sufficiency.SUFFICIENT
+            )
+            report.investigation_recommended = bool(state.final.missing_evidence)
+            await self.evaluate()
+            return
         if documentation_only and state.final is not None:
             state.run.usage = ZERO_USAGE.model_copy(deep=True)
             report.sufficiency = (
@@ -409,6 +497,8 @@ class Supervisor:
         if report.sufficiency is Sufficiency.UNRELIABLE_DATA:
             self.synthesize_unreliable()
             return
+        if render_grounded_prediction_result(state, decision.selected):
+            return
         await state.emit("synthesis_started", {"sufficiency": report.sufficiency.value})
 
     async def evaluate(self) -> None:
@@ -444,6 +534,30 @@ class Supervisor:
             raise AgentError("context_missing")
         quality_claims: list[Claim] = []
         report = self.state.run.supervisor
+        if report and report.routing.intent in {Intent.PREDICTION, Intent.ANOMALY}:
+            from vehicle_platform.agents.grounding import prediction_answer
+
+            self.state.final = prediction_answer(
+                self.state.registry,
+                self.state.context,
+                report.routing.intent.value,
+                error=self.state.prediction_error,
+                forced_gap="prediction_data_quality_gate_blocked",
+                question=self.state.ask.question,
+            )
+            self.state.final.limitations = list(
+                dict.fromkeys(
+                    [
+                        *self.state.final.limitations,
+                        *(
+                            warning
+                            for result in report.specialists
+                            for warning in result.data_quality_warnings
+                        ),
+                    ]
+                )
+            )[:32]
+            return
         for result in report.specialists if report else []:
             if result.specialist is not Specialist.DATA_QUALITY or result.status != "completed":
                 continue
@@ -483,16 +597,65 @@ class Supervisor:
 
     def quality_warnings(self) -> tuple[list[str], bool]:
         state = self.state
+        if state.run.supervisor and state.run.supervisor.routing.intent in {
+            Intent.PREDICTION,
+            Intent.ANOMALY,
+        }:
+            sources = [
+                item
+                for item in state.registry.items.values()
+                if item.source_tool == "get_prediction_evidence"
+            ]
+            prediction_warnings: list[str] = []
+            blocked = state.prediction_error is not None or not sources
+            if state.prediction_error:
+                prediction_warnings.append("prediction_evidence_unavailable")
+            for source in sources:
+                values = {fact.path: fact.value for fact in source.facts}
+                if values.get("/prediction/integrity") != "VERIFIED":
+                    prediction_warnings.append("prediction_integrity_or_artifact_unverified")
+                    blocked = True
+                if values.get("/prediction/completeness") != "COMPLETE":
+                    prediction_warnings.append("prediction_source_incomplete")
+                    blocked = True
+                if values.get("/prediction/quality_class") != "high":
+                    prediction_warnings.append("prediction_source_quality_limited")
+                    blocked = True
+                if values.get("/prediction/status") != "READY_SCORE":
+                    prediction_warnings.append("prediction_result_abstained")
+                    blocked = True
+                if values.get("/prediction/omitted_count", 0):
+                    prediction_warnings.append("prediction_projection_omitted")
+                    # The MCP allowlist intentionally filters non-serving facts. The 9E
+                    # completeness/quality fields and grounded claim paths determine whether
+                    # the recorded result is eligible; keep this as a warning for confidence.
+                if (
+                    any(
+                        token in state.ask.question.casefold()
+                        for token in (
+                            "my real car",
+                            "my actual car",
+                            "meu carro real",
+                            "veículo real",
+                        )
+                    )
+                    and values.get("/prediction/source_role") != "real_vehicle"
+                ):
+                    prediction_warnings.append("prediction_source_role_mismatch")
+                    blocked = True
+            if not sources and not state.prediction_error:
+                prediction_warnings.append("prediction_evidence_unavailable")
+            return list(dict.fromkeys(prediction_warnings)), blocked
         if state.context is None or not state.context.sessions:
             return ["no_recorded_session"], True
         session_ids = list(state.context.capabilities) or [str(state.context.sessions[0]["id"])]
-        warnings: list[str] = []
+        session_warnings: list[str] = []
         blocked = False
         for sid in session_ids:
             current, blocking = self.session_quality_warnings(sid)
-            warnings.extend(current)
+            session_warnings.extend(current)
             blocked |= blocking
-        return list(dict.fromkeys(warnings)), blocked
+        return list(dict.fromkeys(session_warnings)), blocked
 
     def session_quality_warnings(self, sid: str) -> tuple[list[str], bool]:
         state = self.state

@@ -1727,8 +1727,17 @@ export interface components {
       "VERIFIED" | "NOT_APPLICABLE" | "UNAVAILABLE" | "CHECKSUM_MISMATCH";
     /** Ask */
     Ask: {
+      /**
+       * Include Prediction Evidence
+       * @default false
+       */
+      include_prediction_evidence: boolean;
+      /** Prediction Evidence Ids */
+      prediction_evidence_ids?: string[];
       /** Previous Run Id */
       previous_run_id?: string | null;
+      /** Pull Id */
+      pull_id?: string | null;
       /** Question */
       question: string;
       /** Session Id */
@@ -1871,6 +1880,11 @@ export interface components {
       | "ASSOCIATION"
       | "HYPOTHESIS"
       | "SUPPORTED_CONCLUSION"
+      | "MODEL_CLASSIFICATION"
+      | "STATISTICAL_OUTLIER"
+      | "DESCRIPTIVE_ASSOCIATION"
+      | "DATA_GAP"
+      | "DOCUMENTARY_REFERENCE"
       | "UNKNOWN"
       | "INSUFFICIENT_EVIDENCE";
     /** CollectorHealthResponse */
@@ -2428,7 +2442,11 @@ export interface components {
         | "temporal_association"
         | "insufficient_evidence"
         | "thermal_hypothesis"
-        | "unsafe_operation_refused";
+        | "unsafe_operation_refused"
+        | "prediction_result"
+        | "anomaly_result"
+        | "prediction_insufficient"
+        | "statistical_association";
     };
     /**
      * GapStatus
@@ -2563,6 +2581,8 @@ export interface components {
      */
     Intent:
       | "factual"
+      | "prediction"
+      | "anomaly"
       | "performance"
       | "thermal"
       | "fuel_air_boost"
@@ -4021,7 +4041,11 @@ export interface components {
         | "temporal_association"
         | "insufficient_evidence"
         | "thermal_hypothesis"
-        | "unsafe_operation_refused";
+        | "unsafe_operation_refused"
+        | "prediction_result"
+        | "anomaly_result"
+        | "prediction_insufficient"
+        | "statistical_association";
     };
     /** SpecialistResult */
     SpecialistResult: {
@@ -4196,6 +4220,11 @@ export interface components {
       mcp_calls: number;
       /** Model Turns */
       model_turns: number;
+      /**
+       * Prediction Evidence Reads
+       * @default 0
+       */
+      prediction_evidence_reads: number;
       /** Retries */
       retries: number;
       /** Specialists */
@@ -4240,7 +4269,8 @@ export interface components {
        * @default supervisor-v3
        * @enum {string}
        */
-      prompt_version: "supervisor-v1" | "supervisor-v2" | "supervisor-v3";
+      prompt_version:
+        "supervisor-v1" | "supervisor-v2" | "supervisor-v3" | "supervisor-v4";
       /**
        * Retry Count
        * @default 0
@@ -8206,7 +8236,9 @@ export interface operations {
   ask_api_v1_vehicles__vehicle_id__agent_runs_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        "X-VIP-Prediction-Agent-Capability"?: string | null;
+      };
       path: {
         vehicle_id: string;
       };

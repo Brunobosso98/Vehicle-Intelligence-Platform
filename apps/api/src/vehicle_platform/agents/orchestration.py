@@ -1,4 +1,5 @@
 import asyncio
+import hmac
 import json
 from datetime import UTC, datetime, timedelta
 from time import perf_counter
@@ -17,6 +18,10 @@ from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, Evidence
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
+from vehicle_platform.agents.specialists.routing import (
+    prediction_anomaly_pair_requested,
+    prediction_request_intent,
+)
 from vehicle_platform.agents.state import Execution, GraphState
 from vehicle_platform.knowledge.context import knowledge_scope
 from vehicle_platform.knowledge.grounding import render as render_knowledge
@@ -49,6 +54,8 @@ class Orchestrator:
         client: EvidenceClient,
         telemetry: Telemetry,
         knowledge: KnowledgeService | None = None,
+        *,
+        prediction_capability: str | None = None,
     ) -> None:
         self.settings, self.provider, self.client, self.telemetry = (
             settings,
@@ -56,6 +63,7 @@ class Orchestrator:
             client,
             telemetry,
         )
+        self.prediction_capability = prediction_capability
         self.knowledge = knowledge
         graph = StateGraph(GraphState)
         self.grounding_failures = telemetry.metrics.get_meter(
@@ -257,7 +265,43 @@ class Orchestrator:
             raise AgentError("tool_argument_budget_exhausted")
         if not Draft202012Validator(definition["parameters"]).is_valid(arguments):
             raise AgentError("invalid_tool_arguments")
-        identity = canonical_hash({"tool": name, "arguments": arguments})
+        identity_value: dict[str, Any] = {"tool": name, "arguments": arguments}
+        if name == "get_prediction_evidence":
+            selected_id = arguments.get("evidence_id")
+            if (
+                not state.ask.include_prediction_evidence
+                or selected_id is None
+                or str(selected_id) not in {str(item) for item in state.ask.prediction_evidence_ids}
+            ):
+                raise AgentError("prediction_capability_required")
+            if state.prediction_reads >= self.settings.max_prediction_evidence_reads:
+                raise AgentError("prediction_evidence_budget_exhausted")
+            configured_capability = self.settings.prediction_capability_token
+            if (
+                not self.settings.prediction_evidence_enabled
+                or not self.settings.prediction_service_enabled
+                or self.settings.environment not in {"development", "test"}
+                or configured_capability is None
+                or self.prediction_capability is None
+                or not hmac.compare_digest(
+                    self.prediction_capability.encode(),
+                    configured_capability.get_secret_value().encode(),
+                )
+                or state.run.vehicle_id not in self.settings.prediction_vehicle_ids
+            ):
+                self.telemetry.agent_prediction_evidence_authorizations.add(
+                    1, {"outcome": "denied"}
+                )
+                raise AgentError("prediction_capability_revoked")
+            identity_value.update(
+                {
+                    "run_id": str(state.run.id),
+                    "capability_scope": "controlled_prediction_evidence_read",
+                    "projection_version": "prediction-agent-summary-v1",
+                    "verification_policy": "pure-read-time-source-check-v1",
+                }
+            )
+        identity = canonical_hash(identity_value)
         if identity in state.cache:
             return state.cache[identity]
         if len(state.tool_calls) >= self.settings.max_tool_calls:
@@ -282,9 +326,19 @@ class Orchestrator:
             argument_hash=identity,
         )
         state.tool_calls.append(call)
+        if name == "get_prediction_evidence":
+            state.prediction_reads += 1
         await state.audit(call)
         await state.emit("tool_started", {"tool_call_id": str(call.id), "tool_name": name})
         started = perf_counter()
+        prediction_dimensions = {
+            "result_type": "unknown",
+            "horizon": "unknown",
+            "source_role": "unknown",
+            "integrity": "unknown",
+            "completeness": "unknown",
+            "status": "unknown",
+        }
         try:
             with self.telemetry.tracer.start_as_current_span(
                 "agent.mcp_tool",
@@ -296,7 +350,64 @@ class Orchestrator:
                     result = await self.client.call(name, arguments)
             if len(result.model_dump_json().encode()) > self.settings.max_result_bytes:
                 raise AgentError("tool_result_budget_exhausted")
-            evidence = state.registry.add(name, call.id, result)
+            if name == "get_prediction_evidence":
+                from vehicle_platform.mcp.schemas import PredictionEvidenceMCPProjection
+
+                if not isinstance(result.data, dict):
+                    raise AgentError("invalid_tool_result")
+                projection = PredictionEvidenceMCPProjection.model_validate_json(
+                    json.dumps(result.data)
+                )
+                prediction_dimensions.update(
+                    {
+                        "result_type": projection.result_type.value,
+                        "horizon": projection.horizon.value,
+                        "source_role": projection.source_role.value,
+                        "integrity": projection.integrity.value,
+                        "completeness": projection.completeness.value,
+                        "status": projection.status,
+                    }
+                )
+                expected = prediction_request_intent(state.ask.question)
+                pair_request = (
+                    expected is not None
+                    and expected.value == "anomaly"
+                    and prediction_anomaly_pair_requested(state.ask.question)
+                )
+                if pair_request:
+                    scope_matches = (
+                        projection.result_type.value,
+                        projection.horizon.value,
+                    ) in {
+                        ("next_pull", "NEXT_PULL"),
+                        ("anomaly", "AFTER_PULL_OFFLINE"),
+                    }
+                else:
+                    expected_horizon = (
+                        "NEXT_PULL"
+                        if expected is not None and expected.value == "prediction"
+                        else "AFTER_PULL_OFFLINE"
+                    )
+                    scope_matches = expected is None or projection.horizon.value == expected_horizon
+                if (
+                    projection.evidence_id != UUID(str(arguments["evidence_id"]))
+                    or not scope_matches
+                ):
+                    raise AgentError("prediction_horizon_mismatch")
+            if name == "get_prediction_evidence":
+                with self.telemetry.tracer.start_as_current_span(
+                    "agent.prediction_evidence.projection",
+                    record_exception=False,
+                    set_status_on_exception=False,
+                    attributes={
+                        "projection_version": "prediction-agent-summary-v1",
+                        "result_type": prediction_dimensions["result_type"],
+                        "horizon": prediction_dimensions["horizon"],
+                    },
+                ):
+                    evidence = state.registry.add(name, call.id, result)
+            else:
+                evidence = state.registry.add(name, call.id, result)
             call.evidence_ids = [e.id for e in evidence]
             call.returned, call.truncated, call.mcp_request_id = (
                 result.returned,
@@ -326,12 +437,32 @@ class Orchestrator:
         finally:
             call.completed_at = datetime.now(UTC)
             call.duration_seconds = perf_counter() - started
+            if name == "get_prediction_evidence":
+                if call.status != "completed":
+                    self.telemetry.agent_prediction_evidence_authorizations.add(
+                        1, {"outcome": "denied"}
+                    )
+                outcome = "success" if call.status == "completed" else "error"
+                self.telemetry.agent_prediction_evidence_operations.add(
+                    1, {"outcome": outcome, **prediction_dimensions}
+                )
+                self.telemetry.agent_prediction_evidence_duration.record(
+                    call.duration_seconds, {"outcome": outcome, **prediction_dimensions}
+                )
             await state.audit(call)
             await state.emit("tool_completed", call.model_dump(mode="json"))
 
     async def context_node(self, graph: GraphState) -> dict[str, Any]:
         state = graph["execution"]
-        state.tools = await self.client.discover()
+        with self.telemetry.tracer.start_as_current_span(
+            "agent.mcp_discovery",
+            record_exception=False,
+            set_status_on_exception=False,
+            attributes={
+                "capability": "prediction" if state.ask.include_prediction_evidence else "read"
+            },
+        ):
+            state.tools = await self.client.discover()
         vehicle_args = {"vehicle_id": str(state.run.vehicle_id)}
         with self.telemetry.tracer.start_as_current_span(
             "agent.context", record_exception=False, set_status_on_exception=False
@@ -343,13 +474,27 @@ class Orchestrator:
             mods = (
                 await self.call(state, "list_vehicle_modifications", vehicle_args | {"limit": 20})
             )["data"]
-            if state.ask.session_id:
+            selected_pull: dict[str, Any] | None = None
+            selected_session_id = state.ask.session_id
+            if state.ask.pull_id:
+                selected_pull = (
+                    await self.call(
+                        state,
+                        "get_pull",
+                        vehicle_args | {"pull_id": str(state.ask.pull_id)},
+                    )
+                )["data"]
+                pull_session_id = UUID(str(selected_pull["session_id"]))
+                if selected_session_id and selected_session_id != pull_session_id:
+                    raise AgentError("incompatible_context")
+                selected_session_id = pull_session_id
+            if selected_session_id:
                 sessions = [
                     (
                         await self.call(
                             state,
                             "get_session",
-                            vehicle_args | {"session_id": str(state.ask.session_id)},
+                            vehicle_args | {"session_id": str(selected_session_id)},
                         )
                     )["data"]
                 ]
@@ -363,6 +508,26 @@ class Orchestrator:
                     state.context.warnings.append("context_history_truncated")
             if sessions:
                 await self.capabilities(state, UUID(sessions[0]["id"]))
+            if state.ask.include_prediction_evidence:
+                for evidence_id in state.ask.prediction_evidence_ids:
+                    try:
+                        await self.call(
+                            state,
+                            "get_prediction_evidence",
+                            vehicle_args
+                            | {
+                                "evidence_id": str(evidence_id),
+                                "session_id": str(selected_session_id)
+                                if selected_session_id
+                                else None,
+                                "pull_id": str(state.ask.pull_id) if state.ask.pull_id else None,
+                            },
+                        )
+                    except AgentError as exc:
+                        state.prediction_error = exc.category
+                        if exc.category == "prediction_capability_revoked":
+                            raise
+                        break
         await state.emit("context_resolved", state.context.model_dump(mode="json"))
         return {}
 
@@ -397,7 +562,7 @@ class Orchestrator:
             state.run.supervisor.model_turn_count = state.steps
         request = ModelInput(
             question=redact_data(state.ask.question, self.settings),
-            tools=state.tools,
+            tools=[tool for tool in state.tools if tool["name"] != "get_prediction_evidence"],
             context=redact_data(state.context.model_dump(mode="json"), self.settings),
             evidence=redact_data(
                 [e.model_dump(mode="json") for e in state.registry.ordered()], self.settings
@@ -458,6 +623,8 @@ class Orchestrator:
         if not state.turn:
             raise AgentError("invalid_model_response")
         for requested in state.turn.tool_calls:
+            if requested.name == "get_prediction_evidence":
+                raise AgentError("tool_policy_violation")
             if requested.name not in {t["name"] for t in state.tools} or str(
                 requested.arguments.get("vehicle_id")
             ) != str(state.run.vehicle_id):
@@ -602,6 +769,10 @@ class Orchestrator:
         ):
             try:
                 state.final = validate(state.turn.draft, state.registry, state.context)
+                if state.ask.include_prediction_evidence:
+                    self.telemetry.agent_prediction_evidence_grounding.add(
+                        1, {"outcome": "accepted"}
+                    )
                 if report and "capture_requires_approval" in report.routing.hints:
                     state.final.limitations = list(
                         dict.fromkeys([CAPTURE_APPROVAL_LIMITATION, *state.final.limitations])
@@ -629,6 +800,10 @@ class Orchestrator:
                         )
                     )[:32]
             except AgentError as exc:
+                if state.ask.include_prediction_evidence:
+                    self.telemetry.agent_prediction_evidence_grounding.add(
+                        1, {"outcome": "rejected"}
+                    )
                 self.grounding_failures.add(1, {"category": exc.category})
                 self.telemetry.log(
                     "agent.grounding.rejected", str(state.run.id), error_code=exc.category

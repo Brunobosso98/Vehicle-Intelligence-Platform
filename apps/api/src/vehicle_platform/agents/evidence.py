@@ -1,12 +1,41 @@
 import hashlib
 import json
 import math
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.agents.schemas import Evidence, Fact
-from vehicle_platform.mcp.schemas import Envelope
+from vehicle_platform.mcp.schemas import Envelope, PredictionEvidenceMCPProjection
+
+
+@dataclass(frozen=True)
+class PredictionEvidenceLink:
+    run_evidence_id: UUID
+    source_evidence_id: UUID
+    receipt_id: UUID
+    source_vehicle_id: UUID
+    source_session_id: UUID
+    source_pull_id: UUID
+    source_configuration_id: UUID | None
+    source_feature_set_id: UUID | None
+    result_type: str
+    horizon: str
+    task: str | None
+    family: str | None
+    model_version: str | None
+    model_algorithm: str | None
+    detector_version: str | None
+    detector_algorithm_version: str | None
+    detector_method: str | None
+    source_role: str
+    effective_cutoff: datetime
+    integrity: str
+    completeness: str
+    artifact_availability: str
+    projection_version: str
 
 
 def canonical_hash(value: Any) -> str:
@@ -72,9 +101,20 @@ def facts(
 
 
 class EvidenceRegistry:
-    def __init__(self, run_id: UUID, vehicle_id: UUID, maximum: int) -> None:
+    def __init__(
+        self,
+        run_id: UUID,
+        vehicle_id: UUID,
+        maximum: int,
+        selected_session_id: UUID | None = None,
+        selected_pull_id: UUID | None = None,
+        selected_prediction_ids: tuple[UUID, ...] = (),
+    ) -> None:
         self.run_id, self.vehicle_id, self.maximum = run_id, vehicle_id, maximum
+        self.selected_session_id, self.selected_pull_id = selected_session_id, selected_pull_id
+        self.selected_prediction_ids = frozenset(selected_prediction_ids)
         self.items: dict[UUID, Evidence] = {}
+        self.prediction_links: list[PredictionEvidenceLink] = []
 
     def ordered(self) -> list[Evidence]:
         """Merge independent reads by tool/selection, preserving each MCP result's row order."""
@@ -94,6 +134,8 @@ class EvidenceRegistry:
         )
 
     def add(self, tool: str, call_id: UUID, envelope: Envelope) -> list[Evidence]:
+        if tool == "get_prediction_evidence":
+            return self._add_prediction(call_id, envelope)
         selected = str(self.vehicle_id)
         context = envelope.model_dump(mode="json")["context"]
         if context.get("vehicle_id") != selected:
@@ -225,14 +267,241 @@ class EvidenceRegistry:
             added.append(item)
         return added
 
+    def _add_prediction(self, call_id: UUID, envelope: Envelope) -> list[Evidence]:
+        if not isinstance(envelope.data, dict) or len(self.items) >= self.maximum:
+            raise AgentError("invalid_tool_result")
+        projection = PredictionEvidenceMCPProjection.model_validate_json(json.dumps(envelope.data))
+        if (
+            str(envelope.context.get("vehicle_id")) != str(self.vehicle_id)
+            or (
+                self.selected_prediction_ids
+                and projection.evidence_id not in self.selected_prediction_ids
+            )
+            or any(
+                link.source_evidence_id == projection.evidence_id for link in self.prediction_links
+            )
+            or projection.source_vehicle_id != self.vehicle_id
+            or (
+                self.selected_session_id
+                and projection.source_session_id != self.selected_session_id
+            )
+            or (self.selected_pull_id and projection.source_pull_id != self.selected_pull_id)
+            or envelope.context.get("session_id") != projection.source_session_id
+            or envelope.context.get("pull_id") != projection.source_pull_id
+        ):
+            raise AgentError("incompatible_context")
+        if projection.schema_version != "prediction-agent-summary-v1":
+            raise AgentError("unsupported_prediction_schema")
+
+        evidence_id = uuid4()
+        warnings: list[str] = []
+        if projection.integrity.value not in {
+            "VERIFIED",
+            "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        }:
+            warnings.append("prediction_source_not_verifiable")
+        if projection.integrity.value == "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE":
+            warnings.append("prediction_snapshot_artifact_unavailable")
+        if projection.completeness.value == "PARTIAL":
+            warnings.append("prediction_evidence_partial")
+        elif projection.completeness.value == "ABSTAINED":
+            warnings.append("prediction_evidence_abstained")
+        if projection.quality_class != "high":
+            warnings.append("prediction_source_quality_limited")
+        if projection.omitted_count:
+            warnings.append("prediction_projection_omitted")
+
+        values: dict[str, str | float | int | bool | None] = {
+            "result_type": projection.result_type.value,
+            "horizon": projection.horizon.value,
+            "task": projection.task,
+            "family": projection.family,
+            "status": projection.status,
+            "reason_code": projection.reason_code,
+            "model_version": projection.model_version,
+            "model_algorithm": projection.model_algorithm,
+            "detector_version": projection.detector_version,
+            "detector_algorithm_version": projection.detector_algorithm_version,
+            "detector_method": projection.detector_method,
+            "decision": projection.decision,
+            "score": projection.score,
+            "threshold": projection.threshold,
+            "score_is_probability": projection.score_is_probability,
+            "source_role": projection.source_role.value,
+            "requested_cutoff": projection.requested_cutoff.isoformat(),
+            "effective_cutoff": projection.effective_cutoff.isoformat(),
+            "completeness": projection.completeness.value,
+            "integrity": projection.integrity.value,
+            "artifact_availability": projection.artifact_availability.value,
+            "quality_class": projection.quality_class,
+            "coverage": projection.coverage,
+            "feature_coverage": projection.feature_coverage,
+            "observed_feature_count": projection.observed_feature_count,
+            "expected_feature_count": projection.expected_feature_count,
+            "source_type": projection.source_type,
+            "invalid_observation_count": projection.invalid_observation_count,
+            "duplicate_timestamp_count": projection.duplicate_timestamp_count,
+            "pull_completeness": projection.pull_completeness,
+            "reference_row_count": projection.reference_row_count,
+            "reference_session_count": projection.reference_session_count,
+            "omitted_count": projection.omitted_count,
+        }
+        projected_facts = [
+            Fact(
+                path=f"/prediction/{key}",
+                value=value,
+                unit=(
+                    "engineering_validation_score"
+                    if key in {"score", "threshold"} and projection.horizon.value == "NEXT_PULL"
+                    else "detector_specific_nonprobability_score"
+                    if key in {"score", "threshold"}
+                    and projection.horizon.value == "AFTER_PULL_OFFLINE"
+                    else None
+                ),
+            )
+            for key, value in values.items()
+            if value is None or type(value) in {str, bool, int, float}
+        ]
+        for index, reason in enumerate(projection.verification_reasons[:16]):
+            if reason.isascii() and reason.replace("_", "").replace("-", "").isalnum():
+                projected_facts.append(
+                    Fact(path=f"/prediction/verification_reasons/{index}", value=reason)
+                )
+        for key, count in sorted(projection.missing_reason_counts.items()):
+            if not key.isascii() or not key.replace("_", "").isalnum() or len(key) > 48:
+                warnings.append("prediction_projection_omitted")
+                continue
+            projected_facts.append(
+                Fact(path=f"/prediction/missing_reason_counts/{key}", value=count)
+            )
+        for index, signal in enumerate(projection.available_signals):
+            projected_facts.append(
+                Fact(path=f"/prediction/available_signals/{index}", value=signal)
+            )
+        for index, gap in enumerate(projection.gaps[:16]):
+            projected_facts.append(Fact(path=f"/prediction/gaps/{index}", value=gap))
+        for item in projection.facts:
+            projected_facts.append(
+                Fact(
+                    path=f"/prediction/features/{item.key}",
+                    value=item.value,
+                    unit=item.unit,
+                )
+            )
+            projected_facts.extend(
+                [
+                    Fact(
+                        path=f"/prediction/feature_quality/{item.key}",
+                        value=item.quality.value,
+                    ),
+                    Fact(
+                        path=f"/prediction/feature_cutoff/{item.key}",
+                        value=item.cutoff.isoformat(),
+                    ),
+                ]
+            )
+            if item.observed_at is not None:
+                projected_facts.append(
+                    Fact(
+                        path=f"/prediction/feature_observed_at/{item.key}",
+                        value=item.observed_at.isoformat(),
+                    )
+                )
+            if item.available_at is not None:
+                projected_facts.append(
+                    Fact(
+                        path=f"/prediction/feature_available_at/{item.key}",
+                        value=item.available_at.isoformat(),
+                    )
+                )
+        if len(projected_facts) > 160:
+            projected_facts = projected_facts[:160]
+            warnings.append("prediction_projection_omitted")
+
+        safe_projection = {
+            "schema_version": projection.schema_version,
+            "result_type": projection.result_type.value,
+            "horizon": projection.horizon.value,
+            "task": projection.task,
+            "family": projection.family,
+            "source_role": projection.source_role.value,
+            "effective_cutoff": projection.effective_cutoff.isoformat(),
+            "status": projection.status,
+            "score": projection.score,
+            "threshold": projection.threshold,
+            "completeness": projection.completeness.value,
+            "integrity": projection.integrity.value,
+            "quality_class": projection.quality_class,
+            "facts": [item.model_dump(mode="json") for item in projected_facts],
+        }
+        evidence = Evidence(
+            id=evidence_id,
+            run_id=self.run_id,
+            vehicle_id=self.vehicle_id,
+            evidence_type="predictive_evidence",
+            source_tool="get_prediction_evidence",
+            tool_call_id=call_id,
+            source_fingerprint=canonical_hash(safe_projection),
+            summary=(
+                f"Registered {projection.horizon.value} predictive evidence; "
+                f"source role {projection.source_role.value}; status {projection.status}."
+            ),
+            facts=projected_facts,
+            provenance={
+                "projection": projection.schema_version,
+                "horizon": projection.horizon.value,
+                "source_role": projection.source_role.value,
+                "effective_cutoff": projection.effective_cutoff.isoformat(),
+                "integrity": projection.integrity.value,
+                "completeness": projection.completeness.value,
+            },
+            warnings=list(dict.fromkeys(warnings))[:16],
+            truncated=projection.omitted_count > 0 or len(projected_facts) == 160,
+        )
+        self.items[evidence.id] = evidence
+        self.prediction_links.append(
+            PredictionEvidenceLink(
+                run_evidence_id=evidence.id,
+                source_evidence_id=projection.evidence_id,
+                receipt_id=projection.receipt_id,
+                source_vehicle_id=projection.source_vehicle_id,
+                source_session_id=projection.source_session_id,
+                source_pull_id=projection.source_pull_id,
+                source_configuration_id=projection.source_configuration_id,
+                source_feature_set_id=projection.source_feature_set_id,
+                result_type=projection.result_type.value,
+                horizon=projection.horizon.value,
+                task=projection.task,
+                family=projection.family,
+                model_version=projection.model_version,
+                model_algorithm=projection.model_algorithm,
+                detector_version=projection.detector_version,
+                detector_algorithm_version=projection.detector_algorithm_version,
+                detector_method=projection.detector_method,
+                source_role=projection.source_role.value,
+                effective_cutoff=projection.effective_cutoff,
+                integrity=projection.integrity.value,
+                completeness=projection.completeness.value,
+                artifact_availability=projection.artifact_availability.value,
+                projection_version=projection.schema_version,
+            )
+        )
+        return [evidence]
+
     def check_ownership(self, value: Any, depth: int = 0) -> None:
         if depth > 16:
             raise AgentError("invalid_tool_result")
         if isinstance(value, dict):
-            if value.get("vehicle_id") is not None and str(value["vehicle_id"]) != str(
-                self.vehicle_id
+            for identity_key in (
+                "vehicle_id",
+                "source_vehicle_id",
+                "pull_vehicle_id",
+                "session_vehicle_id",
             ):
-                raise AgentError("incompatible_context")
+                if value.get(identity_key) is not None and str(value[identity_key]) != str(
+                    self.vehicle_id
+                ):
+                    raise AgentError("incompatible_context")
             for child in value.values():
                 self.check_ownership(child, depth + 1)
         elif isinstance(value, list):

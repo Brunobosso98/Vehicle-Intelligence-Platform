@@ -3,7 +3,7 @@
 import re
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from vehicle_platform.agents.investigation.domain import (
@@ -571,6 +571,85 @@ class DeterministicProvider:
             raise AgentError("invalid_specialist_request")
         specialist = scope.specialist
         executed = {m.get("name") for m in request.messages if m.get("type") == "function_call"}
+        prediction_sources = [
+            source
+            for source in request.evidence
+            if source["source_tool"] == "get_prediction_evidence"
+        ]
+        for source in prediction_sources:
+            values = {fact["path"]: fact["value"] for fact in source["facts"]}
+            task, family = values.get("/prediction/task"), values.get("/prediction/family")
+            relevant = {
+                Specialist.THERMAL: (isinstance(task, str) and "THERMAL" in task)
+                or family == "thermal",
+                Specialist.PERFORMANCE: (isinstance(task, str) and "PERFORMANCE" in task)
+                or family == "performance",
+                Specialist.FUEL_AIR_BOOST: (isinstance(task, str) and "FUEL" in task)
+                or family in {"fuel", "boost_air"},
+                Specialist.DATA_QUALITY: False,
+            }[specialist]
+            if not relevant:
+                continue
+            horizon = values.get("/prediction/horizon")
+            template: Literal["prediction_result", "anomaly_result"]
+            if horizon == "NEXT_PULL":
+                template = "prediction_result"
+                classification = Classification.MODEL_CLASSIFICATION
+                paths = (
+                    "/prediction/horizon",
+                    "/prediction/task",
+                    "/prediction/score",
+                    "/prediction/threshold",
+                    "/prediction/decision",
+                    "/prediction/model_version",
+                    "/prediction/source_role",
+                    "/prediction/effective_cutoff",
+                )
+            elif horizon == "AFTER_PULL_OFFLINE":
+                template = "anomaly_result"
+                classification = (
+                    Classification.STATISTICAL_OUTLIER
+                    if values.get("/prediction/decision") == "ANOMALOUS"
+                    else Classification.MODEL_CLASSIFICATION
+                )
+                paths = (
+                    "/prediction/horizon",
+                    "/prediction/family",
+                    "/prediction/status",
+                    "/prediction/score",
+                    "/prediction/threshold",
+                    "/prediction/detector_version",
+                    "/prediction/detector_method",
+                    "/prediction/effective_cutoff",
+                )
+            else:
+                continue
+            facts = {fact["path"]: fact for fact in source["facts"]}
+            if not all(path in facts for path in paths):
+                continue
+            return ModelTurn(
+                draft=Draft(
+                    confidence="low",
+                    claims=[
+                        Claim(
+                            classification=classification,
+                            template=template,
+                            evidence_ids=[UUID(source["id"])],
+                            bindings=[
+                                Binding(
+                                    evidence_id=UUID(source["id"]),
+                                    path=path,
+                                    value=facts[path]["value"],
+                                    unit=facts[path].get("unit"),
+                                )
+                                for path in paths
+                            ],
+                        )
+                    ],
+                    missing_evidence=[],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
         if specialist is Specialist.PERFORMANCE:
             q = request.question.casefold()
             if any(word in q for word in ("configur", "intercooler", "modific")):

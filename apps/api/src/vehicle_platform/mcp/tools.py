@@ -42,12 +42,17 @@ TOOL_NAMES = frozenset(
         "compare_configurations",
         "get_cross_session_analytics",
         "get_telemetry_window",
+        "get_prediction_evidence",
     }
 )
 
 
 def register_tools(
-    server: MCPServer[None], adapter: Adapter, instrumentation: Instrumentation
+    server: MCPServer[None],
+    adapter: Adapter,
+    instrumentation: Instrumentation,
+    *,
+    prediction_enabled: bool = False,
 ) -> None:
     async def list_vehicles(limit: Limit = 20) -> Envelope:
         """List at most 100 factual vehicle records, in stable creation/ID order."""
@@ -274,6 +279,33 @@ def register_tools(
         1000 samples; preserves units and identity."""
         return await adapter.window(vehicle_id, session_id, signals, window, max_samples)
 
+    async def get_prediction_evidence(
+        vehicle_id: UUID,
+        evidence_id: UUID,
+        session_id: UUID | None = None,
+        pull_id: UUID | None = None,
+    ) -> Envelope:
+        """Read one exact, previously materialized and revalidated 9E bundle in selected scope."""
+        projection = await adapter.prediction_evidence_summary(
+            vehicle_id, evidence_id, session_id, pull_id
+        )
+        return Envelope(
+            data=projection.model_dump(mode="json"),
+            context={
+                "vehicle_id": vehicle_id,
+                "session_id": session_id or projection.source_session_id,
+                "pull_id": pull_id or projection.source_pull_id,
+            },
+            provenance={
+                "source": "immutable-phase9e-evidence",
+                "projection": projection.schema_version,
+                "persistence": "read-only",
+                "verification": "pure-read-time-source-check",
+            },
+            truncated=projection.omitted_count > 0,
+            returned=1,
+        )
+
     annotations = ToolAnnotations(
         read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
     )
@@ -303,3 +335,5 @@ def register_tools(
         get_telemetry_window,
     ):
         server.add_tool(instrumentation.wrap(function), annotations=annotations)
+    if prediction_enabled:
+        server.add_tool(instrumentation.wrap(get_prediction_evidence), annotations=annotations)

@@ -37,6 +37,102 @@ def event_types(evidence: list[Evidence]) -> set[str]:
     }
 
 
+def prediction_anomaly_pair_requested(question: str) -> bool:
+    """Recognize an explicit request to compare recorded predictions and anomalies."""
+    q = question.casefold()
+    return any(word in q for word in ("prediction", "previsão", "predição")) and any(
+        word in q
+        for word in (
+            "anomaly",
+            "anomalies",
+            "anomalia",
+            "anomalias",
+            "outlier",
+            "outliers",
+            "desvio estatístico",
+            "desvios estatísticos",
+        )
+    )
+
+
+def prediction_request_intent(question: str) -> Intent | None:
+    """Return only explicit requests about an already recorded prediction or anomaly."""
+    q = question.casefold()
+    methodology = re.search(
+        r"\b(methodology|method|algorithm|calibrat|how does .* work|como funciona|"
+        r"significado do score|meaning of (the )?score|how is .* detected)\b",
+        q,
+    )
+    if methodology:
+        return None
+    if re.search(r"\b(anomal(?:y|ies)|outlier|anomalia|anomalias|desvio estatístico)\b", q):
+        if re.search(
+            r"\b(was|were|is|are|has|have|any|there|teve|tem|existiu|existe|houve|registrad|"
+            r"detectad|observad|found|seen|present|outlier|compare|comparar)\b",
+            q,
+        ):
+            return Intent.ANOMALY
+    recorded_prediction = (
+        re.search(
+            r"\b(prediction|previsão|predição)\b.{0,60}\b(recorded|registered|existing|previous|last|result|score|registrada|registrado|anterior|resultado|pontuação)\b",
+            q,
+        )
+        or re.search(
+            r"\b(last|previous|existing|registered|recent|última|último|anterior|registrad[oa])\b"
+            r".{0,40}\b(prediction|previsão|predição)\b",
+            q,
+        )
+        or re.search(
+            r"\b(what|qual|quais)\b.{0,40}\b(prediction|previsão|predição)\b.{0,30}\b(was|is|foi|está|registrad|previst)\b",
+            q,
+        )
+        or re.search(
+            r"\b(what did (the )?model predict|o que (o )?modelo previu|qual foi a previsão|"
+            r"qual previsão foi registrada)\b",
+            q,
+        )
+    )
+    next_pull_expectation = re.search(
+        r"\b(next compatible pull|next pull|próxima puxada|próximo pull)\b.{0,60}"
+        r"\b(expect|predict|classif|expectativa|previst|classifica)\b",
+        q,
+    )
+    return Intent.PREDICTION if recorded_prediction or next_pull_expectation else None
+
+
+def prediction_specialists(question: str, evidence: list[Evidence]) -> tuple[Specialist, ...]:
+    q = question.casefold()
+    interpretive = re.search(
+        r"\b(explain|interpret|analy[sz]e|why|compare|mean|impact|explanation|explique|"
+        r"interprete|analise|por que|significa|impacto)\b",
+        q,
+    )
+    if interpretive is None:
+        return ()
+    selected: set[Specialist] = set()
+    if any(word in q for word in ("thermal", "temperature", "heat", "iat", "térmic", "temperat")):
+        selected.add(Specialist.THERMAL)
+    if any(word in q for word in ("fuel", "hpfp", "boost", "lambda", "combust", "combustível")):
+        selected.add(Specialist.FUEL_AIR_BOOST)
+    if any(
+        word in q for word in ("performance", "torque", "acceleration", "desempenho", "acelera")
+    ):
+        selected.add(Specialist.PERFORMANCE)
+    if not selected:
+        for item in evidence:
+            if item.source_tool != "get_prediction_evidence":
+                continue
+            task = next((f.value for f in item.facts if f.path == "/prediction/task"), None)
+            family = next((f.value for f in item.facts if f.path == "/prediction/family"), None)
+            if (isinstance(task, str) and "THERMAL" in task) or family == "thermal":
+                selected.add(Specialist.THERMAL)
+            elif (isinstance(task, str) and "FUEL" in task) or family in {"fuel", "boost_air"}:
+                selected.add(Specialist.FUEL_AIR_BOOST)
+            elif (isinstance(task, str) and "PERFORMANCE" in task) or family == "performance":
+                selected.add(Specialist.PERFORMANCE)
+    return tuple(item for item in DOMAIN_ORDER if item in selected)
+
+
 def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
     q = question.casefold()
     events = event_types(evidence)
@@ -48,6 +144,7 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
     hints: list[str] = []
     intent: Intent | None = None
     selected: set[Specialist] = set()
+    explicit_prediction = prediction_request_intent(question)
     forced_consensus = (
         re.search(r"\b(repeat|rerun|rerunning|iterate|loop|keep|repita|repetir)\b", q)
         and re.search(r"\b(until|até)\b.*\b(agree|consensus|concordem|consenso)\b", q)
@@ -93,6 +190,9 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         or re.search(r"\b(flash|coding|write ecu|control brakes|shell|sql)\b", q)
     ):
         intent = Intent.UNSAFE
+    elif explicit_prediction is not None:
+        intent = explicit_prediction
+        selected.update(prediction_specialists(question, evidence))
     elif collection_request:
         # Planning capture is read-only; execution and approval remain unavailable.
         intent = Intent.FACTUAL
@@ -272,7 +372,13 @@ def hints_for(question: str, evidence: list[Evidence]) -> RoutingHints:
         hints.append("recorded_quality_warning")
     required = tuple(item for item in DOMAIN_ORDER if item in selected)
     # An unrecognized question needs typed model interpretation, within the finite registry.
-    candidates = required if intent is not None else DOMAIN_ORDER
+    # A prediction request is classified from bounded source facts, so no second
+    # provider call is needed just to decide whether the evidence can be read.
+    candidates = (
+        ()
+        if intent in {Intent.PREDICTION, Intent.ANOMALY}
+        else (required if intent is not None else DOMAIN_ORDER)
+    )
     return RoutingHints(intent, candidates, required, tuple(hints), unreliable)
 
 

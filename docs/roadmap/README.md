@@ -15,9 +15,9 @@
 - Phase 9A — Feature Engineering Foundation (complete; see acceptance report)
 - Phase 9B — Predictive Models (complete as an offline evaluation foundation; see acceptance report)
 - Phase 9C — Anomaly Detection (VERIFIED; merged baseline `7fc4c59` after PR #43)
-- Phase 9D — Prediction Service (VERIFIED on the final exact head of open, unmerged PR #44)
-- Phase 9E — PredictionEvidence (implementation on open, unmerged PR #45; see its current exact-head receipts)
-- Phase 9F — Agent Integration (planned)
+- Phase 9D — Prediction Service (merged and verified; see its acceptance record)
+- Phase 9E — PredictionEvidence (merged at baseline `466ce900988bd81e1d968eb319e970955b4011d7`; see its acceptance record)
+- Phase 9F — Agent Integration (implementation and independent acceptance on its dedicated branch; exact-head PR checks determine verified delivery)
 - Phase 9G — Evaluation / Calibration (planned)
 - Phase 9H — Predictive Intelligence UI (planned)
 - Phase 10 — MLOps Platform (planned)
@@ -34,11 +34,11 @@ remain separately recorded in the [evaluation report](../validation/phase-7d-rea
 and PR checks. Phase 8 acceptance is recorded. Phase 9A builds only the deterministic offline
 feature and dataset foundation; Phase 9B consumes that foundation for offline supervised next-pull
 evaluation. Phase 9C adds verified offline anomaly scoring. Phase 9D adds an explicitly approved,
-disabled-by-default controlled serving boundary and passed its final exact PR-head gates; the final
-SHA and check receipts are in [PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44).
-Phase 9E is delivered as a provenance layer over immutable 9D receipts; its implementation and
-acceptance report are on open, unmerged PR #45. Use the PR's current exact-head checks for delivery
-status. Phases 9F–9H remain planned.
+disabled-by-default controlled serving boundary and is merged. Phase 9E is a provenance layer over
+immutable 9D receipts and is merged at baseline
+`466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F integrates those existing bundles with the
+agent through a controlled MCP scope; it does not start inference. Its exact-head acceptance and
+open PR checks determine delivery status. Phases 9G–9H remain planned.
 
 # Current phase
 
@@ -104,6 +104,6 @@ The [Phase 9D architecture](../architecture/phase-9d-prediction-service.md),
 [acceptance record](../validation/phase-9d-acceptance.md),
 [serving evaluation](../validation/phase-9d-model-serving-evaluation.md), and
 [traceability ledger](../validation/phase-9d-traceability-ledger.md) define the controlled API,
-approval state, evidence limits and gates. Phase 9D is verified on its exact open, unmerged PR head;
-the current receipts are linked from [PR #44 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44#checks).
+approval state and evidence limits. Phase 9D is merged; its earlier exact-head receipts remain in
+its acceptance report. No public production service is implied.
 No public production service is implied.

@@ -131,6 +131,17 @@ Counters add `supervisor.runs`, `supervisor.routing`, `specialist.runs`, `specia
 `specialist.duration`. Labels are bounded role, intent, status, sufficiency and error values.
 Identifiers, tool arguments and questions never become metric labels.
 
+## Phase 9F agent prediction evidence
+
+The agent records `agent.prediction_evidence.operations` and
+`agent.prediction_evidence.duration` with only the bounded `outcome=success|error` label. They
+contain no vehicle, configuration, session, pull, source evidence, receipt, feature-set, score,
+question or model-hash attributes. The `agent.mcp_tool` trace retains the bounded tool name; the
+source verifier spans carry no source identifiers. `make prediction-agent-observability` checks
+the exported metric names and inspects metric/span attributes from the actual disposable
+AgentService + MCP run. Acceptance records fixture measurements and redaction results under the
+ignored `.validation/phase9f/acceptance.json`; it is not a production service-level objective.
+
 Structured routing, sufficiency and specialist completion records contain run/trace IDs, selected
 and skipped roles, state, counts, outcome, duration and the Phase 7B recommendation. They omit
 raw telemetry, credentials and private reasoning. `make supervisor-observability` queries actual

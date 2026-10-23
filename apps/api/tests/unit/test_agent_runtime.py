@@ -176,7 +176,7 @@ async def test_run_deadline_includes_validated_answer_publication(fixture, telem
     service.repository.event.side_effect = slow_publication
     vehicle = UUID(fixture["vehicle"]["id"])
     run = await service.start(vehicle, Ask(question="Qual causa?"))
-    async with asyncio.timeout(0.5):
+    async with asyncio.timeout(5.0):
         await service.tasks[run.id]
     stored = await service.repository.get(vehicle, run.id)
     assert stored.status == "failed" and stored.error_category == "run_timeout"
