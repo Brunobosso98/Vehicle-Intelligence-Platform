@@ -54,13 +54,13 @@ confidence.
 
 ## Evidence admission matrix
 
-| 9E integrity | Completeness | Status, quality, artifact | Allowed answer |
-| --- | --- | --- | --- |
-| `VERIFIED` | `COMPLETE` | `READY_SCORE`, high quality, artifact `VERIFIED` | Fixed, exactly bound 9B model-classification or 9C statistical-outlier statement with its horizon, threshold, source role and cutoff. |
-| `VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE` | `COMPLETE` | `READY_SCORE`, high quality, artifact `UNAVAILABLE` | Historical recorded-output statement with an explicit no-current-reproduction limitation. |
-| Accepted integrity | `PARTIAL` or `ABSTAINED` | Any status or quality | `DATA_GAP` answer only; no score or decision claim. |
-| `FAILED_SOURCE_MISMATCH` or `NOT_VERIFIABLE` | Any | Any status, quality or artifact | No affirmative numerical/model claim; return a bounded unavailable or data-gap result. |
-| Accepted integrity | `COMPLETE` | Low/degraded quality, non-`READY_SCORE`, or missing score | `DATA_GAP` answer only. |
+| 9E integrity                                 | Completeness             | Status, quality, artifact                                 | Allowed answer                                                                                                                        |
+| -------------------------------------------- | ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `VERIFIED`                                   | `COMPLETE`               | `READY_SCORE`, high quality, artifact `VERIFIED`          | Fixed, exactly bound 9B model-classification or 9C statistical-outlier statement with its horizon, threshold, source role and cutoff. |
+| `VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE`     | `COMPLETE`               | `READY_SCORE`, high quality, artifact `UNAVAILABLE`       | Historical recorded-output statement with an explicit no-current-reproduction limitation.                                             |
+| Accepted integrity                           | `PARTIAL` or `ABSTAINED` | Any status or quality                                     | `DATA_GAP` answer only; no score or decision claim.                                                                                   |
+| `FAILED_SOURCE_MISMATCH` or `NOT_VERIFIABLE` | Any                      | Any status, quality or artifact                           | No affirmative numerical/model claim; return a bounded unavailable or data-gap result.                                                |
+| Accepted integrity                           | `COMPLETE`               | Low/degraded quality, non-`READY_SCORE`, or missing score | `DATA_GAP` answer only.                                                                                                               |
 
 The two accepted integrity states are enumerated in `grounding.py`; completeness, quality and
 status checks run before any result renderer. A real-vehicle wording request over a synthetic or

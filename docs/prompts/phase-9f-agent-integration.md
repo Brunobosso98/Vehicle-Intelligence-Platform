@@ -292,7 +292,7 @@ Agent UI may display already supported text and existing run details but Phase 9
 
 ## 66. Citations and provenance
 
-Include run-local evidence citations pointing to the exact 9E evidence ID and original 9D receipt through *internal protected* provenance, original 9A cutoff, 9B/9C model/detector version and displayable source role. Public rendered citation must be safe and only resolve under operator permission; never leak private checksum/artifact path.
+Include run-local evidence citations pointing to the exact 9E evidence ID and original 9D receipt through _internal protected_ provenance, original 9A cutoff, 9B/9C model/detector version and displayable source role. Public rendered citation must be safe and only resolve under operator permission; never leak private checksum/artifact path.
 
 ## 67. Public evidence projection
 
