@@ -1,4 +1,6 @@
 import json
+import math
+from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -20,12 +22,31 @@ from vehicle_platform.agents.schemas import (
     Claim,
     Classification,
     Draft,
+    Intent,
+    RoutingDecision,
+    SupervisorReport,
     VehicleContext,
 )
+from vehicle_platform.agents.service import AgentService
 from vehicle_platform.agents.specialists.contracts import Specialist
-from vehicle_platform.agents.specialists.routing import hints_for, prediction_request_intent
+from vehicle_platform.agents.specialists.routing import (
+    hints_for,
+    prediction_request_intent,
+    prediction_specialists,
+)
+from vehicle_platform.agents.specialists.runtime import Supervisor
 from vehicle_platform.agents.specialists.validation import validate_prediction_scope
+from vehicle_platform.mcp.adapter import Adapter
+from vehicle_platform.mcp.errors import ErrorCode, PlatformError
 from vehicle_platform.mcp.schemas import Envelope, PredictionEvidenceMCPProjection
+from vehicle_platform.prediction_evidence.domain import (
+    ArtifactAvailability,
+    EvidenceFactType,
+    EvidenceIntegrity,
+    FactQuality,
+    SourceKind,
+)
+from vehicle_platform.predictions.domain import PredictionError
 
 NOW = datetime(2026, 10, 22, tzinfo=UTC)
 
@@ -38,6 +59,10 @@ def projection(
     horizon="NEXT_PULL",
     task="NEXT_PULL_THERMAL_DEGRADATION",
     family=None,
+    receipt_id=None,
+    pull_id=None,
+    configuration_id=None,
+    feature_set_id=None,
     status="READY_SCORE",
     decision=True,
     score=0.72,
@@ -47,21 +72,22 @@ def projection(
     quality_class="high",
     artifact_availability="VERIFIED",
     session_id=None,
+    omitted_count=0,
 ):
     vehicle = vehicle_id or uuid4()
     source_evidence = evidence_id or uuid4()
-    pull_id, configuration_id = uuid4(), uuid4()
+    source_pull_id, source_configuration_id = pull_id or uuid4(), configuration_id or uuid4()
     return PredictionEvidenceMCPProjection.model_validate_json(
         json.dumps(
             {
                 "schema_version": "prediction-agent-summary-v1",
                 "evidence_id": str(source_evidence),
-                "receipt_id": str(uuid4()),
+                "receipt_id": str(receipt_id or uuid4()),
                 "source_vehicle_id": str(vehicle),
                 "source_session_id": str(session_id or uuid4()),
-                "source_pull_id": str(pull_id),
-                "source_configuration_id": str(configuration_id),
-                "source_feature_set_id": str(uuid4()),
+                "source_pull_id": str(source_pull_id),
+                "source_configuration_id": str(source_configuration_id),
+                "source_feature_set_id": str(feature_set_id or uuid4()),
                 "result_type": result_type,
                 "horizon": horizon,
                 "task": task,
@@ -112,7 +138,7 @@ def projection(
                     }
                 ],
                 "gaps": [],
-                "omitted_count": 0,
+                "omitted_count": omitted_count,
             }
         )
     )
@@ -139,6 +165,7 @@ def test_explicit_prediction_routing_is_deterministic_and_domain_scoped():
     assert prediction_request_intent("Qual foi a previsão registrada?").value == "prediction"
     assert prediction_request_intent("Was an anomaly detected?").value == "anomaly"
     assert prediction_request_intent("How does the anomaly detector work?") is None
+    assert prediction_request_intent("Explain the anomaly pattern") is None
     assert prediction_request_intent("Summarize my vehicle") is None
     hints = hints_for("Qual foi a previsão registrada?", [])
     assert hints.intent.value == "prediction"
@@ -147,6 +174,28 @@ def test_explicit_prediction_routing_is_deterministic_and_domain_scoped():
     assert hints_for("Explain the thermal prediction", []).required == (Specialist.THERMAL,)
     assert prediction_request_intent("Train a stronger model and predict my failure chance") is None
     assert prediction_request_intent("Can I keep accelerating safely?") is None
+
+
+def test_specialist_routing_uses_recorded_events_and_mechanism_questions():
+    def event(name):
+        return SimpleNamespace(
+            source_tool="list_session_events",
+            facts=[SimpleNamespace(path="/event_type", value=name)],
+        )
+
+    hypotheses = hints_for(
+        "Review competing hypotheses against evidence",
+        [event("iat_rise"), event("fuel_pressure_drop")],
+    )
+    assert hypotheses.intent is Intent.MULTI_MECHANISM
+    assert hypotheses.required == (
+        Specialist.PERFORMANCE,
+        Specialist.THERMAL,
+        Specialist.FUEL_AIR_BOOST,
+    )
+    assert hints_for("Show events", []).intent is Intent.FACTUAL
+    assert hints_for("How does thermal behavior cause this?", []).intent is Intent.THERMAL
+    assert hints_for("How does fuel pressure cause this?", []).intent is Intent.FUEL_AIR_BOOST
 
 
 def test_settings_keep_predictive_access_separate_and_controlled():
@@ -502,3 +551,1018 @@ async def test_prediction_and_applicable_documentation_keep_separate_citations(
     assert str(projected.score) in answer.answer
     assert "synthetic N55 pressure regulator" in answer.answer
     assert "independent diagnostic proof" not in answer.answer.casefold()
+
+
+def _adapter_fact(**updates):
+    base = {
+        "key": "thermal.pre_pull_iat_k",
+        "fact_type": EvidenceFactType.COMPUTED_FEATURE,
+        "value": 300.0,
+        "unit": "K",
+        "quality": FactQuality.VALID,
+        "cutoff": NOW,
+        "cutoff_eligible": True,
+        "observed_at": NOW,
+        "available_at": NOW,
+    }
+    return SimpleNamespace(**(base | updates))
+
+
+def _adapter_fixture(
+    *, facts=None, integrity=EvidenceIntegrity.VERIFIED, feature=True, status="READY_SCORE"
+):
+    artifact_availability = (
+        ArtifactAvailability.UNAVAILABLE
+        if integrity is EvidenceIntegrity.VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE
+        else ArtifactAvailability.VERIFIED
+    )
+    projected = projection(
+        integrity=integrity.value,
+        artifact_availability=artifact_availability.value,
+        status=status,
+        decision=True if status == "READY_SCORE" else None,
+        score=0.72 if status == "READY_SCORE" else None,
+        threshold=0.5 if status == "READY_SCORE" else None,
+    )
+    vehicle_id = projected.source_vehicle_id
+    session_id = projected.source_session_id
+    pull_id = projected.source_pull_id
+    configuration_id = projected.source_configuration_id
+    feature_record = (
+        SimpleNamespace(
+            entity_id=projected.source_feature_set_id,
+            payload={
+                "vehicle_id": str(vehicle_id),
+                "pull_vehicle_id": str(vehicle_id),
+                "session_vehicle_id": str(vehicle_id),
+                "pull_id": str(pull_id),
+                "session_id": str(session_id),
+                "pull_configuration_id": str(configuration_id),
+            },
+        )
+        if feature
+        else None
+    )
+    records = {
+        SourceKind.MODEL_VERSION: SimpleNamespace(
+            payload={"version": "model-v1", "algorithm": "random_forest"}
+        ),
+        SourceKind.DETECTOR_VERSION: SimpleNamespace(
+            payload={
+                "version": "detector-v1",
+                "algorithm_version": "robust-v2",
+                "method": "robust_mad",
+            }
+        ),
+    }
+    if feature_record is not None:
+        records[SourceKind.FEATURE_SET] = feature_record
+    bundle = SimpleNamespace(
+        evidence_id=projected.evidence_id,
+        receipt_id=projected.receipt_id,
+        result_type=projected.result_type,
+        horizon=projected.horizon,
+        task=projected.task,
+        family=projected.family,
+        source_role=projected.source_role,
+        requested_cutoff=projected.requested_cutoff,
+        effective_cutoff=projected.effective_cutoff,
+        prediction=SimpleNamespace(
+            status=projected.status,
+            reason_code=projected.reason_code,
+            decision=projected.decision,
+            score=projected.score,
+            threshold=projected.threshold,
+        ),
+        completeness=projected.completeness,
+        source_summary=SimpleNamespace(
+            quality_class=projected.quality_class,
+            receipt_coverage=projected.coverage,
+            feature_coverage=projected.feature_coverage,
+            observed_feature_count=projected.observed_feature_count,
+            expected_feature_count=projected.expected_feature_count,
+            source_type=projected.source_type,
+            missing_reason_counts=projected.missing_reason_counts,
+            available_signals=projected.available_signals + ["unregistered.signal"],
+            invalid_observation_count=projected.invalid_observation_count,
+            duplicate_timestamp_count=projected.duplicate_timestamp_count,
+            pull_completeness=projected.pull_completeness,
+            reference_row_count=projected.reference_row_count,
+            reference_session_count=projected.reference_session_count,
+        ),
+        facts=facts if facts is not None else [_adapter_fact()],
+        gaps=[SimpleNamespace(code=SimpleNamespace(value="INPUT_INCOMPLETE"))],
+        omitted_count=0,
+    )
+    source = SimpleNamespace(
+        receipt=SimpleNamespace(payload={"pull_id": str(pull_id)}),
+        records=records,
+        artifact_availability=artifact_availability,
+    )
+    verified = SimpleNamespace(bundle=bundle, source=source, integrity=integrity, reason_codes=())
+    adapter = object.__new__(Adapter)
+    adapter.settings = SimpleNamespace(prediction_service_enabled=True, environment="test")
+    adapter.prediction_evidence = SimpleNamespace(read_verified=AsyncMock(return_value=verified))
+    adapter.analysis = SimpleNamespace(
+        pull=AsyncMock(
+            return_value=SimpleNamespace(
+                id=pull_id,
+                vehicle_id=vehicle_id,
+                session_id=session_id,
+                configuration_id=configuration_id,
+            )
+        )
+    )
+    return adapter, projected, verified
+
+
+def _prediction_tool_call(
+    state,
+    projected,
+    telemetry,  # noqa: F811
+    *,
+    result=None,
+    grant_configured=True,
+    capability_value=None,
+):
+    token = SecretStr("operator-capability-" + "c" * 40)
+    settings = AgentSettings(
+        environment="test",
+        prediction_service_enabled=True,
+        prediction_evidence_enabled=True,
+        prediction_capability_token=token,
+        prediction_mcp_token=SecretStr("prediction-mcp-token-" + "p" * 40),
+        mcp_token=SecretStr("ordinary-mcp-token-" + "m" * 40),
+        prediction_vehicle_ids=[state.run.vehicle_id],
+    )
+    state.ask = Ask(
+        question="What prediction was recorded?",
+        include_prediction_evidence=True,
+        prediction_evidence_ids=[projected.evidence_id],
+    )
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        state.run.vehicle_id,
+        80,
+        selected_prediction_ids=(projected.evidence_id,),
+    )
+    state.tools = [
+        {
+            "name": "get_prediction_evidence",
+            "parameters": {
+                "type": "object",
+                "required": ["vehicle_id", "evidence_id"],
+                "properties": {
+                    "vehicle_id": {"type": "string"},
+                    "evidence_id": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+        }
+    ]
+    envelope = result or Envelope(
+        data=projected.model_dump(mode="json"),
+        context={
+            "vehicle_id": state.run.vehicle_id,
+            "session_id": projected.source_session_id,
+            "pull_id": projected.source_pull_id,
+        },
+        provenance={"source": "immutable-phase9e-evidence"},
+        returned=1,
+    )
+    client = SimpleNamespace(call=AsyncMock(return_value=envelope))
+    capability = token.get_secret_value() if grant_configured else capability_value
+    engine = Orchestrator(
+        settings, MagicMock(), client, telemetry, prediction_capability=capability
+    )
+    arguments = {
+        "vehicle_id": str(state.run.vehicle_id),
+        "evidence_id": str(projected.evidence_id),
+    }
+    return engine, arguments, settings, token
+
+
+async def test_prediction_tool_is_authorized_scoped_cached_and_audited(fixture, telemetry):  # noqa: F811
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    engine, arguments, _, _ = _prediction_tool_call(state, projected, telemetry)
+
+    first = await engine.call_locked(state, "get_prediction_evidence", arguments)
+    second = await engine.call_locked(state, "get_prediction_evidence", arguments)
+
+    assert first["data"]["evidence_id"] == str(projected.evidence_id)
+    assert second == first
+    assert state.prediction_reads == 1
+    assert [call.status for call in state.tool_calls] == ["completed"]
+    engine.client.call.assert_awaited_once_with("get_prediction_evidence", arguments)
+    assert state.audit.await_count == 2
+
+
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        ("not_requested", "prediction_capability_required"),
+        ("not_selected", "prediction_capability_required"),
+        ("read_budget", "prediction_evidence_budget_exhausted"),
+        ("evidence_disabled", "prediction_capability_revoked"),
+        ("service_disabled", "prediction_capability_revoked"),
+        ("production", "prediction_capability_revoked"),
+        ("missing_token", "prediction_capability_revoked"),
+        ("missing_grant", "prediction_capability_revoked"),
+        ("wrong_grant", "prediction_capability_revoked"),
+        ("vehicle_scope", "prediction_capability_revoked"),
+    ],
+)
+async def test_prediction_tool_rejects_missing_or_revoked_capability(
+    case,
+    expected,
+    fixture,  # noqa: F811
+    telemetry,  # noqa: F811
+):
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    grant_configured = case not in {"missing_grant", "wrong_grant"}
+    capability_value = "wrong" if case == "wrong_grant" else None
+    engine, arguments, settings, _ = _prediction_tool_call(
+        state,
+        projected,
+        telemetry,
+        grant_configured=grant_configured,
+        capability_value=capability_value,
+    )
+    if case == "not_requested":
+        state.ask = state.ask.model_copy(
+            update={"include_prediction_evidence": False, "prediction_evidence_ids": []}
+        )
+    elif case == "not_selected":
+        state.ask = state.ask.model_copy(update={"prediction_evidence_ids": []})
+    elif case == "read_budget":
+        state.prediction_reads = settings.max_prediction_evidence_reads
+    elif case == "evidence_disabled":
+        settings.prediction_evidence_enabled = False
+    elif case == "service_disabled":
+        settings.prediction_service_enabled = False
+    elif case == "production":
+        settings.environment = "production"
+    elif case == "missing_token":
+        settings.prediction_capability_token = None
+    elif case == "vehicle_scope":
+        settings.prediction_vehicle_ids = []
+
+    with pytest.raises(AgentError, match=expected):
+        await engine.call_locked(state, "get_prediction_evidence", arguments)
+    engine.client.call.assert_not_awaited()
+
+
+@pytest.mark.parametrize("result_kind", ["bad_shape", "wrong_id", "wrong_horizon"])
+async def test_prediction_tool_rejects_bad_result_shape_or_binding(result_kind, fixture, telemetry):  # noqa: F811
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    result = None
+    if result_kind == "bad_shape":
+        result = SimpleNamespace(data="invalid", model_dump_json=lambda: '{"data":"invalid"}')
+    elif result_kind == "wrong_id":
+        result = Envelope(
+            data=projection(vehicle_id=state.run.vehicle_id).model_dump(mode="json"),
+            context={},
+            provenance={"source": "immutable-phase9e-evidence"},
+            returned=1,
+        )
+    else:
+        projected = projection(
+            vehicle_id=state.run.vehicle_id,
+            result_type="anomaly",
+            horizon="AFTER_PULL_OFFLINE",
+            task=None,
+            family="thermal",
+            decision="ANOMALOUS",
+            score=4.2,
+            threshold=3.5,
+        )
+    engine, arguments, _, _ = _prediction_tool_call(state, projected, telemetry, result=result)
+    if result_kind == "wrong_id":
+        arguments["evidence_id"] = str(projected.evidence_id)
+        state.ask = state.ask.model_copy(
+            update={"prediction_evidence_ids": [projected.evidence_id]}
+        )
+        state.registry = EvidenceRegistry(
+            state.run.id,
+            state.run.vehicle_id,
+            80,
+            selected_prediction_ids=(projected.evidence_id,),
+        )
+    expected = (
+        "invalid_tool_result" if result_kind == "bad_shape" else "prediction_horizon_mismatch"
+    )
+    with pytest.raises(AgentError, match=expected):
+        await engine.call_locked(state, "get_prediction_evidence", arguments)
+
+
+async def test_mcp_adapter_projects_verified_prediction_with_scoped_typed_facts():
+    adapter, projected, _ = _adapter_fixture()
+
+    result = await adapter.prediction_evidence_summary(
+        projected.source_vehicle_id,
+        projected.evidence_id,
+        session_id=projected.source_session_id,
+        pull_id=projected.source_pull_id,
+    )
+
+    assert result.evidence_id == projected.evidence_id
+    assert result.source_session_id == projected.source_session_id
+    assert result.model_version == "model-v1"
+    assert result.model_algorithm == "random_forest"
+    assert result.detector_version == "detector-v1"
+    assert result.detector_algorithm_version == "robust-v2"
+    assert result.detector_method == "robust_mad"
+    assert [fact.key for fact in result.facts] == ["thermal.pre_pull_iat_k"]
+    assert result.available_signals == ["engine.intake_air_temperature"]
+    assert result.gaps == ["INPUT_INCOMPLETE"]
+
+
+@pytest.mark.parametrize(
+    ("settings", "expected"),
+    [
+        (
+            {"prediction_service_enabled": False, "environment": "test"},
+            ErrorCode.UNSUPPORTED_CAPABILITY,
+        ),
+        (
+            {"prediction_service_enabled": True, "environment": "production"},
+            ErrorCode.UNSUPPORTED_CAPABILITY,
+        ),
+    ],
+)
+async def test_mcp_adapter_requires_enabled_controlled_runtime(settings, expected):
+    adapter, projected, _ = _adapter_fixture()
+    adapter.settings = SimpleNamespace(**settings)
+    with pytest.raises(PlatformError) as error:
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+    assert error.value.code is expected
+    adapter.prediction_evidence.read_verified.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("status", "code", "expected"),
+    [
+        (404, "PREDICTION_EVIDENCE_NOT_FOUND", ErrorCode.NOT_FOUND),
+        (503, "PREDICTION_EVIDENCE_BUDGET_EXCEEDED", ErrorCode.BACKEND_UNAVAILABLE),
+        (422, "PREDICTION_EVIDENCE_SCHEMA_UNSUPPORTED", ErrorCode.UNSUPPORTED_CAPABILITY),
+        (422, "PREDICTION_EVIDENCE_INVALID", ErrorCode.FORBIDDEN),
+    ],
+)
+async def test_mcp_adapter_maps_prediction_errors_to_fixed_codes(status, code, expected):
+    adapter, projected, _ = _adapter_fixture()
+    adapter.prediction_evidence.read_verified.side_effect = PredictionError(status, code, "private")
+    with pytest.raises(PlatformError) as error:
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+    assert error.value.code is expected
+    assert "private" not in str(error.value)
+
+
+@pytest.mark.parametrize("failure", ["generic", "platform"])
+async def test_mcp_adapter_handles_unexpected_read_failures_without_leaking_details(failure):
+    adapter, projected, _ = _adapter_fixture()
+    exception = (
+        RuntimeError("private backend detail")
+        if failure == "generic"
+        else PlatformError(ErrorCode.BACKEND_UNAVAILABLE)
+    )
+    adapter.prediction_evidence.read_verified.side_effect = exception
+    with pytest.raises(PlatformError) as error:
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+    assert error.value.code is (
+        ErrorCode.NOT_FOUND if failure == "generic" else ErrorCode.BACKEND_UNAVAILABLE
+    )
+    assert "private backend detail" not in str(error.value)
+
+
+async def test_mcp_adapter_rejects_unverified_evidence_and_pull_scope_mismatch():
+    adapter, projected, verified = _adapter_fixture(
+        integrity=EvidenceIntegrity.FAILED_SOURCE_MISMATCH
+    )
+    with pytest.raises(PlatformError, match="EVIDENCE_NOT_VERIFIED"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+    adapter, projected, _ = _adapter_fixture()
+    adapter.analysis.pull.return_value = None
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+    adapter, projected, _ = _adapter_fixture()
+    adapter.analysis.pull.return_value.vehicle_id = uuid4()
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+    adapter, projected, _ = _adapter_fixture()
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id, session_id=uuid4()
+        )
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id, pull_id=uuid4()
+        )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "vehicle_id",
+        "pull_vehicle_id",
+        "session_vehicle_id",
+        "pull_id",
+        "session_id",
+        "pull_configuration_id",
+    ],
+)
+async def test_mcp_adapter_rejects_feature_lineage_scope_mismatch(field):
+    adapter, projected, verified = _adapter_fixture()
+    verified.source.records[SourceKind.FEATURE_SET].payload[field] = str(uuid4())
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+
+async def test_mcp_adapter_requires_feature_set_for_scored_prediction():
+    adapter, projected, _ = _adapter_fixture(feature=False)
+    with pytest.raises(PlatformError, match="NOT_FOUND"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+    adapter, projected, _ = _adapter_fixture(feature=False, status="ABSTAINED_INSUFFICIENT_SIGNAL")
+    result = await adapter.prediction_evidence_summary(
+        projected.source_vehicle_id, projected.evidence_id
+    )
+    assert result.source_feature_set_id is None
+    assert result.score is None
+
+
+async def test_mcp_adapter_rejects_missing_reader_and_accepts_historical_snapshot_integrity():
+    adapter, projected, _ = _adapter_fixture()
+    adapter.prediction_evidence = None
+    with pytest.raises(PlatformError, match="UNSUPPORTED_CAPABILITY"):
+        await adapter.prediction_evidence_summary(
+            projected.source_vehicle_id, projected.evidence_id
+        )
+
+    adapter, projected, _ = _adapter_fixture(
+        integrity=EvidenceIntegrity.VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE
+    )
+    result = await adapter.prediction_evidence_summary(
+        projected.source_vehicle_id, projected.evidence_id
+    )
+    assert result.integrity is EvidenceIntegrity.VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE
+
+
+async def test_mcp_adapter_filters_untrusted_and_out_of_cutoff_facts():
+    invalid_facts = [
+        _adapter_fact(fact_type=EvidenceFactType.CONTEXT_DESCRIPTOR),
+        _adapter_fact(cutoff_eligible=False),
+        _adapter_fact(cutoff=NOW.replace(year=2027)),
+        _adapter_fact(key="unregistered.feature"),
+        _adapter_fact(value=[300.0]),
+        _adapter_fact(value=math.nan),
+        _adapter_fact(value="x" * 161),
+        _adapter_fact(value="não ascii"),
+        _adapter_fact(value="line\nbreak"),
+        _adapter_fact(value="<unsafe>"),
+        _adapter_fact(value="safe"),
+    ]
+    adapter, projected, _ = _adapter_fixture(facts=invalid_facts)
+
+    result = await adapter.prediction_evidence_summary(
+        projected.source_vehicle_id, projected.evidence_id
+    )
+
+    assert [fact.value for fact in result.facts] == ["safe"]
+    assert result.omitted_count == len(invalid_facts) - 1
+
+
+async def test_mcp_adapter_caps_fact_count_and_validates_source_version_text():
+    facts = [_adapter_fact(value=index) for index in range(40)]
+    adapter, projected, verified = _adapter_fixture(facts=facts)
+    verified.source.records[SourceKind.MODEL_VERSION].payload["version"] = "invalid version"
+    verified.source.records[SourceKind.MODEL_VERSION].payload["algorithm"] = "x" * 81
+
+    result = await adapter.prediction_evidence_summary(
+        projected.source_vehicle_id, projected.evidence_id
+    )
+
+    assert len(result.facts) == 32
+    assert result.omitted_count == 8
+    assert result.model_version is None
+    assert result.model_algorithm is None
+
+
+@pytest.mark.parametrize(
+    ("task", "family", "expected"),
+    [
+        ("NEXT_PULL_THERMAL_DEGRADATION", None, Specialist.THERMAL),
+        (None, "fuel", Specialist.FUEL_AIR_BOOST),
+        (None, "performance", Specialist.PERFORMANCE),
+    ],
+)
+def test_prediction_metadata_routes_only_interpretive_domain_specialists(task, family, expected):
+    vehicle = uuid4()
+    projected = projection(vehicle_id=vehicle, task=task, family=family)
+    registry = EvidenceRegistry(
+        uuid4(), vehicle, 20, selected_prediction_ids=(projected.evidence_id,)
+    )
+    source = add_prediction(registry, projected)
+
+    specialists = prediction_specialists(
+        "Explain this recorded result",
+        [SimpleNamespace(source_tool="get_vehicle", facts=[]), source],
+    )
+
+    assert specialists == (expected,)
+
+
+def test_prediction_specialists_honor_explicit_domains_and_require_interpretation():
+    assert prediction_specialists("Summarize this recorded result", []) == ()
+    assert prediction_specialists("Explain thermal fuel and performance", []) == (
+        Specialist.PERFORMANCE,
+        Specialist.THERMAL,
+        Specialist.FUEL_AIR_BOOST,
+    )
+    vehicle = uuid4()
+    projected = projection(vehicle_id=vehicle, task="OTHER", family=None)
+    registry = EvidenceRegistry(
+        uuid4(), vehicle, 20, selected_prediction_ids=(projected.evidence_id,)
+    )
+    unclassified = add_prediction(registry, projected)
+    assert prediction_specialists("Explain this recorded result", [unclassified]) == ()
+
+
+def _prediction_supervisor(state):
+    state.run.supervisor = SupervisorReport(
+        routing=RoutingDecision(
+            intent=Intent.PREDICTION,
+            considered=[],
+            selected=[],
+            skipped=[],
+            data_quality_gate=False,
+            hints=[],
+            reason="controlled test routing",
+        )
+    )
+    return Supervisor(SimpleNamespace(settings=AgentSettings()), state)
+
+
+async def test_prediction_quality_gate_blocks_missing_error_and_low_quality_sources(fixture):  # noqa: F811
+    state = execution(fixture)
+    warnings, blocked = _prediction_supervisor(state).quality_warnings()
+    assert warnings == ["prediction_evidence_unavailable"]
+    assert blocked
+
+    state.prediction_error = "not_found"
+    warnings, blocked = _prediction_supervisor(state).quality_warnings()
+    assert warnings == ["prediction_evidence_unavailable"]
+    assert blocked
+
+    projected = projection(
+        vehicle_id=state.run.vehicle_id,
+        integrity="VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        artifact_availability="UNAVAILABLE",
+        completeness="PARTIAL",
+        quality_class="degraded",
+        status="ABSTAINED_INSUFFICIENT_SIGNAL",
+        decision=None,
+        score=None,
+        threshold=None,
+        omitted_count=2,
+    )
+    state.prediction_error = None
+    state.ask = Ask(
+        question="Did this happen for my real car?",
+        include_prediction_evidence=True,
+        prediction_evidence_ids=[projected.evidence_id],
+    )
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        state.run.vehicle_id,
+        80,
+        selected_prediction_ids=(projected.evidence_id,),
+    )
+    add_prediction(state.registry, projected)
+
+    warnings, blocked = _prediction_supervisor(state).quality_warnings()
+
+    assert warnings == [
+        "prediction_integrity_or_artifact_unverified",
+        "prediction_source_incomplete",
+        "prediction_source_quality_limited",
+        "prediction_result_abstained",
+        "prediction_projection_omitted",
+        "prediction_source_role_mismatch",
+    ]
+    assert blocked
+
+
+async def test_prediction_quality_gate_allows_complete_verified_source_and_preserves_other_routes(
+    fixture,  # noqa: F811
+):
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        state.run.vehicle_id,
+        80,
+        selected_prediction_ids=(projected.evidence_id,),
+    )
+    add_prediction(state.registry, projected)
+    warnings, blocked = _prediction_supervisor(state).quality_warnings()
+    assert warnings == []
+    assert not blocked
+
+    supervisor = _prediction_supervisor(state)
+    state.run.supervisor = state.run.supervisor.model_copy(
+        update={
+            "routing": state.run.supervisor.routing.model_copy(update={"intent": Intent.FACTUAL})
+        }
+    )
+    state.context = None
+    assert supervisor.quality_warnings() == (["no_recorded_session"], True)
+
+
+def _prediction_authorization_settings(vehicle_id):
+    return AgentSettings(
+        environment="test",
+        prediction_service_enabled=True,
+        prediction_evidence_enabled=True,
+        prediction_capability_token=SecretStr("operator-capability-" + "c" * 40),
+        prediction_mcp_token=SecretStr("prediction-mcp-token-" + "p" * 40),
+        mcp_token=SecretStr("ordinary-mcp-token-" + "m" * 40),
+        prediction_vehicle_ids=[vehicle_id],
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "question", "ids", "expected"),
+    [
+        ("evidence_disabled", "What prediction was recorded?", [uuid4()], "prediction_disabled"),
+        ("service_disabled", "What prediction was recorded?", [uuid4()], "prediction_disabled"),
+        ("production", "What prediction was recorded?", [uuid4()], "prediction_disabled"),
+        ("intent", "Can I keep accelerating safely?", [uuid4()], "prediction_intent_required"),
+        (
+            "budget",
+            "What prediction was recorded?",
+            [uuid4(), uuid4()],
+            "prediction_evidence_budget_exhausted",
+        ),
+        (
+            "missing_token",
+            "What prediction was recorded?",
+            [uuid4()],
+            "prediction_capability_required",
+        ),
+        (
+            "missing_capability",
+            "What prediction was recorded?",
+            [uuid4()],
+            "prediction_capability_required",
+        ),
+        (
+            "wrong_capability",
+            "What prediction was recorded?",
+            [uuid4()],
+            "prediction_capability_required",
+        ),
+        (
+            "vehicle_scope",
+            "What prediction was recorded?",
+            [uuid4()],
+            "prediction_vehicle_not_authorized",
+        ),
+    ],
+)
+def test_agent_service_authorizes_prediction_run_with_separate_capability(
+    case,
+    question,
+    ids,
+    expected,
+    telemetry,  # noqa: F811
+):
+    vehicle_id = uuid4()
+    settings = _prediction_authorization_settings(vehicle_id)
+    capability = settings.prediction_capability_token.get_secret_value()
+    if case == "evidence_disabled":
+        settings.prediction_evidence_enabled = False
+    elif case == "service_disabled":
+        settings.prediction_service_enabled = False
+    elif case == "production":
+        settings.environment = "production"
+    elif case == "budget":
+        settings.max_prediction_evidence_reads = 1
+    elif case == "missing_token":
+        settings.prediction_capability_token = None
+    elif case == "vehicle_scope":
+        settings.prediction_vehicle_ids = []
+    ask = Ask(
+        question=question,
+        include_prediction_evidence=True,
+        prediction_evidence_ids=ids,
+    )
+    if case in {"missing_capability", "wrong_capability"}:
+        capability = None if case == "missing_capability" else "wrong"
+
+    with pytest.raises(AgentError, match=expected):
+        AgentService._authorize_prediction_run(
+            SimpleNamespace(settings=settings, telemetry=telemetry),
+            vehicle_id,
+            ask,
+            capability,
+        )
+
+
+def test_agent_service_skips_prediction_authorization_when_no_prediction_was_requested(telemetry):  # noqa: F811
+    settings = AgentSettings()
+    AgentService._authorize_prediction_run(
+        SimpleNamespace(settings=settings, telemetry=telemetry),
+        uuid4(),
+        Ask(question="Summarize my vehicle"),
+        None,
+    )
+
+
+def test_agent_service_authorizes_prediction_for_allowlisted_vehicle(telemetry):  # noqa: F811
+    vehicle_id = uuid4()
+    settings = _prediction_authorization_settings(vehicle_id)
+    ask = Ask(
+        question="What prediction was recorded?",
+        include_prediction_evidence=True,
+        prediction_evidence_ids=[uuid4()],
+    )
+
+    AgentService._authorize_prediction_run(
+        SimpleNamespace(settings=settings, telemetry=telemetry),
+        vehicle_id,
+        ask,
+        settings.prediction_capability_token.get_secret_value(),
+    )
+
+
+def _prediction_pair():
+    vehicle_id, session_id, pull_id, configuration_id, feature_set_id = (
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+    )
+    next_pull = projection(
+        vehicle_id=vehicle_id,
+        session_id=session_id,
+        pull_id=pull_id,
+        configuration_id=configuration_id,
+        feature_set_id=feature_set_id,
+    )
+    anomaly = projection(
+        vehicle_id=vehicle_id,
+        session_id=session_id,
+        pull_id=pull_id,
+        configuration_id=configuration_id,
+        feature_set_id=feature_set_id,
+        result_type="anomaly",
+        horizon="AFTER_PULL_OFFLINE",
+        task=None,
+        family="thermal",
+        decision="ANOMALOUS",
+        score=4.2,
+        threshold=3.5,
+    )
+    registry = EvidenceRegistry(
+        uuid4(),
+        vehicle_id,
+        20,
+        selected_session_id=session_id,
+        selected_pull_id=pull_id,
+        selected_prediction_ids=(next_pull.evidence_id, anomaly.evidence_id),
+    )
+    first = add_prediction(registry, next_pull)
+    second = add_prediction(registry, anomaly)
+    return registry, vehicle_id, first, second
+
+
+def test_prediction_association_requires_distinct_results_on_the_same_frozen_feature_set():
+    registry, vehicle_id, first, second = _prediction_pair()
+    claim = Claim(
+        classification=Classification.DESCRIPTIVE_ASSOCIATION,
+        template="statistical_association",
+        bindings=[],
+        evidence_ids=[first.id, second.id],
+    )
+
+    answer = validate(
+        Draft(confidence="moderate", claims=[claim], missing_evidence=[]),
+        registry,
+        VehicleContext(vehicle_id=vehicle_id, as_of=NOW),
+    )
+
+    assert answer.findings[0].template == "statistical_association"
+    assert "a mesma FeatureSet" in answer.answer
+    assert "não constituem confirmação independente" in answer.answer.casefold()
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing_link",
+        "missing_feature_set",
+        "different_feature_set",
+        "different_pull",
+        "same_source_evidence",
+        "same_receipt",
+        "different_role",
+        "wrong_horizon",
+    ],
+)
+def test_prediction_association_rejects_mismatched_lineage(mutation):
+    registry, vehicle_id, first, second = _prediction_pair()
+    if mutation == "missing_link":
+        registry.prediction_links.pop()
+    elif mutation == "wrong_horizon":
+        source = registry.items[second.id]
+        registry.items[second.id] = source.model_copy(
+            update={
+                "facts": [
+                    fact.model_copy(update={"value": "NEXT_PULL"})
+                    if fact.path == "/prediction/horizon"
+                    else fact
+                    for fact in source.facts
+                ]
+            }
+        )
+    else:
+        link = registry.prediction_links[1]
+        first_link = registry.prediction_links[0]
+        changes = {
+            "missing_feature_set": {"source_feature_set_id": None},
+            "different_feature_set": {"source_feature_set_id": uuid4()},
+            "different_pull": {"source_pull_id": uuid4()},
+            "same_source_evidence": {"source_evidence_id": first_link.source_evidence_id},
+            "same_receipt": {"receipt_id": first_link.receipt_id},
+            "different_role": {"source_role": "real_vehicle"},
+        }[mutation]
+        registry.prediction_links[1] = replace(link, **changes)
+    claim = Claim(
+        classification=Classification.DESCRIPTIVE_ASSOCIATION,
+        template="statistical_association",
+        bindings=[],
+        evidence_ids=[first.id, second.id],
+    )
+
+    with pytest.raises(AgentError, match="unsupported_prediction_association"):
+        validate(
+            Draft(confidence="moderate", claims=[claim], missing_evidence=[]),
+            registry,
+            VehicleContext(vehicle_id=vehicle_id, as_of=NOW),
+        )
+
+
+def _context_node_engine(state, fixture_data, telemetry_value, *, no_sessions=False):
+    session = fixture_data["sessions"][0]
+    names = []
+
+    async def call(state_arg, name, arguments):
+        names.append(name)
+        data = {
+            "get_vehicle": fixture_data["vehicle"],
+            "list_vehicle_configurations": fixture_data["configurations"],
+            "list_vehicle_modifications": fixture_data["modifications"],
+            "list_sessions": [] if no_sessions else fixture_data["sessions"],
+            "get_session": session,
+            "get_session_capabilities": {},
+            "get_pull": {"session_id": session["id"]},
+        }[name]
+        return {"data": data}
+
+    client = SimpleNamespace(discover=AsyncMock(return_value=[]))
+    engine = Orchestrator(AgentSettings(), MagicMock(), client, telemetry_value)
+    engine.call = AsyncMock(side_effect=call)
+    engine.capabilities = AsyncMock()
+    return engine, names
+
+
+async def test_context_node_uses_selected_pull_session_and_bounded_session_list(
+    fixture,  # noqa: F811
+    telemetry,  # noqa: F811
+):
+    state = execution(fixture)
+    engine, names = _context_node_engine(state, fixture, telemetry)
+    state.cache["previous"] = {"truncated": True}
+
+    await engine.context_node({"execution": state})
+
+    assert "list_sessions" in names
+    assert "get_session" not in names
+    assert state.context.warnings == ["context_history_truncated"]
+    engine.capabilities.assert_awaited_once()
+
+    state = execution(fixture)
+    state.ask = state.ask.model_copy(
+        update={"include_prediction_evidence": False, "prediction_evidence_ids": []}
+    )
+    engine, names = _context_node_engine(state, fixture, telemetry)
+    await engine.context_node({"execution": state})
+    assert "get_prediction_evidence" not in names
+
+    state = execution(fixture)
+    state.ask = state.ask.model_copy(
+        update={"include_prediction_evidence": True, "prediction_evidence_ids": []}
+    )
+    engine, names = _context_node_engine(state, fixture, telemetry)
+    await engine.context_node({"execution": state})
+    assert "get_prediction_evidence" not in names
+
+    state = execution(fixture)
+    session_id = UUID(fixture["sessions"][0]["id"])
+    state.ask = state.ask.model_copy(update={"session_id": session_id})
+    engine, names = _context_node_engine(state, fixture, telemetry)
+    await engine.context_node({"execution": state})
+    assert "get_session" in names and "list_sessions" not in names
+
+    state = execution(fixture)
+    state.ask = state.ask.model_copy(update={"pull_id": uuid4()})
+    engine, names = _context_node_engine(state, fixture, telemetry)
+    await engine.context_node({"execution": state})
+    assert "get_pull" in names and "get_session" in names and "list_sessions" not in names
+
+    state = execution(fixture)
+    state.ask = state.ask.model_copy(update={"pull_id": uuid4(), "session_id": uuid4()})
+    engine, _ = _context_node_engine(state, fixture, telemetry)
+    with pytest.raises(AgentError, match="incompatible_context"):
+        await engine.context_node({"execution": state})
+
+    state = execution(fixture)
+    engine, names = _context_node_engine(state, fixture, telemetry, no_sessions=True)
+    await engine.context_node({"execution": state})
+    assert "list_sessions" in names
+    engine.capabilities.assert_not_awaited()
+
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    session_id = UUID(fixture["sessions"][0]["id"])
+    state.ask = Ask(
+        question="Qual foi a previsão registrada?",
+        session_id=session_id,
+        include_prediction_evidence=True,
+        prediction_evidence_ids=[projected.evidence_id],
+    )
+    engine, _ = _context_node_engine(state, fixture, telemetry)
+    original_call = engine.call.side_effect
+
+    async def fail_prediction(state_arg, name, arguments):
+        if name == "get_prediction_evidence":
+            raise AgentError("not_found")
+        return await original_call(state_arg, name, arguments)
+
+    engine.call.side_effect = fail_prediction
+    await engine.context_node({"execution": state})
+    assert state.prediction_error == "not_found"
+
+
+async def test_capabilities_reuse_known_sessions_and_enforce_context_budget(fixture, telemetry):  # noqa: F811
+    state = execution(fixture)
+    session_id = UUID(fixture["sessions"][0]["id"])
+    state.context = state.context.model_copy(update={"capabilities": {}})
+    engine, _ = _context_node_engine(state, fixture, telemetry)
+    engine.capabilities = Orchestrator.capabilities.__get__(engine)
+
+    await engine.capabilities(state, session_id)
+
+    assert engine.call.await_args.args[1] == "get_session_capabilities"
+
+    state = execution(fixture)
+    session_id = UUID(fixture["sessions"][0]["id"])
+    state.context = state.context.model_copy(update={"sessions": []})
+    engine, _ = _context_node_engine(state, fixture, telemetry)
+    engine.capabilities = Orchestrator.capabilities.__get__(engine)
+    await engine.capabilities(state, session_id)
+    assert [str(item["id"]) for item in state.context.sessions] == [str(session_id)]
+
+    context_sessions = state.context.sessions + [
+        state.context.sessions[0] | {"id": str(uuid4())} for _ in range(9)
+    ]
+    state.context = state.context.model_copy(update={"sessions": context_sessions})
+    with pytest.raises(AgentError, match="context_budget_exhausted"):
+        await engine.capabilities(state, uuid4())
+
+    state.context = None
+    with pytest.raises(AgentError, match="context_missing"):
+        await engine.capabilities(state, uuid4())

@@ -1,6 +1,7 @@
 # ruff: noqa: S104
 import asyncio
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -227,6 +228,17 @@ async def test_adapter_isolation_and_envelope():
     adapter.analysis.pull = AsyncMock(return_value=None)
     with pytest.raises(PlatformError, match="NOT_FOUND"):
         await adapter.pull(uuid4(), uuid4())
+    vehicle_id, pull_id = uuid4(), uuid4()
+    adapter.analysis.pull.return_value = SimpleNamespace(
+        vehicle_id=vehicle_id,
+        model_dump=MagicMock(return_value={"id": str(pull_id)}),
+    )
+    assert await adapter.pull(vehicle_id, pull_id) == {"id": str(pull_id)}
+    adapter.analysis.pull.return_value = SimpleNamespace(
+        vehicle_id=uuid4(), model_dump=MagicMock(return_value={})
+    )
+    with pytest.raises(PlatformError, match="INCOMPATIBLE_CONTEXT"):
+        await adapter.pull(vehicle_id, pull_id)
     result = adapter.envelope([{"n": n} for n in range(3)], {}, limit=2)
     assert result.returned == 2 and result.truncated
     assert result.warnings[0].code == "truncated_result"
