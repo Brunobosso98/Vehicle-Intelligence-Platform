@@ -2424,6 +2424,50 @@ async def evaluate() -> dict[str, Any]:
                         constraint_checks
                     )
 
+                    # Keep the shared 9C evidence pristine while the Phase 9F agent reads it.
+                    missing_context = await _pull_context(
+                        database, UUID(str(targets["missing_fuel"]["id"]))
+                    )
+                    low_quality_context = await _pull_context(
+                        database, UUID(str(targets["low_quality"]["id"]))
+                    )
+                    no_feature_context = await _pull_context(
+                        database, UUID(str(no_feature_pull.pull_id))
+                    )
+                    report["phase9f"] = await phase9f.evaluate(
+                        settings=settings,
+                        telemetry=app.state.telemetry,
+                        model_artifacts=model_store,
+                        anomaly_artifacts=anomaly_store,
+                        source_bundles=source_bundles,
+                        source_contexts={
+                            "supervised": {
+                                "vehicle_id": UUID(str(eligible["vehicle_id"])),
+                                "session_id": UUID(str(eligible["session_id"])),
+                                "pull_id": pull_id,
+                                "configuration_id": UUID(
+                                    str(eligible["configuration_id"])
+                                ),
+                            },
+                            "anomaly": {
+                                "vehicle_id": UUID(str(anomaly_pull.vehicle_id)),
+                                "session_id": UUID(str(anomaly_pull.session_id)),
+                                "pull_id": UUID(str(anomaly_pull.pull_id)),
+                                "configuration_id": UUID(
+                                    str(anomaly_pull.configuration_id)
+                                ),
+                            },
+                            "missing_fuel": missing_context,
+                            "low_quality": low_quality_context,
+                            "no_feature_set": no_feature_context,
+                        },
+                        span_exporter=span_exporter,
+                        database_sessions_peak=int(
+                            helper_connection_counts["maximum"]
+                            + api_connection_counts["maximum"]
+                        ),
+                    )
+
                     performance_bundle = source_bundles["anomaly:performance"]
                     performance_detector_id = next(
                         node.source_entity_id
@@ -2704,47 +2748,6 @@ async def evaluate() -> dict[str, Any]:
                         "bounded_labels_only": True,
                         "vehicle_or_evidence_ids_present": False,
                     }
-                    missing_context = await _pull_context(
-                        database, UUID(str(targets["missing_fuel"]["id"]))
-                    )
-                    low_quality_context = await _pull_context(
-                        database, UUID(str(targets["low_quality"]["id"]))
-                    )
-                    no_feature_context = await _pull_context(
-                        database, UUID(str(no_feature_pull.pull_id))
-                    )
-                    report["phase9f"] = await phase9f.evaluate(
-                        settings=settings,
-                        telemetry=app.state.telemetry,
-                        model_artifacts=model_store,
-                        anomaly_artifacts=anomaly_store,
-                        source_bundles=source_bundles,
-                        source_contexts={
-                            "supervised": {
-                                "vehicle_id": UUID(str(eligible["vehicle_id"])),
-                                "session_id": UUID(str(eligible["session_id"])),
-                                "pull_id": pull_id,
-                                "configuration_id": UUID(
-                                    str(eligible["configuration_id"])
-                                ),
-                            },
-                            "anomaly": {
-                                "vehicle_id": UUID(str(anomaly_pull.vehicle_id)),
-                                "session_id": UUID(str(anomaly_pull.session_id)),
-                                "pull_id": UUID(str(anomaly_pull.pull_id)),
-                                "configuration_id": UUID(
-                                    str(anomaly_pull.configuration_id)
-                                ),
-                            },
-                            "missing_fuel": missing_context,
-                            "low_quality": low_quality_context,
-                            "no_feature_set": no_feature_context,
-                        },
-                        span_exporter=span_exporter,
-                        database_sessions_peak=int(
-                            report["benchmarks"]["maximum_database_sessions"]
-                        ),
-                    )
     except Exception as error:  # noqa: BLE001 - convert any evaluator failure into a failed receipt
         report["status"] = "FAIL"
         report["error_category"] = type(error).__name__

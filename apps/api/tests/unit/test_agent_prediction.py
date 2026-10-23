@@ -24,6 +24,8 @@ from vehicle_platform.agents.schemas import (
     Draft,
     Intent,
     RoutingDecision,
+    SpecialistFinding,
+    SpecialistResult,
     SupervisorReport,
     VehicleContext,
 )
@@ -34,7 +36,10 @@ from vehicle_platform.agents.specialists.routing import (
     prediction_request_intent,
     prediction_specialists,
 )
-from vehicle_platform.agents.specialists.runtime import Supervisor
+from vehicle_platform.agents.specialists.runtime import (
+    Supervisor,
+    render_grounded_prediction_result,
+)
 from vehicle_platform.agents.specialists.validation import validate_prediction_scope
 from vehicle_platform.mcp.adapter import Adapter
 from vehicle_platform.mcp.errors import ErrorCode, PlatformError
@@ -758,6 +763,70 @@ async def test_prediction_tool_is_authorized_scoped_cached_and_audited(fixture, 
     assert state.audit.await_count == 2
 
 
+async def test_prediction_tool_accepts_both_horizons_for_explicit_pair(fixture, telemetry):  # noqa: F811
+    state = execution(fixture)
+    next_pull = projection(vehicle_id=state.run.vehicle_id)
+    anomaly = projection(
+        vehicle_id=next_pull.source_vehicle_id,
+        session_id=next_pull.source_session_id,
+        pull_id=next_pull.source_pull_id,
+        configuration_id=next_pull.source_configuration_id,
+        feature_set_id=next_pull.source_feature_set_id,
+        result_type="anomaly",
+        horizon="AFTER_PULL_OFFLINE",
+        task=None,
+        family="performance",
+        decision="INLIER",
+        score=0.0,
+        threshold=3.5,
+    )
+    projections = {
+        next_pull.evidence_id: next_pull,
+        anomaly.evidence_id: anomaly,
+    }
+    engine, arguments, _, _ = _prediction_tool_call(state, next_pull, telemetry)
+    state.ask = state.ask.model_copy(
+        update={
+            "question": "Compare a prediction and anomaly result.",
+            "prediction_evidence_ids": [next_pull.evidence_id, anomaly.evidence_id],
+        }
+    )
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        state.run.vehicle_id,
+        80,
+        selected_prediction_ids=(next_pull.evidence_id, anomaly.evidence_id),
+    )
+
+    async def read_prediction(_name, arguments):
+        selected = projections[UUID(arguments["evidence_id"])]
+        return Envelope(
+            data=selected.model_dump(mode="json"),
+            context={
+                "vehicle_id": selected.source_vehicle_id,
+                "session_id": selected.source_session_id,
+                "pull_id": selected.source_pull_id,
+            },
+            provenance={"source": "immutable-phase9e-evidence"},
+            returned=1,
+        )
+
+    engine.client.call = AsyncMock(side_effect=read_prediction)
+    for selected in (next_pull, anomaly):
+        result = await engine.call_locked(
+            state,
+            "get_prediction_evidence",
+            arguments | {"evidence_id": str(selected.evidence_id)},
+        )
+        assert result["data"]["horizon"] == selected.horizon.value
+
+    assert state.prediction_reads == 2
+    assert len(state.registry.prediction_links) == 2
+    assert {item.source_tool for item in state.registry.items.values()} == {
+        "get_prediction_evidence"
+    }
+
+
 @pytest.mark.parametrize(
     ("case", "expected"),
     [
@@ -1178,7 +1247,7 @@ async def test_prediction_quality_gate_allows_complete_verified_source_and_prese
     fixture,  # noqa: F811
 ):
     state = execution(fixture)
-    projected = projection(vehicle_id=state.run.vehicle_id)
+    projected = projection(vehicle_id=state.run.vehicle_id, omitted_count=2)
     state.registry = EvidenceRegistry(
         state.run.id,
         state.run.vehicle_id,
@@ -1187,8 +1256,12 @@ async def test_prediction_quality_gate_allows_complete_verified_source_and_prese
     )
     add_prediction(state.registry, projected)
     warnings, blocked = _prediction_supervisor(state).quality_warnings()
-    assert warnings == []
+    assert warnings == ["prediction_projection_omitted"]
     assert not blocked
+
+    answer = prediction_answer(state.registry, state.context, "prediction")
+    assert answer.findings[0].template == "prediction_result"
+    assert answer.confidence == "low"
 
     supervisor = _prediction_supervisor(state)
     state.run.supervisor = state.run.supervisor.model_copy(
@@ -1198,6 +1271,88 @@ async def test_prediction_quality_gate_allows_complete_verified_source_and_prese
     )
     state.context = None
     assert supervisor.quality_warnings() == (["no_recorded_session"], True)
+
+
+def test_grounded_prediction_specialist_result_becomes_the_final_answer(fixture):  # noqa: F811
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id, omitted_count=2)
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        state.run.vehicle_id,
+        80,
+        selected_prediction_ids=(projected.evidence_id,),
+    )
+    add_prediction(state.registry, projected)
+    source_claim = prediction_answer(state.registry, state.context, "prediction").findings[0]
+    specialist_finding = SpecialistFinding(
+        **source_claim.model_dump(),
+        finding_id=uuid4(),
+        specialist=Specialist.THERMAL,
+        strength="low",
+    )
+    state.run.supervisor = SupervisorReport(
+        routing=RoutingDecision(
+            intent=Intent.PREDICTION,
+            considered=[Specialist.THERMAL],
+            selected=[Specialist.THERMAL],
+            skipped=[],
+            data_quality_gate=True,
+            hints=[],
+            reason="controlled prediction route",
+        ),
+        specialists=[
+            SpecialistResult(
+                specialist=Specialist.THERMAL,
+                supervisor_run_id=state.run.id,
+                vehicle_id=state.run.vehicle_id,
+                status="completed",
+                prompt_version="thermal-test-v1",
+                findings=[specialist_finding],
+                data_quality_warnings=["prediction_projection_omitted"],
+            )
+        ],
+    )
+
+    assert render_grounded_prediction_result(state, [Specialist.THERMAL])
+    assert state.final is not None
+    assert [finding.template for finding in state.final.findings] == ["prediction_result"]
+    assert state.final.confidence == "low"
+    assert "prediction_projection_omitted" in state.final.limitations
+
+
+@pytest.mark.parametrize(
+    "case", ["no_report", "wrong_intent", "missing_context", "no_source", "no_finding"]
+)
+def test_grounded_prediction_specialist_result_requires_one_matching_source(fixture, case):  # noqa: F811
+    state = execution(fixture)
+    projected = projection(vehicle_id=state.run.vehicle_id)
+    if case != "no_source":
+        state.registry = EvidenceRegistry(
+            state.run.id,
+            state.run.vehicle_id,
+            80,
+            selected_prediction_ids=(projected.evidence_id,),
+        )
+        add_prediction(state.registry, projected)
+    if case == "no_report":
+        state.run.supervisor = None
+    else:
+        state.run.supervisor = SupervisorReport(
+            routing=RoutingDecision(
+                intent=Intent.FACTUAL if case == "wrong_intent" else Intent.PREDICTION,
+                considered=[],
+                selected=[Specialist.THERMAL],
+                skipped=[],
+                data_quality_gate=True,
+                hints=[],
+                reason="controlled prediction route",
+            )
+        )
+    if case == "missing_context":
+        state.context = None
+
+    assert not render_grounded_prediction_result(state, [Specialist.THERMAL])
+    assert state.final is None
 
 
 def _prediction_authorization_settings(vehicle_id):
@@ -1379,6 +1534,35 @@ def test_prediction_association_requires_distinct_results_on_the_same_frozen_fea
     assert "não constituem confirmação independente" in answer.answer.casefold()
 
 
+def test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial():
+    registry, vehicle_id, _, anomaly = _prediction_pair()
+    source = registry.items[anomaly.id]
+    registry.items[anomaly.id] = source.model_copy(
+        update={
+            "facts": [
+                fact.model_copy(update={"value": "PARTIAL"})
+                if fact.path == "/prediction/completeness"
+                else fact
+                for fact in source.facts
+            ]
+        }
+    )
+
+    answer = prediction_answer(
+        registry,
+        VehicleContext(vehicle_id=vehicle_id, as_of=NOW),
+        "anomaly",
+        question="Compare a previsão registrada e a anomalia observada.",
+    )
+
+    assert answer.findings[0].template == "prediction_insufficient"
+    assert answer.findings[0].classification is Classification.DATA_GAP
+    assert answer.confidence == "low"
+    assert answer.findings[0].evidence_ids == [anomaly.id]
+    assert "não há resultado preditivo elegível" in answer.answer.casefold()
+    assert "4.2" not in answer.answer
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -1535,6 +1719,16 @@ async def test_context_node_uses_selected_pull_session_and_bounded_session_list(
     engine.call.side_effect = fail_prediction
     await engine.context_node({"execution": state})
     assert state.prediction_error == "not_found"
+
+    async def revoke_prediction(state_arg, name, arguments):
+        if name == "get_prediction_evidence":
+            raise AgentError("prediction_capability_revoked")
+        return await original_call(state_arg, name, arguments)
+
+    engine.call.side_effect = revoke_prediction
+    with pytest.raises(AgentError, match="prediction_capability_revoked"):
+        await engine.context_node({"execution": state})
+    assert state.prediction_error == "prediction_capability_revoked"
 
 
 async def test_capabilities_reuse_known_sessions_and_enforce_context_budget(fixture, telemetry):  # noqa: F811

@@ -162,9 +162,16 @@ def _assert_grounded_run(
 ) -> tuple[Any, Any]:
     if run.status != "completed" or run.result is None or not run.result.findings:
         raise AssertionError(f"grounded {template} run failed: {run.error_category}")
-    finding = run.result.findings[0]
-    if finding.template != template or run.result.confidence != "low":
-        raise AssertionError(f"{template} claim or conservative confidence was lost")
+    findings = [item for item in run.result.findings if item.template == template]
+    if len(findings) != 1 or run.result.confidence != "low":
+        templates = ",".join(item.template for item in run.result.findings) or "none"
+        sufficiency = run.supervisor.sufficiency if run.supervisor else "missing"
+        raise AssertionError(
+            f"{template} claim or conservative confidence was lost "
+            f"(templates={templates}; confidence={run.result.confidence}; "
+            f"sufficiency={sufficiency})"
+        )
+    finding = findings[0]
     if len(finding.evidence_ids) != 1 or len(finding.bindings) < 8:
         raise AssertionError("prediction answer must cite one complete exact source")
     cited_id = finding.evidence_ids[0]
@@ -314,13 +321,28 @@ def _assert_data_gap_run(run: AgentRun, bundle: Any, context: dict[str, UUID]) -
     ):
         raise AssertionError("missing or incomplete evidence was promoted into a claim")
     cited = [item for item in run.evidence if item.id in finding.evidence_ids]
-    if (
-        len(cited) != 1
-        or cited[0].source_tool != "get_prediction_evidence"
-        or cited[0].vehicle_id != context["vehicle_id"]
-        or cited[0].run_id != run.id
-    ):
-        raise AssertionError("data-gap citation did not stay in the selected run scope")
+    if len(cited) != 1:
+        prediction_evidence = [
+            item
+            for item in run.evidence
+            if item.source_tool == "get_prediction_evidence"
+        ]
+        raise AssertionError(
+            "data-gap citation did not stay in the selected run scope "
+            f"({len(cited)} matches; {len(finding.evidence_ids)} references; "
+            f"{len(prediction_evidence)} prediction records)"
+        )
+    evidence = cited[0]
+    if evidence.source_tool != "get_prediction_evidence":
+        raise AssertionError("data-gap citation did not use prediction evidence")
+    if evidence.vehicle_id != context["vehicle_id"]:
+        raise AssertionError(
+            "data-gap citation did not stay in the selected vehicle scope"
+        )
+    if evidence.run_id != run.id:
+        raise AssertionError(
+            "data-gap citation did not stay in the selected agent-run scope"
+        )
     if (
         bundle.prediction.score is not None
         and str(bundle.prediction.score) in finding.statement
@@ -758,6 +780,19 @@ async def evaluate(
         abstained_anomaly_families: set[str] = set()
         for family in ("thermal", "boost_air", "performance", "fuel"):
             bundle = source_bundles[f"anomaly:{family}"]
+            verified = await adapter.prediction_evidence.read_verified(
+                bundle.evidence_id,
+                vehicle_id=anomaly_context["vehicle_id"],
+            )
+            if verified.integrity.value not in {
+                "VERIFIED",
+                "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+            }:
+                reasons = ",".join(verified.reason_codes)
+                raise AssertionError(
+                    "anomaly evidence failed agent-read verification: "
+                    f"{family} ({verified.integrity.value}; {reasons})"
+                )
             run = await _run(
                 service,
                 anomaly_context["vehicle_id"],
@@ -818,24 +853,40 @@ async def evaluate(
         if (
             pair.status != "completed"
             or pair.result is None
-            or pair.result.findings[0].template != "statistical_association"
-            or pair.result.confidence != "low"
-            or "causalidade" not in pair.result.answer.casefold()
+            or not pair.result.findings
         ):
             raise AssertionError(
-                "same-snapshot prediction/anomaly pairing was not conservative"
+                "same-snapshot prediction/anomaly pairing did not complete"
             )
         pair_result = pair.result
-        if pair_result is None:
-            raise AssertionError("same-snapshot answer disappeared")
+        pair_is_eligible = all(
+            bundle.completeness.value == "COMPLETE"
+            and bundle.integrity.value
+            in {"VERIFIED", "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"}
+            and bundle.source_summary.quality_class == "high"
+            for bundle in (source_prediction, source_anomaly)
+        )
+        if pair_is_eligible:
+            if (
+                pair_result.findings[0].template != "statistical_association"
+                or pair_result.confidence != "moderate"
+                or "não constituem confirmação independente"
+                not in pair_result.answer.casefold()
+                or "nem confiança combinada" not in pair_result.answer.casefold()
+            ):
+                raise AssertionError(
+                    "eligible same-snapshot results lost their descriptive-only wording"
+                )
+            if len(pair_result.findings[0].evidence_ids) != 2:
+                raise AssertionError(
+                    "descriptive association did not cite both source results"
+                )
+        else:
+            _assert_data_gap_run(pair, source_anomaly, anomaly_context)
         expected_source_ids = {
             source_prediction.evidence_id,
             source_anomaly.evidence_id,
         }
-        if len(pair_result.findings[0].evidence_ids) != 2:
-            raise AssertionError(
-                "descriptive association did not cite both source results"
-            )
         pair_links = await _private_links(agent_database, pair.id)
         if (
             len(pair_links) != 2
@@ -1072,14 +1123,19 @@ async def evaluate(
             revoked_run = await revocation_service.repository.get(
                 vehicle_id, revocation_started.id
             )
+            calls_after_revocation = direct_calls["prediction"].count(
+                "get_prediction_evidence"
+            )
             if (
                 revoked_run.status != "failed"
                 or revoked_run.error_category != "prediction_capability_revoked"
-                or direct_calls["prediction"].count("get_prediction_evidence")
-                != calls_before_revocation
+                or calls_after_revocation != calls_before_revocation
             ):
                 raise AssertionError(
-                    "revoked prediction capability allowed a later evidence read"
+                    "revoked prediction capability did not abort before a later evidence read "
+                    f"(status={revoked_run.status}; error={revoked_run.error_category}; "
+                    f"prediction_reads_before={calls_before_revocation}; "
+                    f"prediction_reads_after={calls_after_revocation})"
                 )
         finally:
             await revocation_service.close()
@@ -1242,7 +1298,14 @@ async def evaluate(
                 "private_run_lineage_persisted": True,
                 "next_pull_horizon_preserved": True,
                 "offline_anomaly_horizon_preserved": True,
-                "same_snapshot_pair_is_descriptive_only": True,
+                "same_snapshot_pair_respects_source_completeness": (
+                    pair_result.findings[0].template
+                    == (
+                        "statistical_association"
+                        if pair_is_eligible
+                        else "prediction_insufficient"
+                    )
+                ),
                 "zero_one_two_four_read_cases_executed": True,
                 "interpretive_request_selects_only_performance": True,
                 "thermal_fuel_and_performance_specialists_checked": True,

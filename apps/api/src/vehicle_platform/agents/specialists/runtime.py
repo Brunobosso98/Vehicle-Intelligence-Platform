@@ -35,6 +35,7 @@ from vehicle_platform.agents.specialists.routing import (
     decide,
     event_types,
     hints_for,
+    prediction_anomaly_pair_requested,
 )
 from vehicle_platform.agents.specialists.tool_scope import scoped_tool_definitions
 from vehicle_platform.agents.specialists.validation import (
@@ -50,6 +51,62 @@ if TYPE_CHECKING:
 
 
 ZERO_USAGE = Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0)
+
+
+def render_grounded_prediction_result(state: Execution, selected: list[Specialist]) -> bool:
+    report = state.run.supervisor
+    if report is None or report.routing.intent is not Intent.PREDICTION or state.context is None:
+        return False
+    prediction_sources = [
+        item
+        for item in state.registry.items.values()
+        if item.source_tool == "get_prediction_evidence"
+    ]
+    if len(prediction_sources) != 1:
+        return False
+    source_id = prediction_sources[0].id
+    grounded_findings = [
+        finding
+        for result in report.specialists
+        if result.status == "completed" and result.specialist in selected
+        for finding in result.findings
+        if finding.template == "prediction_result" and finding.evidence_ids == [source_id]
+    ]
+    if len(grounded_findings) != 1:
+        return False
+
+    from vehicle_platform.agents.grounding import validate
+
+    finding = grounded_findings[0]
+    state.final = validate(
+        Draft(
+            confidence="low",
+            claims=[
+                Claim(
+                    classification=finding.classification,
+                    template=finding.template,
+                    bindings=finding.bindings,
+                    evidence_ids=finding.evidence_ids,
+                )
+            ],
+            missing_evidence=[],
+        ),
+        state.registry,
+        state.context,
+    )
+    state.final.limitations = list(
+        dict.fromkeys(
+            [
+                *state.final.limitations,
+                *(
+                    warning
+                    for result in report.specialists
+                    for warning in result.data_quality_warnings
+                ),
+            ]
+        )
+    )[:32]
+    return True
 
 
 def quality_observation_bindings(finding: Finding, registry: EvidenceRegistry) -> list[Binding]:
@@ -312,6 +369,7 @@ class Supervisor:
                 "routing_hints": "1.5",
                 "prediction_intent_routing": "1.0",
                 "prediction_grounding": "prediction-agent-summary-v1",
+                "prediction_projection_quality_gate": "1.1",
                 "prediction_evidence_reads": self.settings.max_prediction_evidence_reads
                 if state.ask.include_prediction_evidence
                 else 0,
@@ -350,10 +408,7 @@ class Supervisor:
             duration_seconds=report.routing_seconds,
         )
         await state.emit("routing_completed", decision.model_dump(mode="json"))
-        question_lower = state.ask.question.casefold()
-        predictive_pair = any(
-            word in question_lower for word in ("prediction", "previsão", "predição")
-        ) and any(word in question_lower for word in ("anomaly", "anomalia", "outlier"))
+        predictive_pair = prediction_anomaly_pair_requested(state.ask.question)
         if hints.intent in {Intent.PREDICTION, Intent.ANOMALY} and (
             state.prediction_error is not None or not decision.selected or predictive_pair
         ):
@@ -441,6 +496,8 @@ class Supervisor:
         await self.evaluate()
         if report.sufficiency is Sufficiency.UNRELIABLE_DATA:
             self.synthesize_unreliable()
+            return
+        if render_grounded_prediction_result(state, decision.selected):
             return
         await state.emit("synthesis_started", {"sufficiency": report.sufficiency.value})
 
@@ -569,7 +626,9 @@ class Supervisor:
                     blocked = True
                 if values.get("/prediction/omitted_count", 0):
                     prediction_warnings.append("prediction_projection_omitted")
-                    blocked = True
+                    # The MCP allowlist intentionally filters non-serving facts. The 9E
+                    # completeness/quality fields and grounded claim paths determine whether
+                    # the recorded result is eligible; keep this as a warning for confidence.
                 if (
                     any(
                         token in state.ask.question.casefold()

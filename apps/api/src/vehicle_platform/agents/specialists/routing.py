@@ -37,6 +37,24 @@ def event_types(evidence: list[Evidence]) -> set[str]:
     }
 
 
+def prediction_anomaly_pair_requested(question: str) -> bool:
+    """Recognize an explicit request to compare recorded predictions and anomalies."""
+    q = question.casefold()
+    return any(word in q for word in ("prediction", "previsão", "predição")) and any(
+        word in q
+        for word in (
+            "anomaly",
+            "anomalies",
+            "anomalia",
+            "anomalias",
+            "outlier",
+            "outliers",
+            "desvio estatístico",
+            "desvios estatísticos",
+        )
+    )
+
+
 def prediction_request_intent(question: str) -> Intent | None:
     """Return only explicit requests about an already recorded prediction or anomaly."""
     q = question.casefold()

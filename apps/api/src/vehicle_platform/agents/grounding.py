@@ -14,6 +14,7 @@ from vehicle_platform.agents.schemas import (
     Finding,
     VehicleContext,
 )
+from vehicle_platform.agents.specialists.routing import prediction_anomaly_pair_requested
 
 PREDICTION_TASKS = {
     "NEXT_PULL_THERMAL_DEGRADATION": (
@@ -60,9 +61,7 @@ def prediction_answer(
 ) -> Answer:
     """Render an explicit prediction request without provider-authored prose."""
     sources = [item for item in registry.ordered() if item.source_tool == "get_prediction_evidence"]
-    compare_pair = any(
-        word in question.casefold() for word in ("prediction", "previsão", "predição")
-    ) and any(word in question.casefold() for word in ("anomaly", "anomalia", "outlier"))
+    compare_pair = prediction_anomaly_pair_requested(question)
     if compare_pair and error is None and forced_gap is None:
         next_pull = [
             item

@@ -34,7 +34,9 @@ effective installation date before the pull but creation time after the cutoff. 
 values and hashes remain unchanged; neither inserted record appears in the 9B or 9C evidence.
 Separately, a valid 9C reference row is appended with a post-cutoff availability timestamp. Its
 updated observed row/session counts differ from the frozen parent manifest, and independent 9E
-verification must return `FAILED_SOURCE_MISMATCH` with `PROVENANCE_MISMATCH`.
+verification must return `FAILED_SOURCE_MISMATCH` with `PROVENANCE_MISMATCH`. Phase 9F runs before
+this sentinel is appended so its reads use the pristine shared fixtures. The sentinel remains in
+the disposable database until teardown because the 9C reference rows are immutable.
 
 The report records each materialized receipt's evidence and source IDs, prediction status,
 completeness, integrity, quality coverage and gap codes, along with aggregate completeness,
@@ -57,11 +59,11 @@ eligible fixture and same-cohort reference support exist.
 The evaluator mutates one disposable 9A feature value, a persisted 9C finding value, and registered
 model/detector artifact bytes; it observes mismatches, restores the mutable test fixtures in
 `finally` blocks and verifies recovery. Missing artifact state is reported as
-`VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE`. The append-only post-cutoff reference-row case is detected
-without deleting the inserted row; the wrapper removes its disposable Compose database. Database
-checks exercise update/delete triggers, duplicate logical identity, oversized JSONB, orphan source
-rows and transaction rollback after an invalid normalized graph insert. These operations are
-confined to the isolated Compose test database and temporary artifact directory.
+`VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE`. The post-cutoff reference-row case is detected after
+Phase 9F completes; the immutable sentinel remains only for the lifetime of the disposable Compose
+database. Database checks exercise update/delete triggers, duplicate logical identity, oversized
+JSONB, orphan source rows and transaction rollback after an invalid normalized graph insert. These
+operations are confined to the isolated Compose test database and temporary artifact directory.
 
 The expected success rate for source integrity, deterministic replay, cutoff checks, privacy checks
 and admission controls is 100%. There is no model-accuracy threshold in Phase 9E. All observed

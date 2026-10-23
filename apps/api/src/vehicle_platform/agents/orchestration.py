@@ -18,7 +18,10 @@ from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, Evidence
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
-from vehicle_platform.agents.specialists.routing import prediction_request_intent
+from vehicle_platform.agents.specialists.routing import (
+    prediction_anomaly_pair_requested,
+    prediction_request_intent,
+)
 from vehicle_platform.agents.state import Execution, GraphState
 from vehicle_platform.knowledge.context import knowledge_scope
 from vehicle_platform.knowledge.grounding import render as render_knowledge
@@ -366,10 +369,29 @@ class Orchestrator:
                     }
                 )
                 expected = prediction_request_intent(state.ask.question)
-                if projection.evidence_id != UUID(str(arguments["evidence_id"])) or (
+                pair_request = (
                     expected is not None
-                    and projection.horizon.value
-                    != ("NEXT_PULL" if expected.value == "prediction" else "AFTER_PULL_OFFLINE")
+                    and expected.value == "anomaly"
+                    and prediction_anomaly_pair_requested(state.ask.question)
+                )
+                if pair_request:
+                    scope_matches = (
+                        projection.result_type.value,
+                        projection.horizon.value,
+                    ) in {
+                        ("next_pull", "NEXT_PULL"),
+                        ("anomaly", "AFTER_PULL_OFFLINE"),
+                    }
+                else:
+                    expected_horizon = (
+                        "NEXT_PULL"
+                        if expected is not None and expected.value == "prediction"
+                        else "AFTER_PULL_OFFLINE"
+                    )
+                    scope_matches = expected is None or projection.horizon.value == expected_horizon
+                if (
+                    projection.evidence_id != UUID(str(arguments["evidence_id"]))
+                    or not scope_matches
                 ):
                     raise AgentError("prediction_horizon_mismatch")
             if name == "get_prediction_evidence":
@@ -503,6 +525,8 @@ class Orchestrator:
                         )
                     except AgentError as exc:
                         state.prediction_error = exc.category
+                        if exc.category == "prediction_capability_revoked":
+                            raise
                         break
         await state.emit("context_resolved", state.context.model_dump(mode="json"))
         return {}
