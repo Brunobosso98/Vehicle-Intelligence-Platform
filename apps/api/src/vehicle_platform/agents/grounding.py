@@ -3,7 +3,253 @@ from uuid import UUID
 
 from vehicle_platform.agents.evidence import EvidenceRegistry
 from vehicle_platform.agents.provider import AgentError
-from vehicle_platform.agents.schemas import Answer, Classification, Draft, Finding, VehicleContext
+from vehicle_platform.agents.schemas import (
+    Answer,
+    Binding,
+    Claim,
+    Classification,
+    Draft,
+    Evidence,
+    Fact,
+    Finding,
+    VehicleContext,
+)
+
+PREDICTION_TASKS = {
+    "NEXT_PULL_THERMAL_DEGRADATION": (
+        "IAT inicial da próxima puxada compatível pelo menos 3 K acima da puxada de entrada"
+    ),
+    "NEXT_PULL_PERFORMANCE_DEGRADATION": (
+        "intervalo de 3.500–4.500 RPM pelo menos 8% mais lento por 1.000 RPM"
+    ),
+    "NEXT_PULL_FUEL_DEVIATION": (
+        "pressão mínima de combustível da próxima puxada em até 88% da média compatível anterior"
+    ),
+}
+ANOMALY_FAMILIES = frozenset({"thermal", "boost_air", "performance", "fuel"})
+ACCEPTED_INTEGRITY = frozenset({"VERIFIED", "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"})
+
+
+def _prediction_fact(source: Evidence, path: str) -> Fact:
+    matches = [fact for fact in source.facts if fact.path == path]
+    if len(matches) != 1:
+        raise AgentError("unsupported_prediction_claim")
+    return matches[0]
+
+
+def _prediction_bindings(source: Evidence, paths: tuple[str, ...]) -> list[Binding]:
+    return [
+        Binding(
+            evidence_id=source.id,
+            path=path,
+            value=_prediction_fact(source, path).value,
+            unit=_prediction_fact(source, path).unit,
+        )
+        for path in paths
+    ]
+
+
+def prediction_answer(
+    registry: EvidenceRegistry,
+    context: VehicleContext,
+    intent: str,
+    *,
+    error: str | None = None,
+    forced_gap: str | None = None,
+    question: str = "",
+) -> Answer:
+    """Render an explicit prediction request without provider-authored prose."""
+    sources = [item for item in registry.ordered() if item.source_tool == "get_prediction_evidence"]
+    compare_pair = any(
+        word in question.casefold() for word in ("prediction", "previsão", "predição")
+    ) and any(word in question.casefold() for word in ("anomaly", "anomalia", "outlier"))
+    if compare_pair and error is None and forced_gap is None:
+        next_pull = [
+            item
+            for item in sources
+            if _prediction_fact(item, "/prediction/horizon").value == "NEXT_PULL"
+        ]
+        offline = [
+            item
+            for item in sources
+            if _prediction_fact(item, "/prediction/horizon").value == "AFTER_PULL_OFFLINE"
+        ]
+        pair = [next_pull[0], offline[0]] if len(next_pull) == len(offline) == 1 else []
+        if pair:
+            claim = Claim(
+                classification=Classification.DESCRIPTIVE_ASSOCIATION,
+                template="statistical_association",
+                bindings=[],
+                evidence_ids=[item.id for item in pair if item is not None],
+            )
+            try:
+                return validate(
+                    Draft(confidence="moderate", claims=[claim], missing_evidence=[]),
+                    registry,
+                    context,
+                )
+            except AgentError:
+                forced_gap = "shared_source_lineage_not_verified"
+        else:
+            forced_gap = "prediction_anomaly_pair_unavailable"
+    expected_horizon = "NEXT_PULL" if intent == "prediction" else "AFTER_PULL_OFFLINE"
+    selected = [
+        item
+        for item in sources
+        if _prediction_fact(item, "/prediction/horizon").value == expected_horizon
+    ]
+    blocked = error is not None or forced_gap is not None or not selected
+    real_vehicle = any(
+        token in question.casefold()
+        for token in ("my real car", "my actual car", "meu carro real", "veículo real")
+    )
+    if real_vehicle and any(
+        _prediction_fact(item, "/prediction/source_role").value != "real_vehicle"
+        for item in selected
+    ):
+        blocked = True
+        forced_gap = "source_role_not_real_vehicle"
+    eligible: list[Evidence] = []
+    for source in selected:
+        integrity = _prediction_fact(source, "/prediction/integrity").value
+        completeness = _prediction_fact(source, "/prediction/completeness").value
+        quality = _prediction_fact(source, "/prediction/quality_class").value
+        status = _prediction_fact(source, "/prediction/status").value
+        score = _prediction_fact(source, "/prediction/score").value
+        threshold = _prediction_fact(source, "/prediction/threshold").value
+        if (
+            integrity not in ACCEPTED_INTEGRITY
+            or completeness != "COMPLETE"
+            or quality != "high"
+            or status != "READY_SCORE"
+            or type(score) not in {int, float}
+            or type(threshold) not in {int, float}
+        ):
+            blocked = True
+        else:
+            eligible.append(source)
+    if forced_gap or blocked or not eligible:
+        cited = selected[:4]
+        reason = forced_gap or error or "prediction_evidence_incomplete_or_abstained"
+        claim = Claim(
+            classification=Classification.DATA_GAP,
+            template="prediction_insufficient",
+            bindings=[],
+            evidence_ids=[item.id for item in cited],
+        )
+        answer = validate(
+            Draft(
+                confidence="low",
+                claims=[claim],
+                missing_evidence=["signal_or_measurement"],
+            ),
+            registry,
+            context,
+        )
+        answer.limitations = list(
+            dict.fromkeys(
+                [
+                    f"prediction_data_gap:{reason[:80]}",
+                    "Uma nova coleta exige aprovação explícita; nenhuma aquisição foi iniciada.",
+                    *answer.limitations,
+                ]
+            )
+        )[:32]
+        return answer
+
+    claims: list[Claim] = []
+    source_roles: set[str] = set()
+    for source in eligible:
+        source_role = _prediction_fact(source, "/prediction/source_role").value
+        if not isinstance(source_role, str):
+            return prediction_answer(
+                registry, context, intent, forced_gap="unsupported_source_role", question=question
+            )
+        source_roles.add(source_role)
+        if intent == "prediction":
+            task = _prediction_fact(source, "/prediction/task").value
+            decision = _prediction_fact(source, "/prediction/decision").value
+            if task not in PREDICTION_TASKS or type(decision) is not bool:
+                return prediction_answer(
+                    registry,
+                    context,
+                    intent,
+                    forced_gap="unsupported_task_or_decision",
+                    question=question,
+                )
+            paths = (
+                "/prediction/horizon",
+                "/prediction/task",
+                "/prediction/score",
+                "/prediction/threshold",
+                "/prediction/decision",
+                "/prediction/model_version",
+                "/prediction/source_role",
+                "/prediction/effective_cutoff",
+            )
+            claims.append(
+                Claim(
+                    classification=Classification.MODEL_CLASSIFICATION,
+                    template="prediction_result",
+                    bindings=_prediction_bindings(source, paths),
+                    evidence_ids=[source.id],
+                )
+            )
+        else:
+            family = _prediction_fact(source, "/prediction/family").value
+            decision = _prediction_fact(source, "/prediction/decision").value
+            if family not in ANOMALY_FAMILIES or decision not in {"ANOMALOUS", "INLIER"}:
+                return prediction_answer(
+                    registry,
+                    context,
+                    intent,
+                    forced_gap="unsupported_family_or_decision",
+                    question=question,
+                )
+            paths = (
+                "/prediction/horizon",
+                "/prediction/family",
+                "/prediction/status",
+                "/prediction/score",
+                "/prediction/threshold",
+                "/prediction/detector_version",
+                "/prediction/detector_method",
+                "/prediction/effective_cutoff",
+            )
+            claims.append(
+                Claim(
+                    classification=(
+                        Classification.STATISTICAL_OUTLIER
+                        if decision == "ANOMALOUS"
+                        else Classification.MODEL_CLASSIFICATION
+                    ),
+                    template="anomaly_result",
+                    bindings=_prediction_bindings(source, paths),
+                    evidence_ids=[source.id],
+                )
+            )
+    answer = validate(
+        Draft(confidence="low", claims=claims, missing_evidence=[]), registry, context
+    )
+    answer.limitations = list(
+        dict.fromkeys(
+            [
+                *(f"source_role:{role}" for role in sorted(source_roles)),
+                *(
+                    ["O artefato histórico não está disponível para reprodução atual."]
+                    if any(
+                        _prediction_fact(source, "/prediction/integrity").value
+                        == "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+                        for source in eligible
+                    )
+                    else []
+                ),
+                *answer.limitations,
+            ]
+        )
+    )[:32]
+    return answer
+
 
 LABELS = {
     "id": "Registro",
@@ -73,6 +319,194 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
             if claim.classification != Classification.OBSERVATION or not claim.bindings:
                 raise AgentError("unsupported_classification")
             statement = "; ".join(render_binding(b.path, b.value, b.unit) for b in claim.bindings)
+        elif claim.template == "prediction_insufficient":
+            if claim.classification != Classification.DATA_GAP or claim.bindings:
+                raise AgentError("unsupported_classification")
+            if any(source.source_tool != "get_prediction_evidence" for source in cited):
+                raise AgentError("unsupported_prediction_claim")
+            status_values = [
+                _prediction_fact(source, "/prediction/status").value for source in cited
+            ]
+            reason_values = [
+                _prediction_fact(source, "/prediction/reason_code").value for source in cited
+            ]
+            reasons = [
+                str(value)
+                for value in [*status_values, *reason_values]
+                if isinstance(value, str)
+                and value.isascii()
+                and value.replace("_", "").replace("-", "").isalnum()
+            ][:4]
+            statement = (
+                "Não há resultado preditivo elegível para esta afirmação. "
+                + ("Estado registrado: " + ", ".join(reasons) + ". " if reasons else "")
+                + "Os dados disponíveis não estabelecem uma falha mecânica."
+            )
+        elif claim.template == "prediction_result":
+            if (
+                claim.classification != Classification.MODEL_CLASSIFICATION
+                or len(cited) != 1
+                or cited[0].source_tool != "get_prediction_evidence"
+            ):
+                raise AgentError("unsupported_classification")
+            source = cited[0]
+            expected_paths = {
+                "/prediction/horizon",
+                "/prediction/task",
+                "/prediction/score",
+                "/prediction/threshold",
+                "/prediction/decision",
+                "/prediction/model_version",
+                "/prediction/source_role",
+                "/prediction/effective_cutoff",
+            }
+            if {binding.path for binding in claim.bindings} != expected_paths:
+                raise AgentError("unsupported_prediction_claim")
+            values = {path: _prediction_fact(source, path).value for path in expected_paths}
+            task_value = values["/prediction/task"]
+            score_value = values["/prediction/score"]
+            threshold_value = values["/prediction/threshold"]
+            if (
+                values["/prediction/horizon"] != "NEXT_PULL"
+                or not isinstance(task_value, str)
+                or task_value not in PREDICTION_TASKS
+                or type(values["/prediction/decision"]) is not bool
+                or _prediction_fact(source, "/prediction/integrity").value not in ACCEPTED_INTEGRITY
+                or _prediction_fact(source, "/prediction/completeness").value != "COMPLETE"
+                or _prediction_fact(source, "/prediction/quality_class").value != "high"
+                or _prediction_fact(source, "/prediction/status").value != "READY_SCORE"
+                or _prediction_fact(source, "/prediction/score_is_probability").value is not False
+            ):
+                raise AgentError("unsupported_prediction_claim")
+            if (
+                not isinstance(score_value, (int, float))
+                or isinstance(score_value, bool)
+                or not isinstance(threshold_value, (int, float))
+                or isinstance(threshold_value, bool)
+            ):
+                raise AgentError("unsupported_prediction_claim")
+            if not 0 <= float(score_value) <= 1 or not 0 <= float(threshold_value) <= 1:
+                raise AgentError("unsupported_prediction_claim")
+            label = PREDICTION_TASKS[task_value]
+            outcome = "positiva" if values["/prediction/decision"] else "negativa"
+            statement = (
+                f"O modelo registrado classificou como {outcome} o rótulo de engenharia "
+                f"'{label}' para a próxima puxada compatível (horizonte NEXT_PULL). "
+                f"Score de validação de engenharia: {values['/prediction/score']}; "
+                f"limiar congelado: {values['/prediction/threshold']}; "
+                f"versão do modelo: {values['/prediction/model_version']}; "
+                f"papel da fonte: {values['/prediction/source_role']}; "
+                f"corte de entrada: {values['/prediction/effective_cutoff']}. "
+                "O score não é probabilidade calibrada de falha nem telemetria observada "
+                "da próxima puxada."
+            )
+        elif claim.template == "anomaly_result":
+            if len(cited) != 1 or cited[0].source_tool != "get_prediction_evidence":
+                raise AgentError("unsupported_classification")
+            source = cited[0]
+            family = _prediction_fact(source, "/prediction/family").value
+            decision = _prediction_fact(source, "/prediction/decision").value
+            expected_classification = (
+                Classification.STATISTICAL_OUTLIER
+                if decision == "ANOMALOUS"
+                else Classification.MODEL_CLASSIFICATION
+            )
+            expected_paths = {
+                "/prediction/horizon",
+                "/prediction/family",
+                "/prediction/status",
+                "/prediction/score",
+                "/prediction/threshold",
+                "/prediction/detector_version",
+                "/prediction/detector_method",
+                "/prediction/effective_cutoff",
+            }
+            if (
+                claim.classification != expected_classification
+                or {binding.path for binding in claim.bindings} != expected_paths
+                or family not in ANOMALY_FAMILIES
+                or decision not in {"ANOMALOUS", "INLIER"}
+                or _prediction_fact(source, "/prediction/horizon").value != "AFTER_PULL_OFFLINE"
+                or _prediction_fact(source, "/prediction/status").value != "READY_SCORE"
+                or _prediction_fact(source, "/prediction/integrity").value not in ACCEPTED_INTEGRITY
+                or _prediction_fact(source, "/prediction/completeness").value != "COMPLETE"
+                or _prediction_fact(source, "/prediction/quality_class").value != "high"
+                or _prediction_fact(source, "/prediction/score_is_probability").value is not False
+            ):
+                raise AgentError("unsupported_prediction_claim")
+            score = _prediction_fact(source, "/prediction/score").value
+            threshold = _prediction_fact(source, "/prediction/threshold").value
+            method = _prediction_fact(source, "/prediction/detector_method").value
+            if (
+                type(score) not in {int, float}
+                or type(threshold) not in {int, float}
+                or not isinstance(method, str)
+            ):
+                raise AgentError("unsupported_prediction_claim")
+            reference_rows = _prediction_fact(source, "/prediction/reference_row_count").value
+            reference_sessions = _prediction_fact(
+                source, "/prediction/reference_session_count"
+            ).value
+            reference = (
+                f" A referência congelada continha {reference_rows} linhas e "
+                f"{reference_sessions} sessões."
+                if type(reference_rows) is int and type(reference_sessions) is int
+                else " O tamanho da referência não está disponível nesta projeção."
+            )
+            label = (
+                "foi classificada como relativamente incomum"
+                if decision == "ANOMALOUS"
+                else "não foi classificada como incomum por este detector"
+            )
+            statement = (
+                f"A puxada observada {label} pela família {family} no horizonte "
+                "AFTER_PULL_OFFLINE. "
+                f"Score específico do detector: {score}; limiar: {threshold}; "
+                f"método: {method}; versão: "
+                f"{_prediction_fact(source, '/prediction/detector_version').value}; "
+                f"papel da fonte: {_prediction_fact(source, '/prediction/source_role').value}; "
+                f"corte: {_prediction_fact(source, '/prediction/effective_cutoff').value}."
+                f"{reference} O score é relativo a esta referência e não é probabilidade, "
+                "severidade de falha ou diagnóstico mecânico."
+            )
+        elif claim.template == "statistical_association":
+            if (
+                claim.classification != Classification.DESCRIPTIVE_ASSOCIATION
+                or claim.bindings
+                or len(cited) != 2
+                or any(source.source_tool != "get_prediction_evidence" for source in cited)
+            ):
+                raise AgentError("unsupported_classification")
+            links = {link.run_evidence_id: link for link in registry.prediction_links}
+            left, right = (links.get(source.id) for source in cited)
+            horizons = {_prediction_fact(source, "/prediction/horizon").value for source in cited}
+            if (
+                left is None
+                or right is None
+                or left.source_feature_set_id is None
+                or left.source_feature_set_id != right.source_feature_set_id
+                or left.source_pull_id != right.source_pull_id
+                or left.source_evidence_id == right.source_evidence_id
+                or left.receipt_id == right.receipt_id
+                or left.source_role != right.source_role
+                or horizons != {"NEXT_PULL", "AFTER_PULL_OFFLINE"}
+                or any(
+                    _prediction_fact(source, "/prediction/integrity").value
+                    not in ACCEPTED_INTEGRITY
+                    or _prediction_fact(source, "/prediction/completeness").value != "COMPLETE"
+                    or _prediction_fact(source, "/prediction/quality_class").value != "high"
+                    for source in cited
+                )
+            ):
+                raise AgentError("unsupported_prediction_association")
+            statement = (
+                "A classificação NEXT_PULL e a avaliação AFTER_PULL_OFFLINE usam a mesma "
+                "FeatureSet e puxada de origem. São saídas distintas e relacionadas pelo "
+                "snapshot compartilhado; não constituem confirmação independente, medida de "
+                "causalidade nem confiança combinada. "
+                f"Papel da fonte: {left.source_role}; cortes: "
+                f"{left.effective_cutoff.isoformat()} e {right.effective_cutoff.isoformat()}."
+            )
         elif claim.template == "temporal_association":
             configuration_sources = {
                 e.entity_id
@@ -159,10 +593,17 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
         f.classification in {Classification.INSUFFICIENT_EVIDENCE, Classification.UNKNOWN}
         for f in findings
     )
+    predictive_evidence_cited = any(
+        source.source_tool == "get_prediction_evidence"
+        for finding in findings
+        for source in (registry.items[identifier] for identifier in finding.evidence_ids)
+    )
     warnings = list(dict.fromkeys(warnings))[:32]
     return Answer(
         answer="\n".join(f.statement for f in findings),
-        confidence="low" if insufficient or warnings else draft.confidence,
+        confidence="low"
+        if insufficient or warnings or predictive_evidence_cited
+        else draft.confidence,
         findings=findings,
         evidence=registry.ordered(),
         context=context,

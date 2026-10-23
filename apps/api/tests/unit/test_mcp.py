@@ -73,7 +73,7 @@ async def test_discovery_and_errors(telemetry):
     async with Client(create_server(adapter, telemetry, MCPSettings())) as client:
         assert client.protocol_version
         inventory = await client.list_tools()
-        assert {item.name for item in inventory.tools} == TOOL_NAMES
+        assert {item.name for item in inventory.tools} == TOOL_NAMES - {"get_prediction_evidence"}
         for item in inventory.tools:
             assert item.description
             assert item.input_schema
@@ -90,6 +90,64 @@ async def test_discovery_and_errors(telemetry):
             assert error.is_error
             assert "INVALID_ARGUMENT" in error.content[0].text
             assert "SECRET" not in error.content[0].text
+
+
+async def test_prediction_scope_is_separate_and_hidden_without_verified_context(telemetry):
+    vehicle = uuid4()
+    adapter = MagicMock(spec=Adapter)
+    adapter.settings = Settings(
+        environment="test",
+        prediction_service_enabled=True,
+        prediction_operator_token=SecretStr("service-operator-token-" + "s" * 40),
+        database_url=SecretStr("postgresql+asyncpg://test:password@localhost/test"),
+    )
+    adapter.catalog = MagicMock()
+    adapter.catalog.database.close = AsyncMock()
+    ordinary = "ordinary-reader-token-" + "o" * 40
+    predictive = "prediction-reader-token-" + "p" * 40
+    config = MCPSettings(
+        transport="streamable-http",
+        token=SecretStr(ordinary),
+        prediction_evidence_enabled=True,
+        prediction_token=SecretStr(predictive),
+        prediction_vehicle_ids=[vehicle],
+    )
+    verifier = ReadTokenVerifier(config, telemetry)
+    assert (await verifier.verify_token(ordinary)).scopes == ["mcp:read"]
+    assert (await verifier.verify_token(predictive)).scopes == [
+        "mcp:read",
+        "mcp:prediction-evidence:read",
+    ]
+    adapter.prediction_evidence_summary = AsyncMock()
+    async with Client(create_server(adapter, telemetry, config)) as client:
+        tools = await client.list_tools()
+        assert "get_prediction_evidence" not in {tool.name for tool in tools.tools}
+        result = await client.call_tool(
+            "get_prediction_evidence",
+            {"vehicle_id": str(vehicle), "evidence_id": str(uuid4())},
+        )
+        assert result.is_error
+        assert "CAPABILITY_REQUIRED" in result.content[0].text
+        adapter.prediction_evidence_summary.assert_not_awaited()
+
+
+def test_prediction_mcp_config_rejects_scope_inheritance_and_public_transport():
+    ordinary = "ordinary-reader-token-" + "o" * 40
+    predictive = "prediction-reader-token-" + "p" * 40
+    with pytest.raises(ValidationError):
+        MCPSettings(
+            transport="streamable-http",
+            token=SecretStr(ordinary),
+            token_scope="mcp:read mcp:prediction-evidence:read",
+        )
+    with pytest.raises(ValidationError):
+        MCPSettings(
+            transport="stdio",
+            token=SecretStr(ordinary),
+            prediction_evidence_enabled=True,
+            prediction_token=SecretStr(predictive),
+            prediction_vehicle_ids=[uuid4()],
+        )
 
 
 @pytest.mark.parametrize(

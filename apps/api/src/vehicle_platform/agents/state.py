@@ -35,6 +35,8 @@ class Execution:
     provider_retries: int = 0
     synthesis_turns: int = 0
     knowledge_tools: KnowledgeTools | None = None
+    prediction_error: str | None = None
+    prediction_reads: int = 0
 
 
 class GraphState(TypedDict):

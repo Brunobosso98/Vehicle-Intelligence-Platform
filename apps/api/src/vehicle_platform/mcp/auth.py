@@ -17,6 +17,21 @@ class ReadTokenVerifier:
         )
 
     async def verify_token(self, token: str) -> AccessToken | None:
+        prediction_secret = self.settings.prediction_token
+        if prediction_secret is not None and hmac.compare_digest(
+            token.encode(), prediction_secret.get_secret_value().encode()
+        ):
+            expires = self.settings.prediction_token_expires_at
+            if expires is not None and expires <= time():
+                self.failures.add(1, {"reason": "invalid_or_expired"})
+                return None
+            return AccessToken(
+                token=token,
+                client_id="controlled-prediction-reader",
+                scopes=["mcp:read", "mcp:prediction-evidence:read"],
+                expires_at=expires,
+                resource=self.settings.resource_url,
+            )
         secret = self.settings.token
         expires = self.settings.token_expires_at
         if (

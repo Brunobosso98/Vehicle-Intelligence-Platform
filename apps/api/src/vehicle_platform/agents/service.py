@@ -1,9 +1,10 @@
 import asyncio
+import hmac
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC, datetime
 from time import perf_counter
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 from uuid import UUID, uuid4
 
 from opentelemetry.trace import StatusCode
@@ -17,6 +18,7 @@ from vehicle_platform.agents.orchestration import Orchestrator
 from vehicle_platform.agents.provider import AgentError, Provider
 from vehicle_platform.agents.repository import AgentRepository
 from vehicle_platform.agents.schemas import AgentRun, Ask, Evidence, StreamEvent, ToolCall
+from vehicle_platform.agents.specialists.routing import prediction_request_intent
 from vehicle_platform.agents.state import Execution
 from vehicle_platform.knowledge.retrieval import KnowledgeService
 from vehicle_platform.observability.telemetry import Telemetry
@@ -48,11 +50,15 @@ class AgentService:
         provider_factory: ProviderFactory,
         client_factory: ClientFactory | None = None,
         knowledge: KnowledgeService | None = None,
+        prediction_client_factory: ClientFactory | None = None,
     ) -> None:
         self.repository, self.settings, self.telemetry = repository, settings, telemetry
         self.provider_factory = provider_factory
         self.knowledge = knowledge
         self.client_factory = client_factory or (lambda: connect(settings))
+        self.prediction_client_factory = prediction_client_factory or (
+            lambda: connect(settings, prediction_access=True)
+        )
         self.signals = AgentInstrumentation(telemetry)
         self.tasks: dict[UUID, asyncio.Task[None]] = {}
         self.active = 0
@@ -65,9 +71,11 @@ class AgentService:
         *,
         run_id: UUID | None = None,
         follow_up_context: str | None = None,
+        prediction_capability: str | None = None,
     ) -> AgentRun:
         if not self.settings.enabled:
             raise AgentError("agent_disabled")
+        self._authorize_prediction_run(vehicle_id, ask, prediction_capability)
         if self.active >= self.settings.max_concurrent_runs:
             raise AgentError("concurrency_exhausted")
         # Reserve before the first await, including run creation and context ownership checks.
@@ -88,7 +96,14 @@ class AgentService:
                 else:
                     if existing.status == "running" and run_id not in self.tasks:
                         self.tasks[run_id] = asyncio.create_task(
-                            self.execute(existing, ask, prior, follow_up_context)
+                            self.execute(
+                                existing,
+                                ask,
+                                prior,
+                                follow_up_context,
+                                prediction_access=ask.include_prediction_evidence,
+                                prediction_capability=prediction_capability,
+                            )
                         )
                         return existing
                     self.active -= 1
@@ -107,7 +122,14 @@ class AgentService:
             )
             await self.repository.create(run)
             self.tasks[run.id] = asyncio.create_task(
-                self.execute(run, ask, prior, follow_up_context)
+                self.execute(
+                    run,
+                    ask,
+                    prior,
+                    follow_up_context,
+                    prediction_access=ask.include_prediction_evidence,
+                    prediction_capability=prediction_capability,
+                )
             )
             return run
         except BaseException as exc:
@@ -119,8 +141,42 @@ class AgentService:
                 raise AgentError("database_unavailable") from None
             raise
 
+    def _authorize_prediction_run(self, vehicle_id: UUID, ask: Ask, capability: str | None) -> None:
+        if not ask.include_prediction_evidence:
+            return
+
+        def deny(category: str) -> NoReturn:
+            self.telemetry.agent_prediction_evidence_authorizations.add(1, {"outcome": "denied"})
+            raise AgentError(category)
+
+        if (
+            not self.settings.prediction_evidence_enabled
+            or not self.settings.prediction_service_enabled
+            or self.settings.environment not in {"development", "test"}
+        ):
+            deny("prediction_disabled")
+        if prediction_request_intent(ask.question) is None:
+            deny("prediction_intent_required")
+        if len(ask.prediction_evidence_ids) > self.settings.max_prediction_evidence_reads:
+            deny("prediction_evidence_budget_exhausted")
+        secret = self.settings.prediction_capability_token
+        if (
+            secret is None
+            or capability is None
+            or not hmac.compare_digest(capability.encode(), secret.get_secret_value().encode())
+        ):
+            deny("prediction_capability_required")
+        if vehicle_id not in self.settings.prediction_vehicle_ids:
+            deny("prediction_vehicle_not_authorized")
+        self.telemetry.agent_prediction_evidence_authorizations.add(1, {"outcome": "allowed"})
+
     def redact(self, value: str) -> str:
         return cast(str, redact_data(value, self.settings))
+
+    def revoke_prediction_access(self) -> None:
+        """Revoke the in-process Phase 9F grant before later tool calls are admitted."""
+
+        self.settings.prediction_capability_token = None
 
     async def execute(
         self,
@@ -128,6 +184,9 @@ class AgentService:
         ask: Ask,
         prior: AgentRun | None,
         follow_up_context: str | None = None,
+        *,
+        prediction_access: bool = False,
+        prediction_capability: str | None = None,
     ) -> None:
         sequence = 0
         event_lock = asyncio.Lock()
@@ -175,7 +234,12 @@ class AgentService:
                     Evidence.model_validate(redact_data(e.model_dump(mode="json"), self.settings))
                     for e in state.registry.ordered()
                 ]
-                await self.repository.save(run)
+                if call.status == "completed" and call.tool_name == "get_prediction_evidence":
+                    await self.repository.save(
+                        run, prediction_links=state.registry.prediction_links
+                    )
+                else:
+                    await self.repository.save(run)
                 self.signals.tools.add(1, {"tool": call.tool_name, "status": call.status})
                 self.signals.tool_duration.record(
                     call.duration_seconds or 0, {"tool": call.tool_name}
@@ -188,7 +252,14 @@ class AgentService:
         state = Execution(
             run=run,
             ask=ask,
-            registry=EvidenceRegistry(run.id, run.vehicle_id, self.settings.max_evidence),
+            registry=EvidenceRegistry(
+                run.id,
+                run.vehicle_id,
+                self.settings.max_evidence,
+                selected_session_id=ask.session_id,
+                selected_pull_id=ask.pull_id,
+                selected_prediction_ids=tuple(ask.prediction_evidence_ids),
+            ),
             emit=emit,
             audit=audit,
         )
@@ -216,9 +287,19 @@ class AgentService:
                 async with asyncio.timeout(self.settings.run_timeout):
                     await emit("run_started", {"vehicle_id": str(run.vehicle_id)})
                     provider = self.provider_factory()
-                    async with self.client_factory() as client:
+                    client_context = (
+                        self.prediction_client_factory()
+                        if prediction_access
+                        else self.client_factory()
+                    )
+                    async with client_context as client:
                         run.result = await Orchestrator(
-                            self.settings, provider, client, self.telemetry, self.knowledge
+                            self.settings,
+                            provider,
+                            client,
+                            self.telemetry,
+                            self.knowledge,
+                            prediction_capability=prediction_capability,
                         ).execute(state)
                     # Publish validated public prose in bounded chunks.
                     run.result = type(run.result).model_validate(

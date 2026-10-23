@@ -241,3 +241,26 @@ acceptance receipt. It records cold/warm latency, p50/p95, response bytes, RSS a
 sessions as fixture measurements without claiming production SLOs. Reports live in ignored
 `.validation/phase9e/` and are uploaded by `full-validation`. Without Docker, the database and
 canonical full-stack checks are CI REQUIRED.
+
+## Phase 9F agent prediction integration
+
+`make test-prediction-agent-integration` runs focused typed policy, evidence projection, renderer,
+scope and adversarial grounding tests. `make phase9f-acceptance` depends on the Phase 9E disposable
+evaluator and verifies a separate `.validation/phase9f/acceptance.json` receipt bound to the exact
+current Git SHA. The evaluator upgrades through migration 0018 and, while generated 9B/9C artifacts
+and immutable 9E bundles are available, exercises the actual AgentService, official MCP transport,
+token scopes, pure source-verification reader, application grounding and private run-lineage
+repository. It checks ordinary-token discovery/direct-call denial, selected-vehicle allowlisting,
+deterministic simple routing, no predictions from ordinary asks, revocation between run start and
+read, distinct `NEXT_PULL`/`AFTER_PULL_OFFLINE` results, same-pull descriptive association,
+specialist scoping, provider/public lineage privacy, private lineage persistence, and telemetry
+redaction. Its report includes measured case counts, latencies and process peak RSS for this bounded
+fixture only. `make benchmark-prediction-agent-integration` and
+`make prediction-agent-observability` render/check those values from the same receipt; they do not
+claim a production SLO.
+
+The 9F evaluator shares the disposable database created by `phase9e-validation.sh`; no persistent
+or production database is accepted. The canonical full-validation workflow records a separate 9F
+receipt and result. Synthetic PASS is integration evidence only, not a real-vehicle accuracy or
+production-readiness claim. Without Docker, `make phase9f-acceptance` is CI REQUIRED; run
+`make verify-cloud` for the cloud-compatible subset.

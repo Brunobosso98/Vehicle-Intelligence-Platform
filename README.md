@@ -170,9 +170,9 @@ next-pull behavior. It does not diagnose failures, serve predictions, or control
 Phase 9C at `c4da7f5` is **VERIFIED** and merged into baseline `7fc4c59` after PR #43 passed its
 canonical full-validation, CI and Security checks. It adds offline anomaly scoring against exact
 same-vehicle/configuration/source references. Scores are statistical deviations, not fault
-diagnoses or failure probabilities. Phase 9D is verified on the final exact head of open, unmerged
-[PR #44](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/44); its checks view
-contains the current SHA and exact-head receipts. Phases 9E–9H remain planned. See the
+diagnoses or failure probabilities. Phase 9D is merged and Phase 9E is merged at baseline
+`466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F is under controlled integration review;
+its exact-head PR checks determine delivery status. Phases 9G–9H remain planned. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
@@ -214,3 +214,24 @@ See the [architecture](docs/architecture/phase-9e-prediction-evidence.md),
 `make test-prediction-evidence` for focused contracts and `make phase9e-acceptance` for the actual
 HTTP/database gate. The benchmark and observability targets consume the same ignored acceptance
 receipt. Docker-dependent results are CI REQUIRED without a usable Docker daemon.
+
+## Phase 9F controlled agent integration
+
+Phase 9F lets an explicitly authorized development/test agent read exact, already materialized 9E
+evidence through a separate MCP scope. The integration is disabled by default and rejected in
+production. It adds no inference, materialization, collection, diagnosis, vehicle control, predictive
+dashboard or general user/tenant authorization. 9B `NEXT_PULL` and 9C `AFTER_PULL_OFFLINE` remain
+distinct; the application validates source facts and renders bounded claims with run-local citations.
+
+See the [architecture](docs/architecture/phase-9f-agent-integration.md),
+[operator runbook](docs/runbooks/prediction-agent-integration.md),
+[acceptance report](docs/validation/phase-9f-acceptance.md),
+[evaluation record](docs/validation/phase-9f-agent-evaluation.md),
+[137-section traceability ledger](docs/validation/phase-9f-traceability-ledger.md),
+[security boundary](docs/security/threat-model.md#phase-9f-agent-prediction-integration), and
+[ADR 0044](docs/adr/0044-phase9f-agent-prediction-boundary.md). Run
+`make test-prediction-agent-integration` for focused contracts. `make phase9f-acceptance` exercises
+the real 9E disposable database, official MCP client and LangGraph agent; benchmark and
+observability targets report measurements from that receipt. Docker-dependent results are CI
+REQUIRED without a usable Docker daemon. Synthetic acceptance does not establish real-vehicle
+accuracy or production readiness.

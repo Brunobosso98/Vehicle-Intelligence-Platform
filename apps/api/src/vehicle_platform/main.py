@@ -57,7 +57,10 @@ def create_app(
         raise RuntimeError("Database dependency not initialized")
     signals = telemetry or Telemetry(config, database)
     publisher = AcquisitionPublisher(config)
-    agent_config = AgentSettings()
+    agent_config = AgentSettings(
+        environment=config.environment,
+        prediction_service_enabled=config.prediction_service_enabled,
+    )
     agent_database = Database(config, command_timeout=3, pool_pre_ping=False, poolclass=NullPool)
     prediction_database = (
         Database(

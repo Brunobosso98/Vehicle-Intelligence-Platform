@@ -9,7 +9,13 @@ from mcp.server.auth.settings import AuthSettings
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError, ResourceNotFoundError, ToolError
-from mcp.types import CallToolResult, InputRequiredResult, TextContent
+from mcp.types import (
+    CallToolResult,
+    InputRequiredResult,
+    ListToolsResult,
+    PaginatedRequestParams,
+    TextContent,
+)
 from pydantic import AnyHttpUrl, AnyUrl, ValidationError
 
 from vehicle_platform.core.config import Settings
@@ -25,6 +31,36 @@ from vehicle_platform.observability.telemetry import Telemetry
 
 class SafeMCPServer(MCPServer[None]):
     result_byte_limit: int = 524288
+    prediction_evidence_enabled: bool = False
+    prediction_vehicle_ids: frozenset[UUID] = frozenset()
+
+    @staticmethod
+    def _scopes(request: Any | None) -> frozenset[str]:
+        user = getattr(request, "user", None)
+        access_token = getattr(user, "access_token", None)
+        return frozenset(getattr(access_token, "scopes", ()))
+
+    @classmethod
+    def _request_has_prediction_scope(cls, request: Any | None) -> bool:
+        return "mcp:prediction-evidence:read" in cls._scopes(request)
+
+    async def _handle_list_tools(
+        self,
+        ctx: Any,
+        params: PaginatedRequestParams | None,
+    ) -> ListToolsResult:
+        result = await super()._handle_list_tools(ctx, params)
+        if not (
+            self.prediction_evidence_enabled and self._request_has_prediction_scope(ctx.request)
+        ):
+            result = result.model_copy(
+                update={
+                    "tools": [
+                        tool for tool in result.tools if tool.name != "get_prediction_evidence"
+                    ]
+                }
+            )
+        return result
 
     @staticmethod
     def public_error(exc: Exception, fallback: ErrorCode) -> ToolError:
@@ -46,6 +82,19 @@ class SafeMCPServer(MCPServer[None]):
         arguments: dict[str, Any],
         context: Context[None, Any] | None = None,
     ) -> CallToolResult | InputRequiredResult:
+        if name == "get_prediction_evidence":
+            if not self.prediction_evidence_enabled:
+                raise tool_error(ErrorCode.PREDICTION_DISABLED, uuid4())
+            request_context = getattr(context, "_request_context", None)
+            request = getattr(request_context, "request", None)
+            if not self._request_has_prediction_scope(request):
+                raise tool_error(ErrorCode.CAPABILITY_REQUIRED, uuid4())
+            try:
+                selected_vehicle = UUID(str(arguments.get("vehicle_id", "")))
+            except ValueError:
+                raise tool_error(ErrorCode.INVALID_ARGUMENT, uuid4()) from None
+            if selected_vehicle not in self.prediction_vehicle_ids:
+                raise tool_error(ErrorCode.NOT_FOUND, uuid4())
         try:
             result = await super().call_tool(name, arguments, context)
             if isinstance(result, CallToolResult) and result.structured_content is not None:
@@ -92,6 +141,13 @@ class SafeMCPServer(MCPServer[None]):
 def create_server(
     adapter: Adapter, telemetry: Telemetry, config: MCPSettings, *, owns_runtime: bool = False
 ) -> MCPServer[None]:
+    if config.prediction_evidence_enabled and (
+        config.transport != "streamable-http"
+        or adapter.settings.environment not in {"development", "test"}
+        or not adapter.settings.prediction_service_enabled
+    ):
+        raise ValueError("Prediction evidence MCP requires a controlled authenticated environment")
+
     @asynccontextmanager
     async def lifespan(server: MCPServer[None]) -> AsyncIterator[None]:
         try:
@@ -108,11 +164,12 @@ def create_server(
             issuer_url=AnyHttpUrl(config.issuer_url),
             resource_server_url=AnyHttpUrl(config.resource_url),
             required_scopes=["mcp:read"],
+            validate_token_resource=True,
         )
         verifier = ReadTokenVerifier(config, telemetry)
     server = SafeMCPServer(
         "vehicle-platform-mcp",
-        version="1.1.0",
+        version="1.2.0",
         lifespan=lifespan,
         instructions=(
             "Read-only factual automotive evidence. Anomaly detection is not diagnosis. "
@@ -121,9 +178,17 @@ def create_server(
         auth=auth,
         token_verifier=verifier,
     )
+    if isinstance(server, SafeMCPServer):
+        server.prediction_evidence_enabled = config.prediction_evidence_enabled
+        server.prediction_vehicle_ids = frozenset(config.prediction_vehicle_ids)
     server.result_byte_limit = config.max_result_bytes
     instrumentation = Instrumentation(telemetry, config)
-    register_tools(server, adapter, instrumentation)
+    register_tools(
+        server,
+        adapter,
+        instrumentation,
+        prediction_enabled=config.prediction_evidence_enabled,
+    )
 
     @server.resource("vehicle://{vehicle_id}", mime_type="application/json")
     async def vehicle(vehicle_id: UUID) -> str:

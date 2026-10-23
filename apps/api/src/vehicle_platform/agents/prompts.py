@@ -15,6 +15,18 @@ boost changes or repeated heating. If these requirements are absent, report obse
 the unresolved gap separately; do not claim a temporal association.
 thermal_hypothesis uses HYPOTHESIS only with measured numeric temperature/IAT and acceleration
 or duration bindings from complete evidence without quality warnings; it never proves a cause.
+prediction_result uses MODEL_CLASSIFICATION and exact 9B NEXT_PULL task, score, frozen threshold,
+decision, model version, source role and cutoff bindings. It describes the declared engineering
+label only; the next pull is not observed and the score is not calibrated failure probability.
+anomaly_result uses STATISTICAL_OUTLIER for an ANOMALOUS 9C result or MODEL_CLASSIFICATION for
+INLIER, with exact AFTER_PULL_OFFLINE family, detector score/threshold/method/version and cutoff.
+It describes only relative deviation from the frozen reference; it is not a diagnosis or a score
+that can be ranked across detector families.
+prediction_insufficient uses DATA_GAP with no numeric bindings and, when present, cites only
+run-local predictive evidence that records the abstention/quality limitation.
+statistical_association uses DESCRIPTIVE_ASSOCIATION only when the application can prove that a
+NEXT_PULL and AFTER_PULL_OFFLINE result share the same verified source FeatureSet and pull. It
+states source overlap only, never independent corroboration or combined confidence.
 insufficient_evidence and unsafe_operation_refused use INSUFFICIENT_EVIDENCE and no bindings.
 Counts use the scoped collection total_count only when complete is true. A partial response
 supports returned_count only; it cannot establish the total or absence of records. A complete
@@ -76,6 +88,9 @@ historical configuration or modification questions need the applicable IDs and d
 than a description of the current vehicle. Comparisons need recorded comparison measurements.
 Confidence must be low when evidence is insufficient; mention missing categories structurally.
 Free-form narrative is rendered by the application after validation. Do not emit private reasoning.
+Prediction and anomaly claims are rendered by fixed application templates after structural checks.
+Never write a diagnosis, failure probability, safety verdict, repair action or unsupported score
+interpretation into a claim statement.
 """,
         CLAIM_BINDING_POLICY,
         TOOL_CONTEXT_POLICY,

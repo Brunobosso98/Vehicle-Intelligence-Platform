@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, Protocol
@@ -5,14 +6,31 @@ from typing import Any, Protocol
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+from mcp.types import TextContent
 from opentelemetry.propagate import inject
 
 from vehicle_platform.agents.config import AgentSettings
 from vehicle_platform.agents.provider import AgentError
+from vehicle_platform.mcp.errors import ErrorCode
 from vehicle_platform.mcp.schemas import Envelope
 from vehicle_platform.mcp.tools import TOOL_NAMES
 
 RECOVERABLE_TOOL_ERRORS = frozenset({"mcp_tool_error", "tool_result_budget_exhausted"})
+PREDICTION_TOOL_ERRORS = {
+    ErrorCode.NOT_FOUND: "prediction_evidence_unavailable",
+    ErrorCode.FORBIDDEN: "prediction_evidence_not_verified",
+    ErrorCode.UNSUPPORTED_CAPABILITY: "prediction_source_schema_unsupported",
+    ErrorCode.CAPABILITY_REQUIRED: "prediction_capability_required",
+    ErrorCode.PREDICTION_DISABLED: "prediction_disabled",
+    ErrorCode.EVIDENCE_NOT_IN_SCOPE: "prediction_evidence_not_in_scope",
+    ErrorCode.EVIDENCE_NOT_VERIFIED: "prediction_evidence_not_verified",
+    ErrorCode.ABSTAINED: "prediction_abstained",
+    ErrorCode.LOW_QUALITY: "prediction_low_quality",
+    ErrorCode.UNAVAILABLE: "prediction_evidence_unavailable",
+    ErrorCode.BUDGET_EXCEEDED: "prediction_evidence_budget_exhausted",
+    ErrorCode.SOURCE_SCHEMA_UNSUPPORTED: "prediction_source_schema_unsupported",
+    ErrorCode.BACKEND_UNAVAILABLE: "prediction_evidence_unavailable",
+}
 
 
 class EvidenceClient(Protocol):
@@ -57,6 +75,17 @@ class MCPClient:
             self.http.headers.update(headers)
         result = await self.client.call_tool(name, arguments)
         if result.is_error:
+            if name == "get_prediction_evidence":
+                for item in result.content:
+                    if not isinstance(item, TextContent):
+                        continue
+                    try:
+                        parsed = json.loads(item.text)
+                        category = PREDICTION_TOOL_ERRORS.get(ErrorCode(parsed.get("code")))
+                    except (ValueError, TypeError, AttributeError):
+                        continue
+                    if category:
+                        raise AgentError(category)
             raise AgentError("mcp_tool_error")
         if result.structured_content is None:
             raise AgentError("invalid_tool_result")
@@ -64,11 +93,16 @@ class MCPClient:
 
 
 @asynccontextmanager
-async def connect(settings: AgentSettings) -> AsyncIterator[EvidenceClient]:
+async def connect(
+    settings: AgentSettings, *, prediction_access: bool = False
+) -> AsyncIterator[EvidenceClient]:
     headers: dict[str, str] = {}
     inject(headers)
-    if settings.mcp_token:
-        headers["Authorization"] = "Bearer " + settings.mcp_token.get_secret_value()
+    token = settings.prediction_mcp_token if prediction_access else settings.mcp_token
+    if prediction_access and token is None:
+        raise AgentError("prediction_capability_required")
+    if token:
+        headers["Authorization"] = "Bearer " + token.get_secret_value()
     async with (
         httpx2.AsyncClient(headers=headers, trust_env=False) as http,
         Client(streamable_http_client(settings.mcp_url, http_client=http)) as client,

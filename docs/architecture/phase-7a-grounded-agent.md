@@ -26,7 +26,8 @@ flowchart LR
 ## Boundaries
 
 `agents` obtains vehicle facts only through authenticated MCP discovery and calls. Its repository
-accesses only `agent_runs`, `agent_tool_calls` and `agent_stream_events`. Migration 0009 is additive;
+owns `agent_runs`, `agent_tool_calls` and `agent_stream_events`; Phase 9F adds a private
+`agent_prediction_evidence_links` mapping for operator-selected 9E source lineage. Migration 0009 is additive;
 its downgrade removes only these tables. Vehicle facts, telemetry and deterministic analytics remain
 owned by their existing modules. No domain writes, diagnosis engine, RAG, specialist agents or
 adaptive logging are introduced.
@@ -105,3 +106,13 @@ cleanup exceeds that deadline by 50 ms. This prevents an unresponsive database f
 HTTP request indefinitely. Acquisition has the bounded driver connect/command timeouts.
 Grounding failure metrics count each rejected draft, including successful correction attempts.
 Every selected pull must match its own temporally valid session/configuration pair.
+
+## Phase 9F extension
+
+Phase 9F optionally admits already materialized 9E evidence through a separate development/test
+capability and an exact vehicle allowlist. Ordinary runs keep the original Phase 7A MCP catalog,
+budget and renderer behavior. The 9F adapter projects typed source facts into the same run-local
+registry; the new private mapping stores source receipt lineage while providers, public snapshots
+and citations see only run-local evidence IDs. All public answers still pass this document's
+structural validator and fixed renderers. See the
+[Phase 9F architecture](phase-9f-agent-integration.md).

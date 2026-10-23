@@ -11,7 +11,7 @@ export PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.cache/ms-playwright
 export BUILDX_CONFIG ?= $(CURDIR)/.cache/buildx
 export PATH := $(CURDIR)/.cache/bin:$(PATH)
 export API_BASE_URL ?= http://127.0.0.1:8000
-.PHONY: phase4-stack-acceptance phase1-acceptance phase2-acceptance phases-0-5-acceptance help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check test-features phase9a-acceptance test-feature-integration benchmark-features feature-observability test-models phase9b-acceptance phase9b-train benchmark-models model-observability test-anomalies phase9c-acceptance benchmark-anomalies anomaly-observability test-prediction-service phase9d-acceptance benchmark-prediction-service prediction-service-observability prediction-service-smoke test-prediction-evidence phase9e-acceptance benchmark-prediction-evidence prediction-evidence-observability
+.PHONY: phase4-stack-acceptance phase1-acceptance phase2-acceptance phases-0-5-acceptance help bootstrap dev dev-api dev-web up down db-up db-migrate db-downgrade lint format typecheck check-api check-web test test-unit test-integration test-e2e contracts contracts-check build containers security security-cloud verify verify-cloud verify-local phase3-acceptance phase4-acceptance phase5-acceptance analytics-benchmark stream-test live-stream-benchmark observability-up observability-check observability-full stack-check docs-check test-features phase9a-acceptance test-feature-integration benchmark-features feature-observability test-models phase9b-acceptance phase9b-train benchmark-models model-observability test-anomalies phase9c-acceptance benchmark-anomalies anomaly-observability test-prediction-service phase9d-acceptance benchmark-prediction-service prediction-service-observability prediction-service-smoke test-prediction-evidence test-prediction-agent-integration phase9e-acceptance phase9f-acceptance benchmark-prediction-agent-integration prediction-agent-observability benchmark-prediction-evidence prediction-evidence-observability
 help:
 	@echo 'bootstrap up down dev-api dev-web check-api check-web test-unit test-integration test-e2e contracts security-cloud security verify-cloud verify'
 bootstrap:
@@ -38,12 +38,12 @@ format:
 	$(API)/ruff format apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	pnpm format
 typecheck:
-	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/report_prediction_evidence.py
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py
 	pnpm --filter @vehicle-platform/web typecheck
 check-api:
 	$(API)/ruff check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/ruff format --check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
-	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/report_prediction_evidence.py
+	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py
 	$(API)/pytest apps/api/tests/unit --cov=vehicle_platform --cov-config=apps/api/pyproject.toml --cov-branch --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
 	$(API)/python scripts/check_coverage.py
 check-web:
@@ -123,7 +123,7 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) test-models phase9b-acceptance
 	$(MAKE) test-anomalies phase9c-acceptance
 	$(MAKE) test-prediction-service phase9d-acceptance
-	$(MAKE) test-prediction-evidence phase9e-acceptance benchmark-prediction-evidence prediction-evidence-observability
+	$(MAKE) test-prediction-evidence test-prediction-agent-integration phase9f-acceptance benchmark-prediction-agent-integration prediction-agent-observability benchmark-prediction-evidence prediction-evidence-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -270,8 +270,16 @@ prediction-service-smoke:
 
 test-prediction-evidence:
 	$(API)/pytest apps/api/tests/unit/test_prediction_evidence.py
+test-prediction-agent-integration:
+	$(API)/pytest apps/api/tests/unit/test_agent_prediction.py
 phase9e-acceptance: test-prediction-evidence
 	bash scripts/phase9e-validation.sh
+phase9f-acceptance: phase9e-acceptance
+	$(API)/python scripts/evaluate_agent_prediction.py --check .validation/phase9f/acceptance.json
+benchmark-prediction-agent-integration: phase9f-acceptance
+	$(API)/python scripts/report_agent_prediction.py benchmark .validation/phase9f/acceptance.json
+prediction-agent-observability: phase9f-acceptance
+	$(API)/python scripts/report_agent_prediction.py observability .validation/phase9f/acceptance.json
 benchmark-prediction-evidence: phase9e-acceptance
 	$(API)/python scripts/report_prediction_evidence.py benchmark
 prediction-evidence-observability: phase9e-acceptance

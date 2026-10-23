@@ -610,6 +610,22 @@ class PredictionEvidenceRepository:
             )
         return _decode_bundle(row["bundle_body"]) if row else None
 
+    async def get_for_vehicle(
+        self, evidence_id: UUID, vehicle_id: UUID
+    ) -> PredictionEvidenceBundle | None:
+        """Scope an exact bundle to its receipt pull before loading its source graph."""
+        async with asyncio.timeout(3.0), self.database.session() as db:
+            row = await self._one(
+                db,
+                "SELECT b.bundle_body FROM prediction_evidence_bundles b "
+                "JOIN prediction_receipts r ON r.id=b.receipt_id "
+                "JOIN pulls p ON p.id=r.pull_id "
+                "WHERE b.id=:evidence AND p.vehicle_id=:vehicle "
+                "AND b.schema_version='phase9e-prediction-evidence-v1'",
+                {"evidence": evidence_id, "vehicle": vehicle_id},
+            )
+        return _decode_bundle(row["bundle_body"]) if row else None
+
     async def get_for_receipt(self, receipt_id: UUID) -> PredictionEvidenceBundle | None:
         async with asyncio.timeout(3.0), self.database.session() as db:
             row = await self._one(

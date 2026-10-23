@@ -22,6 +22,7 @@ from vehicle_platform.prediction_evidence.domain import (
     PredictionEvidenceBundle,
     PredictionEvidenceProjection,
     VerificationOutcome,
+    VerifiedPredictionEvidence,
 )
 from vehicle_platform.prediction_evidence.repository import PredictionEvidenceRepository
 from vehicle_platform.prediction_evidence.verifier import verify_bundle_sources
@@ -155,6 +156,58 @@ class PredictionEvidenceService:
                 404, "PREDICTION_EVIDENCE_NOT_FOUND", "Prediction evidence was not found"
             )
         return self._bounded_projection(bundle)
+
+    async def read_verified(
+        self, evidence_id: UUID, *, vehicle_id: UUID | None = None
+    ) -> VerifiedPredictionEvidence:
+        """Read and revalidate a frozen bundle without appending a 9E verification audit."""
+        started = perf_counter()
+        try:
+            async with asyncio.timeout(self.timeout_seconds):
+                await self.slots.acquire()
+                try:
+                    bundle = (
+                        await self.repository.get_for_vehicle(evidence_id, vehicle_id)
+                        if vehicle_id is not None
+                        else await self.repository.get(evidence_id)
+                    )
+                    if bundle is None:
+                        raise PredictionError(
+                            404,
+                            "PREDICTION_EVIDENCE_NOT_FOUND",
+                            "Prediction evidence was not found",
+                        )
+                    with self._span("prediction.evidence.agent_read.source_resolve"):
+                        source = await self.repository.source_snapshot(bundle.receipt_id)
+                    with self._span("prediction.evidence.agent_read.verify"):
+                        integrity, reasons = verify_bundle_sources(bundle, source)
+                    self._observe(
+                        "agent_read", integrity.value.lower(), bundle, perf_counter() - started
+                    )
+                    return VerifiedPredictionEvidence(
+                        bundle=bundle,
+                        source=source,
+                        integrity=integrity,
+                        reason_codes=tuple(reasons[:16]),
+                    )
+                finally:
+                    self.slots.release()
+        except TimeoutError as error:
+            self._observe("agent_read", "timeout", None, perf_counter() - started)
+            raise PredictionError(
+                503,
+                "PREDICTION_EVIDENCE_BUDGET_EXCEEDED",
+                "Evidence verification exceeded its time budget",
+            ) from error
+        except PredictionError as error:
+            outcome = error.code.removeprefix("PREDICTION_EVIDENCE_").lower()
+            self._observe("agent_read", outcome, None, perf_counter() - started)
+            raise
+        except Exception as error:
+            self._observe("agent_read", "internal_error", None, perf_counter() - started)
+            raise PredictionError(
+                503, "PREDICTION_EVIDENCE_INTERNAL_ERROR", "Evidence verification is unavailable"
+            ) from error
 
     async def verify(self, evidence_id: UUID) -> EvidenceVerificationResult:
         started = perf_counter()

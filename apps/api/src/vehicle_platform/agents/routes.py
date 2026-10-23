@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Header, Query
 from starlette.responses import StreamingResponse
 
 from vehicle_platform.agents.schemas import AgentRun, Ask, RunAudit, StreamEvent
@@ -19,8 +19,14 @@ def agent_router(service: AgentService) -> APIRouter:
         status_code=202,
         responses={408: {"model": ErrorResponse}, 413: {"model": ErrorResponse}},
     )
-    async def ask(vehicle_id: UUID, body: Ask) -> AgentRun:
-        return await service.start(vehicle_id, body)
+    async def ask(
+        vehicle_id: UUID,
+        body: Ask,
+        prediction_capability: str | None = Header(
+            default=None, alias="X-VIP-Prediction-Agent-Capability"
+        ),
+    ) -> AgentRun:
+        return await service.start(vehicle_id, body, prediction_capability=prediction_capability)
 
     @router.get("", response_model=list[AgentRun])
     async def recent(
