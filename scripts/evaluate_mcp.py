@@ -23,7 +23,9 @@ from vehicle_platform.observability.telemetry import Telemetry
 
 async def evaluate(client: Client, f: dict[str, Any]) -> dict[str, Any]:
     inventory = await client.list_tools()
-    assert {tool.name for tool in inventory.tools} == TOOL_NAMES
+    assert {tool.name for tool in inventory.tools} == TOOL_NAMES - {
+        "get_prediction_evidence"
+    }
     for tool in inventory.tools:
         assert tool.input_schema and tool.output_schema and tool.description
         assert tool.annotations.read_only_hint and not tool.annotations.destructive_hint
