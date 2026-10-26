@@ -653,11 +653,20 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
         for finding in findings
         for source in (registry.items[identifier] for identifier in finding.evidence_ids)
     )
+    descriptive_association_only = bool(findings) and all(
+        finding.classification is Classification.DESCRIPTIVE_ASSOCIATION
+        and finding.template == "statistical_association"
+        for finding in findings
+    )
     warnings = list(dict.fromkeys(warnings))[:32]
     return Answer(
         answer="\n".join(f.statement for f in findings),
         confidence="low"
-        if insufficient or warnings or predictive_evidence_cited
+        if insufficient
+        or warnings
+        or (predictive_evidence_cited and not descriptive_association_only)
+        else "moderate"
+        if descriptive_association_only
         else draft.confidence,
         findings=findings,
         evidence=registry.ordered(),

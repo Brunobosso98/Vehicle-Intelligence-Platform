@@ -20,6 +20,9 @@ same-pull lineage, family-specific specialist routing and capability revocation 
 Any source whose original quality or completeness is insufficient must produce a cited `DATA_GAP`
 without its score. An eligible source must produce exact run-local fact bindings and application
 rendered prose. A shared 9A FeatureSet is correlated lineage, not independent corroboration.
+When both complete sources prove the same verified FeatureSet and pull, the descriptive association
+is capped at moderate confidence; that confidence describes the source relationship, not either
+model's prediction or a combined score. Evidence warnings lower it to low.
 
 The 9C positive case is selected from the held-out session-12 performance injection after the
 detector method and threshold were frozen on earlier sessions. The synthetic cohort provides all

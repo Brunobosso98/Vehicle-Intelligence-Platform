@@ -1796,8 +1796,32 @@ def test_prediction_association_requires_distinct_results_on_the_same_frozen_fea
     )
 
     assert answer.findings[0].template == "statistical_association"
+    assert answer.confidence == "moderate"
     assert "a mesma FeatureSet" in answer.answer
     assert "não constituem confirmação independente" in answer.answer.casefold()
+
+
+def test_prediction_association_confidence_drops_when_source_has_warnings():
+    registry, vehicle_id, first, second = _prediction_pair()
+    source = registry.items[first.id]
+    registry.items[first.id] = source.model_copy(
+        update={"warnings": ["prediction_projection_omitted"]}
+    )
+    claim = Claim(
+        classification=Classification.DESCRIPTIVE_ASSOCIATION,
+        template="statistical_association",
+        bindings=[],
+        evidence_ids=[first.id, second.id],
+    )
+
+    answer = validate(
+        Draft(confidence="moderate", claims=[claim], missing_evidence=[]),
+        registry,
+        VehicleContext(vehicle_id=vehicle_id, as_of=NOW),
+    )
+
+    assert answer.confidence == "low"
+    assert "prediction_projection_omitted" in answer.limitations
 
 
 def test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial():
