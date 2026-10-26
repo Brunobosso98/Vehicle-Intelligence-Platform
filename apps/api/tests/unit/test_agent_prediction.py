@@ -28,6 +28,7 @@ from vehicle_platform.agents.schemas import (
     Draft,
     Intent,
     RoutingDecision,
+    RoutingProposal,
     SpecialistFinding,
     SpecialistResult,
     SupervisorReport,
@@ -1866,6 +1867,91 @@ def test_prediction_association_keeps_moderate_confidence_for_non_material_warni
     assert warning in answer.limitations
     if warning == "prediction_projection_omitted":
         assert "bounded_evidence_is_incomplete" in answer.limitations
+
+
+async def test_multiple_selected_anomalies_use_separate_source_bound_findings(
+    fixture,  # noqa: F811
+    telemetry,  # noqa: F811
+):
+    state = execution(fixture)
+    vehicle_id, session_id, pull_id, configuration_id, feature_set_id = (
+        state.run.vehicle_id,
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+    )
+    families = ("thermal", "boost_air", "performance", "fuel")
+    projections = [
+        projection(
+            vehicle_id=vehicle_id,
+            session_id=session_id,
+            pull_id=pull_id,
+            configuration_id=configuration_id,
+            feature_set_id=feature_set_id,
+            result_type="anomaly",
+            horizon="AFTER_PULL_OFFLINE",
+            task=None,
+            family=family,
+            decision="ANOMALOUS",
+            score=4.2,
+            threshold=3.5,
+            facts=[
+                {
+                    "key": f"{family}.test_feature",
+                    "fact_type": "COMPUTED_FEATURE",
+                    "value": 1.0,
+                    "unit": "unit",
+                    "quality": "VALID",
+                    "cutoff": NOW.isoformat(),
+                    "observed_at": NOW.isoformat(),
+                    "available_at": NOW.isoformat(),
+                }
+            ],
+        )
+        for family in families
+    ]
+    state.registry = EvidenceRegistry(
+        state.run.id,
+        vehicle_id,
+        80,
+        selected_session_id=session_id,
+        selected_pull_id=pull_id,
+        selected_prediction_ids=tuple(item.evidence_id for item in projections),
+    )
+    evidence = [add_prediction(state.registry, item) for item in projections]
+    question = "Compare as anomalias registradas nesta puxada."
+    state.ask = Ask(
+        question=question,
+        session_id=session_id,
+        pull_id=pull_id,
+        include_prediction_evidence=True,
+        prediction_evidence_ids=[item.evidence_id for item in projections],
+    )
+    state.context = VehicleContext(vehicle_id=vehicle_id, as_of=NOW)
+    engine = SimpleNamespace(
+        settings=AgentSettings(),
+        telemetry=telemetry,
+        provider=SimpleNamespace(
+            route=AsyncMock(return_value=RoutingProposal(intent=Intent.ANOMALY))
+        ),
+        call=AsyncMock(),
+    )
+
+    with patch.object(Supervisor, "evaluate", new_callable=AsyncMock) as evaluate:
+        await Supervisor(engine, state).run()
+
+    assert state.run.supervisor is not None
+    assert state.run.supervisor.routing.selected
+    assert state.final is not None
+    assert [finding.template for finding in state.final.findings] == [
+        "anomaly_result"
+    ] * len(families)
+    assert all(len(finding.evidence_ids) == 1 for finding in state.final.findings)
+    assert {finding.evidence_ids[0] for finding in state.final.findings} == {
+        item.id for item in evidence
+    }
+    evaluate.assert_awaited_once()
 
 
 def test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial():

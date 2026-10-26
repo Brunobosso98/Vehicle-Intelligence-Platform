@@ -367,7 +367,7 @@ class Supervisor:
                 if state.knowledge_tools
                 else [],
                 "routing_hints": "1.5",
-                "prediction_intent_routing": "1.0",
+                "prediction_intent_routing": "1.1",
                 "prediction_grounding": "prediction-agent-summary-v1",
                 "prediction_projection_quality_gate": "1.1",
                 "prediction_evidence_reads": self.settings.max_prediction_evidence_reads
@@ -409,8 +409,24 @@ class Supervisor:
         )
         await state.emit("routing_completed", decision.model_dump(mode="json"))
         predictive_pair = prediction_anomaly_pair_requested(state.ask.question)
+        selected_prediction_ids = set(state.ask.prediction_evidence_ids)
+        selected_prediction_links = [
+            link
+            for link in state.registry.prediction_links
+            if link.source_evidence_id in selected_prediction_ids
+        ]
+        multiple_anomaly_sources = (
+            hints.intent is Intent.ANOMALY
+            and state.ask.include_prediction_evidence
+            and len(selected_prediction_ids) > 1
+            and len(selected_prediction_links) == len(selected_prediction_ids)
+            and all(link.horizon == "AFTER_PULL_OFFLINE" for link in selected_prediction_links)
+        )
         if hints.intent in {Intent.PREDICTION, Intent.ANOMALY} and (
-            state.prediction_error is not None or not decision.selected or predictive_pair
+            state.prediction_error is not None
+            or not decision.selected
+            or predictive_pair
+            or multiple_anomaly_sources
         ):
             from vehicle_platform.agents.grounding import prediction_answer
 

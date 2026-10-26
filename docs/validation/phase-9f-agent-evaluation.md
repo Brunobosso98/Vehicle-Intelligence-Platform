@@ -25,6 +25,9 @@ is capped at moderate confidence; that confidence describes the source relations
 model's prediction or a combined score. Projection omission and unavailable snapshot artifacts stay
 visible as limitations without lowering this lineage-only confidence when the required lineage
 facts remain verified. Other warnings lower it to low.
+When multiple complete offline anomaly sources are explicitly selected, the fixed renderer returns one
+finding per source even when the supervisor also routes specialists; it preserves their separate
+citations and does not combine their classifications.
 
 The 9C positive case is selected from the held-out session-12 performance injection after the
 detector method and threshold were frozen on earlier sessions. The synthetic cohort provides all
