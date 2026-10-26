@@ -1413,9 +1413,18 @@ async def evaluate() -> dict[str, Any]:
                     denied_burst = [
                         item for item in burst_100 if item[0].status_code == 429
                     ]
+                    burst_status_counts = {
+                        str(status): sum(
+                            item[0].status_code == status for item in burst_100
+                        )
+                        for status in sorted(
+                            {item[0].status_code for item in burst_100}
+                        )
+                    }
                     _assert(
                         len(accepted_burst) + len(denied_burst) == 100,
-                        "100-way materialization burst returned an unexpected status",
+                        "100-way materialization burst returned an unexpected status: "
+                        f"{burst_status_counts}",
                     )
                     burst_ids = {
                         item[0].json()["evidence"]["evidence_id"]
