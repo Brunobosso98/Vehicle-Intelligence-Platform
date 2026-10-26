@@ -23,8 +23,9 @@ rendered prose. A shared 9A FeatureSet is correlated lineage, not independent co
 
 The 9C positive case is selected from the held-out session-12 performance injection after the
 detector method and threshold were frozen on earlier sessions. The synthetic cohort provides all
-registered raw telemetry channels so the selected source can meet the existing 9E completeness
-gate. The scenario label is evaluator-only; the MCP projection and agent receive only the persisted
+registered raw telemetry channels and explicit session truncation and configuration fuel metadata
+so the selected source can meet the existing 9E completeness gate. The scenario label is
+evaluator-only; the MCP projection and agent receive only the persisted
 9D receipt and verified 9E facts. Acceptance requires the recorded decision to be `ANOMALOUS`, the
 source to be complete and high quality, the agent claim to be a statistical outlier, and the fixed
 renderer to include a unit-bearing performance feature from that same 9E source as an exact
@@ -51,8 +52,10 @@ database report's scenario counts.
 The ignored `.validation/phase9f/acceptance.json` receipt records its Git SHA, scenario and citation
 counts, source completeness/integrity/artifact counts, actual run IDs, end-to-end run durations,
 per-stage trace durations, read-count cases, combined evaluator process peak RSS and database-session
-peak. Memory and database-session measurements are explicitly scoped to the combined 9E+9F
-evaluator process; they are not an isolated Phase 9F production estimate.
+peak. The Phase 9E report also retains each bundle's available raw signal names and missing-reason
+counts so incomplete source cases can be diagnosed without changing the completeness gate. Memory
+and database-session measurements are explicitly scoped to the combined 9E+9F evaluator process;
+they are not an isolated Phase 9F production estimate.
 
 Metrics use bounded outcome, result type, horizon, source role, integrity, completeness and status
 labels. Authorization and grounding outcomes are bounded categories. The evaluator checks that

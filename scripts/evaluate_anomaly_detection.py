@@ -237,7 +237,7 @@ async def _seed_vehicle(
                         "vehicle": vehicle_id,
                         "effective": BASE - timedelta(days=60),
                         "ended": BASE + timedelta(days=first_day + session_count + 2),
-                        "metadata": '{"stage":"stock","fuel":"93 AKI"}',
+                        "metadata": '{"stage":"stock","fuel_type":"93 AKI"}',
                         "created": BASE - timedelta(days=90),
                     },
                 )
@@ -255,7 +255,7 @@ async def _seed_vehicle(
                     {
                         "vehicle": vehicle_id,
                         "effective": BASE + timedelta(days=configuration_change_day),
-                        "metadata": '{"stage":"changed","fuel":"93 AKI"}',
+                        "metadata": '{"stage":"changed","fuel_type":"93 AKI"}',
                         "created": BASE - timedelta(days=89),
                     },
                 )
@@ -292,7 +292,8 @@ async def _seed_vehicle(
                         "config": active_configuration,
                         "started": session_start,
                         "ended": session_start + timedelta(minutes=20),
-                        "metadata": '{"data_role":"synthetic","generator":"phase9c-evaluator-v1"}',
+                        "metadata": '{"data_role":"synthetic","generator":"phase9c-evaluator-v1",'
+                        '"truncated":false}',
                         "created": session_start - timedelta(days=40),
                     },
                 )

@@ -73,6 +73,10 @@ and metadata are excluded. Cross-vehicle, unsupported source, incomplete pull, i
 missing required signal, incompatible schema and low-quality cases abstain or fail with a
 sanitized typed error according to the request state.
 
+Feature coverage counts applicable model inputs. A feature marked `not_applicable` remains in the
+bounded missing-reason counts but is excluded from the coverage denominator; unavailable and
+invalid expected features still reduce coverage.
+
 Phase 9B versions remain task-specific and keep their frozen decision thresholds. The adapter
 builds ordered values, units, missingness and quality from the persisted snapshot and calls the
 registered `offline_predict` helper. Phase 9C uses the registered detector version and canonical

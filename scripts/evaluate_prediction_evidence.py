@@ -818,6 +818,7 @@ def _summarize_bundle_outcomes(
                         bundle.source_summary.expected_feature_count
                     ),
                     "missing_reason_counts": bundle.source_summary.missing_reason_counts,
+                    "available_signals": bundle.source_summary.available_signals,
                     "pull_completeness": bundle.source_summary.pull_completeness,
                 },
                 "gap_codes": sorted({gap.code.value for gap in bundle.gaps}),

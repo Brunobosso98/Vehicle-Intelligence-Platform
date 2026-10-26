@@ -2676,14 +2676,14 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/features/service.py": {
-    "mtime": 1792580858.708045,
-    "seen": 1793016605.1571994,
+    "mtime": 1793020450.7602413,
+    "seen": 1793021750.8905098,
     "ast_hash": "e3493754f5f57f28c6b2f04fa694124a",
     "semantic_hash": ""
   },
   "apps/api/tests/integration/test_zzz_features.py": {
-    "mtime": 1792580860.3407462,
-    "seen": 1793016605.1573503,
+    "mtime": 1793020450.834937,
+    "seen": 1793021750.8908744,
     "ast_hash": "2c4c6d6e17403acbbd6dbf1e8c18960a",
     "semantic_hash": ""
   },
@@ -3024,9 +3024,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_anomaly_detection.py": {
-    "mtime": 1793015297.1888108,
-    "seen": 1793016605.1577675,
-    "ast_hash": "4b2dcb59065fd94f43ee590e2761a94b",
+    "mtime": 1793020450.8640935,
+    "seen": 1793021750.891432,
+    "ast_hash": "e3ea552551ffa9fdf432dfca3e608e13",
     "semantic_hash": ""
   },
   "scripts/phase9c-validation.sh": {
@@ -3216,15 +3216,15 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/predictions/service.py": {
-    "mtime": 1792580860.118201,
-    "seen": 1793016605.1573272,
-    "ast_hash": "7562063ac97aa6fe80375330658db24b",
+    "mtime": 1793020519.915951,
+    "seen": 1793021750.8908222,
+    "ast_hash": "5cd00c3c62f37fe52c356007e2f67932",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_predictions.py": {
-    "mtime": 1792580861.109768,
-    "seen": 1793016605.157556,
-    "ast_hash": "88c8bd1710b8cbab2cf514b521db4cd6",
+    "mtime": 1793020469.9918745,
+    "seen": 1793021750.8910413,
+    "ast_hash": "c9f77e3046fa4f061404f3fb83d09101",
     "semantic_hash": ""
   },
   "scripts/evaluate_prediction_service.py": {
@@ -3264,9 +3264,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-9d-prediction-service.md": {
-    "mtime": 1792580862.5613353,
-    "seen": 1793016605.158121,
-    "ast_hash": "01f5fd6a886f72f3ca6692e3215b865f",
+    "mtime": 1793020490.5230534,
+    "seen": 1793021750.8927584,
+    "ast_hash": "2e56b8ec813330b31cd5b369c60554b0",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9d-prediction-service.md": {
@@ -3360,9 +3360,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_prediction_evidence.py": {
-    "mtime": 1793015194.6847868,
-    "seen": 1793016605.1577835,
-    "ast_hash": "66f6637ed3f78a0a60b146ad6ba9cdf0",
+    "mtime": 1793019717.851438,
+    "seen": 1793021750.8914628,
+    "ast_hash": "6cf6a075425c2205ac2a3d912c0da9cc",
     "semantic_hash": ""
   },
   "scripts/phase9e-validation.sh": {
@@ -3474,15 +3474,15 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9f-agent-evaluation.md": {
-    "mtime": 1793015657.589731,
-    "seen": 1793016605.158328,
-    "ast_hash": "4405582529f8c9add94daca2d5e3f983",
+    "mtime": 1793020450.886942,
+    "seen": 1793021750.893382,
+    "ast_hash": "c96353adbedf4ef6cdc5d56f5d80d05c",
     "semantic_hash": ""
   },
   "docs/validation/phase-9f-traceability-ledger.md": {
-    "mtime": 1793015416.0022652,
-    "seen": 1793016605.1583302,
-    "ast_hash": "ce77761e06f0a426bffe6aa428492308",
+    "mtime": 1793018932.7223027,
+    "seen": 1793021750.8933885,
+    "ast_hash": "45831da79eb4e9dc1f71424e0d23bfd0",
     "semantic_hash": ""
   }
 }
