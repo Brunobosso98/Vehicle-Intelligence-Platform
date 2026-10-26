@@ -236,6 +236,7 @@ def prediction_answer(
             anomaly_paths: tuple[str, ...] = (
                 "/prediction/horizon",
                 "/prediction/family",
+                "/prediction/status",
                 "/prediction/score",
                 "/prediction/threshold",
                 "/prediction/detector_version",
@@ -445,6 +446,7 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
             expected_paths = {
                 "/prediction/horizon",
                 "/prediction/family",
+                "/prediction/status",
                 "/prediction/score",
                 "/prediction/threshold",
                 "/prediction/detector_version",

@@ -99,7 +99,7 @@ class Claim(StrictModel):
         "prediction_insufficient",
         "statistical_association",
     ]
-    bindings: list[Binding] = Field(max_length=8)
+    bindings: list[Binding] = Field(max_length=9)
     evidence_ids: list[UUID] = Field(max_length=8)
 
 

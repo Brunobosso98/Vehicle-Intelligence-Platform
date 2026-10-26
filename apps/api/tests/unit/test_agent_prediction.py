@@ -425,6 +425,10 @@ def test_anomaly_renderer_preserves_family_reference_and_nonprobability_semantic
     )
     assert source_binding.value == value
     assert source_binding.unit == unit
+    assert any(
+        binding.path == "/prediction/status" and binding.value == "READY_SCORE"
+        for binding in answer.findings[0].bindings
+    )
     assert "não é probabilidade" in answer.answer
 
 

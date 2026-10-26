@@ -8178,7 +8178,7 @@
       "file_type": "code",
       "norm_label": "_prediction_authorization_settings()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1620"
+      "source_location": "L1624"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_agent_service_authorizes_prediction_for_allowlisted_vehicle",
@@ -8190,7 +8190,7 @@
       "file_type": "code",
       "norm_label": "test_agent_service_authorizes_prediction_for_allowlisted_vehicle()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1720"
+      "source_location": "L1724"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_agent_service_authorizes_prediction_run_with_separate_capability",
@@ -8202,7 +8202,7 @@
       "file_type": "code",
       "norm_label": "test_agent_service_authorizes_prediction_run_with_separate_capability()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1671"
+      "source_location": "L1675"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_agent_service_skips_prediction_authorization_when_no_prediction_was_requested",
@@ -8214,7 +8214,7 @@
       "file_type": "code",
       "norm_label": "test_agent_service_skips_prediction_authorization_when_no_prediction_was_requested()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1710"
+      "source_location": "L1714"
     },
     {
       "id": "apps_api_tests_unit_test_agent_runtime_request",
@@ -11274,7 +11274,7 @@
       "file_type": "code",
       "norm_label": "_context_node_engine()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1884"
+      "source_location": "L1888"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_context_node_engine_call",
@@ -11286,7 +11286,7 @@
       "file_type": "code",
       "norm_label": "call()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1888"
+      "source_location": "L1892"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_capabilities_reuse_known_sessions_and_enforce_context_budget",
@@ -11298,7 +11298,7 @@
       "file_type": "code",
       "norm_label": "test_capabilities_reuse_known_sessions_and_enforce_context_budget()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1996"
+      "source_location": "L2000"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_with_injected_repair_request_reaches_supervisor",
@@ -11310,7 +11310,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_question_with_injected_repair_request_reaches_supervisor()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L595"
+      "source_location": "L599"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_risk_sensitive_question_uses_fixed_safety_response_without_provider",
@@ -11322,7 +11322,7 @@
       "file_type": "code",
       "norm_label": "test_risk_sensitive_question_uses_fixed_safety_response_without_provider()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L565"
+      "source_location": "L569"
     },
     {
       "id": "apps_api_tests_unit_test_agent_scenarios_test_context_and_capability_bounds",
@@ -30378,7 +30378,7 @@
       "file_type": "code",
       "norm_label": "_adapter_fact()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L823"
+      "source_location": "L827"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_adapter_fixture",
@@ -30390,7 +30390,7 @@
       "file_type": "code",
       "norm_label": "_adapter_fixture()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L838"
+      "source_location": "L842"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_add_prediction",
@@ -30414,7 +30414,7 @@
       "file_type": "code",
       "norm_label": "_prediction_pair()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1737"
+      "source_location": "L1741"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_prediction_supervisor",
@@ -30426,7 +30426,7 @@
       "file_type": "code",
       "norm_label": "_prediction_supervisor()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1443"
+      "source_location": "L1447"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_prediction_tool_call",
@@ -30438,7 +30438,7 @@
       "file_type": "code",
       "norm_label": "_prediction_tool_call()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L946"
+      "source_location": "L950"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_projection",
@@ -30462,7 +30462,7 @@
       "file_type": "code",
       "norm_label": "test_abstention_and_partial_evidence_render_only_a_data_gap()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L623"
+      "source_location": "L627"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_anomaly_inlier_without_source_measurement_is_not_rendered_as_an_outlier",
@@ -30474,7 +30474,7 @@
       "file_type": "code",
       "norm_label": "test_anomaly_inlier_without_source_measurement_is_not_rendered_as_an_outlier()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L455"
+      "source_location": "L459"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_anomaly_measurement_selector_rejects_unknown_family",
@@ -30486,7 +30486,7 @@
       "file_type": "code",
       "norm_label": "test_anomaly_measurement_selector_rejects_unknown_family()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L510"
+      "source_location": "L514"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_anomaly_renderer_preserves_family_reference_and_nonprobability_semantics",
@@ -30510,7 +30510,7 @@
       "file_type": "code",
       "norm_label": "test_domain_specialist_cannot_relabel_prediction_as_measurement()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L728"
+      "source_location": "L732"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_grounded_prediction_specialist_result_becomes_the_final_answer",
@@ -30522,7 +30522,7 @@
       "file_type": "code",
       "norm_label": "test_grounded_prediction_specialist_result_becomes_the_final_answer()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1538"
+      "source_location": "L1542"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_grounded_prediction_specialist_result_requires_one_matching_source",
@@ -30534,7 +30534,7 @@
       "file_type": "code",
       "norm_label": "test_grounded_prediction_specialist_result_requires_one_matching_source()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1588"
+      "source_location": "L1592"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_caps_fact_count_and_validates_source_version_text",
@@ -30546,7 +30546,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_caps_fact_count_and_validates_source_version_text()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1387"
+      "source_location": "L1391"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_filters_untrusted_and_out_of_cutoff_facts",
@@ -30558,7 +30558,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_filters_untrusted_and_out_of_cutoff_facts()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1363"
+      "source_location": "L1367"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_handles_unexpected_read_failures_without_leaking_details",
@@ -30570,7 +30570,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_handles_unexpected_read_failures_without_leaking_details()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1259"
+      "source_location": "L1263"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_maps_prediction_errors_to_fixed_codes",
@@ -30582,7 +30582,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_maps_prediction_errors_to_fixed_codes()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1247"
+      "source_location": "L1251"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_projects_verified_prediction_with_scoped_typed_facts",
@@ -30594,7 +30594,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_projects_verified_prediction_with_scoped_typed_facts()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1192"
+      "source_location": "L1196"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_rejects_feature_lineage_scope_mismatch",
@@ -30606,7 +30606,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_rejects_feature_lineage_scope_mismatch()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1322"
+      "source_location": "L1326"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_rejects_missing_reader_and_accepts_historical_snapshot_integrity",
@@ -30618,7 +30618,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_rejects_missing_reader_and_accepts_historical_snapshot_integrity()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1346"
+      "source_location": "L1350"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_rejects_unverified_evidence_and_pull_scope_mismatch",
@@ -30630,7 +30630,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_rejects_unverified_evidence_and_pull_scope_mismatch()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1277"
+      "source_location": "L1281"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_requires_enabled_controlled_runtime",
@@ -30642,7 +30642,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_requires_enabled_controlled_runtime()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1227"
+      "source_location": "L1231"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_mcp_adapter_requires_feature_set_for_scored_prediction",
@@ -30654,7 +30654,7 @@
       "file_type": "code",
       "norm_label": "test_mcp_adapter_requires_feature_set_for_scored_prediction()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1331"
+      "source_location": "L1335"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_missing_prediction_evidence_renders_only_a_data_gap",
@@ -30666,7 +30666,7 @@
       "file_type": "code",
       "norm_label": "test_missing_prediction_evidence_renders_only_a_data_gap()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L653"
+      "source_location": "L657"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_positive_anomaly_requires_a_unit_bearing_family_source_fact",
@@ -30678,7 +30678,7 @@
       "file_type": "code",
       "norm_label": "test_positive_anomaly_requires_a_unit_bearing_family_source_fact()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L431"
+      "source_location": "L435"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_and_applicable_documentation_keep_separate_citations",
@@ -30690,7 +30690,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_and_applicable_documentation_keep_separate_citations()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L752"
+      "source_location": "L756"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_and_applicable_documentation_keep_separate_citations_search",
@@ -30702,7 +30702,7 @@
       "file_type": "code",
       "norm_label": "search()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L786"
+      "source_location": "L790"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial",
@@ -30714,7 +30714,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1799"
+      "source_location": "L1803"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_association_rejects_mismatched_lineage",
@@ -30726,7 +30726,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_association_rejects_mismatched_lineage()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1841"
+      "source_location": "L1845"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_association_requires_distinct_results_on_the_same_frozen_feature_set",
@@ -30738,7 +30738,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_association_requires_distinct_results_on_the_same_frozen_feature_set()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1779"
+      "source_location": "L1783"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_intents_have_english_and_portuguese_parity",
@@ -30762,7 +30762,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_metadata_routes_only_interpretive_domain_specialists()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1411"
+      "source_location": "L1415"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_quality_gate_allows_complete_verified_source_and_preserves_other_routes",
@@ -30774,7 +30774,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_quality_gate_allows_complete_verified_source_and_preserves_other_routes()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1508"
+      "source_location": "L1512"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_quality_gate_blocks_missing_error_and_low_quality_sources",
@@ -30786,7 +30786,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_quality_gate_blocks_missing_error_and_low_quality_sources()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1458"
+      "source_location": "L1462"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_injection_cannot_forge_a_diagnostic_claim",
@@ -30798,7 +30798,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_question_injection_cannot_forge_a_diagnostic_claim()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L528"
+      "source_location": "L532"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_result_is_application_rendered_and_low_confidence",
@@ -30822,7 +30822,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_specialists_honor_explicit_domains_and_require_interpretation()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1427"
+      "source_location": "L1431"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_accepts_both_horizons_for_explicit_pair",
@@ -30834,7 +30834,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_tool_accepts_both_horizons_for_explicit_pair()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1028"
+      "source_location": "L1032"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_is_authorized_scoped_cached_and_audited",
@@ -30846,7 +30846,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_tool_is_authorized_scoped_cached_and_audited()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1012"
+      "source_location": "L1016"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_bad_result_shape_or_binding",
@@ -30858,7 +30858,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_tool_rejects_bad_result_shape_or_binding()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1149"
+      "source_location": "L1153"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
@@ -30870,7 +30870,7 @@
       "file_type": "code",
       "norm_label": "test_prediction_tool_rejects_missing_or_revoked_capability()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1107"
+      "source_location": "L1111"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_projection_keeps_source_lineage_private_and_bounds_facts",
@@ -30930,7 +30930,7 @@
       "file_type": "code",
       "norm_label": "test_provider_cannot_bind_prediction_result_to_wrong_horizon_or_score()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L684"
+      "source_location": "L688"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_real_vehicle_request_rejects_synthetic_source_role",
@@ -30942,7 +30942,7 @@
       "file_type": "code",
       "norm_label": "test_real_vehicle_request_rejects_synthetic_source_role()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L667"
+      "source_location": "L671"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_risk_sensitive_questions_are_identified",
@@ -31014,7 +31014,7 @@
       "file_type": "code",
       "norm_label": "test_unsupported_anomaly_family_becomes_a_data_gap()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L483"
+      "source_location": "L487"
     },
     {
       "id": "apps_api_src_vehicle_platform_evaluation_grading_expected_public_answer",
@@ -32742,7 +32742,7 @@
       "file_type": "code",
       "norm_label": "read_prediction()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1063"
+      "source_location": "L1067"
     },
     {
       "id": "apps_api_tests_unit_test_mcp_test_all_tools_with_service_adapters_pull_record",
@@ -35562,7 +35562,7 @@
       "file_type": "code",
       "norm_label": "render_binding()",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L297"
+      "source_location": "L298"
     },
     {
       "id": "apps_api_src_vehicle_platform_agents_grounding_validate",
@@ -35574,7 +35574,7 @@
       "file_type": "code",
       "norm_label": "validate()",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L307"
+      "source_location": "L308"
     },
     {
       "id": "apps_api_src_vehicle_platform_agents_specialists_routing_decide",
@@ -36750,7 +36750,7 @@
       "file_type": "code",
       "norm_label": "test_context_node_uses_selected_pull_session_and_bounded_session_list()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1908"
+      "source_location": "L1912"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_context_node_uses_selected_pull_session_and_bounded_session_list_fail_prediction",
@@ -36762,7 +36762,7 @@
       "file_type": "code",
       "norm_label": "fail_prediction()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1976"
+      "source_location": "L1980"
     },
     {
       "id": "apps_api_tests_unit_test_agent_prediction_test_context_node_uses_selected_pull_session_and_bounded_session_list_revoke_prediction",
@@ -36774,7 +36774,7 @@
       "file_type": "code",
       "norm_label": "revoke_prediction()",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1985"
+      "source_location": "L1989"
     },
     {
       "id": "apps_api_tests_unit_test_agent_runtime_provider",
@@ -86482,7 +86482,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L245",
+      "source_location": "L246",
       "weight": 1.0
     },
     {
@@ -86494,7 +86494,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L248",
+      "source_location": "L249",
       "weight": 1.0
     },
     {
@@ -86566,7 +86566,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L315",
+      "source_location": "L316",
       "weight": 1.0
     },
     {
@@ -86578,7 +86578,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L352",
+      "source_location": "L353",
       "weight": 1.0
     },
     {
@@ -86590,7 +86590,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L359",
+      "source_location": "L360",
       "weight": 1.0
     },
     {
@@ -86602,7 +86602,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L456",
+      "source_location": "L458",
       "weight": 1.0
     },
     {
@@ -86614,7 +86614,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L638",
+      "source_location": "L640",
       "weight": 1.0
     },
     {
@@ -86626,7 +86626,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L651",
+      "source_location": "L653",
       "weight": 1.0
     },
     {
@@ -105658,7 +105658,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L846",
+      "source_location": "L850",
       "weight": 1.0
     },
     {
@@ -105670,7 +105670,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L920",
+      "source_location": "L924",
       "weight": 1.0
     },
     {
@@ -105682,7 +105682,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1745",
+      "source_location": "L1749",
       "weight": 1.0
     },
     {
@@ -105694,7 +105694,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1774",
+      "source_location": "L1778",
       "weight": 1.0
     },
     {
@@ -105706,7 +105706,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L627",
+      "source_location": "L631",
       "weight": 1.0
     },
     {
@@ -105718,7 +105718,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L639",
+      "source_location": "L643",
       "weight": 1.0
     },
     {
@@ -105730,7 +105730,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L640",
+      "source_location": "L644",
       "weight": 1.0
     },
     {
@@ -105742,7 +105742,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1722",
+      "source_location": "L1726",
       "weight": 1.0
     },
     {
@@ -105754,7 +105754,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1729",
+      "source_location": "L1733",
       "weight": 1.0
     },
     {
@@ -105766,7 +105766,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1679",
+      "source_location": "L1683",
       "weight": 1.0
     },
     {
@@ -105778,7 +105778,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1702",
+      "source_location": "L1706",
       "weight": 1.0
     },
     {
@@ -105790,7 +105790,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1712",
+      "source_location": "L1716",
       "weight": 1.0
     },
     {
@@ -105802,7 +105802,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L457",
+      "source_location": "L461",
       "weight": 1.0
     },
     {
@@ -105814,7 +105814,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L469",
+      "source_location": "L473",
       "weight": 1.0
     },
     {
@@ -105826,7 +105826,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L471",
+      "source_location": "L475",
       "weight": 1.0
     },
     {
@@ -105838,7 +105838,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L512",
+      "source_location": "L516",
       "weight": 1.0
     },
     {
@@ -105850,7 +105850,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L523",
+      "source_location": "L527",
       "weight": 1.0
     },
     {
@@ -105862,7 +105862,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L525",
+      "source_location": "L529",
       "weight": 1.0
     },
     {
@@ -105910,7 +105910,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1997",
+      "source_location": "L2001",
       "weight": 1.0
     },
     {
@@ -105922,7 +105922,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L2000",
+      "source_location": "L2004",
       "weight": 1.0
     },
     {
@@ -105934,7 +105934,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1912",
+      "source_location": "L1916",
       "weight": 1.0
     },
     {
@@ -105946,7 +105946,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1913",
+      "source_location": "L1917",
       "weight": 1.0
     },
     {
@@ -105958,7 +105958,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1965",
+      "source_location": "L1969",
       "weight": 1.0
     },
     {
@@ -105970,7 +105970,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1978",
+      "source_location": "L1982",
       "weight": 1.0
     },
     {
@@ -105982,7 +105982,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1987",
+      "source_location": "L1991",
       "weight": 1.0
     },
     {
@@ -105994,7 +105994,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L730",
+      "source_location": "L734",
       "weight": 1.0
     },
     {
@@ -106006,7 +106006,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L734",
+      "source_location": "L738",
       "weight": 1.0
     },
     {
@@ -106018,7 +106018,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L749",
+      "source_location": "L753",
       "weight": 1.0
     },
     {
@@ -106054,7 +106054,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1539",
+      "source_location": "L1543",
       "weight": 1.0
     },
     {
@@ -106066,7 +106066,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1540",
+      "source_location": "L1544",
       "weight": 1.0
     },
     {
@@ -106078,7 +106078,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1547",
+      "source_location": "L1551",
       "weight": 1.0
     },
     {
@@ -106090,7 +106090,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1548",
+      "source_location": "L1552",
       "weight": 1.0
     },
     {
@@ -106102,7 +106102,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1578",
+      "source_location": "L1582",
       "weight": 1.0
     },
     {
@@ -106114,7 +106114,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1589",
+      "source_location": "L1593",
       "weight": 1.0
     },
     {
@@ -106126,7 +106126,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1590",
+      "source_location": "L1594",
       "weight": 1.0
     },
     {
@@ -106138,7 +106138,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1598",
+      "source_location": "L1602",
       "weight": 1.0
     },
     {
@@ -106150,7 +106150,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1616",
+      "source_location": "L1620",
       "weight": 1.0
     },
     {
@@ -106162,7 +106162,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1388",
+      "source_location": "L1392",
       "weight": 1.0
     },
     {
@@ -106174,7 +106174,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1389",
+      "source_location": "L1393",
       "weight": 1.0
     },
     {
@@ -106186,7 +106186,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1365",
+      "source_location": "L1369",
       "weight": 1.0
     },
     {
@@ -106198,7 +106198,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1377",
+      "source_location": "L1381",
       "weight": 1.0
     },
     {
@@ -106210,7 +106210,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1260",
+      "source_location": "L1264",
       "weight": 1.0
     },
     {
@@ -106222,7 +106222,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1248",
+      "source_location": "L1252",
       "weight": 1.0
     },
     {
@@ -106234,7 +106234,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1193",
+      "source_location": "L1197",
       "weight": 1.0
     },
     {
@@ -106246,7 +106246,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1323",
+      "source_location": "L1327",
       "weight": 1.0
     },
     {
@@ -106258,7 +106258,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1347",
+      "source_location": "L1351",
       "weight": 1.0
     },
     {
@@ -106270,7 +106270,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1278",
+      "source_location": "L1282",
       "weight": 1.0
     },
     {
@@ -106282,7 +106282,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1228",
+      "source_location": "L1232",
       "weight": 1.0
     },
     {
@@ -106294,7 +106294,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1332",
+      "source_location": "L1336",
       "weight": 1.0
     },
     {
@@ -106306,7 +106306,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L656",
+      "source_location": "L660",
       "weight": 1.0
     },
     {
@@ -106318,7 +106318,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L433",
+      "source_location": "L437",
       "weight": 1.0
     },
     {
@@ -106330,7 +106330,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L445",
+      "source_location": "L449",
       "weight": 1.0
     },
     {
@@ -106342,7 +106342,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L447",
+      "source_location": "L451",
       "weight": 1.0
     },
     {
@@ -106354,7 +106354,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L758",
+      "source_location": "L762",
       "weight": 1.0
     },
     {
@@ -106366,7 +106366,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L764",
+      "source_location": "L768",
       "weight": 1.0
     },
     {
@@ -106378,7 +106378,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L776",
+      "source_location": "L780",
       "weight": 1.0
     },
     {
@@ -106390,7 +106390,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L783",
+      "source_location": "L787",
       "weight": 1.0
     },
     {
@@ -106402,7 +106402,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L784",
+      "source_location": "L788",
       "weight": 1.0
     },
     {
@@ -106414,7 +106414,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1800",
+      "source_location": "L1804",
       "weight": 1.0
     },
     {
@@ -106426,7 +106426,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1813",
+      "source_location": "L1817",
       "weight": 1.0
     },
     {
@@ -106438,7 +106438,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1842",
+      "source_location": "L1846",
       "weight": 1.0
     },
     {
@@ -106450,7 +106450,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1877",
+      "source_location": "L1881",
       "weight": 1.0
     },
     {
@@ -106462,7 +106462,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1780",
+      "source_location": "L1784",
       "weight": 1.0
     },
     {
@@ -106474,7 +106474,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1788",
+      "source_location": "L1792",
       "weight": 1.0
     },
     {
@@ -106498,7 +106498,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1413",
+      "source_location": "L1417",
       "weight": 1.0
     },
     {
@@ -106510,7 +106510,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1417",
+      "source_location": "L1421",
       "weight": 1.0
     },
     {
@@ -106522,7 +106522,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1419",
+      "source_location": "L1423",
       "weight": 1.0
     },
     {
@@ -106534,7 +106534,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1511",
+      "source_location": "L1515",
       "weight": 1.0
     },
     {
@@ -106546,7 +106546,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1512",
+      "source_location": "L1516",
       "weight": 1.0
     },
     {
@@ -106558,7 +106558,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1519",
+      "source_location": "L1523",
       "weight": 1.0
     },
     {
@@ -106570,7 +106570,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1520",
+      "source_location": "L1524",
       "weight": 1.0
     },
     {
@@ -106582,7 +106582,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1524",
+      "source_location": "L1528",
       "weight": 1.0
     },
     {
@@ -106594,7 +106594,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1459",
+      "source_location": "L1463",
       "weight": 1.0
     },
     {
@@ -106606,7 +106606,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1460",
+      "source_location": "L1464",
       "weight": 1.0
     },
     {
@@ -106618,7 +106618,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1469",
+      "source_location": "L1473",
       "weight": 1.0
     },
     {
@@ -106630,24 +106630,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1493",
+      "source_location": "L1497",
       "weight": 1.0
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_injection_cannot_forge_a_diagnostic_claim",
       "target": "apps_api_tests_unit_test_agent_prediction_projection",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L530",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_injection_cannot_forge_a_diagnostic_claim",
-      "target": "apps_api_tests_unit_test_agent_prediction_add_prediction",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -106659,6 +106647,18 @@
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_injection_cannot_forge_a_diagnostic_claim",
+      "target": "apps_api_tests_unit_test_agent_prediction_add_prediction",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L538",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_question_injection_cannot_forge_a_diagnostic_claim",
       "target": "apps_api_src_vehicle_platform_agents_grounding_prediction_answer",
       "relation": "calls",
       "_origin": "ast",
@@ -106666,7 +106666,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L535",
+      "source_location": "L539",
       "weight": 1.0
     },
     {
@@ -106678,7 +106678,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L600",
+      "source_location": "L604",
       "weight": 1.0
     },
     {
@@ -106690,7 +106690,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L601",
+      "source_location": "L605",
       "weight": 1.0
     },
     {
@@ -106702,7 +106702,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L602",
+      "source_location": "L606",
       "weight": 1.0
     },
     {
@@ -106750,7 +106750,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1428",
+      "source_location": "L1432",
       "weight": 1.0
     },
     {
@@ -106762,7 +106762,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1435",
+      "source_location": "L1439",
       "weight": 1.0
     },
     {
@@ -106774,7 +106774,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1439",
+      "source_location": "L1443",
       "weight": 1.0
     },
     {
@@ -106786,7 +106786,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1029",
+      "source_location": "L1033",
       "weight": 1.0
     },
     {
@@ -106798,7 +106798,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1030",
+      "source_location": "L1034",
       "weight": 1.0
     },
     {
@@ -106810,7 +106810,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1049",
+      "source_location": "L1053",
       "weight": 1.0
     },
     {
@@ -106822,7 +106822,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1065",
+      "source_location": "L1069",
       "weight": 1.0
     },
     {
@@ -106834,7 +106834,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1013",
+      "source_location": "L1017",
       "weight": 1.0
     },
     {
@@ -106846,7 +106846,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1014",
+      "source_location": "L1018",
       "weight": 1.0
     },
     {
@@ -106858,7 +106858,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1015",
+      "source_location": "L1019",
       "weight": 1.0
     },
     {
@@ -106870,7 +106870,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1150",
+      "source_location": "L1154",
       "weight": 1.0
     },
     {
@@ -106882,7 +106882,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1151",
+      "source_location": "L1155",
       "weight": 1.0
     },
     {
@@ -106894,36 +106894,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1173",
+      "source_location": "L1177",
       "weight": 1.0
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
       "target": "apps_api_tests_unit_test_agents_execution",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1113",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
-      "target": "apps_api_tests_unit_test_agent_prediction_projection",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1114",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
-      "target": "apps_api_tests_unit_test_agent_prediction_prediction_tool_call",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -106931,6 +106907,30 @@
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
       "source_location": "L1117",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
+      "target": "apps_api_tests_unit_test_agent_prediction_projection",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L1118",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_prediction_tool_rejects_missing_or_revoked_capability",
+      "target": "apps_api_tests_unit_test_agent_prediction_prediction_tool_call",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L1121",
       "weight": 1.0
     },
     {
@@ -107026,7 +107026,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L686",
+      "source_location": "L690",
       "weight": 1.0
     },
     {
@@ -107038,7 +107038,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L690",
+      "source_location": "L694",
       "weight": 1.0
     },
     {
@@ -107050,7 +107050,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L725",
+      "source_location": "L729",
       "weight": 1.0
     },
     {
@@ -107062,7 +107062,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L669",
+      "source_location": "L673",
       "weight": 1.0
     },
     {
@@ -107074,7 +107074,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L673",
+      "source_location": "L677",
       "weight": 1.0
     },
     {
@@ -107086,7 +107086,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L674",
+      "source_location": "L678",
       "weight": 1.0
     },
     {
@@ -107098,7 +107098,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L572",
+      "source_location": "L576",
       "weight": 1.0
     },
     {
@@ -107170,7 +107170,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L485",
+      "source_location": "L489",
       "weight": 1.0
     },
     {
@@ -107182,7 +107182,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L497",
+      "source_location": "L501",
       "weight": 1.0
     },
     {
@@ -107194,7 +107194,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L499",
+      "source_location": "L503",
       "weight": 1.0
     },
     {
@@ -127942,7 +127942,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L616",
+      "source_location": "L620",
       "weight": 1.0
     },
     {
@@ -127954,7 +127954,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1632",
+      "source_location": "L1636",
       "weight": 1.0
     },
     {
@@ -127978,7 +127978,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1585",
+      "source_location": "L1589",
       "weight": 1.0
     },
     {
@@ -127990,7 +127990,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1258",
+      "source_location": "L1262",
       "weight": 1.0
     },
     {
@@ -128002,7 +128002,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1238",
+      "source_location": "L1242",
       "weight": 1.0
     },
     {
@@ -128014,7 +128014,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1311",
+      "source_location": "L1315",
       "weight": 1.0
     },
     {
@@ -128026,7 +128026,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1214",
+      "source_location": "L1218",
       "weight": 1.0
     },
     {
@@ -128038,7 +128038,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1828",
+      "source_location": "L1832",
       "weight": 1.0
     },
     {
@@ -128062,7 +128062,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1403",
+      "source_location": "L1407",
       "weight": 1.0
     },
     {
@@ -128074,7 +128074,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1148",
+      "source_location": "L1152",
       "weight": 1.0
     },
     {
@@ -128086,7 +128086,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1092",
+      "source_location": "L1096",
       "weight": 1.0
     },
     {
@@ -128110,7 +128110,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L550",
+      "source_location": "L554",
       "weight": 1.0
     },
     {
@@ -199025,7 +199025,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L297",
+      "source_location": "L298",
       "weight": 1.0
     },
     {
@@ -199036,7 +199036,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L307",
+      "source_location": "L308",
       "weight": 1.0
     },
     {
@@ -210003,7 +210003,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1012",
+      "source_location": "L1016",
       "weight": 1.0
     },
     {
@@ -210014,7 +210014,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1028",
+      "source_location": "L1032",
       "weight": 1.0
     },
     {
@@ -210025,7 +210025,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1107",
+      "source_location": "L1111",
       "weight": 1.0
     },
     {
@@ -210036,7 +210036,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1149",
+      "source_location": "L1153",
       "weight": 1.0
     },
     {
@@ -210047,7 +210047,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1192",
+      "source_location": "L1196",
       "weight": 1.0
     },
     {
@@ -210058,7 +210058,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1227",
+      "source_location": "L1231",
       "weight": 1.0
     },
     {
@@ -210069,7 +210069,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1247",
+      "source_location": "L1251",
       "weight": 1.0
     },
     {
@@ -210080,7 +210080,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1259",
+      "source_location": "L1263",
       "weight": 1.0
     },
     {
@@ -210091,7 +210091,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1277",
+      "source_location": "L1281",
       "weight": 1.0
     },
     {
@@ -210102,7 +210102,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1322",
+      "source_location": "L1326",
       "weight": 1.0
     },
     {
@@ -210113,7 +210113,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1331",
+      "source_location": "L1335",
       "weight": 1.0
     },
     {
@@ -210124,7 +210124,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1346",
+      "source_location": "L1350",
       "weight": 1.0
     },
     {
@@ -210135,7 +210135,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1363",
+      "source_location": "L1367",
       "weight": 1.0
     },
     {
@@ -210146,7 +210146,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1387",
+      "source_location": "L1391",
       "weight": 1.0
     },
     {
@@ -210157,7 +210157,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1411",
+      "source_location": "L1415",
       "weight": 1.0
     },
     {
@@ -210168,7 +210168,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1427",
+      "source_location": "L1431",
       "weight": 1.0
     },
     {
@@ -210179,7 +210179,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1443",
+      "source_location": "L1447",
       "weight": 1.0
     },
     {
@@ -210190,7 +210190,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1458",
+      "source_location": "L1462",
       "weight": 1.0
     },
     {
@@ -210201,7 +210201,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1508",
+      "source_location": "L1512",
       "weight": 1.0
     },
     {
@@ -210212,7 +210212,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1538",
+      "source_location": "L1542",
       "weight": 1.0
     },
     {
@@ -210223,7 +210223,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1588",
+      "source_location": "L1592",
       "weight": 1.0
     },
     {
@@ -210245,7 +210245,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1620",
+      "source_location": "L1624",
       "weight": 1.0
     },
     {
@@ -210256,7 +210256,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1671",
+      "source_location": "L1675",
       "weight": 1.0
     },
     {
@@ -210267,7 +210267,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1710",
+      "source_location": "L1714",
       "weight": 1.0
     },
     {
@@ -210278,7 +210278,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1720",
+      "source_location": "L1724",
       "weight": 1.0
     },
     {
@@ -210289,7 +210289,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1737",
+      "source_location": "L1741",
       "weight": 1.0
     },
     {
@@ -210311,7 +210311,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1779",
+      "source_location": "L1783",
       "weight": 1.0
     },
     {
@@ -210322,7 +210322,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1799",
+      "source_location": "L1803",
       "weight": 1.0
     },
     {
@@ -210333,7 +210333,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1841",
+      "source_location": "L1845",
       "weight": 1.0
     },
     {
@@ -210344,7 +210344,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1884",
+      "source_location": "L1888",
       "weight": 1.0
     },
     {
@@ -210355,7 +210355,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1908",
+      "source_location": "L1912",
       "weight": 1.0
     },
     {
@@ -210366,7 +210366,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1996",
+      "source_location": "L2000",
       "weight": 1.0
     },
     {
@@ -210498,7 +210498,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L431",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -210509,7 +210509,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L455",
+      "source_location": "L459",
       "weight": 1.0
     },
     {
@@ -210520,7 +210520,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L483",
+      "source_location": "L487",
       "weight": 1.0
     },
     {
@@ -210531,7 +210531,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L510",
+      "source_location": "L514",
       "weight": 1.0
     },
     {
@@ -210542,7 +210542,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L528",
+      "source_location": "L532",
       "weight": 1.0
     },
     {
@@ -210553,7 +210553,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L565",
+      "source_location": "L569",
       "weight": 1.0
     },
     {
@@ -210564,7 +210564,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L595",
+      "source_location": "L599",
       "weight": 1.0
     },
     {
@@ -210575,7 +210575,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L623",
+      "source_location": "L627",
       "weight": 1.0
     },
     {
@@ -210597,7 +210597,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L653",
+      "source_location": "L657",
       "weight": 1.0
     },
     {
@@ -210608,7 +210608,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L667",
+      "source_location": "L671",
       "weight": 1.0
     },
     {
@@ -210619,7 +210619,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L684",
+      "source_location": "L688",
       "weight": 1.0
     },
     {
@@ -210630,7 +210630,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L728",
+      "source_location": "L732",
       "weight": 1.0
     },
     {
@@ -210641,7 +210641,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L752",
+      "source_location": "L756",
       "weight": 1.0
     },
     {
@@ -210652,7 +210652,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L823",
+      "source_location": "L827",
       "weight": 1.0
     },
     {
@@ -210663,7 +210663,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L838",
+      "source_location": "L842",
       "weight": 1.0
     },
     {
@@ -210674,7 +210674,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L946",
+      "source_location": "L950",
       "weight": 1.0
     },
     {
@@ -267124,7 +267124,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1903",
+      "source_location": "L1907",
       "weight": 1.0
     },
     {
@@ -267136,7 +267136,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L796",
+      "source_location": "L800",
       "weight": 1.0
     },
     {
@@ -267148,7 +267148,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1076",
+      "source_location": "L1080",
       "weight": 1.0
     },
     {
@@ -268408,7 +268408,7 @@
       "confidence_score": 0.85,
       "context": "assignment",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1981",
+      "source_location": "L1985",
       "weight": 1.0
     },
     {
@@ -268420,7 +268420,7 @@
       "confidence_score": 0.85,
       "context": "assignment",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1990",
+      "source_location": "L1994",
       "weight": 1.0
     },
     {
@@ -268936,7 +268936,7 @@
       "confidence_score": 0.85,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L792",
+      "source_location": "L796",
       "weight": 1.0
     },
     {
@@ -269644,7 +269644,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1895",
+      "source_location": "L1899",
       "weight": 1.0
     },
     {
@@ -271852,7 +271852,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L307",
+      "source_location": "L308",
       "weight": 0.8
     },
     {
@@ -271864,7 +271864,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L307",
+      "source_location": "L308",
       "weight": 0.8
     },
     {
@@ -271876,7 +271876,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L307",
+      "source_location": "L308",
       "weight": 0.8
     },
     {
@@ -277289,7 +277289,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L338",
+      "source_location": "L339",
       "weight": 0.8
     },
     {
@@ -286958,7 +286958,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L826",
+      "source_location": "L830",
       "weight": 0.8
     },
     {
@@ -286969,7 +286969,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L829",
+      "source_location": "L833",
       "weight": 0.8
     },
     {
@@ -286980,7 +286980,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L839",
+      "source_location": "L843",
       "weight": 0.8
     },
     {
@@ -286991,7 +286991,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L842",
+      "source_location": "L846",
       "weight": 0.8
     },
     {
@@ -287002,7 +287002,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L874",
+      "source_location": "L878",
       "weight": 0.8
     },
     {
@@ -287013,7 +287013,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L930",
+      "source_location": "L934",
       "weight": 0.8
     },
     {
@@ -287035,7 +287035,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1902",
+      "source_location": "L1906",
       "weight": 0.8
     },
     {
@@ -287046,7 +287046,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1902",
+      "source_location": "L1906",
       "weight": 0.8
     },
     {
@@ -287057,7 +287057,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1621",
+      "source_location": "L1625",
       "weight": 0.8
     },
     {
@@ -287068,7 +287068,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1766",
+      "source_location": "L1770",
       "weight": 0.8
     },
     {
@@ -287079,7 +287079,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1444",
+      "source_location": "L1448",
       "weight": 0.8
     },
     {
@@ -287090,7 +287090,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1445",
+      "source_location": "L1449",
       "weight": 0.8
     },
     {
@@ -287101,7 +287101,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1446",
+      "source_location": "L1450",
       "weight": 0.8
     },
     {
@@ -287112,7 +287112,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1455",
+      "source_location": "L1459",
       "weight": 0.8
     },
     {
@@ -287123,7 +287123,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1455",
+      "source_location": "L1459",
       "weight": 0.8
     },
     {
@@ -287134,7 +287134,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1002",
+      "source_location": "L1006",
       "weight": 0.8
     },
     {
@@ -287145,7 +287145,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L956",
+      "source_location": "L960",
       "weight": 0.8
     },
     {
@@ -287156,7 +287156,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L965",
+      "source_location": "L969",
       "weight": 0.8
     },
     {
@@ -287167,7 +287167,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L970",
+      "source_location": "L974",
       "weight": 0.8
     },
     {
@@ -287178,7 +287178,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L990",
+      "source_location": "L994",
       "weight": 0.8
     },
     {
@@ -287200,7 +287200,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L636",
+      "source_location": "L640",
       "weight": 0.8
     },
     {
@@ -287211,7 +287211,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L642",
+      "source_location": "L646",
       "weight": 0.8
     },
     {
@@ -287222,7 +287222,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L646",
+      "source_location": "L650",
       "weight": 0.8
     },
     {
@@ -287233,7 +287233,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1723",
+      "source_location": "L1727",
       "weight": 0.8
     },
     {
@@ -287244,7 +287244,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1729",
+      "source_location": "L1733",
       "weight": 0.8
     },
     {
@@ -287255,7 +287255,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1693",
+      "source_location": "L1697",
       "weight": 0.8
     },
     {
@@ -287266,7 +287266,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1701",
+      "source_location": "L1705",
       "weight": 0.8
     },
     {
@@ -287277,7 +287277,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1702",
+      "source_location": "L1706",
       "weight": 0.8
     },
     {
@@ -287288,7 +287288,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1711",
+      "source_location": "L1715",
       "weight": 0.8
     },
     {
@@ -287299,7 +287299,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1712",
+      "source_location": "L1716",
       "weight": 0.8
     },
     {
@@ -287310,7 +287310,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1715",
+      "source_location": "L1719",
       "weight": 0.8
     },
     {
@@ -287321,7 +287321,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L466",
+      "source_location": "L470",
       "weight": 0.8
     },
     {
@@ -287332,7 +287332,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L473",
+      "source_location": "L477",
       "weight": 0.8
     },
     {
@@ -287343,7 +287343,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L478",
+      "source_location": "L482",
       "weight": 0.8
     },
     {
@@ -287354,7 +287354,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L520",
+      "source_location": "L524",
       "weight": 0.8
     },
     {
@@ -287398,7 +287398,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L2001",
+      "source_location": "L2005",
       "weight": 0.8
     },
     {
@@ -287409,7 +287409,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L2019",
+      "source_location": "L2023",
       "weight": 0.8
     },
     {
@@ -287420,7 +287420,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1955",
+      "source_location": "L1959",
       "weight": 0.8
     },
     {
@@ -287431,23 +287431,12 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1967",
+      "source_location": "L1971",
       "weight": 0.8
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
       "target": "apps_api_src_vehicle_platform_agents_evidence_evidenceregistry",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L731",
-      "weight": 0.8
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
-      "target": "apps_api_src_vehicle_platform_agents_schemas_claim",
       "relation": "uses",
       "_origin": "ast",
       "confidence": "INFERRED",
@@ -287458,18 +287447,7 @@
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
-      "target": "apps_api_src_vehicle_platform_agents_schemas_classification",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L736",
-      "weight": 0.8
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
-      "target": "apps_api_src_vehicle_platform_agents_schemas_binding",
+      "target": "apps_api_src_vehicle_platform_agents_schemas_claim",
       "relation": "uses",
       "_origin": "ast",
       "confidence": "INFERRED",
@@ -287480,13 +287458,35 @@
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
+      "target": "apps_api_src_vehicle_platform_agents_schemas_classification",
+      "relation": "uses",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L740",
+      "weight": 0.8
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
+      "target": "apps_api_src_vehicle_platform_agents_schemas_binding",
+      "relation": "uses",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L743",
+      "weight": 0.8
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_domain_specialist_cannot_relabel_prediction_as_measurement",
       "target": "apps_api_src_vehicle_platform_agents_provider_agenterror",
       "relation": "uses",
       "_origin": "ast",
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L748",
+      "source_location": "L752",
       "weight": 0.8
     },
     {
@@ -287497,7 +287497,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1541",
+      "source_location": "L1545",
       "weight": 0.8
     },
     {
@@ -287508,7 +287508,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1549",
+      "source_location": "L1553",
       "weight": 0.8
     },
     {
@@ -287519,7 +287519,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1555",
+      "source_location": "L1559",
       "weight": 0.8
     },
     {
@@ -287530,7 +287530,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1556",
+      "source_location": "L1560",
       "weight": 0.8
     },
     {
@@ -287541,7 +287541,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1557",
+      "source_location": "L1561",
       "weight": 0.8
     },
     {
@@ -287552,7 +287552,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1566",
+      "source_location": "L1570",
       "weight": 0.8
     },
     {
@@ -287563,7 +287563,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1592",
+      "source_location": "L1596",
       "weight": 0.8
     },
     {
@@ -287574,7 +287574,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1602",
+      "source_location": "L1606",
       "weight": 0.8
     },
     {
@@ -287585,7 +287585,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1603",
+      "source_location": "L1607",
       "weight": 0.8
     },
     {
@@ -287596,7 +287596,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1604",
+      "source_location": "L1608",
       "weight": 0.8
     },
     {
@@ -287607,7 +287607,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1390",
+      "source_location": "L1394",
       "weight": 0.8
     },
     {
@@ -287618,7 +287618,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1365",
+      "source_location": "L1369",
       "weight": 0.8
     },
     {
@@ -287629,7 +287629,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1264",
+      "source_location": "L1268",
       "weight": 0.8
     },
     {
@@ -287640,7 +287640,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1264",
+      "source_location": "L1268",
       "weight": 0.8
     },
     {
@@ -287651,7 +287651,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1249",
+      "source_location": "L1253",
       "weight": 0.8
     },
     {
@@ -287662,7 +287662,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1250",
+      "source_location": "L1254",
       "weight": 0.8
     },
     {
@@ -287673,7 +287673,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1324",
+      "source_location": "L1328",
       "weight": 0.8
     },
     {
@@ -287684,7 +287684,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1325",
+      "source_location": "L1329",
       "weight": 0.8
     },
     {
@@ -287695,7 +287695,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1349",
+      "source_location": "L1353",
       "weight": 0.8
     },
     {
@@ -287706,7 +287706,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1355",
+      "source_location": "L1359",
       "weight": 0.8
     },
     {
@@ -287717,7 +287717,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1279",
+      "source_location": "L1283",
       "weight": 0.8
     },
     {
@@ -287728,7 +287728,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1281",
+      "source_location": "L1285",
       "weight": 0.8
     },
     {
@@ -287739,7 +287739,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1230",
+      "source_location": "L1234",
       "weight": 0.8
     },
     {
@@ -287750,7 +287750,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1333",
+      "source_location": "L1337",
       "weight": 0.8
     },
     {
@@ -287761,7 +287761,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L655",
+      "source_location": "L659",
       "weight": 0.8
     },
     {
@@ -287772,7 +287772,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L658",
+      "source_location": "L662",
       "weight": 0.8
     },
     {
@@ -287783,23 +287783,12 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L662",
+      "source_location": "L666",
       "weight": 0.8
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_positive_anomaly_requires_a_unit_bearing_family_source_fact",
       "target": "apps_api_src_vehicle_platform_agents_evidence_evidenceregistry",
-      "relation": "uses",
-      "_origin": "ast",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L442",
-      "weight": 0.8
-    },
-    {
-      "source": "apps_api_tests_unit_test_agent_prediction_test_positive_anomaly_requires_a_unit_bearing_family_source_fact",
-      "target": "apps_api_src_vehicle_platform_agents_provider_agenterror",
       "relation": "uses",
       "_origin": "ast",
       "confidence": "INFERRED",
@@ -287810,13 +287799,24 @@
     },
     {
       "source": "apps_api_tests_unit_test_agent_prediction_test_positive_anomaly_requires_a_unit_bearing_family_source_fact",
+      "target": "apps_api_src_vehicle_platform_agents_provider_agenterror",
+      "relation": "uses",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "apps/api/tests/unit/test_agent_prediction.py",
+      "source_location": "L450",
+      "weight": 0.8
+    },
+    {
+      "source": "apps_api_tests_unit_test_agent_prediction_test_positive_anomaly_requires_a_unit_bearing_family_source_fact",
       "target": "apps_api_src_vehicle_platform_agents_schemas_vehiclecontext",
       "relation": "uses",
       "_origin": "ast",
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L449",
+      "source_location": "L453",
       "weight": 0.8
     },
     {
@@ -287827,7 +287827,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L769",
+      "source_location": "L773",
       "weight": 0.8
     },
     {
@@ -287838,7 +287838,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L777",
+      "source_location": "L781",
       "weight": 0.8
     },
     {
@@ -287849,7 +287849,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L797",
+      "source_location": "L801",
       "weight": 0.8
     },
     {
@@ -287860,7 +287860,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L797",
+      "source_location": "L801",
       "weight": 0.8
     },
     {
@@ -287871,7 +287871,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L808",
+      "source_location": "L812",
       "weight": 0.8
     },
     {
@@ -287882,7 +287882,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1815",
+      "source_location": "L1819",
       "weight": 0.8
     },
     {
@@ -287893,7 +287893,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1821",
+      "source_location": "L1825",
       "weight": 0.8
     },
     {
@@ -287904,7 +287904,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1869",
+      "source_location": "L1873",
       "weight": 0.8
     },
     {
@@ -287915,7 +287915,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1870",
+      "source_location": "L1874",
       "weight": 0.8
     },
     {
@@ -287926,7 +287926,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1876",
+      "source_location": "L1880",
       "weight": 0.8
     },
     {
@@ -287937,7 +287937,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1878",
+      "source_location": "L1882",
       "weight": 0.8
     },
     {
@@ -287948,7 +287948,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1880",
+      "source_location": "L1884",
       "weight": 0.8
     },
     {
@@ -287959,7 +287959,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1781",
+      "source_location": "L1785",
       "weight": 0.8
     },
     {
@@ -287970,7 +287970,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1782",
+      "source_location": "L1786",
       "weight": 0.8
     },
     {
@@ -287981,7 +287981,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1789",
+      "source_location": "L1793",
       "weight": 0.8
     },
     {
@@ -287992,7 +287992,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1791",
+      "source_location": "L1795",
       "weight": 0.8
     },
     {
@@ -288003,7 +288003,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1414",
+      "source_location": "L1418",
       "weight": 0.8
     },
     {
@@ -288014,7 +288014,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1513",
+      "source_location": "L1517",
       "weight": 0.8
     },
     {
@@ -288025,7 +288025,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1531",
+      "source_location": "L1535",
       "weight": 0.8
     },
     {
@@ -288036,7 +288036,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1482",
+      "source_location": "L1486",
       "weight": 0.8
     },
     {
@@ -288047,7 +288047,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1487",
+      "source_location": "L1491",
       "weight": 0.8
     },
     {
@@ -288058,7 +288058,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L531",
+      "source_location": "L535",
       "weight": 0.8
     },
     {
@@ -288069,7 +288069,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L537",
+      "source_location": "L541",
       "weight": 0.8
     },
     {
@@ -288080,7 +288080,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L601",
+      "source_location": "L605",
       "weight": 0.8
     },
     {
@@ -288091,7 +288091,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L603",
+      "source_location": "L607",
       "weight": 0.8
     },
     {
@@ -288102,7 +288102,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L604",
+      "source_location": "L608",
       "weight": 0.8
     },
     {
@@ -288113,7 +288113,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L604",
+      "source_location": "L608",
       "weight": 0.8
     },
     {
@@ -288157,7 +288157,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1436",
+      "source_location": "L1440",
       "weight": 0.8
     },
     {
@@ -288168,7 +288168,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1056",
+      "source_location": "L1060",
       "weight": 0.8
     },
     {
@@ -288179,7 +288179,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1065",
+      "source_location": "L1069",
       "weight": 0.8
     },
     {
@@ -288190,7 +288190,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1156",
+      "source_location": "L1160",
       "weight": 0.8
     },
     {
@@ -288201,7 +288201,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1179",
+      "source_location": "L1183",
       "weight": 0.8
     },
     {
@@ -288212,7 +288212,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1188",
+      "source_location": "L1192",
       "weight": 0.8
     },
     {
@@ -288223,7 +288223,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L1143",
+      "source_location": "L1147",
       "weight": 0.8
     },
     {
@@ -288300,7 +288300,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L687",
+      "source_location": "L691",
       "weight": 0.8
     },
     {
@@ -288311,7 +288311,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L691",
+      "source_location": "L695",
       "weight": 0.8
     },
     {
@@ -288322,7 +288322,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L704",
+      "source_location": "L708",
       "weight": 0.8
     },
     {
@@ -288333,7 +288333,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L712",
+      "source_location": "L716",
       "weight": 0.8
     },
     {
@@ -288344,7 +288344,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L715",
+      "source_location": "L719",
       "weight": 0.8
     },
     {
@@ -288355,7 +288355,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L716",
+      "source_location": "L720",
       "weight": 0.8
     },
     {
@@ -288366,7 +288366,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L724",
+      "source_location": "L728",
       "weight": 0.8
     },
     {
@@ -288377,7 +288377,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L670",
+      "source_location": "L674",
       "weight": 0.8
     },
     {
@@ -288388,7 +288388,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L676",
+      "source_location": "L680",
       "weight": 0.8
     },
     {
@@ -288399,7 +288399,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L680",
+      "source_location": "L684",
       "weight": 0.8
     },
     {
@@ -288410,7 +288410,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L573",
+      "source_location": "L577",
       "weight": 0.8
     },
     {
@@ -288421,7 +288421,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L575",
+      "source_location": "L579",
       "weight": 0.8
     },
     {
@@ -288432,7 +288432,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L575",
+      "source_location": "L579",
       "weight": 0.8
     },
     {
@@ -288487,7 +288487,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L494",
+      "source_location": "L498",
       "weight": 0.8
     },
     {
@@ -288498,7 +288498,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L501",
+      "source_location": "L505",
       "weight": 0.8
     },
     {
@@ -288509,7 +288509,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_agent_prediction.py",
-      "source_location": "L506",
+      "source_location": "L510",
       "weight": 0.8
     },
     {
@@ -305245,5 +305245,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "286333b2f2cccb20976d4cf5b91854c3d4e1b0ba"
+  "built_at_commit": "9f43aee95b62d38c233a45816ef11b2a7c0e594c"
 }
