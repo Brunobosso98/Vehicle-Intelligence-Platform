@@ -1,7 +1,7 @@
 # Graph Report - vehicle-intelligence-platform  (2026-10-26)
 
 ## Corpus Check
-- 561 files · ~602,716 words
+- 561 files · ~602,751 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9179036a`
+- Built from commit: `286333b2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1406,9 +1406,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Phase 8 — Technical RAG & Knowledge Intelligence` connect `Phase 8 — Technical RAG & Knowledge Intelligence` to `49. Phase 7C specialist integration`, `9. Knowledge trust hierarchy`, `48. Phase 7B interaction`, `13. Document domain model`, `39. Query types`, `README.md`?**
   _High betweenness centrality (0.048) - this node is a cross-community bridge._
 - **Why does `OpenAIProvider` connect `DeterministicProvider` to `AgentError`, `test_agent_runtime.py`, `Settings`, `Supervisor`, `pydantic`, `Phase 7D real-model validation`, `typing`, `AgentSettings`, `redact_data`, `test_agents.py`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
-- **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
   _High betweenness centrality (0.046) - this node is a cross-community bridge._
+- **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 90 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**

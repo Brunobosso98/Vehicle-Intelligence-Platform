@@ -3312,9 +3312,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/builder.py": {
-    "mtime": 1792596133.4371772,
-    "seen": 1793016605.1572974,
-    "ast_hash": "0b6bf5d3d9634ee835e05e7d411f2c2c",
+    "mtime": 1793022608.8104782,
+    "seen": 1793023691.1724086,
+    "ast_hash": "6418b320a1f4458d179042460f49052c",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/prediction_evidence/canonical.py": {
@@ -3354,9 +3354,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_prediction_evidence.py": {
-    "mtime": 1792598184.7121446,
-    "seen": 1793016605.1575532,
-    "ast_hash": "5cbbf431934530d21ab6998502aaec4d",
+    "mtime": 1793022608.8093154,
+    "seen": 1793023691.1725688,
+    "ast_hash": "fbb33d6f55ddfcab887d9ad8ca750aed",
     "semantic_hash": ""
   },
   "scripts/evaluate_prediction_evidence.py": {
@@ -3480,9 +3480,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9f-traceability-ledger.md": {
-    "mtime": 1793018932.7223027,
-    "seen": 1793021750.8933885,
-    "ast_hash": "45831da79eb4e9dc1f71424e0d23bfd0",
+    "mtime": 1793022610.1569269,
+    "seen": 1793023691.17351,
+    "ast_hash": "868ba70720800a18a76bf5030062ffe4",
     "semantic_hash": ""
   }
 }

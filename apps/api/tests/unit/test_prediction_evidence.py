@@ -198,7 +198,9 @@ def _anomaly_source(
         SourceKind.ANOMALY_FINDING,
         finding_id,
         {
-            "observed_features": ["thermal.iat_delta_k"],
+            "observed_features": {
+                "thermal.iat_delta_k": {"value": 5.0, "unit": "K", "quality": "valid"}
+            },
             "contributions": [contribution],
             "reference_summary": {
                 "schema_version": "phase9c-detection-run-v1",
@@ -752,6 +754,11 @@ def test_builder_helpers_cover_feature_quality_time_and_interpretation_variants(
     anomaly = _anomaly_source()
     finding = anomaly.records[SourceKind.ANOMALY_FINDING]
     assert _eligible_feature_keys(anomaly, values) == [feature_key]
+    legacy_finding = replace(finding, payload={"observed_features": [feature_key]})
+    assert _eligible_feature_keys(
+        replace(anomaly, records=anomaly.records | {SourceKind.ANOMALY_FINDING: legacy_finding}),
+        values,
+    ) == [feature_key]
     malformed_finding = replace(finding, payload={"observed_features": "bad"})
     assert (
         _eligible_feature_keys(

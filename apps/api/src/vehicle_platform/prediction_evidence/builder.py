@@ -803,8 +803,14 @@ def _eligible_feature_keys(source: EvidenceSourceSnapshot, values: dict[str, Any
     if finding is None:
         return []
     observed = finding.payload.get("observed_features", [])
-    keys = observed if isinstance(observed, list) else []
-    return sorted(key for key in keys if key in values)[:24]
+    keys = (
+        observed
+        if isinstance(observed, list)
+        else list(observed)
+        if isinstance(observed, dict)
+        else []
+    )
+    return sorted(key for key in keys if isinstance(key, str) and key in values)[:24]
 
 
 def _model_output_facts(
