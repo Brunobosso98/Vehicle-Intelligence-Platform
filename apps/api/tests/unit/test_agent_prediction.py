@@ -1805,7 +1805,7 @@ def test_prediction_association_confidence_drops_when_source_has_warnings():
     registry, vehicle_id, first, second = _prediction_pair()
     source = registry.items[first.id]
     registry.items[first.id] = source.model_copy(
-        update={"warnings": ["prediction_projection_omitted"]}
+        update={"warnings": ["unrelated_source_warning"]}
     )
     claim = Claim(
         classification=Classification.DESCRIPTIVE_ASSOCIATION,
@@ -1821,7 +1821,51 @@ def test_prediction_association_confidence_drops_when_source_has_warnings():
     )
 
     assert answer.confidence == "low"
-    assert "prediction_projection_omitted" in answer.limitations
+    assert "unrelated_source_warning" in answer.limitations
+
+
+@pytest.mark.parametrize(
+    "warning", ["prediction_projection_omitted", "prediction_snapshot_artifact_unavailable"]
+)
+def test_prediction_association_keeps_moderate_confidence_for_non_material_warnings(warning):
+    registry, vehicle_id, first, second = _prediction_pair()
+    source = registry.items[first.id]
+    updates = {
+        "warnings": [warning],
+        "truncated": warning == "prediction_projection_omitted",
+    }
+    if warning == "prediction_snapshot_artifact_unavailable":
+        updates["facts"] = [
+            fact.model_copy(update={"value": "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"})
+            if fact.path == "/prediction/integrity"
+            else fact.model_copy(update={"value": "UNAVAILABLE"})
+            if fact.path == "/prediction/artifact_availability"
+            else fact
+            for fact in source.facts
+        ]
+        registry.prediction_links[0] = replace(
+            registry.prediction_links[0],
+            integrity="VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+            artifact_availability="UNAVAILABLE",
+        )
+    registry.items[first.id] = source.model_copy(update=updates)
+    claim = Claim(
+        classification=Classification.DESCRIPTIVE_ASSOCIATION,
+        template="statistical_association",
+        bindings=[],
+        evidence_ids=[first.id, second.id],
+    )
+
+    answer = validate(
+        Draft(confidence="moderate", claims=[claim], missing_evidence=[]),
+        registry,
+        VehicleContext(vehicle_id=vehicle_id, as_of=NOW),
+    )
+
+    assert answer.confidence == "moderate"
+    assert warning in answer.limitations
+    if warning == "prediction_projection_omitted":
+        assert "bounded_evidence_is_incomplete" in answer.limitations
 
 
 def test_prediction_answer_abstains_when_a_same_snapshot_pair_is_partial():

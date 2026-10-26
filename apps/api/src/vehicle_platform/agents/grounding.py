@@ -29,6 +29,13 @@ PREDICTION_TASKS = {
 }
 ANOMALY_FAMILIES = frozenset({"thermal", "boost_air", "performance", "fuel"})
 ACCEPTED_INTEGRITY = frozenset({"VERIFIED", "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"})
+DESCRIPTIVE_ASSOCIATION_NON_MATERIAL_WARNINGS = frozenset(
+    {
+        "bounded_evidence_is_incomplete",
+        "prediction_projection_omitted",
+        "prediction_snapshot_artifact_unavailable",
+    }
+)
 
 
 def _prediction_fact(source: Evidence, path: str) -> Fact:
@@ -659,11 +666,17 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
         for finding in findings
     )
     warnings = list(dict.fromkeys(warnings))[:32]
+    confidence_warnings = [
+        warning
+        for warning in warnings
+        if not descriptive_association_only
+        or warning not in DESCRIPTIVE_ASSOCIATION_NON_MATERIAL_WARNINGS
+    ]
     return Answer(
         answer="\n".join(f.statement for f in findings),
         confidence="low"
         if insufficient
-        or warnings
+        or confidence_warnings
         or (predictive_evidence_cited and not descriptive_association_only)
         else "moderate"
         if descriptive_association_only
