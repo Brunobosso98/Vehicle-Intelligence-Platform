@@ -1012,7 +1012,13 @@ async def evaluate(
                         or finding.classification.value != "STATISTICAL_OUTLIER"
                     ):
                         raise AssertionError(
-                            "positive 9C answer omitted its source unit or outlier classification"
+                            "positive 9C answer omitted its source unit or outlier "
+                            "classification: "
+                            f"rendered_source_unit={rendered}; "
+                            f"classification={finding.classification.value}; "
+                            "expected_source_units="
+                            f"{[f'{fact.key}: {fact.value} {fact.unit}' for fact in unit_facts]}; "
+                            f"statement={finding.statement[:800]!r}"
                         )
                 grounded_anomaly_families.add(family)
             else:
