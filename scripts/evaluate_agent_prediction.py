@@ -1717,6 +1717,10 @@ async def evaluate(
             and len(cross_domain_evidence) == 3
         )
         bounded_label_values = {
+            # PrometheusMetricReader adds these fixed meter-scope labels to each sample.
+            "otel_scope_name": {"vehicle_platform"},
+            "otel_scope_schema_url": {""},
+            "otel_scope_version": {""},
             "outcome": {
                 "success",
                 "error",
