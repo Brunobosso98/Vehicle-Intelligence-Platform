@@ -1099,15 +1099,23 @@ async def evaluate(
             for bundle in (source_prediction, source_anomaly)
         )
         if pair_is_eligible:
+            pair_finding = pair_result.findings[0]
+            has_independent_wording = (
+                "não constituem confirmação independente" in pair_result.answer.casefold()
+            )
+            has_combined_wording = "nem confiança combinada" in pair_result.answer.casefold()
             if (
-                pair_result.findings[0].template != "statistical_association"
+                pair_finding.template != "statistical_association"
                 or pair_result.confidence != "moderate"
-                or "não constituem confirmação independente"
-                not in pair_result.answer.casefold()
-                or "nem confiança combinada" not in pair_result.answer.casefold()
+                or not has_independent_wording
+                or not has_combined_wording
             ):
                 raise AssertionError(
-                    "eligible same-snapshot results lost their descriptive-only wording"
+                    "same-snapshot wording mismatch: "
+                    f"template={pair_finding.template}; confidence={pair_result.confidence}; "
+                    f"independent={int(has_independent_wording)}; "
+                    f"combined={int(has_combined_wording)}; "
+                    f"text={pair_result.answer[:110]!r}"
                 )
             if len(pair_result.findings[0].evidence_ids) != 2:
                 raise AssertionError(
