@@ -417,7 +417,7 @@ def test_anomaly_renderer_preserves_family_reference_and_nonprobability_semantic
     assert "AFTER_PULL_OFFLINE" in answer.answer
     assert "relativamente incomum" in answer.answer
     assert "30 linhas e 6 sessões" in answer.answer
-    assert f"{feature_key.replace('_', ' ')}: {value} {unit}" in answer.answer
+    assert f"{feature_key}: {value} {unit}" in answer.answer
     source_binding = next(
         binding
         for binding in answer.findings[0].bindings

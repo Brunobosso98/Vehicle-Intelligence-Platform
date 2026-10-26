@@ -28,8 +28,8 @@ so the selected source can meet the existing 9E completeness gate. The scenario 
 evaluator-only; the MCP projection and agent receive only the persisted
 9D receipt and verified 9E facts. Acceptance requires the recorded decision to be `ANOMALOUS`, the
 source to be complete and high quality, the agent claim to be a statistical outlier, and the fixed
-renderer to bind the exact `READY_SCORE` status and a unit-bearing performance feature from that
-same 9E source as exact run-local facts. If the source does
+renderer to bind the exact `READY_SCORE` status and preserve the original key, value, and unit of a
+performance feature from that same 9E source as exact run-local facts. If the source does
 not meet those eligibility conditions, the evaluator must fail the positive case; it may not promote
 a partial bundle. The other three detector families are scored and routed through the real 9D/9E
 path, with their answers graded against each bundle's actual completeness and quality.

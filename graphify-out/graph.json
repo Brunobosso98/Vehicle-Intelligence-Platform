@@ -35574,7 +35574,7 @@
       "file_type": "code",
       "norm_label": "validate()",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L308"
+      "source_location": "L312"
     },
     {
       "id": "apps_api_src_vehicle_platform_agents_specialists_routing_decide",
@@ -86566,7 +86566,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L316",
+      "source_location": "L320",
       "weight": 1.0
     },
     {
@@ -86578,7 +86578,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L353",
+      "source_location": "L357",
       "weight": 1.0
     },
     {
@@ -86590,7 +86590,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L360",
+      "source_location": "L364",
       "weight": 1.0
     },
     {
@@ -86602,7 +86602,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L458",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -86614,7 +86614,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L640",
+      "source_location": "L644",
       "weight": 1.0
     },
     {
@@ -86626,7 +86626,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L653",
+      "source_location": "L657",
       "weight": 1.0
     },
     {
@@ -199036,7 +199036,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L308",
+      "source_location": "L312",
       "weight": 1.0
     },
     {
@@ -271852,7 +271852,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L308",
+      "source_location": "L312",
       "weight": 0.8
     },
     {
@@ -271864,7 +271864,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L308",
+      "source_location": "L312",
       "weight": 0.8
     },
     {
@@ -271876,7 +271876,7 @@
       "confidence_score": 0.95,
       "context": "parameter_type",
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L308",
+      "source_location": "L312",
       "weight": 0.8
     },
     {
@@ -277289,7 +277289,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/src/vehicle_platform/agents/grounding.py",
-      "source_location": "L339",
+      "source_location": "L343",
       "weight": 0.8
     },
     {
@@ -305245,5 +305245,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "1d7c7ffcdc5320559f6c5be22428dde475c60e7a"
+  "built_at_commit": "3304b37dcf6d53e1fbe33b9eb6655284eead9041"
 }

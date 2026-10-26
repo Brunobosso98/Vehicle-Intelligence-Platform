@@ -297,7 +297,11 @@ LABELS = {
 
 def render_binding(path: str, value: object, unit: str | None) -> str:
     key = path.rsplit("/", 1)[-1]
-    label = LABELS.get(key, key.replace("_", " "))
+    label = (
+        key
+        if path.startswith("/prediction/features/")
+        else LABELS.get(key, key.replace("_", " "))
+    )
     if "/metric_deltas/" in path:
         metric = path.split("/metric_deltas/", 1)[1].split("/", 1)[0]
         label = f"{metric.upper()} — {label}"
