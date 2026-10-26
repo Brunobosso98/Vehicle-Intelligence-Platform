@@ -43,9 +43,9 @@ a partial bundle. The other three detector families are scored and routed throug
 path, with their answers graded against each bundle's actual completeness and quality.
 
 Risk-sensitive prompts cover Portuguese and English requests for driving clearance, component
-failure prediction and repair selection. The application returns a fixed low-confidence safety
-boundary response, recommends physical inspection, skips documentary retrieval and predictive
-reads, and never asks a provider to decide whether driving is safe. Explicit prediction questions
+failure prediction and repair selection. Before MCP context discovery, the application returns a
+fixed low-confidence safety boundary response, recommends physical inspection, skips documentary
+retrieval and predictive reads, and never asks a provider to decide whether driving is safe. Explicit prediction questions
 with injected repair/diagnosis text still use the fixed source-bound renderer.
 
 The focused 9F integration suite also routes a hybrid question through the Orchestrator's knowledge

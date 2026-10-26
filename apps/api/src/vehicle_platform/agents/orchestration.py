@@ -18,7 +18,7 @@ from vehicle_platform.agents.grounding import validate
 from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
-from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
+from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleContext
 from vehicle_platform.agents.specialists.routing import (
     prediction_anomaly_pair_requested,
     prediction_request_intent,
@@ -74,10 +74,14 @@ class Orchestrator:
         graph.add_node("context", RunnableLambda(self.context_node))
         graph.add_node("knowledge", RunnableLambda(self.knowledge_node))
         graph.add_node("supervisor", RunnableLambda(self.supervisor_node))
+        graph.add_node("safety", RunnableLambda(self.safety_node))
         graph.add_node("model", RunnableLambda(self.model_node))
         graph.add_node("tools", RunnableLambda(self.tools_node))
         graph.add_node("grounding", RunnableLambda(self.grounding_node))
-        graph.add_edge(START, "context")
+        graph.add_conditional_edges(
+            START, self.entry_route, {"context": "context", "safety": "safety"}
+        )
+        graph.add_edge("safety", END)
         graph.add_edge("context", "knowledge")
         graph.add_edge("knowledge", "supervisor")
         graph.add_conditional_edges(
@@ -255,42 +259,8 @@ class Orchestrator:
             ):
                 if execution.context is None:
                     raise AgentError("invalid_agent_context")
-                portuguese = bool(
-                    re.search(
-                        r"\b(posso|devo|continuar|acelerando|dirigir|peça|trocar|"
-                        r"probabilidade|falha|quebrar)\b",
-                        execution.ask.question.casefold(),
-                    )
-                )
-                if portuguese:
-                    answer = (
-                        "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
-                        "uma peça para troca. Scores e desvios estatísticos descrevem apenas "
-                        "evidência de engenharia registrada; não estabelecem integridade mecânica "
-                        "nem segurança. Para uma decisão de segurança, solicite inspeção física "
-                        "por profissional qualificado antes de continuar sob carga."
-                    )
-                    uncertainty = "A causa mecânica e a segurança do veículo não foram avaliadas."
-                    limitation = "Inspeção física por profissional qualificado é necessária."
-                else:
-                    answer = (
-                        "I can't clear the vehicle for driving, estimate failure probability, or "
-                        "recommend a part to replace. Scores and statistical deviations describe "
-                        "recorded engineering evidence only; they do not establish mechanical "
-                        "integrity or safety. For a safety decision, have a qualified professional "
-                        "physically inspect the vehicle before continuing high-load operation."
-                    )
-                    uncertainty = "Mechanical cause and vehicle safety have not been assessed."
-                    limitation = "A qualified professional must inspect the vehicle physically."
-                execution.final = Answer(
-                    answer=answer,
-                    confidence="low",
-                    findings=[],
-                    evidence=execution.registry.ordered(),
-                    uncertainties=[uncertainty],
-                    limitations=[limitation],
-                    missing_evidence=[],
-                    context=execution.context,
+                execution.final = self.fixed_safety_answer(
+                    execution.ask.question, execution.context
                 )
                 return {}
             await Supervisor(self, execution).run(
@@ -499,6 +469,64 @@ class Orchestrator:
                 )
             await state.audit(call)
             await state.emit("tool_completed", call.model_dump(mode="json"))
+
+    @staticmethod
+    def entry_route(graph: GraphState) -> str:
+        question = graph["execution"].ask.question
+        return (
+            "safety"
+            if risk_sensitive_question(question) and prediction_request_intent(question) is None
+            else "context"
+        )
+
+    async def safety_node(self, graph: GraphState) -> dict[str, Any]:
+        state = graph["execution"]
+        state.context = VehicleContext(
+            vehicle_id=state.run.vehicle_id,
+            as_of=datetime.now(UTC),
+        )
+        state.final = self.fixed_safety_answer(state.ask.question, state.context)
+        return {}
+
+    @staticmethod
+    def fixed_safety_answer(question: str, context: VehicleContext) -> Answer:
+        portuguese = bool(
+            re.search(
+                r"\b(posso|devo|continuar|acelerando|dirigir|peça|trocar|"
+                r"probabilidade|falha|quebrar)\b",
+                question.casefold(),
+            )
+        )
+        if portuguese:
+            answer = (
+                "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
+                "uma peça para troca. Scores e desvios estatísticos descrevem apenas "
+                "evidência de engenharia registrada; não estabelecem integridade mecânica "
+                "nem segurança. Para uma decisão de segurança, solicite inspeção física "
+                "por profissional qualificado antes de continuar sob carga."
+            )
+            uncertainty = "A causa mecânica e a segurança do veículo não foram avaliadas."
+            limitation = "Inspeção física por profissional qualificado é necessária."
+        else:
+            answer = (
+                "I can't clear the vehicle for driving, estimate failure probability, or "
+                "recommend a part to replace. Scores and statistical deviations describe "
+                "recorded engineering evidence only; they do not establish mechanical "
+                "integrity or safety. For a safety decision, have a qualified professional "
+                "physically inspect the vehicle before continuing high-load operation."
+            )
+            uncertainty = "Mechanical cause and vehicle safety have not been assessed."
+            limitation = "A qualified professional must inspect the vehicle physically."
+        return Answer(
+            answer=answer,
+            confidence="low",
+            findings=[],
+            evidence=[],
+            uncertainties=[uncertainty],
+            limitations=[limitation],
+            missing_evidence=[],
+            context=context,
+        )
 
     async def context_node(self, graph: GraphState) -> dict[str, Any]:
         state = graph["execution"]

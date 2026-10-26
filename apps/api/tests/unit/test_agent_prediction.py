@@ -597,6 +597,30 @@ async def test_risk_sensitive_question_uses_fixed_safety_response_without_provid
     assert state.final.findings == []
 
 
+async def test_risk_sensitive_entry_gate_precedes_context_discovery(fixture, telemetry):  # noqa: F811
+    state = execution(fixture)
+    state.ask = Ask(question="Posso continuar acelerando?")
+    provider = MagicMock()
+    client = MagicMock()
+    client.discover = AsyncMock(return_value=[])
+    client.call = AsyncMock()
+    engine = Orchestrator(AgentSettings(), provider, client, telemetry)
+    knowledge = SimpleNamespace(search=AsyncMock())
+    engine.knowledge = knowledge
+
+    result = await engine.execute(state)
+
+    client.discover.assert_not_awaited()
+    client.call.assert_not_awaited()
+    provider.route.assert_not_called()
+    provider.turn.assert_not_called()
+    knowledge.search.assert_not_awaited()
+    assert result.confidence == "low"
+    assert result.findings == []
+    assert result.evidence == []
+    assert "inspeção física" in result.answer.casefold()
+
+
 async def test_prediction_question_with_injected_repair_request_reaches_supervisor(
     fixture,  # noqa: F811
     telemetry,  # noqa: F811
