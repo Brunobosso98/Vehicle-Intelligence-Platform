@@ -249,7 +249,10 @@ class Orchestrator:
             "agent.supervisor", record_exception=False, set_status_on_exception=False
         ):
             execution = graph["execution"]
-            if risk_sensitive_question(execution.ask.question):
+            if (
+                risk_sensitive_question(execution.ask.question)
+                and prediction_request_intent(execution.ask.question) is None
+            ):
                 if execution.context is None:
                     raise AgentError("invalid_agent_context")
                 portuguese = bool(
