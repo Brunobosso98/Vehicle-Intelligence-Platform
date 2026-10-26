@@ -100,6 +100,23 @@ def prediction_request_intent(question: str) -> Intent | None:
     return Intent.PREDICTION if recorded_prediction or next_pull_expectation else None
 
 
+def risk_sensitive_question(question: str) -> bool:
+    """Identify safety clearance, component-failure and repair-choice requests."""
+    q = question.casefold()
+    patterns = (
+        r"\b(can i|may i|should i|is it safe to|keep accelerating|continue accelerating|"
+        r"continue driving|safe to drive)\b",
+        r"\b(will|could|is .* going to)\b.{0,60}\b(fail|break|blow|explode)\b",
+        r"\b(what part|which part|what component)\b.{0,60}\b(replace|change|install)\b",
+        r"\b(probability|chance|likelihood)\b.{0,60}\b(fail|failure|break|component)\b",
+        r"\b(posso|devo)\b.{0,50}\b(continuar|acelerar|dirigir|rodar)\b",
+        r"\b(turbo|motor|peça|componente)\b.{0,60}\b(vai quebrar|vai falhar|quebrou|falhou)\b",
+        r"\b(qual|que)\b.{0,50}\b(peça|componente)\b.{0,50}\b(trocar|substituir)\b",
+        r"\b(probabilidade|chance|risco)\b.{0,60}\b(falha|quebrar|componente)\b",
+    )
+    return any(re.search(pattern, q) for pattern in patterns)
+
+
 def prediction_specialists(question: str, evidence: list[Evidence]) -> tuple[Specialist, ...]:
     q = question.casefold()
     interpretive = re.search(

@@ -817,6 +817,7 @@ def _summarize_bundle_outcomes(
                     "expected_feature_count": (
                         bundle.source_summary.expected_feature_count
                     ),
+                    "missing_reason_counts": bundle.source_summary.missing_reason_counts,
                     "pull_completeness": bundle.source_summary.pull_completeness,
                 },
                 "gap_codes": sorted({gap.code.value for gap in bundle.gaps}),
@@ -1194,7 +1195,22 @@ async def evaluate() -> dict[str, Any]:
                             f"9D {task.value} fixture did not score",
                         )
 
-                    anomaly_pull = primary.pulls_by_session[12][0]
+                    # Use a known eligible held-out positive from the frozen 9C test
+                    # fold. Session 12 was not used to fit or select the detector
+                    # threshold; slot 8 is the evaluation-only performance injection
+                    # created by the canonical 9C fixture. The label stays in this
+                    # evaluator and is never written to model input or exposed to 9F.
+                    anomaly_pull = primary.pulls_by_session[12][8]
+                    _assert(
+                        anomaly_pull.scenario == "performance",
+                        "Phase 9F requires the predeclared held-out 9C positive case",
+                    )
+                    report["phase9f_fixture"] = {
+                        "fold": "session_12_frozen_test",
+                        "selected_stimulus": "performance",
+                        "scenario_metadata_used_for": "evaluator_case_selection_only",
+                        "scenario_metadata_exposed_to_agent": False,
+                    }
                     anomaly_cutoff = datetime.now(UTC) + timedelta(seconds=1)
                     for family in anomaly_context["versions"]:
                         response = await client.post(

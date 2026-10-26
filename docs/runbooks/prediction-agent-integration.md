@@ -58,8 +58,10 @@ curl --fail-with-body http://127.0.0.1:8000/api/v1/vehicles/$VEHICLE_ID/agent-ru
 The returned claim cites the AgentRun-local evidence ID. Its limitation identifies the recorded
 source role, exact `NEXT_PULL` or `AFTER_PULL_OFFLINE` horizon and non-calibrated engineering score.
 An `ABSTAINED`/`PARTIAL` or low-quality bundle instead returns a `DATA_GAP` answer without its
-ineligible score. A risk-sensitive question such as “Posso continuar acelerando?” cannot receive a
-safe-to-drive conclusion, fault probability or part-replacement instruction from these records.
+ineligible score. A risk-sensitive question such as “Posso continuar acelerando?” takes a fixed
+application refusal path. It makes no safe-to-drive conclusion, failure-probability estimate or
+part-replacement instruction, skips prediction reads, and recommends physical inspection by a
+qualified professional before high-load operation. English equivalents follow the same policy.
 
 To simulate operator revocation in a running process, rotate the prediction capability and remove
 the selected vehicle from both allowlists. New evidence reads in an already running graph fail with

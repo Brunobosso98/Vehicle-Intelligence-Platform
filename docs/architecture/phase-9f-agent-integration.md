@@ -35,6 +35,11 @@ routing and application-authored Portuguese templates. Interpretive requests sel
 matching performance, thermal, or fuel/air/boost specialist. No provider chooses which evidence
 may be opened.
 
+Safety-clearance, failure-probability and part-replacement questions take an application-owned
+refusal path after vehicle context is resolved. The path skips document retrieval and predictive
+evidence reads, gives no permission or repair instruction, and recommends physical inspection by a
+qualified professional for safety decisions. The provider cannot rewrite that response.
+
 ## Scope and semantics
 
 The adapter calls `PredictionEvidenceService.read_verified` with the selected vehicle. That path
@@ -46,7 +51,10 @@ budget yields a bounded error or data-gap answer.
 9B `NEXT_PULL` remains a versioned engineering-label classification about the next compatible
 pull; it is not observed future telemetry or a calibrated failure probability. 9C
 `AFTER_PULL_OFFLINE` remains a retrospective statistical deviation on an observed pull; it is not
-a diagnosis. Both scores preserve their separate units and thresholds. A same-pull pair requires
+a diagnosis. The 9C fixed renderer includes a unit-bearing family feature from the same verified 9E
+projection as an exact run-local binding alongside the detector score and frozen cohort size; the
+feature is descriptive and is not presented as the cause of the outlier. Both score types preserve their separate units and
+thresholds. A same-pull pair requires
 distinct 9E evidence and receipt IDs, one matching FeatureSet and pull, verified complete/high
 quality sources, and both horizons. The rendered statement calls this a shared snapshot, not
 independent corroboration, causal evidence, or combined confidence. Predictive answers have low

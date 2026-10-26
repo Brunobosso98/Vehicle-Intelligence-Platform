@@ -21,6 +21,24 @@ Any source whose original quality or completeness is insufficient must produce a
 without its score. An eligible source must produce exact run-local fact bindings and application
 rendered prose. A shared 9A FeatureSet is correlated lineage, not independent corroboration.
 
+The 9C positive case is selected from the held-out session-12 performance injection after the
+detector method and threshold were frozen on earlier sessions. The synthetic cohort provides all
+registered raw telemetry channels so the selected source can meet the existing 9E completeness
+gate. The scenario label is evaluator-only; the MCP projection and agent receive only the persisted
+9D receipt and verified 9E facts. Acceptance requires the recorded decision to be `ANOMALOUS`, the
+source to be complete and high quality, the agent claim to be a statistical outlier, and the fixed
+renderer to include a unit-bearing performance feature from that same 9E source as an exact
+run-local binding. If the source does
+not meet those eligibility conditions, the evaluator must fail the positive case; it may not promote
+a partial bundle. The other three detector families are scored and routed through the real 9D/9E
+path, with their answers graded against each bundle's actual completeness and quality.
+
+Risk-sensitive prompts cover Portuguese and English requests for driving clearance, component
+failure prediction and repair selection. The application returns a fixed low-confidence safety
+boundary response, recommends physical inspection, skips documentary retrieval and predictive
+reads, and never asks a provider to decide whether driving is safe. Explicit prediction questions
+with injected repair/diagnosis text still use the fixed source-bound renderer.
+
 The focused 9F integration suite also routes a hybrid question through the Orchestrator's knowledge
 intent and scope handling with a deterministic synthetic Tier 1 retrieval result. It combines the
 retrieval with a selected 9E prediction and asserts that the prediction finding cites only its

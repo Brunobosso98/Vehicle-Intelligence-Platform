@@ -50,6 +50,30 @@ def _prediction_bindings(source: Evidence, paths: tuple[str, ...]) -> list[Bindi
     ]
 
 
+def _anomaly_source_measurement(source: Evidence, family: str) -> Fact | None:
+    """Return a bounded, unit-bearing feature from the same 9E projection."""
+    prefixes = {
+        "thermal": "thermal.",
+        "boost_air": "boost_air.",
+        "performance": "performance.",
+        "fuel": "fuel.",
+    }
+    prefix = prefixes.get(family)
+    if prefix is None:
+        return None
+    candidates = [
+        fact
+        for fact in source.facts
+        if fact.path.startswith("/prediction/features/")
+        and fact.path.removeprefix("/prediction/features/").startswith(prefix)
+        and fact.unit is not None
+        and isinstance(fact.value, (int, float))
+        and not isinstance(fact.value, bool)
+        and math.isfinite(fact.value)
+    ]
+    return min(candidates, key=lambda fact: fact.path) if candidates else None
+
+
 def prediction_answer(
     registry: EvidenceRegistry,
     context: VehicleContext,
@@ -176,7 +200,7 @@ def prediction_answer(
                     forced_gap="unsupported_task_or_decision",
                     question=question,
                 )
-            paths = (
+            prediction_paths = (
                 "/prediction/horizon",
                 "/prediction/task",
                 "/prediction/score",
@@ -190,14 +214,18 @@ def prediction_answer(
                 Claim(
                     classification=Classification.MODEL_CLASSIFICATION,
                     template="prediction_result",
-                    bindings=_prediction_bindings(source, paths),
+                    bindings=_prediction_bindings(source, prediction_paths),
                     evidence_ids=[source.id],
                 )
             )
         else:
             family = _prediction_fact(source, "/prediction/family").value
             decision = _prediction_fact(source, "/prediction/decision").value
-            if family not in ANOMALY_FAMILIES or decision not in {"ANOMALOUS", "INLIER"}:
+            if (
+                not isinstance(family, str)
+                or family not in ANOMALY_FAMILIES
+                or decision not in {"ANOMALOUS", "INLIER"}
+            ):
                 return prediction_answer(
                     registry,
                     context,
@@ -205,16 +233,20 @@ def prediction_answer(
                     forced_gap="unsupported_family_or_decision",
                     question=question,
                 )
-            paths = (
+            anomaly_paths: tuple[str, ...] = (
                 "/prediction/horizon",
                 "/prediction/family",
-                "/prediction/status",
                 "/prediction/score",
                 "/prediction/threshold",
                 "/prediction/detector_version",
                 "/prediction/detector_method",
                 "/prediction/effective_cutoff",
             )
+            source_measurement = _anomaly_source_measurement(source, family)
+            if decision == "ANOMALOUS":
+                if source_measurement is None:
+                    raise AgentError("unsupported_prediction_claim")
+                anomaly_paths = (*anomaly_paths, source_measurement.path)
             claims.append(
                 Claim(
                     classification=(
@@ -223,7 +255,7 @@ def prediction_answer(
                         else Classification.MODEL_CLASSIFICATION
                     ),
                     template="anomaly_result",
-                    bindings=_prediction_bindings(source, paths),
+                    bindings=_prediction_bindings(source, anomaly_paths),
                     evidence_ids=[source.id],
                 )
             )
@@ -413,13 +445,19 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
             expected_paths = {
                 "/prediction/horizon",
                 "/prediction/family",
-                "/prediction/status",
                 "/prediction/score",
                 "/prediction/threshold",
                 "/prediction/detector_version",
                 "/prediction/detector_method",
                 "/prediction/effective_cutoff",
             }
+            if not isinstance(family, str):
+                raise AgentError("unsupported_prediction_claim")
+            source_measurement = _anomaly_source_measurement(source, family)
+            if decision == "ANOMALOUS" and source_measurement is None:
+                raise AgentError("unsupported_prediction_claim")
+            if source_measurement is not None and decision == "ANOMALOUS":
+                expected_paths.add(source_measurement.path)
             if (
                 claim.classification != expected_classification
                 or {binding.path for binding in claim.bindings} != expected_paths
@@ -457,6 +495,17 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
                 if decision == "ANOMALOUS"
                 else "não foi classificada como incomum por este detector"
             )
+            source_detail = (
+                " Característica registrada na fonte 9E: "
+                + render_binding(
+                    source_measurement.path,
+                    source_measurement.value,
+                    source_measurement.unit,
+                )
+                + "."
+                if source_measurement is not None
+                else ""
+            )
             statement = (
                 f"A puxada observada {label} pela família {family} no horizonte "
                 "AFTER_PULL_OFFLINE. "
@@ -465,7 +514,8 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
                 f"{_prediction_fact(source, '/prediction/detector_version').value}; "
                 f"papel da fonte: {_prediction_fact(source, '/prediction/source_role').value}; "
                 f"corte: {_prediction_fact(source, '/prediction/effective_cutoff').value}."
-                f"{reference} O score é relativo a esta referência e não é probabilidade, "
+                f"{reference}{source_detail} O score é relativo a esta referência e não é "
+                "probabilidade, "
                 "severidade de falha ou diagnóstico mecânico."
             )
         elif claim.template == "statistical_association":

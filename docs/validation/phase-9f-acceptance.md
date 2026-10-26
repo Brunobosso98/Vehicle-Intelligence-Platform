@@ -17,9 +17,16 @@ The gate checks:
 - a plain recorded-result lookup skips provider routing/turns and opens only the selected evidence;
 - read-time 9E verification adds no verification audit and does not rerun inference;
 - the next-pull result and retrospective anomaly preserve their distinct horizons and safe wording;
+- the 9C performance case is selected from the predeclared, frozen session-12 test fold. Its
+  evaluation-only scenario label remains in the evaluator, while the agent receives only the
+  persisted 9D/9E source evidence. The canonical synthetic cohort provides all registered raw
+  telemetry channels so the selected result can qualify as a complete 9E source; if it is partial,
+  the expected response is still `DATA_GAP`. A positive outlier answer must include a unit-bearing
+  9E performance feature from that same pull as an exact run-local fact binding;
 - a same-pull pair retains separate receipt/evidence IDs and shared source lineage; because the
-  current anomaly bundle is partial, the response is a `DATA_GAP`. A complete verified pair may
-  state only descriptive association and never combines confidence;
+  outcomes depend on the original 9E completeness and quality. A complete verified pair may state
+  only descriptive association and never combines confidence; an incomplete pair stays a
+  `DATA_GAP`;
 - an interpretive prediction request selects only the matching domain specialist;
 - allowlist-filtered facts in the private MCP projection retain a warning and low confidence, while a
   complete, verified, high-quality 9E bundle can still support an exact result claim when its
@@ -29,6 +36,12 @@ The gate checks:
 - exact source evidence, receipt and FeatureSet IDs stay out of provider input and public AgentRun
   snapshots while a private run-local mapping is stored;
 - an ordinary vehicle question uses the regular MCP credential and never calls the prediction tool.
+- Portuguese and English safety/repair questions receive fixed application refusals that make no
+  safe-to-drive, failure-probability or part-replacement claim and recommend a qualified physical
+  inspection. They do not read predictive evidence or invoke the provider.
+- check values in the receipt are derived from observed MCP calls, authorization denials, source
+  bindings, specialist selections, answer content, private-link rows and run counts. The evaluator
+  refuses to run on a dirty source tree, and the receipt checker requires a clean matching SHA.
 - revoking prediction capability during a run aborts it before a subsequent prediction evidence read.
 
 All fixtures are generated in an isolated disposable PostgreSQL database. PASS means this controlled

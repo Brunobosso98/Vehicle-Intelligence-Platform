@@ -1,6 +1,7 @@
 import asyncio
 import hmac
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from time import perf_counter
 from typing import Any
@@ -21,6 +22,7 @@ from vehicle_platform.agents.schemas import Answer, ToolCall, Usage
 from vehicle_platform.agents.specialists.routing import (
     prediction_anomaly_pair_requested,
     prediction_request_intent,
+    risk_sensitive_question,
 )
 from vehicle_platform.agents.state import Execution, GraphState
 from vehicle_platform.knowledge.context import knowledge_scope
@@ -144,7 +146,9 @@ class Orchestrator:
         state = graph["execution"]
         if self.knowledge is None or state.context is None:
             return {}
-        if hints_for(state.ask.question, state.registry.ordered()).intent == Intent.UNSAFE:
+        if hints_for(
+            state.ask.question, state.registry.ordered()
+        ).intent == Intent.UNSAFE or risk_sensitive_question(state.ask.question):
             return {}
         requested = plan(state.ask.question)
         if requested.intent is None:
@@ -245,6 +249,47 @@ class Orchestrator:
             "agent.supervisor", record_exception=False, set_status_on_exception=False
         ):
             execution = graph["execution"]
+            if risk_sensitive_question(execution.ask.question):
+                if execution.context is None:
+                    raise AgentError("invalid_agent_context")
+                portuguese = bool(
+                    re.search(
+                        r"\b(posso|devo|continuar|acelerando|dirigir|peça|trocar|"
+                        r"probabilidade|falha|quebrar)\b",
+                        execution.ask.question.casefold(),
+                    )
+                )
+                if portuguese:
+                    answer = (
+                        "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
+                        "uma peça para troca. Scores e desvios estatísticos descrevem apenas "
+                        "evidência de engenharia registrada; não estabelecem integridade mecânica "
+                        "nem segurança. Para uma decisão de segurança, solicite inspeção física "
+                        "por profissional qualificado antes de continuar sob carga."
+                    )
+                    uncertainty = "A causa mecânica e a segurança do veículo não foram avaliadas."
+                    limitation = "Inspeção física por profissional qualificado é necessária."
+                else:
+                    answer = (
+                        "I can't clear the vehicle for driving, estimate failure probability, or "
+                        "recommend a part to replace. Scores and statistical deviations describe "
+                        "recorded engineering evidence only; they do not establish mechanical "
+                        "integrity or safety. For a safety decision, have a qualified professional "
+                        "physically inspect the vehicle before continuing high-load operation."
+                    )
+                    uncertainty = "Mechanical cause and vehicle safety have not been assessed."
+                    limitation = "A qualified professional must inspect the vehicle physically."
+                execution.final = Answer(
+                    answer=answer,
+                    confidence="low",
+                    findings=[],
+                    evidence=execution.registry.ordered(),
+                    uncertainties=[uncertainty],
+                    limitations=[limitation],
+                    missing_evidence=[],
+                    context=execution.context,
+                )
+                return {}
             await Supervisor(self, execution).run(
                 documentation_only=bool(execution.final and execution.final.knowledge)
             )
