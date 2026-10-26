@@ -1204,8 +1204,68 @@ async def evaluate(
                     "four-source quality gap was promoted into a result"
                 )
         elif len(four_read.result.findings) != 4:
+            four_read_diagnostics = {
+                "finding_count": len(four_read.result.findings),
+                "findings": [
+                    {
+                        "template": finding.template,
+                        "classification": finding.classification.value,
+                        "citation_count": len(finding.evidence_ids),
+                    }
+                    for finding in four_read.result.findings
+                ],
+                "confidence": four_read.result.confidence,
+                "missing_evidence": four_read.result.missing_evidence,
+                "limitations": four_read.result.limitations,
+                "sources": [
+                    {
+                        "family": next(
+                            (
+                                fact.value
+                                for fact in source.facts
+                                if fact.path == "/prediction/family"
+                            ),
+                            None,
+                        ),
+                        "completeness": next(
+                            (
+                                fact.value
+                                for fact in source.facts
+                                if fact.path == "/prediction/completeness"
+                            ),
+                            None,
+                        ),
+                        "integrity": next(
+                            (
+                                fact.value
+                                for fact in source.facts
+                                if fact.path == "/prediction/integrity"
+                            ),
+                            None,
+                        ),
+                        "quality": next(
+                            (
+                                fact.value
+                                for fact in source.facts
+                                if fact.path == "/prediction/quality_class"
+                            ),
+                            None,
+                        ),
+                        "unit_feature_paths": [
+                            fact.path
+                            for fact in source.facts
+                            if fact.path.startswith("/prediction/features/")
+                            and fact.unit is not None
+                        ],
+                        "warnings": source.warnings,
+                        "truncated": source.truncated,
+                    }
+                    for source in four_read_evidence
+                ],
+            }
             raise AssertionError(
-                "four eligible anomaly sources were not cited separately"
+                "four eligible anomaly sources were not cited separately: "
+                + json.dumps(four_read_diagnostics, ensure_ascii=False, sort_keys=True)
             )
         selected_four = (
             four_read.supervisor.routing.selected if four_read.supervisor else []
