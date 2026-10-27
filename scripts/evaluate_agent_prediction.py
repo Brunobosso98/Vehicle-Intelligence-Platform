@@ -580,7 +580,7 @@ async def evaluate(
                 raise AssertionError(
                     "ordinary MCP token received the wrong authorization error"
                 )
-                ordinary_direct_call_denied = True
+            ordinary_direct_call_denied = True
         else:
             raise AssertionError(
                 "ordinary MCP token directly called the predictive evidence tool"
@@ -607,7 +607,7 @@ async def evaluate(
                 raise AssertionError(
                     "foreign vehicle scope was not hidden as not found"
                 )
-                foreign_vehicle_hidden = True
+            foreign_vehicle_hidden = True
         else:
             raise AssertionError(
                 "prediction MCP token read evidence outside its vehicle allowlist"
@@ -1289,6 +1289,13 @@ async def evaluate(
             raise AssertionError(
                 f"interpretive request failed: {interpreted.error_category}"
             )
+        _, _, interpreted_grounding_verified = _assert_grounded_run(
+            interpreted,
+            source_prediction,
+            anomaly_context,
+            template="prediction_result",
+        )
+        grounding_checks.append(interpreted_grounding_verified)
         selected = (
             interpreted.supervisor.routing.selected if interpreted.supervisor else []
         )
