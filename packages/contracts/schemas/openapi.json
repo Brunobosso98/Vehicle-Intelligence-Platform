@@ -2168,7 +2168,7 @@
         "properties": {
           "bindings": {
             "items": { "$ref": "#/components/schemas/Binding" },
-            "maxItems": 8,
+            "maxItems": 9,
             "title": "Bindings",
             "type": "array"
           },
@@ -5020,7 +5020,7 @@
         "properties": {
           "bindings": {
             "items": { "$ref": "#/components/schemas/Binding" },
-            "maxItems": 8,
+            "maxItems": 9,
             "title": "Bindings",
             "type": "array"
           },
