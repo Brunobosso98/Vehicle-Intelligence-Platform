@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from vehicle_platform.agents.evidence import PredictionEvidenceLink
 from vehicle_platform.agents.provider import AgentError
 from vehicle_platform.agents.schemas import AgentRun, StreamEvent, ToolCall
 from vehicle_platform.infrastructure.database import Database
@@ -142,7 +143,14 @@ class AgentRepository:
             )
             await db.commit()
 
-    async def save(self, run: AgentRun) -> None:
+    async def save(
+        self,
+        run: AgentRun,
+        *,
+        prediction_links: list[PredictionEvidenceLink] | None = None,
+    ) -> None:
+        if prediction_links is not None and len(prediction_links) > 4:
+            raise AgentError("prediction_evidence_budget_exhausted")
         async with self.session() as db:
             await db.execute(
                 text(
@@ -151,6 +159,50 @@ class AgentRepository:
                 ),
                 {"id": run.id, "status": run.status, "snapshot": run.model_dump_json()},
             )
+            for link in prediction_links or []:
+                await db.execute(
+                    text(
+                        "INSERT INTO agent_prediction_evidence_links "
+                        "(agent_run_id,run_evidence_id,source_evidence_id,receipt_id,"
+                        "source_vehicle_id,source_session_id,source_pull_id,"
+                        "source_configuration_id,source_feature_set_id,result_type,horizon,task,family,"
+                        "model_version,model_algorithm,detector_version,detector_algorithm_version,"
+                        "detector_method,source_role,effective_cutoff,integrity,completeness,"
+                        "artifact_availability,projection_version) VALUES "
+                        "(:run,:run_evidence,:source_evidence,:receipt,:vehicle,:session,:pull,"
+                        ":configuration,:feature_set,:result_type,:horizon,:task,:family,"
+                        ":model_version,:model_algorithm,:detector_version,:detector_algorithm_version,"
+                        ":detector_method,:role,:cutoff,"
+                        ":integrity,:completeness,:artifact_availability,:projection) "
+                        "ON CONFLICT (agent_run_id,run_evidence_id) DO NOTHING"
+                    ),
+                    {
+                        "run": run.id,
+                        "run_evidence": link.run_evidence_id,
+                        "source_evidence": link.source_evidence_id,
+                        "receipt": link.receipt_id,
+                        "vehicle": link.source_vehicle_id,
+                        "session": link.source_session_id,
+                        "pull": link.source_pull_id,
+                        "configuration": link.source_configuration_id,
+                        "feature_set": link.source_feature_set_id,
+                        "result_type": link.result_type,
+                        "horizon": link.horizon,
+                        "task": link.task,
+                        "family": link.family,
+                        "model_version": link.model_version,
+                        "model_algorithm": link.model_algorithm,
+                        "detector_version": link.detector_version,
+                        "detector_algorithm_version": link.detector_algorithm_version,
+                        "detector_method": link.detector_method,
+                        "role": link.source_role,
+                        "cutoff": link.effective_cutoff,
+                        "integrity": link.integrity,
+                        "completeness": link.completeness,
+                        "artifact_availability": link.artifact_availability,
+                        "projection": link.projection_version,
+                    },
+                )
             await db.commit()
 
     async def finish(self, run: AgentRun, event: StreamEvent) -> None:

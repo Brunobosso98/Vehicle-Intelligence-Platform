@@ -54,3 +54,14 @@ controlled fixture; the existing Phase 7B browser gate separately exercises the 
 Phase 7D owns comprehensive real-model routing, cost, latency and quality evaluation. Phase 8 owns
 technical-document retrieval and RAG. This phase introduces neither external knowledge nor vehicle
 control. Deterministic validation must use the production graph, real MCP and disposable databases.
+
+## Phase 9F controlled prediction evidence
+
+Phase 9F adds deterministic intent routing for explicitly selected, already verified 9E evidence.
+The Data Quality specialist remains the interpretation gate; thermal, performance and fuel/air/boost
+receive only their family-specific typed projections. A prediction read consumes the shared run
+MCP budget and cannot widen another specialist's registry snapshot. `NEXT_PULL` classifications
+remain separate from `AFTER_PULL_OFFLINE` statistical outliers, and same-FeatureSet agreement is
+descriptive association only. Provider or specialist prose cannot override 9F structural validation
+or the application renderers. The path is disabled in production and on ordinary agent asks; see the
+[Phase 9F architecture](phase-9f-agent-integration.md).

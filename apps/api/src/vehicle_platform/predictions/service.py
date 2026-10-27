@@ -927,12 +927,26 @@ class PredictionService:
     def _quality(
         self, snapshot: FeatureSnapshot, features: dict[str, Any], missing: dict[str, str]
     ) -> PredictionQuality:
-        expected = len(features) if features else len(snapshot.values)
-        observed = (
-            expected - len(missing)
+        feature_keys = set(features) if features else set(snapshot.values)
+        missing_reasons = (
+            missing
             if features
-            else sum(item.get("value") is not None for item in snapshot.values.values())
+            else {
+                key: (
+                    str(item.get("missing_reason"))
+                    if isinstance(item.get("missing_reason"), str)
+                    else "invalid_quality"
+                )
+                for key, item in snapshot.values.items()
+                if item.get("value") is None
+            }
         )
+        not_applicable = {
+            key for key, reason in missing_reasons.items() if reason == "not_applicable"
+        }
+        applicable_keys = feature_keys - not_applicable
+        expected = len(applicable_keys)
+        observed = len(applicable_keys - set(missing_reasons))
         coverage = observed / expected if expected else 0.0
         declared = snapshot.quality_metadata.get("expected_coverage_ratio")
         if isinstance(declared, (int, float)) and not isinstance(declared, bool):

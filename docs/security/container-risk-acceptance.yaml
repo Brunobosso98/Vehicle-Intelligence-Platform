@@ -220,12 +220,12 @@ exceptions:
       HTTP/1 endpoints only and binds published ports to 127.0.0.1; this limits exposure but does not remove the finding.
   - id: grafana-cve-2026-100352
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-100352
     packages:
       - github.com/getkin/kin-openapi
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition:
       Upgrade to a Grafana release embedding kin-openapi 0.148.0 or later and rescan; review
@@ -237,12 +237,12 @@ exceptions:
       acceptance pending the next vendor patch.
   - id: grafana-cve-2026-100353
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-100353
     packages:
       - github.com/getkin/kin-openapi
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition:
       Upgrade to a Grafana release embedding kin-openapi 0.149.0 or later and rescan; review
@@ -254,12 +254,12 @@ exceptions:
       pending the next vendor patch.
   - id: grafana-cve-2026-100354
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-100354
     packages:
       - github.com/getkin/kin-openapi
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition:
       Upgrade to a Grafana release embedding kin-openapi 0.149.0 or later and rescan; review
@@ -271,12 +271,12 @@ exceptions:
       acceptance pending the next vendor patch.
   - id: grafana-cve-2026-21728
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-21728
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition: Rescan Grafana after the vendor updates its embedded Tempo module; review again by 2026-10-28.
     rationale:
@@ -285,12 +285,12 @@ exceptions:
       Viewer access; retain this exact module finding for review rather than treating the scanner result as remediated.
   - id: grafana-cve-2026-28377
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-28377
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition: Rescan Grafana after the vendor updates its embedded Tempo module; review again by 2026-10-28.
     rationale:
@@ -347,12 +347,12 @@ exceptions:
       risk. Accept only until a fixed vendor image is available.
   - id: grafana-cve-2026-111943
     images:
-      - grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
+      - grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737
     vulnerability_id: CVE-2026-111943
     packages:
       - stdlib
     owner: repository-maintainer
-    reviewed_on: "2026-10-21"
+    reviewed_on: "2026-10-23"
     expires: "2026-10-28"
     remediation_condition:
       Replace with a compatible vendor image built with Go 1.26.10 or 1.27.3, then rescan; review

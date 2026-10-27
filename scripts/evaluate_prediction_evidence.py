@@ -20,6 +20,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 from uuid import UUID
 
+import evaluate_agent_prediction as phase9f
 import evaluate_anomaly_detection as phase9c
 import evaluate_prediction_service as phase9d
 import httpx
@@ -575,7 +576,8 @@ async def _select_pull_with_future_target(
             (
                 await db.execute(
                     text(
-                        "SELECT p.id,p.vehicle_id,p.ended_at,fs.id AS feature_set_id,"
+                        "SELECT p.id,p.vehicle_id,p.session_id,p.configuration_id,p.ended_at,"
+                        "fs.id AS feature_set_id,"
                         "fs.observation_cutoff,fs.quality_metadata "
                         "FROM pulls p JOIN feature_sets fs ON fs.pull_id=p.id "
                         "WHERE fs.entity_scope='pull' ORDER BY p.started_at,p.id"
@@ -637,6 +639,26 @@ async def _select_pull_with_future_target(
         "9B source cutoff cannot precede its recorded future target",
     )
     return {**targets, "eligible": eligible}
+
+
+async def _pull_context(database: Database, pull_id: UUID) -> dict[str, UUID]:
+    async with database.session() as db:
+        row = (
+            (
+                await db.execute(
+                    text(
+                        "SELECT id AS pull_id,vehicle_id,session_id,configuration_id "
+                        "FROM pulls WHERE id=:id"
+                    ),
+                    {"id": pull_id},
+                )
+            )
+            .mappings()
+            .one()
+        )
+    if row["configuration_id"] is None:
+        raise ValueError("acceptance pull has no configuration context")
+    return {key: UUID(str(row[key])) for key in row}
 
 
 async def _materialize(
@@ -795,6 +817,8 @@ def _summarize_bundle_outcomes(
                     "expected_feature_count": (
                         bundle.source_summary.expected_feature_count
                     ),
+                    "missing_reason_counts": bundle.source_summary.missing_reason_counts,
+                    "available_signals": bundle.source_summary.available_signals,
                     "pull_completeness": bundle.source_summary.pull_completeness,
                 },
                 "gap_codes": sorted({gap.code.value for gap in bundle.gaps}),
@@ -928,6 +952,9 @@ async def evaluate() -> dict[str, Any]:
             first_upgrade_output = _migrate(url, "upgrade", "0017")
             down_output = _migrate(url, "downgrade", "0016")
             up_output = _migrate(url, "upgrade", "0017")
+            lineage_upgrade_output = _migrate(url, "upgrade", "0018")
+            lineage_down_output = _migrate(url, "downgrade", "0017")
+            lineage_reupgrade_output = _migrate(url, "upgrade", "0018")
             database = Database(settings, command_timeout=60)
             _monitor_database_sessions(database, helper_connection_counts)
             await database.check()
@@ -939,11 +966,15 @@ async def evaluate() -> dict[str, Any]:
             report["migration"] = {
                 "fresh_upgrade_head": "PASS",
                 "round_trip": "0016 -> 0017 -> 0016 -> 0017",
+                "phase9f_lineage_round_trip": "0017 -> 0018 -> 0017 -> 0018",
                 "legacy_table_count": len(legacy_before),
                 "legacy_digests_unchanged": True,
                 "first_upgrade_output": first_upgrade_output,
                 "downgrade_output": down_output,
                 "upgrade_output": up_output,
+                "phase9f_upgrade_output": lineage_upgrade_output,
+                "phase9f_downgrade_output": lineage_down_output,
+                "phase9f_reupgrade_output": lineage_reupgrade_output,
             }
 
             app = create_app(settings)
@@ -1165,7 +1196,22 @@ async def evaluate() -> dict[str, Any]:
                             f"9D {task.value} fixture did not score",
                         )
 
-                    anomaly_pull = primary.pulls_by_session[12][0]
+                    # Use a known eligible held-out positive from the frozen 9C test
+                    # fold. Session 12 was not used to fit or select the detector
+                    # threshold; slot 8 is the evaluation-only performance injection
+                    # created by the canonical 9C fixture. The label stays in this
+                    # evaluator and is never written to model input or exposed to 9F.
+                    anomaly_pull = primary.pulls_by_session[12][8]
+                    _assert(
+                        anomaly_pull.scenario == "performance",
+                        "Phase 9F requires the predeclared held-out 9C positive case",
+                    )
+                    report["phase9f_fixture"] = {
+                        "fold": "session_12_frozen_test",
+                        "selected_stimulus": "performance",
+                        "scenario_metadata_used_for": "evaluator_case_selection_only",
+                        "scenario_metadata_exposed_to_agent": False,
+                    }
                     anomaly_cutoff = datetime.now(UTC) + timedelta(seconds=1)
                     for family in anomaly_context["versions"]:
                         response = await client.post(
@@ -1367,9 +1413,18 @@ async def evaluate() -> dict[str, Any]:
                     denied_burst = [
                         item for item in burst_100 if item[0].status_code == 429
                     ]
+                    burst_status_counts = {
+                        str(status): sum(
+                            item[0].status_code == status for item in burst_100
+                        )
+                        for status in sorted(
+                            {item[0].status_code for item in burst_100}
+                        )
+                    }
                     _assert(
                         len(accepted_burst) + len(denied_burst) == 100,
-                        "100-way materialization burst returned an unexpected status",
+                        "100-way materialization burst returned an unexpected status: "
+                        f"{burst_status_counts}",
                     )
                     burst_ids = {
                         item[0].json()["evidence"]["evidence_id"]
@@ -2393,6 +2448,50 @@ async def evaluate() -> dict[str, Any]:
                     )
                     report["integrity_controls"]["database_constraints"] = (
                         constraint_checks
+                    )
+
+                    # Keep the shared 9C evidence pristine while the Phase 9F agent reads it.
+                    missing_context = await _pull_context(
+                        database, UUID(str(targets["missing_fuel"]["id"]))
+                    )
+                    low_quality_context = await _pull_context(
+                        database, UUID(str(targets["low_quality"]["id"]))
+                    )
+                    no_feature_context = await _pull_context(
+                        database, UUID(str(no_feature_pull.pull_id))
+                    )
+                    report["phase9f"] = await phase9f.evaluate(
+                        settings=settings,
+                        telemetry=app.state.telemetry,
+                        model_artifacts=model_store,
+                        anomaly_artifacts=anomaly_store,
+                        source_bundles=source_bundles,
+                        source_contexts={
+                            "supervised": {
+                                "vehicle_id": UUID(str(eligible["vehicle_id"])),
+                                "session_id": UUID(str(eligible["session_id"])),
+                                "pull_id": pull_id,
+                                "configuration_id": UUID(
+                                    str(eligible["configuration_id"])
+                                ),
+                            },
+                            "anomaly": {
+                                "vehicle_id": UUID(str(anomaly_pull.vehicle_id)),
+                                "session_id": UUID(str(anomaly_pull.session_id)),
+                                "pull_id": UUID(str(anomaly_pull.pull_id)),
+                                "configuration_id": UUID(
+                                    str(anomaly_pull.configuration_id)
+                                ),
+                            },
+                            "missing_fuel": missing_context,
+                            "low_quality": low_quality_context,
+                            "no_feature_set": no_feature_context,
+                        },
+                        span_exporter=span_exporter,
+                        database_sessions_peak=int(
+                            helper_connection_counts["maximum"]
+                            + api_connection_counts["maximum"]
+                        ),
                     )
 
                     performance_bundle = source_bundles["anomaly:performance"]

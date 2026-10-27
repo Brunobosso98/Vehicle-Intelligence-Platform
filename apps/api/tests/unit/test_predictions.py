@@ -24,7 +24,7 @@ from vehicle_platform.predictions.domain import (
     PredictionStatus,
     ServingCandidate,
 )
-from vehicle_platform.predictions.service import BoundedInferenceWorker
+from vehicle_platform.predictions.service import BoundedInferenceWorker, PredictionService
 
 
 def settings(**overrides: object) -> Settings:
@@ -64,6 +64,32 @@ def auth_headers(token: str = "a" * 48) -> list[tuple[bytes, bytes]]:
         (b"authorization", f"Bearer {token}".encode()),
         (b"content-type", b"application/json"),
     ]
+
+
+def test_prediction_quality_excludes_not_applicable_features_from_coverage() -> None:
+    service = object.__new__(PredictionService)
+    snapshot = SimpleNamespace(
+        values={
+            "observed": {"value": 0.5, "missing_reason": None},
+            "not-applicable": {"value": None, "missing_reason": "not_applicable"},
+            "unavailable": {"value": None, "missing_reason": "unavailable_signal"},
+        },
+        quality_metadata={},
+    )
+
+    quality = service._quality(
+        snapshot,
+        features={"observed": 0.5, "not-applicable": None, "unavailable": None},
+        missing={
+            "not-applicable": "not_applicable",
+            "unavailable": "unavailable_signal",
+        },
+    )
+
+    assert quality.expected_feature_count == 2
+    assert quality.observed_feature_count == 1
+    assert quality.coverage == 0.5
+    assert quality.missing_reason_counts == {"not_applicable": 1, "unavailable_signal": 1}
 
 
 def test_prediction_request_accepts_json_wire_types_and_forbids_extra_fields() -> None:

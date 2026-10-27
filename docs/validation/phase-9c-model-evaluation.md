@@ -31,6 +31,11 @@ In the mixed batch Robust MAD flagged all 300 synthetic deviations; Isolation Fo
 300 as inliers. The detector choice remains validation-only and favors Robust MAD for every family.
 The full Phase 9C results and limitations below remain bounded to this controlled fixture.
 
+Eligible synthetic pulls now include the full set of 14 canonical telemetry channels. Explicit
+missing-fuel and quality-control scenarios retain their intended gaps. The detector definitions,
+feature lists and predeclared threshold floors are unchanged; the extra channels allow the separate
+9E evidence layer to establish complete source coverage for the held-out Phase 9F example.
+
 The first comparison fits eight chronological reference sessions (40 pull FeatureSets), selects
 the method and threshold on validation session 9, and then opens sessions 12 and 13. The test
 folds contain 14 and 16 pulls respectively. Two clean recovery sessions separate validation

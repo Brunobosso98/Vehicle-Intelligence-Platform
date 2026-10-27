@@ -127,6 +127,10 @@ post-cutoff modification before Phase 9A generation, then independently verifies
 excluded. An earlier development run showed false
 alarms on immediate post-injection clean pulls when the boost detector used a rolling historical
 feature; that report is retained under ignored `.validation/phase9c/` and is not final acceptance.
+Eligible synthetic pulls include all 14 canonical telemetry signals so the downstream 9E positive
+example can be complete; explicit no-fuel and quality-control cases continue to omit or corrupt their
+predeclared inputs. This changes evaluator source coverage only; the frozen detector feature lists,
+threshold-selection policy and event classification rules are unchanged.
 The evaluator measures local engineering performance only. Passing synthetic injection tests says nothing about real-car sensitivity,
 specificity, mechanical condition, fleet generalization or calibration. See the
 [operator runbook](../runbooks/anomaly-detection.md), [acceptance report](../validation/phase-9c-acceptance.md),

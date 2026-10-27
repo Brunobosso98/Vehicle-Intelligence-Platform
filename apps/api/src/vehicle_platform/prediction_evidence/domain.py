@@ -488,6 +488,14 @@ class EvidenceSourceSnapshot:
 
 
 @dataclass(frozen=True)
+class VerifiedPredictionEvidence:
+    bundle: PredictionEvidenceBundle
+    source: EvidenceSourceSnapshot
+    integrity: EvidenceIntegrity
+    reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class VerificationOutcome:
     integrity: EvidenceIntegrity
     reason_codes: tuple[str, ...]

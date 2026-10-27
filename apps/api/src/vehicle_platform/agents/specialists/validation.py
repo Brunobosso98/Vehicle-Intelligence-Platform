@@ -42,6 +42,47 @@ def validate_source_context(
                 raise AgentError("incompatible_specialist_context")
 
 
+def validate_prediction_scope(
+    specialist: Specialist, claim: Claim, registry: EvidenceRegistry
+) -> None:
+    predictive_sources = [
+        registry.items.get(identifier)
+        for identifier in claim.evidence_ids
+        if registry.items.get(identifier)
+        and registry.items[identifier].source_tool == "get_prediction_evidence"
+    ]
+    if not predictive_sources:
+        return
+    if claim.template not in {
+        "prediction_result",
+        "anomaly_result",
+        "prediction_insufficient",
+        "statistical_association",
+    }:
+        raise AgentError("specialist_prediction_scope_violation")
+    if specialist is Specialist.DATA_QUALITY or claim.template == "statistical_association":
+        if claim.template != "prediction_insufficient":
+            raise AgentError("specialist_prediction_scope_violation")
+    for identifier in claim.evidence_ids:
+        source = registry.items.get(identifier)
+        if not source or source.source_tool != "get_prediction_evidence":
+            raise AgentError("specialist_prediction_scope_violation")
+        values = {fact.path: fact.value for fact in source.facts}
+        task = values.get("/prediction/task")
+        family = values.get("/prediction/family")
+        allowed = {
+            Specialist.THERMAL: (isinstance(task, str) and "THERMAL" in task)
+            or family == "thermal",
+            Specialist.PERFORMANCE: (isinstance(task, str) and "PERFORMANCE" in task)
+            or family == "performance",
+            Specialist.FUEL_AIR_BOOST: (isinstance(task, str) and "FUEL" in task)
+            or family in {"fuel", "boost_air"},
+            Specialist.DATA_QUALITY: True,
+        }[specialist]
+        if not allowed:
+            raise AgentError("specialist_prediction_scope_violation")
+
+
 def materialize(
     response: SpecialistDraft, request: SpecialistRequest, registry: EvidenceRegistry
 ) -> list[SpecialistFinding]:
@@ -57,6 +98,7 @@ def materialize(
         raise AgentError("specialist_result_budget_exhausted")
     for claim in response.draft.claims:
         validate_source_context(claim.evidence_ids, request, registry)
+        validate_prediction_scope(request.specialist, claim, registry)
     answer = validate(response.draft, registry, request.context)
     results: list[SpecialistFinding] = []
     for finding in answer.findings:

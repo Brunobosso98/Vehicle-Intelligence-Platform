@@ -46,7 +46,7 @@ The evaluator trains and approves the existing 9B/9C fixture versions, creates r
 - three scored `NEXT_PULL` tasks, four 9C anomaly families, low-quality/missing-fuel/missing-FeatureSet abstentions, and a 9B/9C pair that shares one FeatureSet but retains independent receipts, evidence IDs, scores, claims and horizons;
 - a target pull beginning after the 9B input cutoff, with 48 observed target measurements after cutoff; target pull and FeatureSet IDs are absent from all supervised evidence;
 - late-ingested telemetry with an old observation time and a modification created after cutoff with an earlier effective date; the frozen FeatureSet ID, values and hashes remain unchanged and neither late record enters the same-pull bundles;
-- a valid 9C reference row appended after the original cutoff; verification rejects the changed frozen counts with `FAILED_SOURCE_MISMATCH` / `PROVENANCE_MISMATCH`;
+- a valid 9C reference row appended after the original cutoff; verification rejects the changed frozen counts with `FAILED_SOURCE_MISMATCH` / `PROVENANCE_MISMATCH`. Phase 9F reads the pristine bundles before this sentinel is appended; the sentinel remains only in the disposable database until teardown;
 - 10 concurrent same-receipt requests with one evidence identity, and a 100-request replay/admission burst with 16 accepted replays and 84 bounded 429 responses;
 - source, finding, model/detector artifact, missing artifact, database outage, timeout, immutability, rollback, audit-cap, authentication, peer-scope and safe-projection controls.
 

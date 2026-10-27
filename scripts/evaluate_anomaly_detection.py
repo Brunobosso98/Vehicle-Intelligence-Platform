@@ -237,7 +237,7 @@ async def _seed_vehicle(
                         "vehicle": vehicle_id,
                         "effective": BASE - timedelta(days=60),
                         "ended": BASE + timedelta(days=first_day + session_count + 2),
-                        "metadata": '{"stage":"stock","fuel":"93 AKI"}',
+                        "metadata": '{"stage":"stock","fuel_type":"93 AKI"}',
                         "created": BASE - timedelta(days=90),
                     },
                 )
@@ -255,7 +255,7 @@ async def _seed_vehicle(
                     {
                         "vehicle": vehicle_id,
                         "effective": BASE + timedelta(days=configuration_change_day),
-                        "metadata": '{"stage":"changed","fuel":"93 AKI"}',
+                        "metadata": '{"stage":"changed","fuel_type":"93 AKI"}',
                         "created": BASE - timedelta(days=89),
                     },
                 )
@@ -292,7 +292,8 @@ async def _seed_vehicle(
                         "config": active_configuration,
                         "started": session_start,
                         "ended": session_start + timedelta(minutes=20),
-                        "metadata": '{"data_role":"synthetic","generator":"phase9c-evaluator-v1"}',
+                        "metadata": '{"data_role":"synthetic","generator":"phase9c-evaluator-v1",'
+                        '"truncated":false}',
                         "created": session_start - timedelta(days=40),
                     },
                 )
@@ -329,6 +330,12 @@ async def _seed_vehicle(
                     "engine.intake_air_temperature",
                     "engine.oil_temperature",
                     "engine.coolant_temperature",
+                    "electrical.battery_voltage",
+                    "environment.ambient_air_temperature",
+                    "fuel.equivalence_ratio",
+                    "fuel.low_pressure",
+                    "engine.accelerator_position",
+                    "engine.ignition_timing",
                 ]
                 if fuel_available:
                     signals.append("fuel.high_pressure")
@@ -373,8 +380,7 @@ async def _seed_vehicle(
                         "end_iat": values["iat_start"] + values["iat_delta"],
                         "iat_delta": values["iat_delta"],
                         "completeness": 1.0,
-                        "sample_count": len(values["times"])
-                        * (7 + int(fuel_available)),
+                        "sample_count": len(values["times"]) * len(values["signals"]),
                         "metadata": json.dumps({"available_signals": signals}),
                         "created": started_at - timedelta(milliseconds=1),
                     }
@@ -524,6 +530,8 @@ def _pull_values(
         fuel_base - index * (30_000.0 + pull_index * 800.0)
         for index in range(len(times))
     ]
+    ambient = [288.0 + temperature_offset + index * 0.01 for index in range(len(times))]
+    low_pressure = [520_000.0 - index * 350.0 for index in range(len(times))]
     signals: list[tuple[str, str, list[float]]] = [
         ("engine.rpm", "rpm", rpm),
         ("vehicle.speed", "m/s", speed),
@@ -536,6 +544,20 @@ def _pull_values(
         ("engine.intake_air_temperature", "K", iat),
         ("engine.oil_temperature", "K", oil),
         ("engine.coolant_temperature", "K", coolant),
+        ("electrical.battery_voltage", "V", [13.8] * len(times)),
+        ("environment.ambient_air_temperature", "K", ambient),
+        ("fuel.equivalence_ratio", "ratio", [1.0] * len(times)),
+        ("fuel.low_pressure", "Pa", low_pressure),
+        (
+            "engine.accelerator_position",
+            "%",
+            [92.0 - index * 0.25 for index in range(len(times))],
+        ),
+        (
+            "engine.ignition_timing",
+            "deg",
+            [10.0 - index * 0.1 for index in range(len(times))],
+        ),
     ]
     if fuel_available:
         signals.append(("fuel.high_pressure", "Pa", fuel))

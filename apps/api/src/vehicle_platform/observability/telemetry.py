@@ -172,6 +172,20 @@ class Telemetry:
         self.prediction_evidence_graph_size = meter.create_histogram(
             "prediction_evidence.graph_size", unit="{item}"
         )
+        # Phase 9F metrics use only a bounded outcome label. Source, vehicle, session,
+        # pull, receipt and evidence identifiers must never be metric attributes.
+        self.agent_prediction_evidence_operations = meter.create_counter(
+            "agent.prediction_evidence.operations", unit="{operation}"
+        )
+        self.agent_prediction_evidence_duration = meter.create_histogram(
+            "agent.prediction_evidence.duration", unit="s"
+        )
+        self.agent_prediction_evidence_authorizations = meter.create_counter(
+            "agent.prediction_evidence.authorizations", unit="{attempt}"
+        )
+        self.agent_prediction_evidence_grounding = meter.create_counter(
+            "agent.prediction_evidence.grounding", unit="{claim}"
+        )
         # Labels are deliberately source/outcome only; never vehicle, VIN, session or sample IDs.
         self.imports = meter.create_counter("telemetry.imports", unit="{import}")
         self.import_rows = meter.create_counter("telemetry.import.rows", unit="{sample}")

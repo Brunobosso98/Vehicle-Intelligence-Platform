@@ -1,7 +1,7 @@
 # ADR 0043: Phase 9E immutable prediction evidence
 
-Status: accepted; implementation and validation are tracked on open PR #45. The current exact-head
-result is linked from the [acceptance report](../validation/phase-9e-acceptance.md).
+Status: accepted; its Phase 9E decisions remain in force. The later Phase 9F agent boundary is
+recorded in [ADR 0044](0044-phase9f-agent-prediction-boundary.md).
 
 ## Context
 
@@ -40,7 +40,9 @@ store. Content bounds can yield a structured partial bundle with an omission cou
 consistency inside the trusted application/database boundary but do not authenticate a privileged
 database rewrite.
 
-No 9F agent, 9G calibration, 9H UI, production exposure or ECU control path is introduced.
+At adoption, Phase 9E introduced no agent, calibration, predictive UI, production exposure or ECU
+control path. ADR 0044 later adds a separate controlled agent read boundary without changing 9E
+ownership or mutation semantics.
 
 ## Alternatives considered
 

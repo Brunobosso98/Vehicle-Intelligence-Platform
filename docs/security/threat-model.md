@@ -252,3 +252,27 @@ attempts source/artifact tampering, orphan/oversize/duplicate inserts, partial t
 replay flooding and unauthorized access; it never targets retained local or production data. See
 the [Phase 9E architecture](../architecture/phase-9e-prediction-evidence.md)
 and [acceptance report](../validation/phase-9e-acceptance.md).
+
+## Phase 9F agent prediction integration
+
+Predictive reads remain disabled by default and are rejected in production. The operator agent
+capability, ordinary MCP token, and dedicated prediction MCP token must be distinct; ordinary
+`mcp:read` does not receive the predictive scope or discover the tool. Direct calls recheck the
+scope, controlled flag, selected vehicle, exact evidence ID and optional pull/session context.
+Only authenticated Streamable HTTP is supported for the dedicated scope.
+The agent rechecks its in-process operator capability and vehicle grant before each selected
+evidence call. `AgentService.revoke_prediction_access()` clears the capability for subsequent calls;
+an already admitted in-flight read may complete in that current run, while any later read is denied.
+No public revocation route is added.
+
+The agent never materializes a bundle, reruns inference, appends a 9E verification audit, or starts
+collection. It revalidates the original 9E source through a pure read path. Source evidence,
+receipt and FeatureSet IDs stay in the private `agent_prediction_evidence_links` table; model
+inputs, public AgentRun snapshots and citations use run-local IDs. The application checks claim
+template, horizon, source role, cutoff, quality and exact same-FeatureSet lineage before it renders
+answers. A 9B/9C pair is explicitly not independent corroboration or causality. See the
+[Phase 9F architecture](../architecture/phase-9f-agent-integration.md) and
+[runbook](../runbooks/prediction-agent-integration.md).
+Phase 9F operation/latency, authorization and grounding metrics have bounded outcome and source
+status dimensions only. The evaluator inspects metrics and span attributes for source and vehicle
+identifiers; no score, question or hash becomes a metric label.

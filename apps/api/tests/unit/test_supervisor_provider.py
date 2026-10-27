@@ -167,7 +167,7 @@ async def test_specialist_system_policy_is_assigned_by_application(provider, fix
     kwargs = provider.client.responses.create.call_args.kwargs
     instructions = kwargs["instructions"]
     assert specialist_policy(Specialist.THERMAL) in instructions
-    assert "thermal-v6" in instructions and "No private reasoning" in instructions
+    assert "thermal-v7" in instructions and "No private reasoning" in instructions
     assert kwargs["text"]["format"]["strict"] is True
     assert kwargs["text"]["format"]["schema"]["properties"]["claims"]["maxItems"] == 8
     data = json.loads(kwargs["input"][1]["content"].split("\n", 1)[1])

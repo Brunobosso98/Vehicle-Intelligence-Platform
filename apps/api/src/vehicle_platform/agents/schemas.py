@@ -17,6 +17,11 @@ class Classification(StrEnum):
     ASSOCIATION = "ASSOCIATION"
     HYPOTHESIS = "HYPOTHESIS"
     SUPPORTED_CONCLUSION = "SUPPORTED_CONCLUSION"
+    MODEL_CLASSIFICATION = "MODEL_CLASSIFICATION"
+    STATISTICAL_OUTLIER = "STATISTICAL_OUTLIER"
+    DESCRIPTIVE_ASSOCIATION = "DESCRIPTIVE_ASSOCIATION"
+    DATA_GAP = "DATA_GAP"
+    DOCUMENTARY_REFERENCE = "DOCUMENTARY_REFERENCE"
     UNKNOWN = "UNKNOWN"
     INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
 
@@ -24,7 +29,18 @@ class Classification(StrEnum):
 class Ask(StrictModel):
     question: str = Field(min_length=1, max_length=2000)
     session_id: UUID | None = None
+    pull_id: UUID | None = None
     previous_run_id: UUID | None = None
+    include_prediction_evidence: bool = False
+    prediction_evidence_ids: list[UUID] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def prediction_selection_is_explicit(self) -> "Ask":
+        if self.include_prediction_evidence != bool(self.prediction_evidence_ids):
+            raise ValueError("prediction evidence requires explicit run-scoped evidence IDs")
+        if len(set(self.prediction_evidence_ids)) != len(self.prediction_evidence_ids):
+            raise ValueError("prediction evidence IDs must be unique")
+        return self
 
 
 class Usage(StrictModel):
@@ -78,8 +94,12 @@ class Claim(StrictModel):
         "insufficient_evidence",
         "thermal_hypothesis",
         "unsafe_operation_refused",
+        "prediction_result",
+        "anomaly_result",
+        "prediction_insufficient",
+        "statistical_association",
     ]
-    bindings: list[Binding] = Field(max_length=8)
+    bindings: list[Binding] = Field(max_length=9)
     evidence_ids: list[UUID] = Field(max_length=8)
 
 
@@ -133,6 +153,8 @@ class Specialist(StrEnum):
 
 class Intent(StrEnum):
     FACTUAL = "factual"
+    PREDICTION = "prediction"
+    ANOMALY = "anomaly"
     PERFORMANCE = "performance"
     THERMAL = "thermal"
     FUEL_AIR_BOOST = "fuel_air_boost"
@@ -223,6 +245,7 @@ class SupervisorLimits(StrictModel):
     evidence_items: int = Field(ge=4, le=100)
     input_bytes: int = Field(ge=4096, le=524288)
     tool_result_bytes: int = Field(ge=1024, le=262144)
+    prediction_evidence_reads: int = Field(default=0, ge=0, le=4)
 
 
 class RoutingProposal(StrictModel):
@@ -262,7 +285,9 @@ class Sufficiency(StrEnum):
 
 class SupervisorReport(StrictModel):
     schema_version: Literal["1.0", "1.1"] = "1.1"
-    prompt_version: Literal["supervisor-v1", "supervisor-v2", "supervisor-v3"] = "supervisor-v3"
+    prompt_version: Literal["supervisor-v1", "supervisor-v2", "supervisor-v3", "supervisor-v4"] = (
+        "supervisor-v3"
+    )
     routing: RoutingDecision
     specialists: list[SpecialistResult] = Field(default_factory=list, max_length=4)
     conflicts: list[Conflict] = Field(default_factory=list, max_length=8)

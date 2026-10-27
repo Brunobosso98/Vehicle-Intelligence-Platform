@@ -1,27 +1,38 @@
 # Container scan findings and risk review
 
-## Current review — 2026-10-21
+## Current review — 2026-10-23
 
-Fresh image scans used Trivy 0.75.0 with its vulnerability database refreshed on 2026-10-21.
+Fresh image scans used Trivy 0.75.0 with its vulnerability database refreshed on 2026-10-23.
 Counts below are High/Critical occurrences followed by unique IDs; every selected image has zero
-Critical findings. The refreshed database reported `CVE-2026-111943` in Go binaries built with
+Critical findings. The refreshed database reported `CVE-2026-111497` in Alpine `brotli-libs`
+1.2.0-r1 in Kafka and Grafana. The advisory affects Brotli through 1.2.0 and recommends 1.2.1
+or later ([GitHub Advisory](https://github.com/advisories/GHSA-9v8h-qqgm-4m35),
+[Node.js security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases#nodejs-brotli-decoder-out-of-bounds-write-permits-remote-code-execution-cve-2026-111497---high)).
+The GitHub Advisory rates the decoder issue Critical; Trivy's Alpine package feed classified these
+image occurrences as High.
+Kafka now pins the fixed `brotli-libs=1.2.1-r0` package. Grafana stays on application version
+12.4.13 but uses the official Ubuntu image variant, whose refreshed scan does not contain this
+Alpine package finding. No exception was added for this CVE. The database also reports
+`CVE-2026-111943` in Go binaries built with
 Go 1.26.6–1.27.1. Go 1.26.10 and 1.27.3 add the `crypto/x509` denylist for compromised
 intermediate certificates ([Go release history](https://go.dev/doc/devel/release#go1.26.10),
 [CVE record](https://www.cve.org/CVERecord?id=CVE-2026-111943)). The hardened TimescaleDB image
 now compiles its helpers with a digest-pinned Go 1.26.10 builder and scans with zero High/Critical
-findings. Temporary observability exceptions are limited to the exact selected digests and
-`stdlib` package, reviewed on 2026-10-21 and expiring on 2026-10-28.
+findings. The temporary Go standard-library exceptions remain limited to exact selected image
+digests and the `stdlib` package, reviewed on 2026-10-21 and expiring on 2026-10-28. Grafana's
+existing dependency exceptions were reviewed against the new Ubuntu image digest on 2026-10-23 and
+retain their 2026-10-28 expiry.
 
-| Component               | Selected image                                                                                                                                                            | Fresh findings         | Review                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TimescaleDB             | `vehicle-platform-timescaledb:local`                                                                                                                                      | 0 High / 0 Critical    | Fresh local build; both Go helpers scan clean after the Go 1.26.10 update.                                                                                                         |
-| API                     | `vehicle-platform-api:local`                                                                                                                                              | 44 High / 0 Critical   | All 44 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                          |
-| Web                     | `vehicle-platform-web:local`                                                                                                                                              | 43 High / 0 Critical   | All 43 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                          |
-| Kafka                   | `vehicle-platform-kafka:local`                                                                                                                                            | 0 High / 0 Critical    | Fresh CI image scan passed.                                                                                                                                                        |
-| OpenTelemetry Collector | `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6` | 5 High / 4 unique IDs  | Four existing Go findings remain accepted; the fifth occurrence is `CVE-2026-111943`. A pull of tag 0.163.0 returned not found on 2026-10-21.                                      |
-| Prometheus              | `quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e`                                                           | 10 High / 5 unique IDs | Eight existing Go occurrences remain accepted; two are `CVE-2026-111943`. A pull of v3.16.0 returned not found on 2026-10-21.                                                      |
-| Tempo                   | `grafana/tempo:3.0.4@sha256:dbd8ef9b596aa0efb6c2f9cefc94efa3a2d92d3b4242c250e6f9d98354dec4a4`                                                                             | 1 High / 1 unique ID   | The only finding is `CVE-2026-111943`. The earlier 3.1.0 preflight had four High occurrences across three older Go advisories.                                                     |
-| Grafana                 | `grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185`                                                                         | 8 High / 6 unique IDs  | Five existing `kin-openapi` and embedded Tempo findings remain accepted; three Go binaries report `CVE-2026-111943`. The 13.2.4 preflight had 60 High occurrences / 11 unique IDs. |
+| Component               | Selected image                                                                                                                                                            | Fresh findings         | Review                                                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| TimescaleDB             | `vehicle-platform-timescaledb:local`                                                                                                                                      | 0 High / 0 Critical    | Fresh local build; both Go helpers scan clean after the Go 1.26.10 update.                                                                                                     |
+| API                     | `vehicle-platform-api:local`                                                                                                                                              | 44 High / 0 Critical   | All 44 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                      |
+| Web                     | `vehicle-platform-web:local`                                                                                                                                              | 43 High / 0 Critical   | All 43 occurrences match the existing exact-image Debian exceptions, expiring 2026-11-01.                                                                                      |
+| Kafka                   | `vehicle-platform-kafka:local`                                                                                                                                            | 0 High / 0 Critical    | Fresh image scan passed after pinning `brotli-libs=1.2.1-r0`.                                                                                                                  |
+| OpenTelemetry Collector | `ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6` | 5 High / 4 unique IDs  | Four existing Go findings remain accepted; the fifth occurrence is `CVE-2026-111943`. A pull of tag 0.163.0 returned not found on 2026-10-21.                                  |
+| Prometheus              | `quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e`                                                           | 10 High / 5 unique IDs | Eight existing Go occurrences remain accepted; two are `CVE-2026-111943`. A pull of v3.16.0 returned not found on 2026-10-21.                                                  |
+| Tempo                   | `grafana/tempo:3.0.4@sha256:dbd8ef9b596aa0efb6c2f9cefc94efa3a2d92d3b4242c250e6f9d98354dec4a4`                                                                             | 1 High / 1 unique ID   | The only finding is `CVE-2026-111943`. The earlier 3.1.0 preflight had four High occurrences across three older Go advisories.                                                 |
+| Grafana                 | `grafana/grafana:12.4.13-ubuntu@sha256:410a16811de69aeecd929269357494cca9b9649e68e74f30482520ecb5718737`                                                                  | 8 High / 6 unique IDs  | Five existing `kin-openapi` and embedded Tempo findings remain accepted; three Go binaries report `CVE-2026-111943`. The new Ubuntu variant removes the Alpine Brotli finding. |
 
 The observability exceptions keep the exact image digest, CVE, package, owner, rationale, review
 date, expiry, and remediation condition in `container-risk-acceptance.yaml`. Configured local
