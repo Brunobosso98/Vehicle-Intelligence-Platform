@@ -1101,9 +1101,12 @@ async def evaluate(
         if pair_is_eligible:
             pair_finding = pair_result.findings[0]
             has_independent_wording = (
-                "não constituem confirmação independente" in pair_result.answer.casefold()
+                "não constituem confirmação independente"
+                in pair_result.answer.casefold()
             )
-            has_combined_wording = "nem confiança combinada" in pair_result.answer.casefold()
+            has_combined_wording = (
+                "nem confiança combinada" in pair_result.answer.casefold()
+            )
             if (
                 pair_finding.template != "statistical_association"
                 or pair_result.confidence != "moderate"

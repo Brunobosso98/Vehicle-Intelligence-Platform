@@ -1829,9 +1829,7 @@ def test_prediction_association_requires_distinct_results_on_the_same_frozen_fea
 def test_prediction_association_confidence_drops_when_source_has_warnings():
     registry, vehicle_id, first, second = _prediction_pair()
     source = registry.items[first.id]
-    registry.items[first.id] = source.model_copy(
-        update={"warnings": ["unrelated_source_warning"]}
-    )
+    registry.items[first.id] = source.model_copy(update={"warnings": ["unrelated_source_warning"]})
     claim = Claim(
         classification=Classification.DESCRIPTIVE_ASSOCIATION,
         template="statistical_association",
@@ -1968,9 +1966,9 @@ async def test_multiple_selected_anomalies_use_separate_source_bound_findings(
     assert state.run.supervisor is not None
     assert state.run.supervisor.routing.selected
     assert state.final is not None
-    assert [finding.template for finding in state.final.findings] == [
-        "anomaly_result"
-    ] * len(families)
+    assert [finding.template for finding in state.final.findings] == ["anomaly_result"] * len(
+        families
+    )
     assert all(len(finding.evidence_ids) == 1 for finding in state.final.findings)
     assert {finding.evidence_ids[0] for finding in state.final.findings} == {
         item.id for item in evidence
