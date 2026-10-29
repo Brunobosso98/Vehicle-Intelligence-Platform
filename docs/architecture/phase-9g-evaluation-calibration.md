@@ -35,6 +35,13 @@ physical pull, vehicle, or configuration cannot appear in more than one partitio
 evaluation window is later than model training. The runner verifies these constraints again after
 the split. It keeps original 9B target horizons and frozen thresholds.
 
+The offline 9G source fixture uses three later time windows (June through August 2026), each with
+four synthetic vehicles, five sessions per vehicle, and five pulls per session. This yields three
+disjoint vehicle/configuration cohorts for calibration, validation, and final test while keeping
+the combined 9A source payload within its existing 32 MiB dataset bound. The earlier 9B training
+fixture keeps its original default cohort and generator ordering; no registered model artifact or
+serving threshold is changed by this research-only fixture sizing.
+
 Only calibration rows fit candidate maps. Sigmoid requires at least 40 rows, 10 examples of each
 class, and 10 sessions. Isotonic requires 100 rows, 30 examples of each class, and 30 sessions.
 An ineligible candidate is recorded as an explicit abstention. Validation alone selects among

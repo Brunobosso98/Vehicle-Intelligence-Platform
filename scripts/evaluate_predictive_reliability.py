@@ -295,7 +295,8 @@ async def _train_and_evaluate_supervised(
             vehicle_model_prefix=f"PHASE9G-HELDOUT-{index + 1}",
             engine_codes=("N55", "B58", "S55"),
             scenario_seed=(137, 641, 911)[index],
-            generator_version=f"phase9g-heldout-v{index + 1}",
+            generator_version="phase9g-heldout-v4",
+            vehicle_count=4,
         )
         await _record_modifications(database, fixture)
         await generate_fixture_features(database, fixture, telemetry=telemetry)
@@ -393,11 +394,7 @@ async def _train_and_evaluate_supervised(
                 "unlabeled_outcomes_fabricated": False,
                 "signal_missingness_counts": _feature_signal_availability(future_rows),
             },
-            "generator_versions": [
-                "phase9g-heldout-v1",
-                "phase9g-heldout-v2",
-                "phase9g-heldout-v3",
-            ],
+            "generator_versions": ["phase9g-heldout-v4"],
             "training_session_overlap_adversary_blocked": _session_overlap_adversary(
                 model_run.training.split.train, future_rows
             ),
@@ -1210,7 +1207,7 @@ def _dataset_manifest(task_reports: dict[str, dict[str, Any]]) -> DatasetManifes
         row_fingerprint=stable_hash(row_ids),
         cutoff=EVALUATION_CUTOFF,
         known_at_policy="input_available_before_next_pull_target_v1",
-        generator_version=("phase9g-heldout-v1+phase9g-heldout-v2+phase9g-heldout-v3"),
+        generator_version="phase9g-heldout-v4",
     )
 
 

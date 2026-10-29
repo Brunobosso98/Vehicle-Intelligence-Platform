@@ -1182,9 +1182,9 @@
     "semantic_hash": ""
   },
   "AI_CONTEXT.md": {
-    "mtime": 1793210569.9016125,
-    "seen": 1793298043.999383,
-    "ast_hash": "b9902ecf81e9c4f6e96ff560b1b3127a",
+    "mtime": 1793299327.2926517,
+    "seen": 1793299462.789159,
+    "ast_hash": "d682b8e2f2edb10e4b45755ae8dd45da",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -2832,9 +2832,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/synthetic.py": {
-    "mtime": 1793211029.679467,
-    "seen": 1793298043.9986315,
-    "ast_hash": "b391ca0918b709aed0706e2232d6de61",
+    "mtime": 1793299288.0038133,
+    "seen": 1793299462.7878497,
+    "ast_hash": "ab6bc8e1c584cbc8818ebad022a8418a",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/training.py": {
@@ -3582,9 +3582,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_predictive_reliability.py": {
-    "mtime": 1793210716.8941612,
-    "seen": 1793298043.999129,
-    "ast_hash": "f5553e9ae45dbbfdabc8cbd06e99c9db",
+    "mtime": 1793299215.3167872,
+    "seen": 1793299462.7887206,
+    "ast_hash": "e8b4458e464586dc455a1c5bb5e1a23b",
     "semantic_hash": ""
   },
   "scripts/phase9g-validation.sh": {
@@ -3612,9 +3612,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-9g-evaluation-calibration.md": {
-    "mtime": 1793210361.0082054,
-    "seen": 1793298043.9995766,
-    "ast_hash": "3422978f18072bbeb7eceddc6a245421",
+    "mtime": 1793299258.130319,
+    "seen": 1793299462.7896082,
+    "ast_hash": "270f5ad2484915a081891287901ccb7f",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9g-evaluation-calibration.md": {
@@ -3636,15 +3636,21 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9g-evaluation.md": {
-    "mtime": 1793210361.0588331,
-    "seen": 1793298043.9998431,
-    "ast_hash": "9b22c9c71b1d4f40dcf742d3db367291",
+    "mtime": 1793299260.8771327,
+    "seen": 1793299462.790281,
+    "ast_hash": "47294a7dc414298cde779a4a2ae5ee85",
     "semantic_hash": ""
   },
   "docs/validation/phase-9g-traceability-ledger.md": {
     "mtime": 1793214715.4851737,
     "seen": 1793298043.999845,
     "ast_hash": "2523138e07fc306a0ad93cedb78bb142",
+    "semantic_hash": ""
+  },
+  "apps/api/tests/unit/test_ml_synthetic.py": {
+    "mtime": 1793299246.0233765,
+    "seen": 1793299462.7881517,
+    "ast_hash": "c8d3bcd06269de48c72415ab3cffd566",
     "semantic_hash": ""
   }
 }

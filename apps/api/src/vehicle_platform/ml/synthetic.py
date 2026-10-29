@@ -32,6 +32,7 @@ async def seed_predictive_fixture(
     engine_codes: tuple[str, ...] = ("N55",),
     scenario_seed: int = 0,
     generator_version: str = "phase9b-v1",
+    vehicle_count: int = 8,
 ) -> SyntheticFixture:
     """Seed canonical telemetry with deterministic observable progression and confounders."""
     start = start_at or datetime(2026, 1, 1, tzinfo=UTC)
@@ -49,6 +50,8 @@ async def seed_predictive_fixture(
         raise ValueError("synthetic scenario seed must be between zero and ten thousand")
     if not generator_version or len(generator_version) > 80:
         raise ValueError("synthetic generator version is outside the fixed bound")
+    if not 4 <= vehicle_count <= 8:
+        raise ValueError("synthetic fixture vehicle count must be between four and eight")
     configuration_ids: dict[str, tuple[UUID, UUID]] = {}
     vehicle_ids: list[UUID] = []
     vehicle_engine_codes: list[str] = []
@@ -58,13 +61,15 @@ async def seed_predictive_fixture(
     telemetry_rows: list[dict[str, Any]] = []
     pull_params: list[dict[str, Any]] = []
     schedule = [
-        (round_index, vehicle_index) for round_index in range(5) for vehicle_index in range(7)
+        (round_index, vehicle_index)
+        for round_index in range(5)
+        for vehicle_index in range(vehicle_count - 1)
     ]
-    schedule.extend((round_index, 7) for round_index in range(5))
+    schedule.extend((round_index, vehicle_count - 1) for round_index in range(5))
     session_order = {item: index for index, item in enumerate(schedule)}
 
     async with database.session() as db:
-        for vehicle_index in range(8):
+        for vehicle_index in range(vehicle_count):
             vehicle_id = (
                 await db.execute(
                     text(

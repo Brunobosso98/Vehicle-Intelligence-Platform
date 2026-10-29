@@ -11,7 +11,9 @@
 - `apps/api/src/vehicle_platform/features`: Phase 9A versioned canonical feature generation,
   provenance, cutoffs, dataset materialization, profiling and export.
 - `apps/api/src/vehicle_platform/ml`: Phase 9B supervised next-pull labels, splits, training,
-  trusted artifacts and offline model registry.
+  trusted artifacts, deterministic synthetic fixtures and offline model registry. Phase 9G uses a
+  bounded four-vehicle fixture option for later calibration/validation/test cohorts; the default
+  9B fixture size and ordering remain unchanged.
 - `apps/api/src/vehicle_platform/anomalies`: Phase 9C detector definitions, eligible reference
   cohorts, offline fitting/scoring, artifact validation and immutable findings.
 - `apps/api/src/vehicle_platform/predictions`: Phase 9D controlled HTTP inference, explicit

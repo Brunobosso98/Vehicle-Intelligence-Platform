@@ -10,6 +10,11 @@ denominators, and benchmark measurements.
 - Protocol: `phase9g-protocol-v1`; report schema: `phase9g-evaluation-v1`.
 - Population: synthetic canonical Phase 9A FeatureSets generated through the existing Phase 9B and
   Phase 9C pipelines. Source role is retained per record.
+- Held-out generator: `phase9g-heldout-v4`; three later windows use four distinct synthetic
+  vehicles, five sessions per vehicle, and five pulls per session. The 9B training fixture retains
+  its original default size and ordering. The bounded future cohorts keep the combined canonical
+  9A source payload under its 32 MiB materialization limit and provide separate vehicle/configuration
+  groups for the chronological calibration, validation, and test thirds.
 - Supervised tasks: the three registered 9B `NEXT_PULL` tasks. Model artifacts and operating
   thresholds are loaded as registered and held fixed.
 - Partitioning: strict chronological whole-session training, calibration, validation, and test;
