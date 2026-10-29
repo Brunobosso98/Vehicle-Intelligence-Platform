@@ -10,7 +10,11 @@ FAMILIES = ("thermal", "boost_air", "performance", "fuel")
 METHODS = ("robust_mad", "isolation_forest")
 MULTI_FAMILY_SCENARIOS = {"subtle_multivariate"}
 HARD_NEGATIVE_SCENARIOS = {"boost_fluctuation", "config_holdout", "normal_unusual_configuration"}
-QUALITY_ABSTENTION_SCENARIOS = {"missing_fuel", "quality_duplicate"}
+QUALITY_ABSTENTION_SCENARIOS = {"quality_duplicate"}
+
+
+def _quality_abstention_scenarios(family: str) -> set[str]:
+    return QUALITY_ABSTENTION_SCENARIOS | ({"missing_fuel"} if family == "fuel" else set())
 
 
 class AnomalyEvaluationError(ValueError):
@@ -98,7 +102,7 @@ def evaluate_phase9c_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
             ]
             other_scored = [item for item in other_single_family if item["eligible"]]
             cross_alarms = sum(bool(item["alarm"]) for item in other_scored)
-            scenario_matrix = _scenario_matrix(normalized)
+            scenario_matrix = _scenario_matrix(normalized, family=family)
             output["families"][family][method] = {
                 "detector_version_id": result.get("detector_version_id"),
                 "artifact_checksum": artifact_checksum,
@@ -139,7 +143,7 @@ def evaluate_phase9c_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
                 "multi_family_ambiguous": _scenario_subset(normalized, MULTI_FAMILY_SCENARIOS),
                 "hard_negative_stress": _scenario_subset(normalized, HARD_NEGATIVE_SCENARIOS),
                 "quality_capability_abstentions": _scenario_subset(
-                    normalized, QUALITY_ABSTENTION_SCENARIOS
+                    normalized, _quality_abstention_scenarios(family)
                 ),
                 "alarm_threshold_sensitivity": _threshold_sensitivity(normalized, float(threshold)),
                 "score_distribution_within_method_only": _score_distribution(normalized),
@@ -206,15 +210,15 @@ def _normalize_cases(
         score_value = float(score) if score is not None else None
         if eligible and score_value is not None and bool(alarm) != (score_value > threshold):
             raise AnomalyEvaluationError("anomaly alarm bit does not match frozen threshold")
-        if scenario in QUALITY_ABSTENTION_SCENARIOS and status not in {
-            "LOW_QUALITY",
-            "INSUFFICIENT_SIGNAL",
-            "UNSUPPORTED_SOURCE",
-            "NOT_EVALUABLE",
-        }:
-            # A quality-control row may be represented as a safe no-finding abstention by 9C.
-            if score is not None:
-                raise AnomalyEvaluationError("quality adversary was assigned a detector score")
+        if scenario in _quality_abstention_scenarios(family) and (
+            status
+            not in {"LOW_QUALITY", "INSUFFICIENT_SIGNAL", "UNSUPPORTED_SOURCE", "NOT_EVALUABLE"}
+            or score is not None
+            or alarm is not None
+        ):
+            raise AnomalyEvaluationError(
+                "required-signal or quality-control adversary was not abstained"
+            )
         normalized.append(
             {
                 "index": index,
@@ -232,7 +236,7 @@ def _normalize_cases(
     return normalized
 
 
-def _scenario_matrix(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _scenario_matrix(rows: list[dict[str, Any]], *, family: str) -> dict[str, dict[str, Any]]:
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         groups[row["scenario"]].append(row)
@@ -255,7 +259,7 @@ def _scenario_matrix(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
                 else "MULTI_FAMILY_OR_AMBIGUOUS"
                 if scenario in MULTI_FAMILY_SCENARIOS
                 else "QUALITY_OR_CAPABILITY_ABSTENTION"
-                if scenario in QUALITY_ABSTENTION_SCENARIOS
+                if scenario in _quality_abstention_scenarios(family)
                 else "HARD_NEGATIVE_OR_CONTEXT_SHIFT"
             ),
             "cross_family_false_positive": False,

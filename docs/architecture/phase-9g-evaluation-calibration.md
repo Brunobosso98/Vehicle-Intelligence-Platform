@@ -65,6 +65,11 @@ eligible-clean denominators, target-family detections, cross-family alarms, qual
 and deterministic reference-size refits. It never interprets anomaly scores as probabilities or
 health percentages. Scenario oracle metadata is held outside feature fitting and scoring.
 
+Missing fuel pressure is an abstention only for the fuel detector, whose required input is absent.
+Thermal, boost/air, and performance detectors retain their scores for that same case so missingness
+can be measured as a separate confounder; those scores are not labeled fuel-fault detections.
+Duplicate/low-quality telemetry is an abstention for every family.
+
 Drift is split into feature distribution, label prevalence, concept/performance, reliability, and
 detector-reference comparisons. PSI and robust location shifts use the training reference only;
 OOD thresholds also use training only. Labeled drift experiments are synthetic and explicitly

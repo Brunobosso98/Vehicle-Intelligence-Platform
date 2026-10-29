@@ -1,13 +1,13 @@
 # Graph Report - vip-phase9g-graphify-temp  (2026-10-29)
 
 ## Corpus Check
-- 589 files · ~648,573 words
+- 592 files · ~649,278 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .toml 1)
 
 ## Summary
-- 7622 nodes · 20561 edges · 341 communities (265 shown, 76 thin omitted)
-- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 3682 edges (avg confidence: 0.94)
+- 7634 nodes · 20577 edges · 358 communities (276 shown, 82 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 3683 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -37,9 +37,9 @@
 - Phase 5 — Automotive Analytics
 - register_tools
 - generated/api.ts
-- _run_phase9g
+- evaluate_predictive_reliability.py
 - MLTask
-- KnowledgeRepository
+- EmbeddingLedger
 - Phase 7A — Agent Core & Grounded Orchestration
 - Phase 8 — Technical RAG & Knowledge Intelligence
 - Phase 9D — Prediction Service
@@ -54,14 +54,14 @@
 - features/registry.py
 - test_agent_prediction.py
 - devDependencies
-- retrieval.py
+- KnowledgeService
 - test_phase7d_grading.py
 - Supervisor
 - package.json
-- Envelope
-- test_quality_observation_bindings.py
+- EvidenceClient
+- DeviceCapabilities
 - observability-validation.sh
-- digest
+- test_knowledge_refresh.py
 - telemetry-dashboard.tsx
 - Phase 7B — Investigation & Adaptive Logging
 - FeatureGenerationService
@@ -70,12 +70,12 @@
 - asyncio
 - verifier.py
 - observability-smoke.py
-- agents/schemas.py
+- test_supervisor_contracts.py
 - architecture/phase-9b-predictive-models.md
 - mcp-validation.sh
 - anomalies/domain.py
 - README.md
-- test_agents.py
+- Envelope
 - AgentError
 - integration.sh
 - retrospective-validation.sh
@@ -108,7 +108,7 @@
 - ml/splitting.py
 - Phase 7D — Real Model Validation & Agent Reliability Baseline
 - pipeline.py
-- test_predictions.py
+- PredictionRequestBudgetMiddleware
 - test_agent_runtime.py
 - Settings
 - pull_request_template.md
@@ -134,9 +134,9 @@
 - phase-9g-traceability-ledger.md
 - ADR 0012: Versioned deterministic session analysis
 - ADR 0013: Deterministic evidence-first event architecture
-- test_features.py
+- KnowledgeRepository
 - Adapter
-- supervised.py
+- test_evaluation.py
 - Phase 3 events
 - 75. API surface
 - 85. Unit and contract tests
@@ -144,7 +144,7 @@
 - Phases 0–5 retrospective hardening
 - prediction_evidence/repository.py
 - Vehicle Intelligence Platform context
-- features/domain.py
+- evaluate_mcp.py
 - stable_hash
 - 94. Failure behavior
 - phase-9a-acceptance.md
@@ -152,18 +152,18 @@
 - migrations.md
 - definition-of-done.md
 - gates.md
-- json
+- typing
 - anomalies/cli.py
 - CATEGORY C — THERMAL
 - security-policy.py
 - evaluate
 - 15. Required acquisition adapters
 - Vehicle Intelligence Platform / N55 Intelligence Lab
-- SanitizingExporter
-- prompts/phase-7d-real-model-validation.md
+- exercise
+- CATEGORY D — FUEL / AIR / BOOST
 - 101. ADRs
 - _validate_json_value
-- knowledge/domain.py
+- BoundedSpool
 - api/AGENTS.md
 - agents/__init__.py
 - web/AGENTS.md
@@ -181,25 +181,25 @@
 - contracts/AGENTS.md
 - contracts/README.md
 - SECURITY.md
-- CATEGORY G — PHASE 7B / INSUFFICIENT EVIDENCE / ADAPTIVE LOGGING
+- prompts/phase-7d-real-model-validation.md
 - investigation_router
 - test_acquisition.py
 - ADR 0022: Bounded real-model evaluation and durable spend accounting
 - Phase 7D real-model validation
-- predictions/cli.py
-- Phase 4 acquisition threats
+- json
+- PredictionRepository
 - test_scoped_tool_schemas.py
 - normalize_value
-- ADR 0019: Grounded agent state and evidence
+- ADR 0018: Read-only MCP application adapter
 - 98. Phase 7B Definition of Done
 - phase9b-validation.sh
 - specialists/__init__.py
 - @playwright/test
-- extraction.py
+- digest
 - Phase 7B acceptance
 - Model card: next-pull fuel deviation
 - validate_vehicle_context
-- prediction_router
+- acquisition/cli.py
 - agent-workspace.test.tsx
 - Phase 2 session and pull analysis
 - Model card: next-pull performance degradation
@@ -212,26 +212,26 @@
 - PHASE 0 COMPLETION REPORT
 - phase-7d-delivery.md
 - Model card: next-pull thermal degradation
-- seed_knowledge
+- main
 - What You Must Do When Invoked
-- dataclasses
+- datetime
 - anomalies/detectors.py
-- AgentRun
+- AgentRepository
 - Phase 7D observed response review
 - architecture/phase-6-mcp-tool-platform.md
 - investigation/routes.py
 - Phase 6 acceptance
 - Phase 7D observed response review
-- CATEGORY A — FACTUAL / FAST-PATH
+- test_elm_tcp_transport_connects_reads_reuses_and_closes
 - test_knowledge.py
 - 13. Document domain model
-- InvestigationPlan
+- InvestigationService
 - 4. Feature categories
 - Current public review shortlist
 - pytest
 - ArtifactStore
 - 39. Query types
-- knowledge_router
+- knowledge/context.py
 - ADR 0024: Bounded tool feedback and optional recipe needs
 - ADR 0025: Scoped tool inputs and capture expectations
 - vehicle-workspace.tsx
@@ -243,9 +243,9 @@
 - feature-validation.sh
 - scripts
 - Phase 9C — Anomaly Detection
-- ArtifactStore
+- anomalies/artifacts.py
 - 5. Initial supervised tasks
-- evaluate_prediction_evidence.py
+- evaluate
 - 70. Leakage test fixtures
 - ADR 0030: Technical knowledge storage, retrieval and provenance
 - Phase 8 acceptance — final validation record
@@ -258,29 +258,29 @@
 - SourceRole
 - 30. Dataset size reality
 - acquisition/service.py
-- CATEGORY B — PERFORMANCE
-- persist_evaluation
-- adapter.py
-- response
-- main
+- test_creation_and_acquisition_frequency_bounds_preserve_other_routes
+- evaluation/repository.py
+- .window
+- agent_router
+- Path
 - phase-9c-model-evaluation.md
-- Any
-- Phase 7A grounded agent
 - require_aware
+- Phase 7A grounded agent
+- supervised.py
 - .__call__
 - phase9g-validation.sh
-- test_evaluation.py
+- test_agent_repository.py
 - graphify reference: extra exports and benchmark
-- architecture/phase-9e-prediction-evidence.md
-- typing
-- phase-9b-acceptance.md
+- Phase 9E PredictionEvidence
+- check_knowledge_security.py
+- Phase 9B acceptance report
 - CATEGORY E — DATA QUALITY
 - phase9c-validation.sh
 - benchmark_stream_live.py
 - Phase 1 vehicle and telemetry core
 - Phase 9D controlled prediction service
 - phase9d-validation.sh
-- _run
+- .execute_scoped
 - score_samples
 - phase-7a-traceability-ledger.md
 - Offline anomaly detection runbook
@@ -289,8 +289,8 @@
 - ADR 0036: Phase 9C detector families and validation selection
 - ADR 0037: Phase 9C immutable registry and trusted artifacts
 - ADR 0038: Phase 3, 9B and 9C evidence coexistence
-- evaluate
-- Phase 9A feature engineering foundation
+- ml/synthetic.py
+- Elm327Adapter
 - ADR 0039: Phase 9D controlled serving boundary
 - ADR 0040: Phase 9D immutable serving approvals and snapshots
 - SafeMCPServer
@@ -299,17 +299,25 @@
 - graphify reference: commit hook and native CLAUDE.md integration
 - graphify reference: incremental update and cluster-only
 - ADR 0041: Phase 9D minimal immutable prediction receipts
-- phase7d_eval.py
+- evaluate
 - ADR 0042: Phase 9D trusted artifacts and bounded inference workers
-- EventEngine
+- CorrelationMiddleware
+- test_database.py
 - graphify reference: GitHub clone and cross-repo merge
 - Phase 7D real evaluation report
 - evaluate
 - extraction-spec.md
-- anomaly_scenario
+- test_config.py
+- IngestionService
+- Phase 9E acceptance
+- HTTPInstrumentation
+- test_collector_reports_actual_recovery_metrics_and_payload_free_spans
 - sqlalchemy_dialects
-- TerminableConnection
+- StructuredHTML
+- generate_features.py
+- report_predictive_reliability.py
 - Controlled knowledge ingestion
+- model_validator
 - Phase 9D acceptance record
 - test_investigation_repository.py
 - phase9e-validation.sh
@@ -317,22 +325,31 @@
 - ADR 0043: Phase 9E immutable prediction evidence
 - Controlled prediction service runbook
 - Phase 7C acceptance
+- model_validator
+- report_prediction_evidence.py
 - evaluation/artifacts.py
 - Phase 9D model-serving evaluation
+- test_spool_acknowledges_only_after_publish_and_recovers_in_same_run
 - Phase 7C traceability ledger
 - Phase 9C acceptance
 - apps_web_next_types_root_params_d
 - apps_web_next_types_routes_d
+- main
 - Phase 9F agent evaluation
+- knowledge_router
+- get_prediction_evidence
 - Archived scan records
-- ADR 0018: Read-only MCP application adapter
+- Phase 7B investigation and adaptive logging
+- Phase 9G anomaly reliability
 - Catalog
+- Phase 9G drift and applicability
+- Phase 9G supervised calibration
+- check_coverage.py
 - Database
-- ResponseObserver
+- Ask
+- main
 - phase-9f-traceability-ledger.md
 - _run
-- .export
-- events/service.py
 - DatabaseProbe
 - runbooks/phase-7d-real-evaluation.md
 
@@ -351,10 +368,10 @@
 ## Surprising Connections (you probably didn't know these)
 - `Boundaries and flow` --references--> `VehicleDataAdapter`  [INFERRED]
   docs/architecture/phase-4-live-acquisition.md → apps/api/src/vehicle_platform/acquisition/adapters.py
-- `Collector heartbeat and acquisition context` --references--> `collector_health()`  [INFERRED]
-  docs/architecture/phase-4-live-acquisition.md → apps/api/src/vehicle_platform/acquisition/quality.py
 - `Execution and lifecycle` --references--> `AgentSettings`  [INFERRED]
   docs/architecture/phase-7a-grounded-agent.md → apps/api/src/vehicle_platform/agents/config.py
+- `Domain and persistence` --references--> `InvestigationPlan`  [INFERRED]
+  docs/architecture/phase-7b-investigation-adaptive-logging.md → apps/api/src/vehicle_platform/agents/investigation/domain.py
 - `32. Robust baseline mathematics` --references--> `median()`  [INFERRED]
   docs/prompts/phase-9c-anomaly-detection.md → apps/api/src/vehicle_platform/analytics/domain.py
 - `Phase 9A traceability ledger` --references--> `FeatureSetVersion`  [INFERRED]
@@ -363,7 +380,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (341 total, 76 thin omitted)
+## Communities (358 total, 82 thin omitted)
 
 ### Community 0 - "AnalyticsConfig"
 Cohesion: 0.08
@@ -378,16 +395,16 @@ Cohesion: 0.02
 Nodes (104): 100. Definition of Done — architecture, 101. Definition of Done — features, 102. Definition of Done — safety/integrity, 103. Definition of Done — dataset, 104. Definition of Done — validation, 105. Final report, 10. Determinism, 11. Temporal availability (+96 more)
 
 ### Community 3 - "router"
-Cohesion: 0.09
-Nodes (60): Health, BaseModel, Ready, Version, APIRouter, router(), analytics_config(), analyze_repeated_pulls() (+52 more)
+Cohesion: 0.08
+Nodes (63): Health, BaseModel, Ready, Version, APIRouter, router(), analytics_config(), analyze_repeated_pulls() (+55 more)
 
 ### Community 4 - "api/routes.py"
-Cohesion: 0.10
-Nodes (39): AcquisitionBatchAccepted, AcquisitionCreate, AcquisitionCreated, AcquisitionHeartbeat, AcquisitionLiveQuality, AcquisitionLiveSnapshot, AcquisitionPipelineMeasurement, AnalysisRequest (+31 more)
+Cohesion: 0.08
+Nodes (49): AnalysisLimitError, ValueError, AcquisitionHeartbeat, AcquisitionLiveQuality, AcquisitionLiveSnapshot, AcquisitionPipelineMeasurement, AnalysisRequest, AnalyticsRequest (+41 more)
 
 ### Community 5 - "anomalies/service.py"
-Cohesion: 0.15
-Nodes (20): fit_checksum_for(), repository_sha(), _abstention(), AnomalyService, _candidate_training_metrics(), DetectionRunResult, DetectorVersionResult, _input_schema() (+12 more)
+Cohesion: 0.16
+Nodes (19): fit_checksum_for(), repository_sha(), AnomalyService, _candidate_training_metrics(), DetectionRunResult, DetectorVersionResult, _input_schema(), Any (+11 more)
 
 ### Community 6 - "Phase 9B — Predictive Models"
 Cohesion: 0.02
@@ -406,36 +423,36 @@ Cohesion: 0.01
 Nodes (136): 100. Provenance immutability, 101. Security review of external access, 102. Observation and privacy metrics, 103. Performance benchmark, 104. Migration decision, 105. Typed schema and contracts, 106. Evaluation harness independence, 107. Acceptance matrix size (+128 more)
 
 ### Community 10 - "PredictionEvidenceBundle"
-Cohesion: 0.16
-Nodes (13): render_safe_projection(), EvidenceVerificationResult, PredictionEvidenceBundle, PredictionEvidenceProjection, model_validator, VerificationOutcome, VerifiedPredictionEvidence, Versioned, source-verified evidence derived from Phase 9D receipts. (+5 more)
+Cohesion: 0.08
+Nodes (33): fit_bundle_to_size(), Drop optional records at boundaries and retain an explicit omission count., render_safe_projection(), EvidenceVerificationResult, PredictionEvidenceBundle, PredictionEvidenceProjection, VerificationOutcome, VerifiedPredictionEvidence (+25 more)
 
 ### Community 11 - "MappedCSVTelemetrySource"
-Cohesion: 0.08
-Nodes (32): UUID, RawTelemetryMessage, StreamObservation, preview_csv_import(), CSVColumnMapping, CSVSignalColumn, inspect_csv(), MappedCSVTelemetrySource (+24 more)
+Cohesion: 0.11
+Nodes (23): CSVColumnMapping, CSVSignalColumn, inspect_csv(), MappedCSVTelemetrySource, BaseModel, model_validator, mapping(), parametrize (+15 more)
 
 ### Community 12 - "AlignedFrame"
-Cohesion: 0.18
-Nodes (28): AlignedFrame, BaselineType, DetectorResult, DetectorState, EventCandidate, EventCategory, PullWindow, StrEnum (+20 more)
+Cohesion: 0.08
+Nodes (66): AlignedFrame, BaselineType, DetectorResult, DetectorState, EventCandidate, EventCategory, EventProfile, PullWindow (+58 more)
 
 ### Community 14 - "DeterministicProvider"
-Cohesion: 0.06
-Nodes (46): APIError, InvestigationInput, InvestigationProposal, ProposedGap, ProposedHypothesis, model_validator, draft_schema(), investigation_schema() (+38 more)
+Cohesion: 0.05
+Nodes (48): APIError, InvestigationInput, InvestigationProposal, ProposedGap, ProposedHypothesis, model_validator, investigation_schema(), OpenAIProvider (+40 more)
 
 ### Community 15 - "CATEGORY H — ADVERSARIAL / SECURITY / UNCERTAINTY"
 Cohesion: 0.03
 Nodes (61): 100. Optional Sol comparison, 101. Real-model grading, 102. Hard blockers / zero-tolerance metrics, 103. Routing quality, 104. Tool efficiency, 105. Grounding, 106. Causal restraint, 107. Diagnosis restraint (+53 more)
 
 ### Community 16 - "calibration.py"
-Cohesion: 0.18
-Nodes (23): apply_calibrator(), _binary_label(), calibration_row_checksum(), CalibrationError, _canonical(), fit_calibrator(), _fit_monotone_sigmoid(), FittedCalibrator (+15 more)
+Cohesion: 0.16
+Nodes (27): apply_calibrator(), _binary_label(), calibration_row_checksum(), CalibrationError, _canonical(), fit_calibrator(), _fit_monotone_sigmoid(), FittedCalibrator (+19 more)
 
 ### Community 17 - "training.py"
-Cohesion: 0.12
-Nodes (42): CandidateFamily, TemporalSplit, _acceptance_state(), _build_pipeline(), CandidateEvaluation, classification_metrics(), _evaluate_test_baselines_and_selected(), _feature_importance() (+34 more)
+Cohesion: 0.08
+Nodes (55): CandidateFamily, CandidateSpec, MLModel, ModelSpec, Any, TemporalSplit, Offline, versioned supervised model training built on Phase 9A datasets., _acceptance_state() (+47 more)
 
 ### Community 18 - "AnomalyDetectorDefinition"
 Cohesion: 0.18
-Nodes (15): AnomalyDetectorDefinition, AnomalyFindingResult, DetectorLifecycle, AnomalyRegistry, AnomalyRegistryConflict, _correlation_group(), _finding_parameters(), Any (+7 more)
+Nodes (14): AnomalyDetectorDefinition, AnomalyFindingResult, AnomalyRegistry, AnomalyRegistryConflict, _correlation_group(), _finding_parameters(), Any, datetime (+6 more)
 
 ### Community 19 - "Phase 7C — Specialist Agents & Supervisor Orchestration"
 Cohesion: 0.02
@@ -459,23 +476,23 @@ Nodes (113): 100. ADR, 101. AGENTS.md / repository workflow, 102. Make targets, 
 
 ### Community 24 - "register_tools"
 Cohesion: 0.11
-Nodes (19): MCPServer, register_tools(), get_cross_session_analytics(), get_prediction_evidence(), get_pull_summary(), get_repeated_pull_analysis(), get_session_analytics(), get_session_capabilities() (+11 more)
+Nodes (19): MCPServer, register_tools(), compare_configurations(), get_cross_session_analytics(), get_event(), get_pull_summary(), get_repeated_pull_analysis(), get_session_analytics() (+11 more)
 
 ### Community 25 - "generated/api.ts"
 Cohesion: 0.10
 Nodes (22): AgentEvent, AgentRun, Audit, AgentRun, Investigation, InvestigationWorkspace(), terminal, Report (+14 more)
 
-### Community 26 - "_run_phase9g"
-Cohesion: 0.12
-Nodes (31): Any, record_run_metrics(), _anomaly_evaluation(), _assert(), _bounded_abstention_reasons(), _check_partition_safety(), _curve_support(), _dataset_manifest() (+23 more)
+### Community 26 - "evaluate_predictive_reliability.py"
+Cohesion: 0.16
+Nodes (32): _anomaly_evaluation(), _assert(), _bounded_abstention_reasons(), _check_partition_safety(), _curve_support(), _dataset_manifest(), _drift_records(), _evidence_refs() (+24 more)
 
 ### Community 27 - "MLTask"
-Cohesion: 0.11
-Nodes (41): DatasetCandidate, A pull considered by DatasetBuilder, including pulls excluded from feature rows., LabelDefinition, CandidateSpec, LabelExclusionReason, MLModel, MLTask, ModelSpec (+33 more)
+Cohesion: 0.13
+Nodes (42): DatasetCandidate, A pull considered by DatasetBuilder, including pulls excluded from feature rows., LabelExclusionReason, MLTask, StrEnum, build_supervised_dataset(), get_model_spec(), _input_vector() (+34 more)
 
-### Community 28 - "KnowledgeRepository"
-Cohesion: 0.06
-Nodes (35): KnowledgeIndexVersion, validate_vector(), BudgetExceeded, embedding_namespace(), EmbeddingLedger, EmbeddingSettings, PaidEmbedder, PriceVerification (+27 more)
+### Community 28 - "EmbeddingLedger"
+Cohesion: 0.08
+Nodes (34): validate_vector(), BudgetExceeded, embedding_namespace(), EmbeddingLedger, EmbeddingSettings, PaidEmbedder, PriceVerification, BaseSettings (+26 more)
 
 ### Community 29 - "Phase 7A — Agent Core & Grounded Orchestration"
 Cohesion: 0.03
@@ -494,20 +511,20 @@ Cohesion: 0.17
 Nodes (13): dynamic, GET(), SystemStatusPanel(), register(), getSystemStatus(), isSystemStatus(), Ready, SystemStatus (+5 more)
 
 ### Community 33 - "build_evidence"
-Cohesion: 0.10
-Nodes (75): _anomaly_facts(), _anomaly_interpretation(), build_evidence(), add_edge(), add_node(), _completeness(), _datetime(), _dedupe_gaps() (+67 more)
+Cohesion: 0.08
+Nodes (82): PredictionEvidenceFact, PredictionEvidenceMCPProjection, BaseModel, model_validator, Private MCP response; the agent removes source identifiers before provider…, Window, _anomaly_facts(), _anomaly_interpretation() (+74 more)
 
 ### Community 34 - "compilerOptions"
 Cohesion: 0.11
 Nodes (18): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+10 more)
 
 ### Community 35 - "datasets.py"
-Cohesion: 0.11
-Nodes (47): _atomic_write(), chronological_split(), _configuration_modifications_are_safe(), DatasetBuilder, DatasetValidationError, _datetime(), _eligible(), export_model_ready() (+39 more)
+Cohesion: 0.06
+Nodes (87): feature_source_capability_matrix(), Any, Describe signal-set compatibility without claiming runtime availability., _atomic_write(), chronological_split(), _configuration_modifications_are_safe(), DatasetBuilder, DatasetValidationError (+79 more)
 
 ### Community 36 - "RawTelemetryRecord"
-Cohesion: 0.04
-Nodes (58): Elm327Adapter, ElmTcpTransport, ElmTransport, Protocol, Read-only adapter contract. Deliberately has no command/write operation., Concrete ELM327 TCP/RFCOMM bridge transport with a strict read-only command…, Generic standard-mode OBD-II reader; no proprietary or write commands., ReplayAdapter (+50 more)
+Cohesion: 0.10
+Nodes (18): Read-only adapter contract. Deliberately has no command/write operation., VehicleDataAdapter, AcquisitionCollector, report(), report_periodically(), CollectorStats, Hardware-near bounded collector with retry, backpressure, and disk replay., UUID (+10 more)
 
 ### Community 37 - "analytics-workspace.tsx"
 Cohesion: 0.13
@@ -522,48 +539,48 @@ Cohesion: 0.18
 Nodes (6): config, GET, POST, apps_web_src_app_globals, metadata, next
 
 ### Community 40 - "features/registry.py"
-Cohesion: 0.17
-Nodes (28): FeatureContext, Any, datetime, FeatureDefinition, FeatureValue, MissingReason, _configuration_value(), _engine_code_calculator() (+20 more)
+Cohesion: 0.16
+Nodes (32): FeatureContext, Any, datetime, FeatureDefinition, FeatureValue, MissingReason, _configuration_value(), _context_signal_dependencies() (+24 more)
 
 ### Community 41 - "test_agent_prediction.py"
-Cohesion: 0.11
-Nodes (64): EvidenceRegistry, _anomaly_source_measurement(), prediction_answer(), Return a bounded, unit-bearing feature from the same 9E projection., Render an explicit prediction request without provider-authored prose., Classification, VehicleContext, _adapter_fact() (+56 more)
+Cohesion: 0.06
+Nodes (114): EvidenceRegistry, _anomaly_source_measurement(), prediction_answer(), _prediction_bindings(), _prediction_fact(), Return a bounded, unit-bearing feature from the same 9E projection., Render an explicit prediction request without provider-authored prose., render_binding() (+106 more)
 
 ### Community 42 - "devDependencies"
 Cohesion: 0.12
 Nodes (16): devDependencies, @axe-core/playwright, eslint, @eslint/compat, eslint-config-next, jsdom, @playwright/test, @testing-library/jest-dom (+8 more)
 
-### Community 43 - "retrieval.py"
+### Community 43 - "KnowledgeService"
 Cohesion: 0.11
-Nodes (35): DocumentVersion, KnowledgeSource, Match, Model, BaseModel, StrEnum, Unknown metadata lowers specificity; it never establishes an exact calibration…, RetrievalIntent (+27 more)
+Nodes (39): expected_public_answer(), Retain vehicle integrity checks while validating the versioned documentary…, KnowledgeClaim, KnowledgeEvidence, KnowledgeReport, NumericFact, RetrievalIntent, RetrievalResult (+31 more)
 
 ### Community 44 - "test_phase7d_grading.py"
-Cohesion: 0.07
-Nodes (52): expected_statement(), grade(), Any, semantic_binding_paths(), summarize(), temporal_checks(), effective(), timestamp() (+44 more)
+Cohesion: 0.08
+Nodes (49): expected_statement(), grade(), Any, semantic_binding_paths(), summarize(), temporal_checks(), effective(), timestamp() (+41 more)
 
 ### Community 45 - "Supervisor"
-Cohesion: 0.09
-Nodes (65): ModelTurn, ToolRequest, StrEnum, Specialist, Sufficiency, Supervisor, test_provider_input_excludes_configured_secrets(), validate_input() (+57 more)
+Cohesion: 0.10
+Nodes (62): ModelTurn, ToolRequest, StrEnum, Specialist, Sufficiency, Supervisor, test_provider_input_excludes_configured_secrets(), validate_input() (+54 more)
 
 ### Community 46 - "package.json"
 Cohesion: 0.11
 Nodes (18): devDependencies, openapi-typescript, prettier, engines, node, name, packageManager, private (+10 more)
 
-### Community 47 - "Envelope"
+### Community 47 - "EvidenceClient"
 Cohesion: 0.06
-Nodes (42): connect(), EvidenceClient, MCPClient, Any, AsyncClient, Client, Protocol, MeteredClient (+34 more)
+Nodes (38): EvidenceClient, Any, Protocol, Revoke the in-process Phase 9F grant before later tool calls are admitted., MeteredClient, Any, Path, ToolMeter (+30 more)
 
-### Community 48 - "test_quality_observation_bindings.py"
-Cohesion: 0.50
-Nodes (7): quality_observation_bindings(), observation(), parametrize, test_quality_event_identity_is_not_duplicated(), test_quality_gap_details_preserve_event_identity_and_recorded_values(), test_quality_synthesis_excludes_unsupported_mechanical_details(), test_quality_synthesis_rejects_mechanical_events_and_unrelated_source_tools()
+### Community 48 - "DeviceCapabilities"
+Cohesion: 0.12
+Nodes (39): SyntheticLiveAdapter, DeviceCapabilities, Importance, LoggingRecipe, plan_sampling(), PreflightResult, Priority, StrEnum (+31 more)
 
 ### Community 49 - "observability-validation.sh"
 Cohesion: 0.33
 Nodes (5): scripts_lib_wait_http_sh, observability-validation.sh script, wait_prometheus_query(), NO_PROXY, stack-smoke.sh script
 
-### Community 50 - "digest"
-Cohesion: 0.10
-Nodes (19): digest(), model_validator, write(), fixture, setup_query(), decision(), fixture, parametrize (+11 more)
+### Community 50 - "test_knowledge_refresh.py"
+Cohesion: 0.19
+Nodes (12): write(), decision(), parametrize, Operator refresh cannot overwrite approved text or publish an unreviewed…, test_metadata_only_review_versions_applicability_without_copying_unchanged_text(), test_quarantined_source_may_be_rejected_but_never_approved(), test_refresh_recovers_from_interrupted_manifest_write_without_changing_review(), fail_manifest() (+4 more)
 
 ### Community 51 - "telemetry-dashboard.tsx"
 Cohesion: 0.11
@@ -574,32 +591,32 @@ Cohesion: 0.02
 Nodes (98): 10. Investigation taxonomy, 11. Evidence gap model, 12. Reuse Phase 7A missing-evidence categories, 13. SignalNeed abstraction, 14. No invented channels, 15. Capability resolver, 16. Session capability vs hardware/source capability, 17. Existing-data-first policy (+90 more)
 
 ### Community 53 - "FeatureGenerationService"
-Cohesion: 0.16
-Nodes (13): HistoricalPull, TelemetryFeatureSample, FeatureSet, _deduplicate(), FeatureGenerationService, _json_object(), _modification_ids(), Any (+5 more)
+Cohesion: 0.15
+Nodes (16): HistoricalPull, TelemetryFeatureSample, FeatureSet, _deduplicate(), FeatureGenerationLimitError, FeatureGenerationService, FeatureVersionConflict, _json_object() (+8 more)
 
 ### Community 54 - "investigation/service.py"
-Cohesion: 0.09
-Nodes (51): Importance, LoggingRecipe, plan_sampling(), PreflightResult, Priority, StrEnum, SignalRequirement, req() (+43 more)
+Cohesion: 0.13
+Nodes (41): Availability, EvidenceGap, GapStatus, GapType, Hypothesis, HypothesisCategory, HypothesisStatus, InvestigationOutcome (+33 more)
 
 ### Community 55 - "97. Phase 7C Definition of Done"
 Cohesion: 0.14
 Nodes (14): 97. Phase 7C Definition of Done, API/UI/SSE, Conflicts, Data quality, Delivery, Evidence, Observability/performance, Parallelism (+6 more)
 
 ### Community 56 - "asyncio"
-Cohesion: 0.09
-Nodes (45): asyncio, httpx, os, main(), Dedicated browser gate: controlled real API, authenticated HTTP MCP and…, Independent controlled temporal/configuration fixtures in disposable…, seed_agent(), main() (+37 more)
+Cohesion: 0.05
+Nodes (82): asyncio, fcntl, httpx, os, pathlib, main(), Dedicated browser gate: controlled real API, authenticated HTTP MCP and…, domain_fingerprint() (+74 more)
 
 ### Community 57 - "verifier.py"
-Cohesion: 0.16
-Nodes (28): fit_bundle_to_size(), Drop optional records at boundaries and retain an explicit omission count., rehash_bundle(), canonical_json(), canonical_time(), canonical_value(), evidence_content_payload(), evidence_identity_payload() (+20 more)
+Cohesion: 0.18
+Nodes (25): rehash_bundle(), canonical_json(), canonical_time(), canonical_value(), evidence_content_payload(), evidence_identity_payload(), Any, datetime (+17 more)
 
-### Community 59 - "agents/schemas.py"
-Cohesion: 0.06
-Nodes (77): Conflict, Finding, Intent, BaseModel, Model chooses typed intent and candidates; application policy owns final…, Provider result before application grounding and public statement rendering., RoutingDecision, RoutingProposal (+69 more)
+### Community 59 - "test_supervisor_contracts.py"
+Cohesion: 0.08
+Nodes (68): Conflict, Model chooses typed intent and candidates; application policy owns final…, RoutingProposal, decide(), hints_for(), RoutingHints, conflicts_for(), sufficiency_for() (+60 more)
 
 ### Community 60 - "architecture/phase-9b-predictive-models.md"
-Cohesion: 0.08
-Nodes (22): ADR 0032: Versioned next-pull outcome labels, Alternatives considered, Consequences, Context, Decision, ADR 0033: Offline model selection and temporal splits, Alternatives considered, Consequences (+14 more)
+Cohesion: 0.05
+Nodes (33): TrainingRun, ADR 0032: Versioned next-pull outcome labels, Alternatives considered, Consequences, Context, Decision, ADR 0033: Offline model selection and temporal splits, Alternatives considered (+25 more)
 
 ### Community 61 - "mcp-validation.sh"
 Cohesion: 0.25
@@ -607,19 +624,19 @@ Nodes (6): DATABASE_URL, ENVIRONMENT, MCP_TEST_PROJECT, mcp-validation.sh script
 
 ### Community 62 - "anomalies/domain.py"
 Cohesion: 0.18
-Nodes (15): _cohort_policy(), _feature_keys(), _feature_spec(), _make_definition(), _normalization_policy(), _quality_policy(), _required_signals(), _threshold_policy() (+7 more)
+Nodes (16): _cohort_policy(), _feature_keys(), _feature_spec(), _make_definition(), _normalization_policy(), _quality_policy(), _required_signals(), _threshold_policy() (+8 more)
 
 ### Community 63 - "README.md"
 Cohesion: 0.07
-Nodes (16): Contributing, Phase 7C specialist agents and supervisor, Phase 9F controlled prediction evidence, System context, Toolchain selection, Local development, Roadmap, Investigation workflow (+8 more)
+Nodes (17): Contributing, Phase 7C specialist agents and supervisor, Phase 9F controlled prediction evidence, System context, Toolchain selection, Local development, Roadmap, Investigation workflow (+9 more)
 
-### Community 64 - "test_agents.py"
-Cohesion: 0.08
-Nodes (55): canonical_hash(), facts(), Any, UUID, Merge independent reads by tool/selection, preserving each MCP result's row…, _prediction_bindings(), _prediction_fact(), render_binding() (+47 more)
+### Community 64 - "Envelope"
+Cohesion: 0.09
+Nodes (25): canonical_hash(), facts(), Any, UUID, Merge independent reads by tool/selection, preserving each MCP result's row…, call(), P, Envelope (+17 more)
 
 ### Community 65 - "AgentError"
 Cohesion: 0.05
-Nodes (74): at(), effective(), Any, datetime, UUID, resolve_context(), AgentError, Exception (+66 more)
+Nodes (72): AgentError, Exception, Case, Ledger, load_suite(), Any, Decimal, model_validator (+64 more)
 
 ### Community 66 - "integration.sh"
 Cohesion: 0.40
@@ -651,15 +668,15 @@ Nodes (13): 45. Required synthetic scenarios, A. Identical repeated pulls, B. Pr
 
 ### Community 95 - "metrics.py"
 Cohesion: 0.21
-Nodes (24): ConfidenceInterval, MetricDefinition, MetricResult, MetricStatus, binary_metrics(), _brier(), _cluster_interval_unavailable(), _ece() (+16 more)
+Nodes (25): ConfidenceInterval, MetricDefinition, MetricResult, MetricStatus, ReliabilityBin, binary_metrics(), _brier(), _cluster_interval_unavailable() (+17 more)
 
 ### Community 96 - "73. Definition of Done"
 Cohesion: 0.17
 Nodes (12): 73. Definition of Done, API/UI, Architecture, Delivery, Grounding, Observability, Orchestration, Performance (+4 more)
 
 ### Community 97 - "ml/splitting.py"
-Cohesion: 0.21
-Nodes (21): _assert_disjoint_groups(), chronological_group_split(), ValueError, _replace_rows(), scenario_holdout_split(), _split_result(), SplitValidationError, temporal_blocks() (+13 more)
+Cohesion: 0.33
+Nodes (14): _assert_disjoint_groups(), chronological_group_split(), ValueError, _replace_rows(), scenario_holdout_split(), _split_result(), SplitValidationError, temporal_blocks() (+6 more)
 
 ### Community 98 - "Phase 7D — Real Model Validation & Agent Reliability Baseline"
 Cohesion: 0.13
@@ -667,31 +684,31 @@ Nodes (15): 10. No hidden real calls in normal CI, 11. Evaluation dataset design
 
 ### Community 99 - "pipeline.py"
 Cohesion: 0.17
-Nodes (21): DatasetBuild, ModelState, SupervisedDataset, build_task_dataset(), dataset_definitions(), Any, datetime, Exception (+13 more)
+Nodes (20): DatasetBuild, ModelState, SupervisedDataset, build_task_dataset(), dataset_definitions(), Any, datetime, Exception (+12 more)
 
-### Community 100 - "test_predictions.py"
+### Community 100 - "PredictionRequestBudgetMiddleware"
 Cohesion: 0.05
-Nodes (59): PredictionRequestBudgetMiddleware, Receive, Scope, Send, Authenticate and bound prediction requests before FastAPI reads JSON or the DB., Cancel downstream work when the ASGI server reports a disconnected client., auth_headers(), collect() (+51 more)
+Nodes (51): PredictionRequestBudgetMiddleware, Receive, Scope, Send, Authenticate and bound prediction requests before FastAPI reads JSON or the DB., Cancel downstream work when the ASGI server reports a disconnected client., auth_headers(), collect() (+43 more)
 
 ### Community 101 - "test_agent_runtime.py"
-Cohesion: 0.05
-Nodes (49): Any, Redact only strings, preserving numeric facts and JSON structure., redact_data(), Ask, model_validator, AgentService, deny(), audit() (+41 more)
+Cohesion: 0.08
+Nodes (30): draft_schema(), parametrize, Provider wire parsing and service lifecycle failure branches (unit doubles…, request(), ResponseStream, service_fixture(), call(), event() (+22 more)
 
 ### Community 102 - "Settings"
-Cohesion: 0.05
-Nodes (49): AcquisitionPublisher, Application-owned producer; bounded concurrent publication and shutdown., BaseSettings, datetime, field_validator, model_validator, Settings, create_app() (+41 more)
+Cohesion: 0.06
+Nodes (36): AIOKafkaProducer, AcquisitionPublisher, Application-owned producer; bounded concurrent publication and shutdown., BaseSettings, datetime, field_validator, model_validator, Settings (+28 more)
 
 ### Community 103 - "pull_request_template.md"
 Cohesion: 0.22
 Nodes (8): Database/contract impact, Documentation, How it was validated, Observability impact, Risks, Security impact, What changed, Why
 
 ### Community 104 - "DetectorProfile"
-Cohesion: 0.16
-Nodes (25): UUID, align_observations(), Align by deterministic last-value carry-forward, expiring at max_gap. Duplicate…, rolling_median(), HeuristicPullDetector, DetectorProfile, Heuristic defaults, not manufacturer calibration data., mixed_drive() (+17 more)
+Cohesion: 0.09
+Nodes (42): UUID, align_observations(), Align by deterministic last-value carry-forward, expiring at max_gap. Duplicate…, rolling_median(), compute_pull_metrics(), HeuristicPullDetector, HeuristicSegmentDetector, _mean() (+34 more)
 
 ### Community 105 - "PredictionService"
-Cohesion: 0.07
-Nodes (40): AnomalyRequest, FeatureSelection, FeatureSnapshot, NextPullRequest, PredictionError, PredictionLineage, PredictionQuality, PredictionRequestBase (+32 more)
+Cohesion: 0.09
+Nodes (30): default_feature_version(), offline_predict(), TrustedModelArtifact, AnomalyRequest, FeatureSelection, FeatureSnapshot, NextPullRequest, PredictionError (+22 more)
 
 ### Community 106 - "Phase 5 automotive analytics"
 Cohesion: 0.25
@@ -750,8 +767,8 @@ Cohesion: 0.29
 Nodes (6): ADR 0011: Canonical telemetry storage and retry identity, Alternatives considered, Consequences and risks, Context, Decision, Status
 
 ### Community 120 - "AgentSettings"
-Cohesion: 0.07
-Nodes (51): AgentSettings, BaseSettings, model_validator, accumulate(), Orchestrator, Any, UUID, Preserve a bounded co-recorded sample alongside the full MCP session summary.… (+43 more)
+Cohesion: 0.06
+Nodes (56): AgentSettings, BaseSettings, model_validator, at(), effective(), Any, datetime, UUID (+48 more)
 
 ### Community 121 - "Phase 3 event and anomaly engine"
 Cohesion: 0.29
@@ -773,17 +790,17 @@ Nodes (5): ADR 0012: Versioned deterministic session analysis, Alternatives, Con
 Cohesion: 0.33
 Nodes (5): ADR 0013: Deterministic evidence-first event architecture, Alternatives, Consequences and risks, Context, Decision
 
-### Community 126 - "test_features.py"
-Cohesion: 0.16
-Nodes (21): feature_source_capability_matrix(), Any, Describe signal-set compatibility without claiming runtime availability., FeatureQuality, context(), datetime, sample(), target_source_refs() (+13 more)
+### Community 126 - "KnowledgeRepository"
+Cohesion: 0.10
+Nodes (24): DocumentChunk, DocumentVersion, KnowledgeIndexVersion, KnowledgeSource, Model, BaseModel, SourceConflict, KnowledgeRepository (+16 more)
 
 ### Community 127 - "Adapter"
-Cohesion: 0.07
-Nodes (44): AccessToken, Adapter, Verify an operator-provisioned opaque token; never issue or forward tokens., ReadTokenVerifier, MCPSettings, BaseSettings, model_validator, BaseException (+36 more)
+Cohesion: 0.06
+Nodes (47): AccessToken, MCPClient, AsyncClient, Client, Adapter, Verify an operator-provisioned opaque token; never issue or forward tokens., ReadTokenVerifier, MCPSettings (+39 more)
 
-### Community 128 - "supervised.py"
-Cohesion: 0.13
-Nodes (38): Any, source_fingerprint(), assert_disjoint_training_source(), _assert_partition_safety(), chronological_calibration_split(), EvaluationPartitions, EvaluationSplitError, fold_summary() (+30 more)
+### Community 128 - "test_evaluation.py"
+Cohesion: 0.18
+Nodes (25): assert_disjoint_training_source(), _assert_partition_safety(), chronological_calibration_split(), EvaluationPartitions, EvaluationSplitError, fold_summary(), Any, ValueError (+17 more)
 
 ### Community 129 - "Phase 3 events"
 Cohesion: 0.11
@@ -799,23 +816,23 @@ Nodes (6): 85. Unit and contract tests, Collector, Live analysis, Recipes, Sampl
 
 ### Community 132 - "evaluate_anomaly_detection.py"
 Cohesion: 0.14
-Nodes (35): classification_metrics(), MethodCandidate, Any, Select only over the supplied validation fold; never accepts test labels., select_detector_method(), select_validation_threshold(), ThresholdCandidate, test_evaluation_metrics_cover_empty_support_and_rejected_candidates() (+27 more)
+Nodes (34): classification_metrics(), MethodCandidate, Any, Select only over the supplied validation fold; never accepts test labels., select_detector_method(), select_validation_threshold(), ThresholdCandidate, test_evaluation_metrics_cover_empty_support_and_rejected_candidates() (+26 more)
 
 ### Community 133 - "Phases 0–5 retrospective hardening"
 Cohesion: 0.06
 Nodes (29): ADR 0014: Kafka durable acquisition stream, Consequences, Context, Decision, ADR 0017: Retrospective evidence and execution identity, Alternatives, Consequences and risks, Context (+21 more)
 
 ### Community 134 - "prediction_evidence/repository.py"
-Cohesion: 0.15
-Nodes (27): ArtifactAvailability, EvidenceSourceSnapshot, SourceRecordSnapshot, _artifact_state(), _binding_matches_receipt(), _decode_bundle(), _feature_matches_receipt(), _feature_values_match_provenance() (+19 more)
+Cohesion: 0.16
+Nodes (27): EvidenceSourceSnapshot, SourceRecordSnapshot, _artifact_state(), _binding_matches_receipt(), _decode_bundle(), _feature_matches_receipt(), _feature_values_match_provenance(), _feature_version_checksum() (+19 more)
 
 ### Community 135 - "Vehicle Intelligence Platform context"
 Cohesion: 0.33
 Nodes (5): Business Logic & Feature Map, Current implementation map, Directory Structure Map, Validation, Vehicle Intelligence Platform context
 
-### Community 136 - "features/domain.py"
-Cohesion: 0.16
-Nodes (24): AcquisitionClass, EntityScope, FeatureCategory, FeatureDType, FeatureSetVersion, HorizonKind, PredictionHorizon, StrEnum (+16 more)
+### Community 136 - "evaluate_mcp.py"
+Cohesion: 0.11
+Nodes (21): httpx2, mcp, mcp_client_stdio, mcp_client_streamable_http, Representative MCP reads measured through the SDK against disposable canonical…, evaluate(), Any, Client (+13 more)
 
 ### Community 137 - "stable_hash"
 Cohesion: 0.15
@@ -829,9 +846,9 @@ Nodes (5): 94. Failure behavior, Database unavailable, Device disconnect, One ba
 Cohesion: 0.08
 Nodes (20): ADR 0031: Versioned feature engineering and temporal datasets, Alternatives considered, Consequences, Context, Decision, Validation, Service boundaries, Feature dataset builder runbook (+12 more)
 
-### Community 144 - "json"
+### Community 144 - "typing"
 Cohesion: 0.06
-Nodes (57): StandardPid, Explicit paid embedding boundary with durable per-request reservations and…, Isolated PDF process. No network, file arguments, credentials, script execution…, Prevent database driver messages and SQL text from leaving the process., parse_timestamp(), datetime, sample_id(), validate_sequence() (+49 more)
+Nodes (54): Isolated PDF process. No network, file arguments, credentials, script execution…, Protocol, Read-only connection defaults also bound queries before a transaction begins., Terminable, Prevent database driver messages and SQL text from leaving the process., build_parser(), main(), ArgumentParser (+46 more)
 
 ### Community 145 - "anomalies/cli.py"
 Cohesion: 0.21
@@ -846,19 +863,19 @@ Cohesion: 0.24
 Nodes (11): Validate local skills, scoped context, declarative YAML and Markdown links., accepted(), load_exceptions(), load_findings(), main(), parse_args(), Any, Namespace (+3 more)
 
 ### Community 148 - "evaluate"
-Cohesion: 0.09
-Nodes (25): _event_flag(), generate_fixture_features(), _noise_flag(), Any, datetime, Seed canonical telemetry with deterministic observable progression and…, seed_predictive_fixture(), SyntheticFixture (+17 more)
+Cohesion: 0.18
+Nodes (15): _assert(), _db_counts(), evaluate(), _inject_late_records(), _legacy_table_digests(), main(), _migration_round_trip(), _percentile() (+7 more)
 
 ### Community 149 - "15. Required acquisition adapters"
 Cohesion: 0.50
 Nodes (4): 15. Required acquisition adapters, Real read-only OBD adapter path, Replay adapter, Synthetic live adapter
 
-### Community 151 - "SanitizingExporter"
-Cohesion: 0.14
-Nodes (9): SanitizingExporter, JSONFormatter, Any, test_database_error_propagation_cannot_leak_through_parent_spans(), test_database_trace_export_redacts_driver_inputs(), test_json_logs_do_not_render_exception_secrets(), test_sql_text_is_removed_from_non_database_successful_spans(), LogRecord (+1 more)
+### Community 151 - "exercise"
+Cohesion: 0.12
+Nodes (9): SanitizingExporter, JSONFormatter, Any, test_database_trace_export_redacts_driver_inputs(), test_json_logs_do_not_render_exception_secrets(), LogRecord, exercise(), main() (+1 more)
 
-### Community 152 - "prompts/phase-7d-real-model-validation.md"
-Cohesion: 0.15
+### Community 152 - "CATEGORY D — FUEL / AIR / BOOST"
+Cohesion: 0.18
 Nodes (11): 44. D01, 45. D02, 46. D03, 47. D04, 48. D05, 49. D06, 50. D07, 51. D08 (+3 more)
 
 ### Community 153 - "101. ADRs"
@@ -869,29 +886,29 @@ Nodes (3): 101. ADRs, Acquisition lifecycle / recipes, Streaming architecture
 Cohesion: 0.36
 Nodes (3): Any, field_validator, _validate_json_value()
 
-### Community 155 - "knowledge/domain.py"
-Cohesion: 0.22
-Nodes (22): expected_public_answer(), Independent deterministic scoring of public outputs; no paid LLM judge., Retain vehicle integrity checks while validating the versioned documentary…, KnowledgeClaim, KnowledgeEvidence, KnowledgeReport, NumericFact, Trust, temporal applicability and immutable documentary provenance contracts. (+14 more)
+### Community 155 - "BoundedSpool"
+Cohesion: 0.08
+Nodes (16): ReplayAdapter, run(), collect(), GatewayPublisher, UUID, BoundedSpool, Path, Single-collector atomic acknowledgement, only after successful publish. (+8 more)
 
 ### Community 159 - "CATEGORY F — MULTI-SPECIALIST"
 Cohesion: 0.18
 Nodes (11): 64. F01, 65. F02, 66. F03, 67. F04, 68. F05, 69. F06, 70. F07, 71. F08 (+3 more)
 
 ### Community 168 - "test_investigation.py"
-Cohesion: 0.10
-Nodes (59): DeviceCapabilities, Support, Approval, CapabilitySnapshot, Feasibility, InvestigationStatus, SignalRole, plan_recipe() (+51 more)
+Cohesion: 0.15
+Nodes (29): InvestigationStatus, insufficient_run(), MemoryInvestigations, plan(), test_cancel_and_reject_are_idempotent_only_at_exact_version(), test_completed_followup_reloads_after_stale_race(), test_create_closes_provider_after_invalid_semantic_output(), test_create_rejects_invalid_identity_capacity_and_sufficient_answer() (+21 more)
 
-### Community 173 - "CATEGORY G — PHASE 7B / INSUFFICIENT EVIDENCE / ADAPTIVE LOGGING"
-Cohesion: 0.18
-Nodes (11): 74. G01, 75. G02, 76. G03, 77. G04, 78. G05, 79. G06, 80. G07, 81. G08 (+3 more)
+### Community 173 - "prompts/phase-7d-real-model-validation.md"
+Cohesion: 0.06
+Nodes (33): 14. A01 — last session, 15. A02 — active configuration, 16. A03 — installed modifications, 17. A04 — last pull count, 18. A05 — strongest pull, 19. A06 — session capabilities, 20. A07 — event lookup, 21. A08 — current vs historical configuration identity (+25 more)
 
 ### Community 174 - "investigation_router"
 Cohesion: 0.12
 Nodes (4): investigation_router(), APIRouter, test_investigation_api_requires_operator_token(), test_operator_route_requires_configured_token()
 
 ### Community 175 - "test_acquisition.py"
-Cohesion: 0.03
-Nodes (55): preflight(), Readiness, BoundedSpool, Path, Single-collector atomic acknowledgement, only after successful publish., FakeElm, capabilities(), Exception (+47 more)
+Cohesion: 0.09
+Nodes (29): preflight(), Readiness, FakeElm, capabilities(), parametrize, test_collector_health_distinguishes_transport_and_sampling(), test_elm327_only_uses_allowlisted_read_commands(), test_elm_recovers_timeout_without_reusing_sequence() (+21 more)
 
 ### Community 176 - "ADR 0022: Bounded real-model evaluation and durable spend accounting"
 Cohesion: 0.22
@@ -901,25 +918,25 @@ Nodes (8): ADR 0022: Bounded real-model evaluation and durable spend accounting,
 Cohesion: 0.18
 Nodes (11): Comparable capture needs, Hardening from partial real observations, Phase 7D real-model validation, Quality, source capability and comparison metadata scope, Registered pull discovery and routing context, Related-domain routing and deterministic selection correction, Required and optional recipe coverage, Scoped output references (+3 more)
 
-### Community 178 - "predictions/cli.py"
-Cohesion: 0.09
-Nodes (25): build_parser(), _confirmation(), ArgumentParser, _roles(), argparse, _aware_datetime(), datetime, Build and export a bounded Phase 9A pull dataset from registered feature sets. (+17 more)
+### Community 178 - "json"
+Cohesion: 0.08
+Nodes (34): Trust, temporal applicability and immutable documentary provenance contracts., Explicit paid embedding boundary with durable per-request reservations and…, Knowledge-owned SQL persistence. All external values are bound parameters., Deterministic, trust/applicability-aware hybrid retrieval with auditable…, Operator-only acquisition: public pinned addresses, bounded reads, no redirects…, Runtime query embeddings: immutable cached vectors, explicit billing and…, argparse, decimal (+26 more)
 
-### Community 179 - "Phase 4 acquisition threats"
-Cohesion: 0.09
-Nodes (21): Revoke the in-process Phase 9F grant before later tool calls are admitted., Bounds and failure behavior, Evidence admission matrix, Persistence and compatibility, Phase 9F agent integration, Request and evidence flow, Scope and semantics, Original Phase 4 local resource budgets (+13 more)
+### Community 179 - "PredictionRepository"
+Cohesion: 0.17
+Nodes (12): PullContext, StrEnum, ServingEventType, json_object(), PredictionRepository, Any, datetime, UUID (+4 more)
 
 ### Community 180 - "test_scoped_tool_schemas.py"
-Cohesion: 0.30
-Nodes (12): Any, Describe existing specialist ID permissions in per-turn tool schemas., scoped_tool_definitions(), parametrize, scope(), test_comparison_arrays_preserve_cardinality_and_unique_registered_ids(), test_foreign_or_out_of_scope_evidence_cannot_supply_tool_ids(), test_nullable_configuration_filter_keeps_null_and_owned_configuration() (+4 more)
+Cohesion: 0.35
+Nodes (11): Any, scoped_tool_definitions(), parametrize, scope(), test_comparison_arrays_preserve_cardinality_and_unique_registered_ids(), test_foreign_or_out_of_scope_evidence_cannot_supply_tool_ids(), test_nullable_configuration_filter_keeps_null_and_owned_configuration(), test_tool_ids_accept_registered_scope_and_reject_guessed_ids() (+3 more)
 
 ### Community 181 - "normalize_value"
-Cohesion: 0.12
-Nodes (21): DataQuality, NormalizationError, normalize_value(), StrEnum, ValueError, SignalDefinition, SyntheticTelemetrySource, CSVTelemetrySource (+13 more)
-
-### Community 182 - "ADR 0019: Grounded agent state and evidence"
 Cohesion: 0.08
-Nodes (22): blocked(), ADR 0015: Versioned recipes and acquisition lifecycle, Consequences, Decision, ADR 0019: Grounded agent state and evidence, Alternatives, Consequences and risks, Context (+14 more)
+Nodes (29): DataQuality, NormalizationError, normalize_value(), parse_timestamp(), datetime, StrEnum, ValueError, sample_id() (+21 more)
+
+### Community 182 - "ADR 0018: Read-only MCP application adapter"
+Cohesion: 0.06
+Nodes (28): ADR 0016: Deterministic, immutable automotive analytics, Consequences, Decision, Status, ADR 0018: Read-only MCP application adapter, Alternatives, Consequences and risks, Context (+20 more)
 
 ### Community 183 - "98. Phase 7B Definition of Done"
 Cohesion: 0.15
@@ -933,9 +950,9 @@ Nodes (7): DATABASE_URL, ENVIRONMENT, GIT_COMMIT_SHA, MCP_TEST_PROJECT, phase9b-
 Cohesion: 0.27
 Nodes (4): @axe-core/playwright, ref_node_fs, ref_node_path, @playwright/test
 
-### Community 187 - "extraction.py"
-Cohesion: 0.09
-Nodes (42): DocumentChunk, chunks(), extract(), markdown_sections(), flush(), pdf_sections(), UUID, Heading/page/table-aware extraction. Image-only pages remain explicit… (+34 more)
+### Community 187 - "digest"
+Cohesion: 0.10
+Nodes (44): digest(), StrEnum, SourceStatus, Trust, chunks(), extract(), markdown_sections(), flush() (+36 more)
 
 ### Community 188 - "Phase 7B acceptance"
 Cohesion: 0.29
@@ -946,12 +963,12 @@ Cohesion: 0.29
 Nodes (6): Inputs and dataset, Label and horizon, Limitations and failure modes, Model card: next-pull fuel deviation, Purpose and prohibited use, Split and model
 
 ### Community 190 - "validate_vehicle_context"
-Cohesion: 0.14
-Nodes (13): ImportResult, TelemetryWindow, TelemetrySource, _content_hash(), AsyncSession, datetime, UUID, validate_vehicle_context() (+5 more)
+Cohesion: 0.24
+Nodes (8): datetime, UUID, validate_vehicle_context(), For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
 
-### Community 191 - "prediction_router"
+### Community 191 - "acquisition/cli.py"
 Cohesion: 0.15
-Nodes (10): prediction_router(), materialize_evidence(), next_pull(), versions(), PredictionBindingResponse, PredictionEvidenceMaterializeRequest, PredictionEvidenceMaterializeResponse, PredictionVersionsResponse (+2 more)
+Nodes (21): ElmTcpTransport, Concrete ELM327 TCP/RFCOMM bridge transport with a strict read-only command…, adapter_for(), AdapterKind, devices(), execute(), _preflight(), preflight_command() (+13 more)
 
 ### Community 192 - "agent-workspace.test.tsx"
 Cohesion: 0.18
@@ -966,8 +983,8 @@ Cohesion: 0.29
 Nodes (6): Inputs and dataset, Label and horizon, Limitations and failure modes, Model card: next-pull performance degradation, Purpose and prohibited use, Split and model
 
 ### Community 195 - "anomaly.py"
-Cohesion: 0.27
-Nodes (15): AnomalyEvaluationError, _deduplicated_burden(), evaluate_phase9c_receipt(), _normalize_cases(), Any, ValueError, _quantile(), _scenario_matrix() (+7 more)
+Cohesion: 0.23
+Nodes (18): AnomalyEvaluationError, _deduplicated_burden(), evaluate_phase9c_receipt(), _normalize_cases(), Any, ValueError, _quality_abstention_scenarios(), _quantile() (+10 more)
 
 ### Community 196 - "45. Investigation examples"
 Cohesion: 0.50
@@ -978,12 +995,12 @@ Cohesion: 0.10
 Nodes (20): 2:A01:0 — representative, 2:A02:0 — representative, 2:A03:0 — representative, 2:A05:0 — ambiguous, 2:A06:0 — representative, 2:A09:0 — representative, 2:A10:0 — worst, 2:B04:0 — ambiguous (+12 more)
 
 ### Community 199 - "evaluation/contracts.py"
-Cohesion: 0.10
-Nodes (20): CalibrationCandidate, CalibrationValidityScope, DatasetManifest, DriftComparison, EvaluationEvidenceRef, EvaluationProtocol, EvaluationRun, FoldManifest (+12 more)
+Cohesion: 0.09
+Nodes (30): assess_source_applicability(), AllowedClaimCategory, ApplicabilityAssessment, ApplicabilityStatus, CalibrationCandidate, CalibrationValidityScope, DatasetManifest, DriftComparison (+22 more)
 
 ### Community 200 - "SessionAnalysisService"
-Cohesion: 0.35
-Nodes (7): AnalysisLimitError, UUID, ValueError, SessionAnalysisService, AnalysisResult, Pull, SessionSegment
+Cohesion: 0.47
+Nodes (4): UUID, SessionAnalysisService, AnalysisResult, Pull
 
 ### Community 201 - "PHASE 0 COMPLETION REPORT"
 Cohesion: 0.06
@@ -993,25 +1010,25 @@ Nodes (26): Closure, ADRs created, Applications, Architecture, CI/CD, Closure re
 Cohesion: 0.29
 Nodes (6): Inputs and dataset, Label and horizon, Limitations and failure modes, Model card: next-pull thermal degradation, Purpose and prohibited use, Split and model
 
-### Community 204 - "seed_knowledge"
-Cohesion: 0.25
-Nodes (11): main(), encode(), percentiles(), evaluate(), encode(), fixture_vector(), Project-authored synthetic corpus for independent disposable database gates., seed_knowledge() (+3 more)
+### Community 204 - "main"
+Cohesion: 0.40
+Nodes (6): main(), encode(), percentiles(), encode(), fixture_vector(), encode()
 
 ### Community 205 - "What You Must Do When Invoked"
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
-### Community 206 - "dataclasses"
-Cohesion: 0.13
-Nodes (20): compute_pull_metrics(), HeuristicSegmentDetector, _mean(), PullDetector, Protocol, SegmentDetector, _slope(), DetectedPull (+12 more)
+### Community 206 - "datetime"
+Cohesion: 0.12
+Nodes (21): StandardPid, Independent deterministic scoring of public outputs; no paid LLM judge., Versioned suite, conservative pricing, and crash-safe paid-call accounting., asyncpg, collections, dataclasses, datetime, hashlib (+13 more)
 
 ### Community 207 - "anomalies/detectors.py"
-Cohesion: 0.14
-Nodes (51): detector_definition(), _abstention(), _coverage(), DetectorFitError, _eligible_feature_order(), fit_detector(), _fit_robust_stats(), _forest_matrix() (+43 more)
+Cohesion: 0.13
+Nodes (50): detector_definition(), _coverage(), DetectorFitError, _eligible_feature_order(), fit_detector(), _fit_robust_stats(), _forest_matrix(), _observed_values() (+42 more)
 
-### Community 208 - "AgentRun"
-Cohesion: 0.19
-Nodes (10): PredictionEvidenceLink, AgentRepository, AsyncSession, UUID, Commit terminal state and stream event together; reconnect cannot race…, Only agent-owned tables. Vehicle existence is resolved through MCP, never SQL., Recover interrupted runs beyond the hard 180s runtime plus cleanup allowance., AgentRun (+2 more)
+### Community 208 - "AgentRepository"
+Cohesion: 0.22
+Nodes (8): PredictionEvidenceLink, AgentRepository, AsyncSession, UUID, Commit terminal state and stream event together; reconnect cannot race…, Only agent-owned tables. Vehicle existence is resolved through MCP, never SQL., Recover interrupted runs beyond the hard 180s runtime plus cleanup allowance., StreamEvent
 
 ### Community 209 - "Phase 7D observed response review"
 Cohesion: 0.20
@@ -1023,7 +1040,7 @@ Nodes (19): Component model, CURRENT, FUTURE, Phase 6 MCP tool platform, Resourc
 
 ### Community 211 - "investigation/routes.py"
 Cohesion: 0.10
-Nodes (27): AcquisitionCapabilitySource, fresh(), datetime, UUID, Source capability snapshots from the local collector, never inferred from…, Phase 4 owner of source support; a dataset report is not source support., SourceCapabilitySnapshot, validated_report() (+19 more)
+Nodes (28): AcquisitionCapabilitySource, fresh(), datetime, UUID, Source capability snapshots from the local collector, never inferred from…, Phase 4 owner of source support; a dataset report is not source support., SourceCapabilitySnapshot, validated_report() (+20 more)
 
 ### Community 212 - "Phase 6 acceptance"
 Cohesion: 0.14
@@ -1033,21 +1050,21 @@ Nodes (13): Phase 3 acceptance, Phase 6 acceptance, Phase 7A acceptance, Phase 7
 Cohesion: 0.22
 Nodes (9): Critical-repeat stability, Cumulative provider role usage, Current affected-follow-up review through round 22, Current category outcomes, Current cumulative provider usage and retained reservations, Historical round-nine review (unchanged), Historical round-three and round-two reviews, Phase 7D observed response review (+1 more)
 
-### Community 214 - "CATEGORY A — FACTUAL / FAST-PATH"
-Cohesion: 0.18
-Nodes (11): 14. A01 — last session, 15. A02 — active configuration, 16. A03 — installed modifications, 17. A04 — last pull count, 18. A05 — strongest pull, 19. A06 — session capabilities, 20. A07 — event lookup, 21. A08 — current vs historical configuration identity (+3 more)
+### Community 214 - "test_elm_tcp_transport_connects_reads_reuses_and_closes"
+Cohesion: 0.09
+Nodes (9): Exception, MonkeyPatch, test_consumer_database_failure_exits_without_sql_inputs(), fail(), test_elm_tcp_transport_connects_reads_reuses_and_closes(), test_gateway_publisher_classifies_responses(), test_gateway_transport_errors_enter_retry_spool_path(), test_spool_failed_atomic_ack_preserves_original() (+1 more)
 
 ### Community 215 - "test_knowledge.py"
 Cohesion: 0.12
-Nodes (34): Applicability, StrEnum, RequestType, search(), price(), MonkeyPatch, parametrize, Path (+26 more)
+Nodes (27): Applicability, Match, Unknown metadata lowers specificity; it never establishes an exact calibration…, download(), public_addresses(), Pin the validated IP and preserve hostname TLS/Host to prevent DNS rebinding., StrEnum, RequestType (+19 more)
 
 ### Community 216 - "13. Document domain model"
 Cohesion: 0.29
 Nodes (7): 13. Document domain model, DocumentChunk, DocumentVersion, KnowledgeEvidence, KnowledgeSource, RetrievalRun, TechnicalDocument
 
-### Community 217 - "InvestigationPlan"
-Cohesion: 0.08
-Nodes (20): InvestigationError, InvestigationEvent, InvestigationPlan, model_validator, ValueError, A public investigation rule was violated., Transition, InvestigationInstrumentation (+12 more)
+### Community 217 - "InvestigationService"
+Cohesion: 0.09
+Nodes (17): Approval, InvestigationError, InvestigationEvent, InvestigationPlan, model_validator, ValueError, A public investigation rule was violated., InvestigationInstrumentation (+9 more)
 
 ### Community 218 - "4. Feature categories"
 Cohesion: 0.18
@@ -1058,20 +1075,20 @@ Cohesion: 0.29
 Nodes (7): Ambiguous, Critical, Cumulative actual provider usage, Current public review shortlist, Historical round-fifteen review, Representative, Worst
 
 ### Community 220 - "pytest"
-Cohesion: 0.07
-Nodes (31): alembic_config, alembic_script, StreamEvent, fixture, Requires an explicitly supplied disposable test database. Never skips silently., url(), Additive knowledge migration lifecycle over the same disposable Timescale…, parametrize (+23 more)
+Cohesion: 0.14
+Nodes (14): alembic_config, alembic_script, fixture, Requires an explicitly supplied disposable test database. Never skips silently., url(), Additive knowledge migration lifecycle over the same disposable Timescale…, fixture(), Path (+6 more)
 
 ### Community 221 - "ArtifactStore"
-Cohesion: 0.26
-Nodes (12): ArtifactReceipt, ArtifactStore, ArtifactValidationError, _file_sha256(), offline_predict(), Any, ndarray, Path (+4 more)
+Cohesion: 0.24
+Nodes (12): ArtifactReceipt, ArtifactStore, ArtifactValidationError, _file_sha256(), Any, ndarray, Path, ValueError (+4 more)
 
 ### Community 222 - "39. Query types"
 Cohesion: 0.33
 Nodes (6): 39. Query types, HYBRID_COMPARISON, KNOWLEDGE_FACT, TECHNICAL_KNOWLEDGE_INSUFFICIENT, VEHICLE_EVIDENCE_INSUFFICIENT, VEHICLE_FACT
 
-### Community 223 - "knowledge_router"
-Cohesion: 0.12
-Nodes (20): knowledge_scope(), Any, UUID, Only MCP-resolved context may establish vehicle knowledge applicability., text_field(), knowledge_router(), search(), Any (+12 more)
+### Community 223 - "knowledge/context.py"
+Cohesion: 0.13
+Nodes (18): knowledge_scope(), Any, UUID, Only MCP-resolved context may establish vehicle knowledge applicability., text_field(), search(), Any, record() (+10 more)
 
 ### Community 224 - "ADR 0024: Bounded tool feedback and optional recipe needs"
 Cohesion: 0.40
@@ -1117,24 +1134,24 @@ Nodes (8): scripts, build, dev, lint, start, test, test:e2e, typecheck
 Cohesion: 0.11
 Nodes (18): 10. Evaluation design: labels are NOT ground truth, 11. Reproducibility and artifact security, 12. CLI and persistence, 13. Tests and independent acceptance, 14. Performance and observability, 15. Documentation and traceability, 16. Mandatory validation and delivery, 17. Definition of done — checklist (+10 more)
 
-### Community 235 - "ArtifactStore"
-Cohesion: 0.19
-Nodes (12): AnomalyArtifactError, ArtifactReceipt, ArtifactStore, _file_sha256(), Any, Path, ValueError, Read/write only internally generated registry-backed Phase 9C artifacts. (+4 more)
+### Community 235 - "anomalies/artifacts.py"
+Cohesion: 0.18
+Nodes (13): AnomalyArtifactError, ArtifactReceipt, ArtifactStore, _file_sha256(), Any, Path, ValueError, Read/write only internally generated registry-backed Phase 9C artifacts. (+5 more)
 
 ### Community 236 - "5. Initial supervised tasks"
 Cohesion: 0.50
 Nodes (4): 5. Initial supervised tasks, TASK A — NEXT_PULL_THERMAL_DEGRADATION, TASK B — NEXT_PULL_PERFORMANCE_DEGRADATION, TASK C — NEXT_PULL_FUEL_DEVIATION
 
-### Community 237 - "evaluate_prediction_evidence.py"
-Cohesion: 0.14
-Nodes (28): DBAPIError, Response, _assert(), _assert_graph_oracle(), _attempt_materialize(), _bundle_from_database(), evaluate(), _git_sha() (+20 more)
+### Community 237 - "evaluate"
+Cohesion: 0.12
+Nodes (26): DBAPIError, Response, _assert(), _assert_graph_oracle(), _attempt_materialize(), _bundle_from_database(), evaluate(), _git_sha() (+18 more)
 
 ### Community 238 - "70. Leakage test fixtures"
 Cohesion: 0.33
 Nodes (6): 70. Leakage test fixtures, Cross-config, Cross-vehicle, Current outcome leakage, Future event leakage, Future pull leakage
 
 ### Community 239 - "ADR 0030: Technical knowledge storage, retrieval and provenance"
-Cohesion: 0.40
+Cohesion: 0.33
 Nodes (5): ADR 0030: Technical knowledge storage, retrieval and provenance, Alternatives, Consequences and risks, Context, Decision
 
 ### Community 240 - "Phase 8 acceptance — final validation record"
@@ -1146,56 +1163,64 @@ Cohesion: 0.67
 Nodes (3): 48. Phase 7B interaction, Missing technical documentation, Missing telemetry evidence
 
 ### Community 242 - ".vehicle_id"
-Cohesion: 0.10
-Nodes (20): stream(), replay(), stream(), events(), pull(), read_pull(), session(), read_session() (+12 more)
+Cohesion: 0.11
+Nodes (18): stream(), replay(), pull(), read_pull(), session(), read_session(), 16. Selected-vehicle ownership, 18. Request identifiers and tool schemas (+10 more)
 
 ### Community 244 - "main.py"
-Cohesion: 0.04
-Nodes (56): agent_router(), audit(), APIRouter, RunAudit, ErrorDetail, ErrorResponse, CorrelationMiddleware, PlatformAPI (+48 more)
+Cohesion: 0.05
+Nodes (51): connect(), Protocol, TerminableConnection, Constant-memory local request budgets for the Phase 4 resource boundaries., ErrorDetail, ErrorResponse, Opt-in paid-evaluation traces of public structured I/O, never reasoning or…, Case-wide MCP receipts, including the existing Phase 7B search/refresh calls. (+43 more)
 
 ### Community 246 - "21. Baseline models"
 Cohesion: 0.67
 Nodes (3): 21. Baseline models, Dummy baseline, Linear baseline
 
 ### Community 247 - "SourceRole"
-Cohesion: 0.21
-Nodes (19): ReferenceRow, SourceRole, AnomalyDataRepository, AnomalyRepositoryError, _aware_cutoff(), _cohort_exclusion(), _datetime(), _fallback_source_role() (+11 more)
+Cohesion: 0.20
+Nodes (22): _abstention(), AnomalyReason, ReferenceRow, SourceRole, AnomalyDataRepository, AnomalyRepositoryError, _aware_cutoff(), _cohort_exclusion() (+14 more)
 
 ### Community 248 - "30. Dataset size reality"
 Cohesion: 0.67
 Nodes (3): 30. Dataset size reality, ENGINEERING_VALIDATION, REAL_WORLD_VALIDATION
 
 ### Community 249 - "acquisition/service.py"
-Cohesion: 0.14
-Nodes (22): aiokafka, AIOKafkaProducer, assess_dataset(), collector_health(), DatasetCapability, measure_signal_quality(), datetime, Infer transport/sampling freshness only from an authenticated report. Event… (+14 more)
+Cohesion: 0.13
+Nodes (27): aiokafka, assess_dataset(), collector_health(), DatasetCapability, measure_signal_quality(), datetime, Infer transport/sampling freshness only from an authenticated report. Event…, SignalQuality (+19 more)
 
-### Community 250 - "CATEGORY B — PERFORMANCE"
-Cohesion: 0.18
-Nodes (11): 24. B01, 25. B02, 26. B03, 27. B04, 28. B05, 29. B06, 30. B07, 31. B08 (+3 more)
+### Community 250 - "test_creation_and_acquisition_frequency_bounds_preserve_other_routes"
+Cohesion: 0.12
+Nodes (15): ASGIApp, Per-process budgets, with no unbounded per-client identifier dictionaries. The…, ResourceBudgetMiddleware, TokenBucket, parametrize, Scope, request_scope(), test_bucket_burst_refill_and_long_idle_never_exceed_capacity() (+7 more)
 
-### Community 251 - "persist_evaluation"
-Cohesion: 0.27
-Nodes (10): assert_evaluation_immutability(), EvaluationRegistryConflict, _json(), _mutation_is_blocked(), persist_evaluation(), Any, UUID, ValueError (+2 more)
+### Community 251 - "evaluation/repository.py"
+Cohesion: 0.19
+Nodes (14): EvaluationProtocol, protocol_fingerprint(), default_protocol(), assert_evaluation_immutability(), EvaluationRegistryConflict, _json(), _mutation_is_blocked(), persist_evaluation() (+6 more)
 
-### Community 252 - "adapter.py"
+### Community 252 - ".window"
+Cohesion: 0.35
+Nodes (4): Any, Entity, UUID, Warning
+
+### Community 253 - "agent_router"
 Cohesion: 0.07
-Nodes (37): main(), Any, Entity, UUID, main(), One registration shared by stdio and authenticated Streamable HTTP., ErrorCode, PlatformError (+29 more)
+Nodes (30): agent_router(), audit(), stream(), events(), APIRouter, RunAudit, AgentRequestBudgetMiddleware, Receive (+22 more)
 
-### Community 253 - "response"
-Cohesion: 0.06
-Nodes (43): AgentRequestBudgetMiddleware, ASGIApp, Receive, Scope, Send, Constant-memory local request budgets for the Phase 4 resource boundaries., Bound admission and body buffering before FastAPI parses an agent question., Per-process budgets, with no unbounded per-client identifier dictionaries. The… (+35 more)
-
-### Community 254 - "main"
-Cohesion: 0.20
-Nodes (8): default_feature_version(), FeatureLeakageRejected, FeatureVersionConflict, ValueError, test_default_registry_is_complete_and_versioned_deterministically(), _fixture_seed(), main(), Any
+### Community 254 - "Path"
+Cohesion: 0.12
+Nodes (14): Path, test_bounded_spool_replays_and_reports_overflow(), test_collector_capability_failure_closes_adapter(), test_collector_heartbeat_interruption_does_not_erase_samples(), test_collector_interruption_preserves_unpublished_partial_batch(), read(), test_collector_reports_capabilities_bounds_and_graceful_disconnect(), heartbeat() (+6 more)
 
 ### Community 255 - "phase-9c-model-evaluation.md"
 Cohesion: 0.11
 Nodes (16): Detector card: boost and air behavior, Detector card: fuel pressure, Detector card: comparable RPM performance, Phase 9C detector cards, Detector card: thermal behavior, Evidence boundary and temporal split, Exact-head GitHub acceptance and benchmark, Expanding-window and quality controls (+8 more)
 
+### Community 256 - "require_aware"
+Cohesion: 0.08
+Nodes (11): FeatureSetVersion, LabelDefinition, Any, datetime, require_aware(), 9B candidate shortlist, Definitions and version identity, Operations and failure recovery (+3 more)
+
 ### Community 257 - "Phase 7A grounded agent"
 Cohesion: 0.33
 Nodes (6): Boundaries, Context and evidence, Execution and lifecycle, Phase 7A grounded agent, Phase 9F extension, Provider and streaming contracts
+
+### Community 258 - "supervised.py"
+Cohesion: 0.26
+Nodes (18): Any, source_fingerprint(), _calibration_support(), _decision_changes(), evaluate_supervised_task(), _example_evidence(), _feature_values(), _hypothetical_prevalence() (+10 more)
 
 ### Community 259 - ".__call__"
 Cohesion: 0.40
@@ -1205,25 +1230,25 @@ Nodes (3): Receive, Scope, Send
 Cohesion: 0.20
 Nodes (8): DATABASE_URL, ENVIRONMENT, GIT_COMMIT_SHA, MCP_TEST_PROJECT, PHASE9G_BASE_SHA, phase9g-validation.sh script, TEST_DATABASE_URL, TEST_KAFKA_PORT
 
-### Community 261 - "test_evaluation.py"
-Cohesion: 0.20
-Nodes (22): assess_source_applicability(), AllowedClaimCategory, ApplicabilityAssessment, ApplicabilityStatus, EvaluationState, StrEnum, SourceRole, _sha() (+14 more)
+### Community 261 - "test_agent_repository.py"
+Cohesion: 0.14
+Nodes (17): fixture, parametrize, Agent repository SQL/serialization boundaries; real transactions are tested…, rows(), storage(), test_database_errors_are_normalized_and_session_closes(), test_interrupted_run_reconciliation_is_bounded_and_terminal(), test_missing_driver_fails_closed() (+9 more)
 
 ### Community 262 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
 Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
 
-### Community 263 - "architecture/phase-9e-prediction-evidence.md"
-Cohesion: 0.07
-Nodes (27): inspect(), anomalies(), Cohort and support policy, Detectors and score interpretation, Observability and limits, Ownership and data flow, Persistence and artifact boundary, Phase 9C offline anomaly detection (+19 more)
+### Community 263 - "Phase 9E PredictionEvidence"
+Cohesion: 0.20
+Nodes (10): inspect(), Graph and integrity, Observability and failure behavior, Ownership and flow, Persistence and API, Phase 9E PredictionEvidence, Historical revocation and gaps, Materialize and inspect (+2 more)
 
-### Community 264 - "typing"
-Cohesion: 0.06
-Nodes (41): Optional internal metering seam; never carries prompts, credentials or…, Opt-in paid-evaluation traces of public structured I/O, never reasoning or…, Case-wide MCP receipts, including the existing Phase 7B search/refresh calls., atomic_json(), Versioned suite, conservative pricing, and crash-safe paid-call accounting., dotenv, hashlib, hmac (+33 more)
+### Community 264 - "check_knowledge_security.py"
+Cohesion: 0.40
+Nodes (5): dotenv, main(), Path, Verify raw publisher artifacts before narrowly scoped secret-scan exceptions…, verify()
 
-### Community 265 - "phase-9b-acceptance.md"
-Cohesion: 0.09
-Nodes (19): TrainingRun, Before training, Offline model training runbook, Review and offline inference, Train, Validation commands, Imported-data compatibility smoke, Label and dataset evidence (+11 more)
+### Community 265 - "Phase 9B acceptance report"
+Cohesion: 0.29
+Nodes (7): Imported-data compatibility smoke, Label and dataset evidence, Model evaluation, Phase 9B acceptance report, Reproducibility, artifact and resource evidence, Safety and limitations, Status and scope
 
 ### Community 266 - "CATEGORY E — DATA QUALITY"
 Cohesion: 0.18
@@ -1249,9 +1274,9 @@ Nodes (8): Approval and immutable state, Controlled access, Idempotency, errors,
 Cohesion: 0.25
 Nodes (6): DATABASE_URL, ENVIRONMENT, MCP_TEST_PROJECT, phase9d-validation.sh script, TEST_DATABASE_URL, TEST_KAFKA_PORT
 
-### Community 272 - "_run"
-Cohesion: 0.33
-Nodes (6): build_parser(), main(), Any, ArgumentParser, Namespace, _run()
+### Community 272 - ".execute_scoped"
+Cohesion: 0.17
+Nodes (11): accumulate(), enforce_tool(), Any, Specialist, tools_for(), performance_discovery_sessions(), Any, UUID (+3 more)
 
 ### Community 275 - "Offline anomaly detection runbook"
 Cohesion: 0.29
@@ -1277,13 +1302,13 @@ Nodes (5): ADR 0037: Phase 9C immutable registry and trusted artifacts, Alternat
 Cohesion: 0.33
 Nodes (5): ADR 0038: Phase 3, 9B and 9C evidence coexistence, Alternatives considered, Consequences, Context, Decision
 
-### Community 281 - "evaluate"
-Cohesion: 0.31
-Nodes (9): _assert(), _confounder_evidence(), evaluate(), main(), _peak_rss_bytes(), Any, _scenario_holdout(), _score_rows() (+1 more)
+### Community 281 - "ml/synthetic.py"
+Cohesion: 0.22
+Nodes (11): _event_flag(), generate_fixture_features(), _noise_flag(), Any, datetime, Seed canonical telemetry with deterministic observable progression and…, seed_predictive_fixture(), SyntheticFixture (+3 more)
 
-### Community 283 - "Phase 9A feature engineering foundation"
-Cohesion: 0.33
-Nodes (6): 9B candidate shortlist, Definitions and version identity, Operations and failure recovery, Ownership and data flow, Phase 9A feature engineering foundation, Quality, context and time
+### Community 283 - "Elm327Adapter"
+Cohesion: 0.21
+Nodes (4): Elm327Adapter, ElmTransport, Protocol, Generic standard-mode OBD-II reader; no proprietary or write commands.
 
 ### Community 284 - "ADR 0039: Phase 9D controlled serving boundary"
 Cohesion: 0.33
@@ -1317,29 +1342,57 @@ Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphif
 Cohesion: 0.33
 Nodes (5): ADR 0041: Phase 9D minimal immutable prediction receipts, Alternatives considered, Consequences, Context, Decision
 
-### Community 292 - "phase7d_eval.py"
-Cohesion: 0.07
-Nodes (47): fcntl, random, domain_fingerprint(), Any, Aggregate content changes, including updates, in disposable fixture tables., database_command(), free_port(), Process (+39 more)
+### Community 292 - "evaluate"
+Cohesion: 0.28
+Nodes (9): investigable(), database_command(), evaluate(), failure_kind(), One read-only reconnect to the same durable run; never create another run., read_public_stream(), stop_suite(), vehicle_for() (+1 more)
 
 ### Community 293 - "ADR 0042: Phase 9D trusted artifacts and bounded inference workers"
 Cohesion: 0.33
 Nodes (5): ADR 0042: Phase 9D trusted artifacts and bounded inference workers, Alternatives considered, Consequences, Context, Decision
 
-### Community 294 - "EventEngine"
-Cohesion: 0.27
-Nodes (16): EventProfile, Development heuristics; these are not factory safety or N55 calibration limits., EventEngine, base(), frames(), pull(), test_comparable_pulls(), test_fuel_drop_requires_sustained_observation_not_single_low_spike() (+8 more)
+### Community 294 - "CorrelationMiddleware"
+Cohesion: 0.20
+Nodes (6): CorrelationMiddleware, ASGIApp, PlatformAPI, ASGIApp, FastAPI, test_non_http_passthrough()
+
+### Community 295 - "test_database.py"
+Cohesion: 0.22
+Nodes (9): DependencyUnavailable, Exception, Infrastructure failed its bounded readiness check., parametrize, test_extension_required(), test_otlp_configured(), test_real_app_lifespan(), test_real_database_unreachable() (+1 more)
 
 ### Community 297 - "Phase 7D real evaluation report"
 Cohesion: 0.04
 Nodes (44): ADR 0023: Scoped collection evidence and consistent evidence gaps, Consequences and verification, Context, Decision, Follow-up from affected real confirmation, ADR 0026: Scope structured draft references to visible evidence, Consequences and verification, Context (+36 more)
 
 ### Community 298 - "evaluate"
-Cohesion: 0.18
-Nodes (17): _assert_data_gap_run(), _assert_grounded_run(), _assert_private_link(), _assert_start_denied(), _audit_count(), evaluate(), provider_factory(), record_denial() (+9 more)
+Cohesion: 0.11
+Nodes (23): _assert_data_gap_run(), _assert_grounded_run(), _assert_private_link(), _audit_count(), check_report(), evaluate(), client_factory(), open_client() (+15 more)
 
-### Community 304 - "anomaly_scenario"
-Cohesion: 0.20
-Nodes (17): evaluate_events(), EventClassMetrics, EventEvaluation, _overlaps(), One-to-one deterministic matching by type, pull and temporal overlap., anomaly_scenario(), AnomalyInjection, EventScenario (+9 more)
+### Community 300 - "test_config.py"
+Cohesion: 0.22
+Nodes (10): MonkeyPatch, parametrize, test_build_timestamp_normalized_to_utc(), test_empty_optional_container_metadata(), test_invalid_settings(), test_malformed_database_config(), test_required_database(), test_safe_metadata() (+2 more)
+
+### Community 301 - "IngestionService"
+Cohesion: 0.33
+Nodes (4): TelemetrySource, _content_hash(), IngestionService, AsyncSession
+
+### Community 302 - "Phase 9E acceptance"
+Cohesion: 0.22
+Nodes (8): Boundaries and exact-head result, Focused local result, Phase 9E acceptance, Scenarios and measured bounds, Fixture matrix, Integrity adversaries, Phase 9E evidence evaluation, Temporal and correlation sentinels
+
+### Community 303 - "HTTPInstrumentation"
+Cohesion: 0.22
+Nodes (4): main(), HTTPInstrumentation, ASGI boundary preserving W3C trace context and counting SDK auth rejections., test_http_trace_context_and_auth_rejections()
+
+### Community 304 - "test_collector_reports_actual_recovery_metrics_and_payload_free_spans"
+Cohesion: 0.29
+Nodes (5): test_collector_reports_actual_recovery_metrics_and_payload_free_spans(), test_collector_retries_spools_and_replays_without_loss(), available(), unavailable(), test_pending_spool_precedes_new_data_and_overflow_is_visible()
+
+### Community 308 - "generate_features.py"
+Cohesion: 0.43
+Nodes (6): _cutoff(), main(), datetime, Namespace, Bounded operator CLI for deterministic Phase 9A feature generation., _run()
+
+### Community 309 - "report_predictive_reliability.py"
+Cohesion: 0.40
+Nodes (5): main(), Any, Path, Render measured Phase 9G benchmark and observability receipts., _receipt()
 
 ### Community 310 - "Controlled knowledge ingestion"
 Cohesion: 0.50
@@ -1350,8 +1403,8 @@ Cohesion: 0.22
 Nodes (9): API contract, idempotency and persistence, Data model and approval lifecycle, Delivery and scope, Inference results and evidence boundaries, Limits and reproducibility, Operator enablement and access boundary, Phase 9D acceptance record, Resource, benchmark and observability results (+1 more)
 
 ### Community 313 - "test_investigation_repository.py"
-Cohesion: 0.27
-Nodes (11): approved_plan(), item(), fixture, Phase 7B optimistic SQL boundary; disposable PostgreSQL tests cover execution., result_with(), storage(), test_claim_reanalysis_is_atomic_and_unique(), test_create_conflict_and_stale_update_fail_closed() (+3 more)
+Cohesion: 0.22
+Nodes (13): call(), approved_plan(), item(), fixture, Phase 7B optimistic SQL boundary; disposable PostgreSQL tests cover execution., result_with(), storage(), session() (+5 more)
 
 ### Community 314 - "phase9e-validation.sh"
 Cohesion: 0.25
@@ -1373,6 +1426,10 @@ Nodes (6): Controlled prediction service runbook, Enable a local controlled inst
 Cohesion: 0.50
 Nodes (4): Local and canonical validation, Phase 7C acceptance, Phase 7C receipts, Result
 
+### Community 332 - "report_prediction_evidence.py"
+Cohesion: 0.50
+Nodes (4): main(), Any, Validate and print measured Phase 9E benchmark or observability evidence., _report()
+
 ### Community 333 - "evaluation/artifacts.py"
 Cohesion: 0.36
 Nodes (14): _canonical(), EvaluationArtifactError, Any, Path, ValueError, read_calibrator(), _safe_path(), _sha256() (+6 more)
@@ -1389,61 +1446,65 @@ Nodes (3): Evidence references, Phase 7C traceability ledger, Requirement matrix
 Cohesion: 0.50
 Nodes (4): Implemented checks, Phase 9C acceptance, Regression and handoff status, Scope and status
 
+### Community 340 - "main"
+Cohesion: 0.83
+Nodes (4): main(), address(), command(), wait_for_telemetry_backends()
+
 ### Community 341 - "Phase 9F agent evaluation"
 Cohesion: 0.40
 Nodes (4): Independent source oracle, Measurements and privacy, Phase 9F agent evaluation, Run and delivery status
+
+### Community 343 - "get_prediction_evidence"
+Cohesion: 0.67
+Nodes (3): get_prediction_evidence(), 12. Proposed architecture, Phase 9F agent integration acceptance
 
 ### Community 344 - "Archived scan records"
 Cohesion: 0.15
 Nodes (13): 2026-10-09 Go advisory refresh — historical, 2026-10-10 Go HTTP/2 advisory refresh — historical, 2026-10-10 Kafka dependency refresh — historical, 2026-10-19 Alpine expat refresh — historical, Archived scan records, Canonical rerun 36952758342 — historical, Container scan findings and risk review, Current review — 2026-10-23 (+5 more)
 
-### Community 346 - "ADR 0018: Read-only MCP application adapter"
-Cohesion: 0.17
-Nodes (10): ADR 0016: Deterministic, immutable automotive analytics, Consequences, Decision, Status, ADR 0018: Read-only MCP application adapter, Alternatives, Consequences and risks, Context (+2 more)
+### Community 345 - "Phase 7B investigation and adaptive logging"
+Cohesion: 0.67
+Nodes (3): Approval and follow-up, Domain and persistence, Phase 7B investigation and adaptive logging
 
 ### Community 347 - "Catalog"
-Cohesion: 0.33
+Cohesion: 0.38
 Nodes (4): Catalog, Any, Entity, UUID
 
 ### Community 351 - "Database"
-Cohesion: 0.07
-Nodes (23): StreamConsumer, AgentInstrumentation, ASGIApp, Database, DependencyUnavailable, AsyncSession, Exception, Infrastructure failed its bounded readiness check. (+15 more)
+Cohesion: 0.06
+Nodes (26): main(), StreamConsumer, AgentInstrumentation, FeatureLeakageRejected, Database, AsyncSession, Telemetry, Any (+18 more)
 
-### Community 352 - "ResponseObserver"
-Cohesion: 0.16
-Nodes (9): Any, Protocol, ResponseObserver, public_json(), Any, Path, TracedOpenAIProvider, test_provider_trace_failure_contains_only_category() (+1 more)
+### Community 352 - "Ask"
+Cohesion: 0.08
+Nodes (27): Any, Redact only strings, preserving numeric facts and JSON structure., redact_data(), Ask, model_validator, AgentService, deny(), audit() (+19 more)
+
+### Community 353 - "main"
+Cohesion: 1.00
+Nodes (3): main(), address(), command()
 
 ### Community 355 - "_run"
-Cohesion: 0.50
-Nodes (4): main(), Any, Namespace, _run()
-
-### Community 361 - ".export"
-Cohesion: 0.33
-Nodes (4): graphify reference: transcribe video and audio, Step 2.5 - Transcribe video / audio files (only if video files detected), ReadableSpan, SpanExportResult
-
-### Community 364 - "events/service.py"
-Cohesion: 0.31
-Nodes (9): Observation, DetectedEvent, EventAnalysisResult, EventSummary, EventAnalysisLimitError, EventAnalysisService, datetime, UUID (+1 more)
+Cohesion: 0.29
+Nodes (8): build_parser(), _confirmation(), main(), Any, ArgumentParser, Namespace, _roles(), _run()
 
 ## Knowledge Gaps
-- **2625 isolated node(s):** `vehicle-platform-api`, `StandardPid`, `MLModel`, `FeatureSelection`, `config` (+2620 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3587 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **76 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **2628 isolated node(s):** `vehicle-platform-api`, `StandardPid`, `MLModel`, `FeatureSelection`, `config` (+2623 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3593 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **82 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `OpenAIProvider` connect `DeterministicProvider` to `test_agents.py`, `AgentError`, `ResponseObserver`, `phase7d_eval.py`, `test_agent_runtime.py`, `Settings`, `typing`, `Supervisor`, `Phase 7D real-model validation`, `main.py`, `AgentSettings`, `agents/schemas.py`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
+- **Why does `OpenAIProvider` connect `DeterministicProvider` to `Ask`, `AgentError`, `test_agent_runtime.py`, `Settings`, `test_agent_prediction.py`, `Supervisor`, `Phase 7D real-model validation`, `main.py`, `AgentSettings`, `asyncio`, `test_supervisor_contracts.py`?**
+  _High betweenness centrality (0.070) - this node is a cross-community bridge._
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Why does `Database` connect `Database` to `AnalyticsConfig`, `router`, `api/routes.py`, `anomalies/service.py`, `prediction_evidence/repository.py`, `evaluate_anomaly_detection.py`, `typing`, `stable_hash`, `PredictionEvidenceBundle`, `json`, `anomalies/cli.py`, `AnomalyDetectorDefinition`, `_run`, `evaluate`, `SanitizingExporter`, `evaluate`, `_run_phase9g`, `KnowledgeRepository`, `datasets.py`, `evaluate`, `retrieval.py`, `predictions/cli.py`, `FeatureGenerationService`, `asyncio`, `extraction.py`, `SessionAnalysisService`, `seed_knowledge`, `AgentRun`, `investigation/routes.py`, `Catalog`, `ArtifactStore`, `pipeline.py`, `_run`, `Settings`, `PredictionService`, `ArtifactStore`, `events/service.py`, `evaluate_prediction_evidence.py`, `main.py`, `SourceRole`, `acquisition/service.py`, `persist_evaluation`, `adapter.py`, `main`, `Adapter`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+- **Why does `AgentError` connect `AgentError` to `test_agent_repository.py`, `DeterministicProvider`, `.execute_scoped`, `evaluate`, `test_investigation.py`, `test_agent_prediction.py`, `evaluate`, `Supervisor`, `EvidenceClient`, `DeviceCapabilities`, `investigation/service.py`, `asyncio`, `test_investigation_repository.py`, `test_supervisor_contracts.py`, `Envelope`, `datetime`, `AgentRepository`, `InvestigationService`, `knowledge/context.py`, `Ask`, `test_agent_runtime.py`, `main.py`, `AgentSettings`, `agent_router`, `KnowledgeRepository`, `Adapter`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 108 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 108 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `StandardPid`, `MLModel` to the rest of the system?**
-  _2625 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2628 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.0789293067947838 - nodes in this community are weakly interconnected._

@@ -3492,9 +3492,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/anomaly.py": {
-    "mtime": 1793192528.507336,
-    "seen": 1793298043.9984157,
-    "ast_hash": "862e2efd2657437c6fe39479774b0002",
+    "mtime": 1793301776.8628185,
+    "seen": 1793301953.7049315,
+    "ast_hash": "f7a914837d0326702439862ad2389079",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/anomaly_sensitivity.py": {
@@ -3570,15 +3570,15 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_evaluation.py": {
-    "mtime": 1793213208.6677682,
-    "seen": 1793298043.9987998,
-    "ast_hash": "17a06601947e52780d945082ddaa8e92",
+    "mtime": 1793301783.4656599,
+    "seen": 1793301953.7056425,
+    "ast_hash": "d7f8dac5a5474cfabf2c5720ea65e133",
     "semantic_hash": ""
   },
   "scripts/check_predictive_reliability.py": {
-    "mtime": 1793300460.5634942,
-    "seen": 1793300681.8001332,
-    "ast_hash": "3d4a60b4a796206c6c092f07ce65e9ca",
+    "mtime": 1793301776.8606524,
+    "seen": 1793301953.706078,
+    "ast_hash": "3e2a138c491014a328a0e0ae6f37e11e",
     "semantic_hash": ""
   },
   "scripts/evaluate_predictive_reliability.py": {
@@ -3612,9 +3612,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-9g-evaluation-calibration.md": {
-    "mtime": 1793300501.5833592,
-    "seen": 1793300681.8005905,
-    "ast_hash": "1e4b2a511979bfd751723d435e897a70",
+    "mtime": 1793301743.005393,
+    "seen": 1793301953.7069306,
+    "ast_hash": "b41520ac960d5ea8ee1b8f0066e5a5b1",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9g-evaluation-calibration.md": {
@@ -3657,6 +3657,24 @@
     "mtime": 1793300443.058448,
     "seen": 1793300681.799656,
     "ast_hash": "3c33d3ad34abc2302a0c75cca93845d2",
+    "semantic_hash": ""
+  },
+  "docs/validation/phase-9g-anomaly-reliability.md": {
+    "mtime": 1793301759.4818552,
+    "seen": 1793301953.7073417,
+    "ast_hash": "56bff11e64313026dad9c88cae96a9a7",
+    "semantic_hash": ""
+  },
+  "docs/validation/phase-9g-drift-applicability.md": {
+    "mtime": 1793301763.9320095,
+    "seen": 1793301953.707347,
+    "ast_hash": "2ffc5e09d52c945bf34191d90a6c0b57",
+    "semantic_hash": ""
+  },
+  "docs/validation/phase-9g-model-calibration.md": {
+    "mtime": 1793301755.1103396,
+    "seen": 1793301953.7073545,
+    "ast_hash": "5272200d1b29b2a8c038613eaab90bf9",
     "semantic_hash": ""
   }
 }

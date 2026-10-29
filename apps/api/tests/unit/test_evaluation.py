@@ -12,6 +12,11 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
+from vehicle_platform.evaluation.anomaly import (
+    AnomalyEvaluationError,
+    _normalize_cases,
+    _scenario_matrix,
+)
 from vehicle_platform.evaluation.applicability import assess_source_applicability
 from vehicle_platform.evaluation.artifacts import (
     EvaluationArtifactError,
@@ -100,6 +105,57 @@ def _row(
         feature_quality={"thermal.iat_start": "valid"},
         target=bool(index % 2),
     )
+
+
+def test_missing_fuel_only_requires_abstention_from_fuel_detector() -> None:
+    missing_fuel_alarm = {
+        "scenario": "missing_fuel",
+        "score": 0.6,
+        "status": "ANOMALOUS",
+        "predicted_anomaly": True,
+        "fold": "session-1",
+    }
+    boost = _normalize_cases([missing_fuel_alarm], family="boost_air", threshold=0.5)
+    assert boost[0]["eligible"] is True
+    assert (
+        _scenario_matrix(boost, family="boost_air")["missing_fuel"]["oracle_role"]
+        == "HARD_NEGATIVE_OR_CONTEXT_SHIFT"
+    )
+
+    fuel_abstention = _normalize_cases(
+        [
+            {
+                **missing_fuel_alarm,
+                "score": None,
+                "status": "INSUFFICIENT_SIGNAL",
+                "predicted_anomaly": None,
+            }
+        ],
+        family="fuel",
+        threshold=0.5,
+    )
+    assert fuel_abstention[0]["eligible"] is False
+    assert (
+        _scenario_matrix(fuel_abstention, family="fuel")["missing_fuel"]["oracle_role"]
+        == "QUALITY_OR_CAPABILITY_ABSTENTION"
+    )
+
+
+def test_quality_duplicate_requires_safe_abstention_for_every_detector() -> None:
+    with pytest.raises(AnomalyEvaluationError, match="was not abstained"):
+        _normalize_cases(
+            [
+                {
+                    "scenario": "quality_duplicate",
+                    "score": 0.6,
+                    "status": "ANOMALOUS",
+                    "predicted_anomaly": True,
+                    "fold": "session-1",
+                }
+            ],
+            family="thermal",
+            threshold=0.5,
+        )
 
 
 def _sha(label: str) -> str:

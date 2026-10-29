@@ -925,12 +925,21 @@ def _check_anomaly_receipt(summary: dict[str, Any]) -> dict[str, Any]:
                         f"{family}/{method} alarm bit differs from frozen threshold",
                     )
                     eligible.append(row)
-                if (
-                    row.get("scenario") in {"missing_fuel", "quality_duplicate"}
-                    and score is not None
-                ):
-                    raise AcceptanceRejected(
-                        "quality-control adversary received a detector score"
+                requires_abstention = row.get("scenario") == "quality_duplicate" or (
+                    family == "fuel" and row.get("scenario") == "missing_fuel"
+                )
+                if requires_abstention:
+                    _assert(
+                        score is None
+                        and alarm is None
+                        and row.get("status")
+                        in {
+                            "LOW_QUALITY",
+                            "INSUFFICIENT_SIGNAL",
+                            "UNSUPPORTED_SOURCE",
+                            "NOT_EVALUABLE",
+                        },
+                        "required-signal or quality-control adversary was not abstained",
                     )
             clean = [row for row in rows if row.get("scenario") == "clean"]
             clean_scored = [row for row in eligible if row.get("scenario") == "clean"]
@@ -1041,7 +1050,10 @@ def _check_anomaly_receipt(summary: dict[str, Any]) -> dict[str, Any]:
                 "cross_family_scored": len(cross_scored),
                 "cross_family_alarms": cross_alarms,
                 "quality_abstentions": sum(
-                    row.get("scenario") in {"missing_fuel", "quality_duplicate"}
+                    (
+                        row.get("scenario") == "quality_duplicate"
+                        or (family == "fuel" and row.get("scenario") == "missing_fuel")
+                    )
                     and row.get("score") is None
                     for row in rows
                 ),
