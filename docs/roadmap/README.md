@@ -18,7 +18,8 @@
 - Phase 9D — Prediction Service (merged and verified; see its acceptance record)
 - Phase 9E — PredictionEvidence (merged at baseline `466ce900988bd81e1d968eb319e970955b4011d7`; see its acceptance record)
 - Phase 9F — Agent Integration (implementation and independent acceptance on its dedicated branch; exact-head PR checks determine verified delivery)
-- Phase 9G — Evaluation / Calibration (planned)
+- Phase 9G — Evaluation / Calibration (implementation on the dedicated branch; exact-head
+  independent and canonical checks determine verified delivery)
 - Phase 9H — Predictive Intelligence UI (planned)
 - Phase 10 — MLOps Platform (planned)
 - Phase 11 — Agent Evals / Red Team (planned)
@@ -38,7 +39,9 @@ disabled-by-default controlled serving boundary and is merged. Phase 9E is a pro
 immutable 9D receipts and is merged at baseline
 `466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F integrates those existing bundles with the
 agent through a controlled MCP scope; it does not start inference. Its exact-head acceptance and
-open PR checks determine delivery status. Phases 9G–9H remain planned.
+open PR checks determine delivery status. Phase 9G adds an offline, immutable evaluation and
+research-only calibration foundation; its real-world scientific validity remains not established
+without verified outcomes. Phase 9H remains planned.
 
 # Current phase
 

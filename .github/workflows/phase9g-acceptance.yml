@@ -1,0 +1,43 @@
+name: Phase 9G acceptance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase9g-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  independent-acceptance:
+    name: Phase 9G independent acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: 0.12.19
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - name: Install locked project dependencies
+        run: make bootstrap
+      - name: Run focused contracts and independent disposable database acceptance
+        run: make test-evaluation-calibration phase9g-acceptance
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: phase9g-independent-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            .validation/phase9g
+            .validation/phase9c
+          if-no-files-found: warn
+          retention-days: 14

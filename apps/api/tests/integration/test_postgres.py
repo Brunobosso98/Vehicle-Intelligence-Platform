@@ -148,6 +148,11 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "prediction_evidence_gaps",
             "prediction_evidence_verification_audits",
             "agent_prediction_evidence_links",
+            "evaluation_protocols",
+            "evaluation_runs",
+            "evaluation_metric_reports",
+            "evaluation_calibration_candidates",
+            "evaluation_applicability_assessments",
         }
         assert await connection.scalar(
             text(

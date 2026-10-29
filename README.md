@@ -235,3 +235,26 @@ the real 9E disposable database, official MCP client and LangGraph agent; benchm
 observability targets report measurements from that receipt. Docker-dependent results are CI
 REQUIRED without a usable Docker daemon. Synthetic acceptance does not establish real-vehicle
 accuracy or production readiness.
+
+## Phase 9G offline evaluation and calibration
+
+Phase 9G evaluates the registered Phase 9B next-pull models and Phase 9C detectors over the
+canonical 9A feature pipeline with chronological session, vehicle, and configuration holdouts.
+Calibration candidates are research-only; validation selects candidates, held-out test data remains
+untouched until scoring, and original model/detector artifacts and thresholds remain frozen. The
+workflow reports reliability, uncertainty, abstentions, false-alarm/cross-family burden, drift, and
+source applicability with an independent arithmetic and provenance checker. It does not add
+inference, promotion, a public endpoint, agent confidence, or a predictive UI.
+
+See the [architecture](docs/architecture/phase-9g-evaluation-calibration.md),
+[operator runbook](docs/runbooks/predictive-reliability.md),
+[acceptance record](docs/validation/phase-9g-acceptance.md),
+[evaluation report](docs/validation/phase-9g-evaluation.md),
+[175-section traceability ledger](docs/validation/phase-9g-traceability-ledger.md),
+[security boundary](docs/security/threat-model.md#phase-9g-offline-evaluation-and-calibration), and
+[ADR 0045](docs/adr/0045-phase9g-offline-evaluation.md). Run
+`make test-evaluation-calibration` for focused contracts and `make phase9g-acceptance` for the
+disposable database, migration, registered-artifact, and independent-checker gate. Benchmark and
+observability commands render only from the same current-SHA receipt. Real-world predictive
+validity and calibration remain `NOT_ESTABLISHED` without verified outcomes. Docker-dependent
+acceptance is `CI REQUIRED` without a usable daemon.

@@ -276,3 +276,22 @@ answers. A 9B/9C pair is explicitly not independent corroboration or causality. 
 Phase 9F operation/latency, authorization and grounding metrics have bounded outcome and source
 status dimensions only. The evaluator inspects metrics and span attributes for source and vehicle
 identifiers; no score, question or hash becomes a metric label.
+
+## Phase 9G offline evaluation and calibration
+
+Phase 9G has no public endpoint, serving adapter, agent/MCP route, model-promotion action, or
+production calibration path. It accepts only a disposable `vehicle_test*` database and bounds
+evaluation rows, source-table scans, JSON report size, and research artifact bytes. Calibration
+maps are strict JSON with checksums, finite monotone parameters, dependency/schema versions, and
+complete synthetic source/model/label lineage; the 9G evaluator never deserializes a pickle. A
+tampering probe operates on temporary artifact copies and confirms the registered 9B/9C source
+files remain unchanged.
+
+The report contains row/session/vehicle/configuration and source fingerprints for private audit;
+raw VINs, entity identifiers, samples, feature values, credentials, and customer-provided text are
+not metric labels or public output. Database triggers block update/delete/truncate of all five 9G
+registry tables. A repeatable-read digest snapshots the explicit 9A–9F table allowlist before and
+after research persistence. These controls establish local consistency and boundary behavior, not a
+cryptographic signature against a privileged database operator. Synthetic calibration is never
+represented as mechanical-failure probability; real-world validity remains not established without
+verified outcome labels.

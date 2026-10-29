@@ -239,3 +239,16 @@ artifact paths and feature values are excluded from metric labels and span attri
 captured in `.validation/phase9e/acceptance.json`, including redaction. This check requires the
 preceding disposable-DB acceptance; a declared instrument or empty metrics endpoint is not proof of
 delivery.
+
+## Phase 9G evaluation and calibration
+
+The offline evaluator emits `evaluation.runs`, `evaluation.failures`, `evaluation.duration`,
+`evaluation.dataset.rows`, `evaluation.dataset.sessions`, `evaluation.calibration.candidates`,
+`evaluation.abstentions`, `evaluation.abstention.reasons`, `evaluation.integrity.violations`,
+`evaluation.research_artifact.bytes`, and `evaluation.drift.features`. Labels are bounded protocol
+values for source role, run status, candidate method/status, abstention reason, integrity reason, and
+canonical feature family. Vehicle/configuration/session/pull IDs, VINs, feature values, paths,
+checksums, row identities, and credentials never become metric labels. Spans record aggregate
+counts and bounded phase/task names only. `make predictive-reliability-observability` verifies the
+actual metrics and spans in the exact-SHA disposable acceptance receipt; this is fixture evidence,
+not a production SLO or a claim of real-world predictive validity.

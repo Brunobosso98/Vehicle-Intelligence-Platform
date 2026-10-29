@@ -264,3 +264,18 @@ or production database is accepted. The canonical full-validation workflow recor
 receipt and result. Synthetic PASS is integration evidence only, not a real-vehicle accuracy or
 production-readiness claim. Without Docker, `make phase9f-acceptance` is CI REQUIRED; run
 `make verify-cloud` for the cloud-compatible subset.
+
+## Phase 9G evaluation and calibration
+
+`make test-evaluation-calibration` covers protocol contracts, strict chronological/group splits,
+metric arithmetic and support behavior, research calibrator serialization/tampering, source-role
+applicability, anomaly alarm accounting, and drift/OOD limits. `make phase9g-acceptance` requires
+disposable Docker PostgreSQL, round-trips migration 0019 from 0018, creates canonical 9B/9C source
+artifacts, exercises all three supervised tasks and all four anomaly families, and runs an
+independent checker over the exact-SHA report. The checker recomputes primary metric arithmetic,
+clustered intervals, holdouts, calibration choice, anomaly denominators, drift adversaries,
+artifact tampering, lineage, idempotency, and source immutability. `make
+benchmark-predictive-reliability` and `make predictive-reliability-observability` render measurements
+from the same independently checked receipt. The runner is offline and does not call external AI or
+embedding services. Without Docker, these database, migration, artifact-registry and full-stack
+results are `CI REQUIRED` until the canonical full-validation workflow passes on the same SHA.

@@ -23,6 +23,7 @@ labels = {
     "Phase 9D controlled prediction service": "PHASE9D",
     "Phase 9E prediction evidence": "PHASE9E",
     "Phase 9F agent prediction integration": "PHASE9F",
+    "Phase 9G evaluation and calibration": "PHASE9G",
 }
 outcome_status = {
     "success": "PASS",
