@@ -1,7 +1,7 @@
 # Graph Report - vip-phase9g-graphify-temp  (2026-10-29)
 
 ## Corpus Check
-- 588 files · ~648,254 words
+- 588 files · ~648,261 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .toml 1)
 
@@ -1580,11 +1580,11 @@ Nodes (4): failure_category(), BaseException, MCP task groups can wrap applicati
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `OpenAIProvider` connect `DeterministicProvider` to `ResponseObserver`, `TracedOpenAIProvider`, `test_agent_runtime.py`, `Database`, `typing`, `Phase 7D real-model validation`, `AgentSettings`, `AgentError`, `json`, `test_supervisor_contracts.py`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
+  _High betweenness centrality (0.075) - this node is a cross-community bridge._
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
-  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
 - **Why does `Database` connect `Database` to `AnalyticsConfig`, `router`, `api/routes.py`, `anomalies/service.py`, `prediction_evidence/repository.py`, `evaluate`, `evaluate_predictive_reliability.py`, `prediction_evidence/service.py`, `typing`, `anomalies/cli.py`, `stable_hash`, `PredictionRepository`, `evaluate`, `_run_phase9g`, `retrieval_fixture`, `KnowledgeRepository`, `datasets.py`, `evaluate`, `KnowledgeService`, `generate_features.py`, `FeatureGenerationService`, `json`, `PredictionEvidenceBundle`, `IngestionService`, `datetime`, `AgentRun`, `acquisition/capabilities.py`, `Catalog`, `ArtifactStore`, `StreamConsumer`, `pipeline.py`, `_run`, `train_predictive_models.py`, `PredictionService`, `ArtifactStore`, `evaluate_prediction_evidence.py`, `SourceRole`, `AcquisitionService`, `Adapter`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 107 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**

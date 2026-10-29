@@ -1573,7 +1573,11 @@ async def _run_phase9g(
     span_exporter = InMemorySpanExporter()
     telemetry.traces.add_span_processor(SimpleSpanProcessor(span_exporter))
     protocol = default_protocol()
-    model_store = ModelArtifactStore(EVIDENCE_ROOT / "model-artifacts")
+    EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
+    model_artifact_workspace = tempfile.TemporaryDirectory(
+        prefix="model-artifacts-", dir=EVIDENCE_ROOT
+    )
+    model_store = ModelArtifactStore(Path(model_artifact_workspace.name))
     started = time.perf_counter()
     cpu_started = time.process_time()
     training_span_names: set[str] = set()
@@ -1901,6 +1905,7 @@ async def _run_phase9g(
     finally:
         telemetry.shutdown()
         await database.close()
+        model_artifact_workspace.cleanup()
 
 
 async def _main() -> None:
