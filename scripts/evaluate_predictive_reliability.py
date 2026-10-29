@@ -725,8 +725,8 @@ async def _integrity_adversaries(
     ] = "0" * 64
     source_receipt_tamper_rejected = False
     try:
-        evaluate_phase9c_receipt(modified_receipt)
-    except ValueError:
+        await _source_detector_ids(database, modified_receipt)
+    except AssertionError:
         source_receipt_tamper_rejected = True
     return {
         "9b_registered_artifact_tamper_rejected": model_tamper_rejected,
