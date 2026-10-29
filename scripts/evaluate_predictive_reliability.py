@@ -313,6 +313,9 @@ async def _train_and_evaluate_supervised(
     future_pulls = {
         str(item) for fixture in future_fixtures for item in fixture.pull_ids
     }
+    future_pull_ids = tuple(
+        item for fixture in future_fixtures for item in fixture.pull_ids
+    )
     base_pulls = {str(item) for item in base.pull_ids}
     for task in MLTask:
         started = time.perf_counter()
@@ -339,6 +342,29 @@ async def _train_and_evaluate_supervised(
                     str(session): "controlled_unseen_context"
                     for session in future_sessions
                 },
+                candidate_pull_ids=future_pull_ids,
+            )
+            requested_candidate_ids = {str(item) for item in future_pull_ids}
+            materialized_candidate_ids = {
+                item.pull_id for item in _input_dataset.candidates
+            }
+            cohort_materialization = {
+                "requested_pull_count": len(requested_candidate_ids),
+                "requested_pull_fingerprint": stable_hash(
+                    sorted(requested_candidate_ids)
+                ),
+                "materialized_pull_count": len(materialized_candidate_ids),
+                "materialized_pull_fingerprint": stable_hash(
+                    sorted(materialized_candidate_ids)
+                ),
+                "unrequested_pull_count": len(
+                    materialized_candidate_ids - requested_candidate_ids
+                ),
+                "training_pull_count": len(materialized_candidate_ids & base_pulls),
+            }
+            _assert(
+                materialized_candidate_ids == requested_candidate_ids,
+                f"{task.value} canonical dataset escaped the predeclared held-out cohort",
             )
             future_rows = tuple(
                 row for row in future_dataset.rows if row.session_id in future_sessions
@@ -377,6 +403,7 @@ async def _train_and_evaluate_supervised(
                 "source_pull_count": sum(
                     len(fixture.pull_ids) for fixture in future_fixtures
                 ),
+                "cohort_materialization": cohort_materialization,
                 "labeled_next_pull_rows": len(future_rows),
                 "excluded_pair_counts": _future_exclusions(
                     future_dataset, future_pulls

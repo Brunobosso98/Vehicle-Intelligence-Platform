@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import datetime
@@ -83,6 +83,7 @@ async def build_task_dataset(
     git_sha: str | None = None,
     telemetry: Any | None = None,
     scenario_family_by_session: Mapping[str, str] | None = None,
+    candidate_pull_ids: Sequence[UUID] | None = None,
 ) -> tuple[SupervisedDataset, DatasetBuild, DatasetBuild]:
     spec = get_model_spec(task)
     generation = FeatureGenerationService(database, telemetry)
@@ -97,8 +98,10 @@ async def build_task_dataset(
         else nullcontext()
     )
     with context:
-        input_dataset = await builder.build(input_definition)
-        outcome_dataset = await builder.build(outcome_definition)
+        input_dataset = await builder.build(input_definition, candidate_pull_ids=candidate_pull_ids)
+        outcome_dataset = await builder.build(
+            outcome_definition, candidate_pull_ids=candidate_pull_ids
+        )
     label_context = (
         telemetry.tracer.start_as_current_span(
             "ml.label_generation", attributes={"ml.task": spec.task.value}

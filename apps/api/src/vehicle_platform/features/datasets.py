@@ -107,17 +107,31 @@ class DatasetBuilder:
         self.registry = registry
         self.telemetry = telemetry
 
-    async def build(self, definition: DatasetDefinition) -> DatasetBuild:
+    async def build(
+        self,
+        definition: DatasetDefinition,
+        *,
+        candidate_pull_ids: Sequence[UUID] | None = None,
+    ) -> DatasetBuild:
         started = perf_counter()
         outcome = "failed"
         try:
+            if candidate_pull_ids is not None:
+                if len(candidate_pull_ids) > MAX_DATASET_ROWS:
+                    raise FeatureGenerationLimitError(
+                        "dataset candidate pull selection exceeds 100000 pulls"
+                    )
+                if len(set(candidate_pull_ids)) != len(candidate_pull_ids):
+                    raise DatasetValidationError(
+                        "dataset candidate pull selection contains duplicates"
+                    )
             if self.telemetry:
                 with self.telemetry.tracer.start_as_current_span("features.dataset.build") as span:
-                    result = await self._build(definition)
+                    result = await self._build(definition, candidate_pull_ids)
                     span.set_attribute("dataset.row_count", len(result.rows))
                     span.set_attribute("dataset.excluded_count", len(result.exclusions))
             else:
-                result = await self._build(definition)
+                result = await self._build(definition, candidate_pull_ids)
             outcome = "completed"
             if self.telemetry:
                 self.telemetry.dataset_builds.add(1, {"outcome": outcome})
@@ -134,7 +148,11 @@ class DatasetBuilder:
                     perf_counter() - started, {"outcome": outcome}
                 )
 
-    async def _build(self, definition: DatasetDefinition) -> DatasetBuild:
+    async def _build(
+        self,
+        definition: DatasetDefinition,
+        candidate_pull_ids: Sequence[UUID] | None,
+    ) -> DatasetBuild:
         selected = tuple(self.registry.resolve(key) for key in definition.selected_features)
         if definition.label_definition and set(definition.selected_features).intersection(
             definition.label_definition.source_feature_keys
@@ -149,6 +167,14 @@ class DatasetBuilder:
             ).scalar_one_or_none()
             if feature_version is None:
                 raise DatasetValidationError("feature set version is not registered")
+            pull_params: dict[str, Any] = {
+                "cutoff": definition.observation_cutoff,
+                "limit": MAX_DATASET_ROWS + 1,
+                "has_candidate_pull_ids": candidate_pull_ids is not None,
+                "candidate_pull_ids": (
+                    list(candidate_pull_ids) if candidate_pull_ids is not None else None
+                ),
+            }
             pull_rows = (
                 (
                     await db.execute(
@@ -158,9 +184,11 @@ class DatasetBuilder:
                             "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
                             "JOIN vehicles v ON v.id=p.vehicle_id "
                             "WHERE p.started_at<=:cutoff AND p.created_at<=:cutoff "
+                            "AND (:has_candidate_pull_ids IS FALSE OR "
+                            "p.id=ANY(CAST(:candidate_pull_ids AS uuid[]))) "
                             "ORDER BY p.started_at,p.vehicle_id,p.id LIMIT :limit"
                         ),
-                        {"cutoff": definition.observation_cutoff, "limit": MAX_DATASET_ROWS + 1},
+                        pull_params,
                     )
                 )
                 .mappings()

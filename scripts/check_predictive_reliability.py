@@ -769,6 +769,17 @@ def _check_partition_and_calibration(
     )
 
     availability = report["label_availability"]
+    cohort = availability["cohort_materialization"]
+    _assert(
+        cohort["requested_pull_count"] == cohort["materialized_pull_count"]
+        and cohort["requested_pull_fingerprint"]
+        == cohort["materialized_pull_fingerprint"],
+        f"{task} materialized pulls differ from the predeclared held-out cohort",
+    )
+    _assert(
+        cohort["unrequested_pull_count"] == 0 and cohort["training_pull_count"] == 0,
+        f"{task} materialized training or unrequested source pulls",
+    )
     _assert(
         availability["unlabeled_outcomes_fabricated"] is False,
         f"{task} fabricated missing labels",
@@ -791,6 +802,7 @@ def _check_partition_and_calibration(
         "validation_only_candidate_selection": True,
         "independent_test_metric_arithmetic": True,
         "clustered_uncertainty_recomputed": True,
+        "held_out_source_cohort_recomputed": True,
         "missing_labels_reported_without_fabrication": True,
     }
 

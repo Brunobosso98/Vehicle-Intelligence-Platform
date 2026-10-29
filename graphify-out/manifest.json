@@ -2658,9 +2658,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/features/datasets.py": {
-    "mtime": 1792580858.5941372,
-    "seen": 1793016605.1571915,
-    "ast_hash": "ea91daf3e716af6ca20fbc774d7ccb22",
+    "mtime": 1793300718.1562304,
+    "seen": 1793300803.9384272,
+    "ast_hash": "cd45c83b78c14fc6aa496579b29f445e",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/features/domain.py": {
@@ -2814,9 +2814,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/pipeline.py": {
-    "mtime": 1792580859.6781082,
-    "seen": 1793016605.157277,
-    "ast_hash": "06e90f9e6de50596b05377d0465574c3",
+    "mtime": 1793300460.5599642,
+    "seen": 1793300681.7995138,
+    "ast_hash": "4939a95eac01a8c266c18a94c11409e7",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/ml/registry.py": {
@@ -3576,15 +3576,15 @@
     "semantic_hash": ""
   },
   "scripts/check_predictive_reliability.py": {
-    "mtime": 1793211029.679467,
-    "seen": 1793298043.9990816,
-    "ast_hash": "987e95947d404dd6080e5aec237f1d5d",
+    "mtime": 1793300460.5634942,
+    "seen": 1793300681.8001332,
+    "ast_hash": "3d4a60b4a796206c6c092f07ce65e9ca",
     "semantic_hash": ""
   },
   "scripts/evaluate_predictive_reliability.py": {
-    "mtime": 1793299923.7090929,
-    "seen": 1793300095.1665606,
-    "ast_hash": "f80dc0c649f097002ba99bcbb2eba665",
+    "mtime": 1793300586.9777794,
+    "seen": 1793300681.800186,
+    "ast_hash": "7db08d2477f1dcd68c69af7fae585d14",
     "semantic_hash": ""
   },
   "scripts/phase9g-validation.sh": {
@@ -3612,9 +3612,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-9g-evaluation-calibration.md": {
-    "mtime": 1793299258.130319,
-    "seen": 1793299462.7896082,
-    "ast_hash": "270f5ad2484915a081891287901ccb7f",
+    "mtime": 1793300501.5833592,
+    "seen": 1793300681.8005905,
+    "ast_hash": "1e4b2a511979bfd751723d435e897a70",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9g-evaluation-calibration.md": {
@@ -3636,9 +3636,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9g-evaluation.md": {
-    "mtime": 1793299260.8771327,
-    "seen": 1793299462.790281,
-    "ast_hash": "47294a7dc414298cde779a4a2ae5ee85",
+    "mtime": 1793300504.8455505,
+    "seen": 1793300681.8008416,
+    "ast_hash": "abbae7c717ab85ebd993bcd3a97d7183",
     "semantic_hash": ""
   },
   "docs/validation/phase-9g-traceability-ledger.md": {
@@ -3651,6 +3651,12 @@
     "mtime": 1793299246.0233765,
     "seen": 1793299462.7881517,
     "ast_hash": "c8d3bcd06269de48c72415ab3cffd566",
+    "semantic_hash": ""
+  },
+  "apps/api/tests/unit/test_dataset_selection.py": {
+    "mtime": 1793300443.058448,
+    "seen": 1793300681.799656,
+    "ast_hash": "3c33d3ad34abc2302a0c75cca93845d2",
     "semantic_hash": ""
   }
 }

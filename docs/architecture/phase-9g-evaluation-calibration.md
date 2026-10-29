@@ -37,10 +37,12 @@ the split. It keeps original 9B target horizons and frozen thresholds.
 
 The offline 9G source fixture uses three later time windows (June through August 2026), each with
 four synthetic vehicles, five sessions per vehicle, and five pulls per session. This yields three
-disjoint vehicle/configuration cohorts for calibration, validation, and final test while keeping
-the combined 9A source payload within its existing 32 MiB dataset bound. The earlier 9B training
-fixture keeps its original default cohort and generator ordering; no registered model artifact or
-serving threshold is changed by this research-only fixture sizing.
+disjoint vehicle/configuration cohorts for calibration, validation, and final test. The held-out
+pull IDs are preselected from these fixture receipts and passed as a bounded allowlist to the
+canonical 9A dataset builder; requested and materialized cohort fingerprints must match, and no
+training pull may enter that dataset. The builder's existing 32 MiB source-payload limit remains in
+force. The earlier 9B training fixture keeps its original default cohort and generator ordering;
+no registered model artifact or serving threshold is changed by this research-only fixture sizing.
 
 Only calibration rows fit candidate maps. Sigmoid requires at least 40 rows, 10 examples of each
 class, and 10 sessions. Isotonic requires 100 rows, 30 examples of each class, and 30 sessions.
