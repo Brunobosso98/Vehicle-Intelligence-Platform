@@ -1492,7 +1492,7 @@ async def evaluate() -> dict[str, Any]:
                                 datetime.now(UTC)
                                 + timedelta(
                                     seconds=settings.prediction_max_future_cutoff_seconds
-                                    + 1
+                                    + 60
                                 )
                             ).isoformat(),
                             "source_role": "synthetic",
@@ -1500,8 +1500,21 @@ async def evaluate() -> dict[str, Any]:
                         },
                         headers=headers,
                     )
+                    future_cutoff_error = {}
+                    try:
+                        future_cutoff_error = future_cutoff.json().get("error", {})
+                    except (ValueError, AttributeError):
+                        pass
                     _assert(
-                        future_cutoff.status_code == 422, "future cutoff was accepted"
+                        future_cutoff.status_code == 422,
+                        "future cutoff expected 422, got "
+                        f"{future_cutoff.status_code} "
+                        f"({future_cutoff_error.get('code', 'no error code')})",
+                    )
+                    _assert(
+                        future_cutoff_error.get("code")
+                        == "PREDICTION_CUTOFF_IN_FUTURE",
+                        "future cutoff was not rejected by the temporal boundary",
                     )
                     no_feature_cutoff = late_feature_pull.ended_at + timedelta(
                         seconds=1

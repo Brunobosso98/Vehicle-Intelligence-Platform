@@ -170,9 +170,11 @@ next-pull behavior. It does not diagnose failures, serve predictions, or control
 Phase 9C at `c4da7f5` is **VERIFIED** and merged into baseline `7fc4c59` after PR #43 passed its
 canonical full-validation, CI and Security checks. It adds offline anomaly scoring against exact
 same-vehicle/configuration/source references. Scores are statistical deviations, not fault
-diagnoses or failure probabilities. Phase 9D is merged and Phase 9E is merged at baseline
-`466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F is under controlled integration review;
-its exact-head PR checks determine delivery status. Phases 9G–9H remain planned. See the
+diagnoses or failure probabilities. Phase 9D and 9E are merged, and Phase 9F is included in merged
+baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G's offline evaluation and
+research-only calibration foundation is implemented on its dedicated branch; its exact-head PR
+checks and canonical full-stack gate determine verified delivery. Real-world calibration remains
+`NOT_ESTABLISHED`. Phase 9H remains planned. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
@@ -235,3 +237,26 @@ the real 9E disposable database, official MCP client and LangGraph agent; benchm
 observability targets report measurements from that receipt. Docker-dependent results are CI
 REQUIRED without a usable Docker daemon. Synthetic acceptance does not establish real-vehicle
 accuracy or production readiness.
+
+## Phase 9G offline evaluation and calibration
+
+Phase 9G evaluates the registered Phase 9B next-pull models and Phase 9C detectors over the
+canonical 9A feature pipeline with chronological session, vehicle, and configuration holdouts.
+Calibration candidates are research-only; validation selects candidates, held-out test data remains
+untouched until scoring, and original model/detector artifacts and thresholds remain frozen. The
+workflow reports reliability, uncertainty, abstentions, false-alarm/cross-family burden, drift, and
+source applicability with an independent arithmetic and provenance checker. It does not add
+inference, promotion, a public endpoint, agent confidence, or a predictive UI.
+
+See the [architecture](docs/architecture/phase-9g-evaluation-calibration.md),
+[operator runbook](docs/runbooks/predictive-reliability.md),
+[acceptance record](docs/validation/phase-9g-acceptance.md),
+[evaluation report](docs/validation/phase-9g-evaluation.md),
+[175-section traceability ledger](docs/validation/phase-9g-traceability-ledger.md),
+[security boundary](docs/security/threat-model.md#phase-9g-offline-evaluation-and-calibration), and
+[ADR 0045](docs/adr/0045-phase9g-offline-evaluation.md). Run
+`make test-evaluation-calibration` for focused contracts and `make phase9g-acceptance` for the
+disposable database, migration, registered-artifact, and independent-checker gate. Benchmark and
+observability commands render only from the same current-SHA receipt. Real-world predictive
+validity and calibration remain `NOT_ESTABLISHED` without verified outcomes. Docker-dependent
+acceptance is `CI REQUIRED` without a usable daemon.

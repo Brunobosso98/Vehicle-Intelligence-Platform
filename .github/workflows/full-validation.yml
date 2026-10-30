@@ -143,10 +143,15 @@ jobs:
         continue-on-error: true
         run: apps/api/.venv/bin/python scripts/evaluate_agent_prediction.py --check .validation/phase9f/acceptance.json
 
+      - name: Validate Phase 9G evaluation and calibration
+        id: phase9g
+        continue-on-error: true
+        run: make test-evaluation-calibration phase9g-acceptance benchmark-predictive-reliability predictive-reliability-observability
+
       - name: Capture stack logs
         if: always()
         run: |
-          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability,mcp,agent,investigation,phase9a,phase9b,phase9c,phase9d,phase9e,phase9f}
+          mkdir -p validation-artifacts/{summary,tests,coverage,playwright,security,observability,mcp,agent,investigation,phase9a,phase9b,phase9c,phase9d,phase9e,phase9f,phase9g}
           if ! docker compose -f compose.yaml -f infra/docker/observability/compose.yaml \
             --profile observability ps --format json > validation-artifacts/summary/compose-ps.json; then
             echo '{"status":"NOT RUN","reason":"compose status unavailable"}' \
@@ -175,6 +180,7 @@ jobs:
           test ! -d .validation/phase9d || cp -r .validation/phase9d/. validation-artifacts/phase9d/
           test ! -d .validation/phase9e || cp -r .validation/phase9e/. validation-artifacts/phase9e/
           test ! -d .validation/phase9f || cp -r .validation/phase9f/. validation-artifacts/phase9f/
+          test ! -d .validation/phase9g || cp -r .validation/phase9g/. validation-artifacts/phase9g/
           test ! -d .validation/summary || cp -r .validation/summary/. validation-artifacts/summary/
 
       - name: Write commit-tied validation summary
@@ -198,6 +204,7 @@ jobs:
           PHASE9D: ${{ steps.phase9d.outcome }}
           PHASE9E: ${{ steps.phase9e.outcome }}
           PHASE9F: ${{ steps.phase9f.outcome }}
+          PHASE9G: ${{ steps.phase9g.outcome }}
         run: python3 scripts/validation-summary.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -227,6 +234,7 @@ jobs:
           PHASE9D: ${{ steps.phase9d.outcome }}
           PHASE9E: ${{ steps.phase9e.outcome }}
           PHASE9F: ${{ steps.phase9f.outcome }}
+          PHASE9G: ${{ steps.phase9g.outcome }}
         run: |
           failed=0
           for entry in \
@@ -235,7 +243,8 @@ jobs:
             "observability:$OBSERVABILITY" "security:$SECURITY" "mcp:$MCP" \
             "agent:$AGENT" "investigation:$INVESTIGATION" "supervisor:$SUPERVISOR" \
             "phase7d:$PHASE7D" "knowledge:$KNOWLEDGE" "phase9:$PHASE9" \
-            "phase9d:$PHASE9D" "phase9e:$PHASE9E" "phase9f:$PHASE9F"; do
+            "phase9d:$PHASE9D" "phase9e:$PHASE9E" "phase9f:$PHASE9F" \
+            "phase9g:$PHASE9G"; do
             name=${entry%%:*}
             outcome=${entry#*:}
             if [ "$outcome" != success ]; then

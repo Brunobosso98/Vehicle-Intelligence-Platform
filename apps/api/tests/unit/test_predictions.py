@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -518,6 +518,7 @@ def test_prediction_request_types_reject_mixed_role_and_naive_cutoff() -> None:
                 "task": "NEXT_PULL_THERMAL_DEGRADATION",
             }
         )
+
     with pytest.raises(ValidationError):
         AnomalyRequest.model_validate(
             {
@@ -527,6 +528,21 @@ def test_prediction_request_types_reject_mixed_role_and_naive_cutoff() -> None:
                 "family": "thermal",
             }
         )
+
+
+def test_prediction_service_rejects_cutoff_beyond_future_limit() -> None:
+    service = object.__new__(PredictionService)
+    service.settings = settings(prediction_max_future_cutoff_seconds=5)
+    now = datetime.now(UTC)
+
+    with pytest.raises(PredictionError) as error:
+        service._validate_cutoff(
+            now + timedelta(seconds=6),
+            now - timedelta(minutes=1),
+        )
+
+    assert error.value.status_code == 422
+    assert error.value.code == "PREDICTION_CUTOFF_IN_FUTURE"
 
 
 def test_prediction_network_setting_rejects_public_ranges() -> None:

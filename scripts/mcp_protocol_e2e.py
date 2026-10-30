@@ -61,7 +61,8 @@ async def main() -> None:
                 stdout=stderr,
                 stderr=stderr,
             )
-            deadline = monotonic() + 20
+            # Imports from a checkout on the WSL Windows mount can exceed 20s.
+            deadline = monotonic() + 90
             async with httpx.AsyncClient(trust_env=False) as http:
                 while monotonic() < deadline and process.returncode is None:
                     try:

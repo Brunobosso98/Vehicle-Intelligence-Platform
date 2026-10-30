@@ -24,38 +24,67 @@ class SyntheticFixture:
     configuration_ids_by_vehicle: dict[str, tuple[str, str]]
 
 
-async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
+async def seed_predictive_fixture(
+    database: Database,
+    *,
+    start_at: datetime | None = None,
+    vehicle_model_prefix: str = "N55-9B",
+    engine_codes: tuple[str, ...] = ("N55",),
+    scenario_seed: int = 0,
+    generator_version: str = "phase9b-v1",
+    vehicle_count: int = 8,
+) -> SyntheticFixture:
     """Seed canonical telemetry with deterministic observable progression and confounders."""
-    start = datetime(2026, 1, 1, tzinfo=UTC)
-    model = "N55-9B"
+    start = start_at or datetime(2026, 1, 1, tzinfo=UTC)
+    if start.tzinfo is None:
+        raise ValueError("synthetic fixture start time must be timezone-aware")
+    if not vehicle_model_prefix or len(vehicle_model_prefix) > 40:
+        raise ValueError("synthetic vehicle model prefix is outside the fixed bound")
+    if (
+        not engine_codes
+        or len(engine_codes) > 3
+        or not set(engine_codes).issubset({"N55", "B58", "S55"})
+    ):
+        raise ValueError("synthetic engine analogues must use the fixed N55/B58/S55 allowlist")
+    if not 0 <= scenario_seed <= 10_000:
+        raise ValueError("synthetic scenario seed must be between zero and ten thousand")
+    if not generator_version or len(generator_version) > 80:
+        raise ValueError("synthetic generator version is outside the fixed bound")
+    if not 4 <= vehicle_count <= 8:
+        raise ValueError("synthetic fixture vehicle count must be between four and eight")
     configuration_ids: dict[str, tuple[UUID, UUID]] = {}
     vehicle_ids: list[UUID] = []
+    vehicle_engine_codes: list[str] = []
     session_ids: list[UUID] = []
     pull_ids: list[UUID] = []
     scenario_map: dict[str, str] = {}
     telemetry_rows: list[dict[str, Any]] = []
     pull_params: list[dict[str, Any]] = []
     schedule = [
-        (round_index, vehicle_index) for round_index in range(5) for vehicle_index in range(7)
+        (round_index, vehicle_index)
+        for round_index in range(5)
+        for vehicle_index in range(vehicle_count - 1)
     ]
-    schedule.extend((round_index, 7) for round_index in range(5))
+    schedule.extend((round_index, vehicle_count - 1) for round_index in range(5))
     session_order = {item: index for index, item in enumerate(schedule)}
 
     async with database.session() as db:
-        for vehicle_index in range(8):
+        for vehicle_index in range(vehicle_count):
             vehicle_id = (
                 await db.execute(
                     text(
                         "INSERT INTO vehicles(manufacturer,model,engine_code,created_at) "
-                        "VALUES('BMW',:model,'N55',:created) RETURNING id"
+                        "VALUES('BMW',:model,:engine_code,:created) RETURNING id"
                     ),
                     {
-                        "model": f"{model}-{vehicle_index}",
+                        "model": f"{vehicle_model_prefix}-{vehicle_index}",
+                        "engine_code": engine_codes[vehicle_index % len(engine_codes)],
                         "created": start - timedelta(days=60),
                     },
                 )
             ).scalar_one()
             vehicle_ids.append(vehicle_id)
+            vehicle_engine_codes.append(engine_codes[vehicle_index % len(engine_codes)])
             config_a_end = start + timedelta(minutes=2 * session_order[(3, vehicle_index)])
             config_a = (
                 await db.execute(
@@ -106,7 +135,9 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
                         "configuration": configuration_id,
                         "started": at,
                         "ended": at + timedelta(seconds=60),
-                        "metadata": '{"data_role":"synthetic","generator":"phase9b-v1"}',
+                        "metadata": json.dumps(
+                            {"data_role": "synthetic", "generator": generator_version}
+                        ),
                         "created": start - timedelta(days=29),
                     },
                 )
@@ -115,38 +146,46 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
             scenario_map[str(session_id)] = (
                 "unseen_compound" if session_index >= 24 else "controlled_baseline"
             )
-            current_iat = 292.0 + vehicle_index * 0.8 + round_index * 0.15
-            fuel_baseline = 15_000_000.0 + vehicle_index * 30_000.0
+            engine_code = vehicle_engine_codes[vehicle_index]
+            engine_variant = 1.0 if engine_code == "B58" else 1.8 if engine_code == "S55" else 0.0
+            current_iat = 292.0 + vehicle_index * 0.8 + round_index * 0.15 + engine_variant
+            fuel_baseline = 15_000_000.0 + vehicle_index * 30_000.0 + engine_variant * 100_000.0
             current_fuel = fuel_baseline
             previous_fuel_event = False
             # Keep every adjacent RPM sample within Phase 5's 1.0 s continuity
             # limit while preserving a measurable next-pull interval increase.
-            base_interval = 0.72 + (vehicle_index % 3) * 0.02
+            base_interval = 0.72 + (vehicle_index % 3) * 0.02 - engine_variant * 0.004
             current_interval = base_interval
             for pull_index in range(5):
                 pull_at = at + timedelta(seconds=3 + pull_index * 11)
-                thermal_event = _event_flag(vehicle_index, round_index, pull_index, 1)
-                performance_event = _event_flag(vehicle_index, round_index, pull_index, 2)
-                fuel_event = _event_flag(vehicle_index, round_index, pull_index, 3)
+                thermal_event = _event_flag(
+                    vehicle_index, round_index, pull_index, 1, scenario_seed
+                )
+                performance_event = _event_flag(
+                    vehicle_index, round_index, pull_index, 2, scenario_seed
+                )
+                fuel_event = _event_flag(vehicle_index, round_index, pull_index, 3, scenario_seed)
                 # Controlled label noise prevents any one sensor from being a perfect proxy.
-                if _noise_flag(vehicle_index, round_index, pull_index, 1):
+                if _noise_flag(vehicle_index, round_index, pull_index, 1, scenario_seed):
                     thermal_event = not thermal_event
-                if _noise_flag(vehicle_index, round_index, pull_index, 2):
+                if _noise_flag(vehicle_index, round_index, pull_index, 2, scenario_seed):
                     performance_event = not performance_event
-                if _noise_flag(vehicle_index, round_index, pull_index, 3):
+                if _noise_flag(vehicle_index, round_index, pull_index, 3, scenario_seed):
                     fuel_event = not fuel_event
                 thermal_proxy = thermal_event
                 performance_proxy = performance_event
                 fuel_proxy = fuel_event
-                if _noise_flag(vehicle_index, round_index, pull_index, 9):
+                if _noise_flag(vehicle_index, round_index, pull_index, 9, scenario_seed):
                     thermal_proxy = not thermal_proxy
-                if _noise_flag(vehicle_index, round_index, pull_index, 10):
+                if _noise_flag(vehicle_index, round_index, pull_index, 10, scenario_seed):
                     performance_proxy = not performance_proxy
-                if _noise_flag(vehicle_index, round_index, pull_index, 11):
+                if _noise_flag(vehicle_index, round_index, pull_index, 11, scenario_seed):
                     fuel_proxy = not fuel_proxy
                 # Preserve a controlled high-IAT negative case so the thermal
                 # label cannot be learned as a raw temperature threshold.
-                if current_iat >= 298.0 and _noise_flag(vehicle_index, round_index, pull_index, 12):
+                if current_iat >= 298.0 and _noise_flag(
+                    vehicle_index, round_index, pull_index, 12, scenario_seed
+                ):
                     thermal_event = False
                     thermal_proxy = False
                 current_fuel = fuel_baseline - (4_000_000.0 if previous_fuel_event else 0.0)
@@ -157,8 +196,10 @@ async def seed_predictive_fixture(database: Database) -> SyntheticFixture:
                 next_interval = base_interval * (1.14 if performance_event else 1.0)
                 next_iat = current_iat + (4.2 if thermal_event else 0.6)
                 next_fuel = fuel_baseline - (4_000_000.0 if fuel_event else 0.0)
-                boost_base = 112_000.0 + (10_000.0 if performance_proxy else 0.0)
-                if _noise_flag(vehicle_index, round_index, pull_index, 4):
+                boost_base = (
+                    112_000.0 + engine_variant * 1_000.0 + (10_000.0 if performance_proxy else 0.0)
+                )
+                if _noise_flag(vehicle_index, round_index, pull_index, 4, scenario_seed):
                     boost_base += -7_000.0 if performance_proxy else 7_000.0
                 boost_pattern = [
                     boost_base - 1_200.0,
@@ -391,11 +432,15 @@ async def generate_fixture_features(
     await asyncio.gather(*(generate(item) for item in fixture.session_ids))
 
 
-def _event_flag(vehicle: int, round_index: int, pull: int, task: int) -> bool:
-    value = (vehicle * 17 + round_index * 11 + pull * 7 + task * 13) % 20
+def _event_flag(
+    vehicle: int, round_index: int, pull: int, task: int, scenario_seed: int = 0
+) -> bool:
+    value = (vehicle * 17 + round_index * 11 + pull * 7 + task * 13 + scenario_seed * 3) % 20
     return value < 10
 
 
-def _noise_flag(vehicle: int, round_index: int, pull: int, task: int) -> bool:
-    value = (vehicle * 19 + round_index * 13 + pull * 11 + task * 17) % 13
+def _noise_flag(
+    vehicle: int, round_index: int, pull: int, task: int, scenario_seed: int = 0
+) -> bool:
+    value = (vehicle * 19 + round_index * 13 + pull * 11 + task * 17 + scenario_seed * 5) % 13
     return value in {0, 1, 2}

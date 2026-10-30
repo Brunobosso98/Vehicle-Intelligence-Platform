@@ -11,13 +11,18 @@
 - `apps/api/src/vehicle_platform/features`: Phase 9A versioned canonical feature generation,
   provenance, cutoffs, dataset materialization, profiling and export.
 - `apps/api/src/vehicle_platform/ml`: Phase 9B supervised next-pull labels, splits, training,
-  trusted artifacts and offline model registry.
+  trusted artifacts, deterministic synthetic fixtures and offline model registry. Phase 9G uses a
+  bounded four-vehicle fixture option for later calibration/validation/test cohorts; the default
+  9B fixture size and ordering remain unchanged.
 - `apps/api/src/vehicle_platform/anomalies`: Phase 9C detector definitions, eligible reference
   cohorts, offline fitting/scoring, artifact validation and immutable findings.
 - `apps/api/src/vehicle_platform/predictions`: Phase 9D controlled HTTP inference, explicit
   serving approvals, request budgets, trusted 9B/9C adapters and immutable response receipts.
 - `apps/api/src/vehicle_platform/prediction_evidence`: Phase 9E typed evidence graph, canonical
   fingerprints, bounded safe projection, immutable receipt lineage and independent verification.
+- `apps/api/src/vehicle_platform/evaluation`: Phase 9G immutable offline evaluation contracts,
+  chronological calibration splits, reliability/anomaly/drift metrics, source applicability,
+  bounded research artifacts, and source-integrity verification. No serving wiring exists.
 - `apps/api/src/vehicle_platform/acquisition`: read-only hardware collection and streaming.
   `capabilities.py` reads authenticated collector capability snapshots or operator-attested
   local preflight reports for the same vehicle/configuration/source; a recorded session alone
@@ -39,7 +44,7 @@
   bounded public stream event tables.
 - `apps/api/migrations/versions/0010_investigation.py`: additive source preflight,
   investigation plan, session-link and replay event tables.
-- `apps/api/migrations/versions/0013_feature_datasets.py`,
+- `apps/api/migrations/versions/0013_feature_engineering.py`,
   `0014_predictive_models.py`, and `0015_anomaly_detection.py`: additive Phase 9A/9B/9C
   persistence. Phase 9C findings and reference rows are immutable.
 - `apps/api/migrations/versions/0016_prediction_service.py`: additive immutable Phase 9D serving
@@ -48,6 +53,8 @@
   normalized lineage/facts/gaps and append-only verification audits.
 - `apps/api/migrations/versions/0018_agent_prediction_lineage.py`: additive private mapping from
   run-local Phase 9F evidence IDs to exact 9E source and receipt lineage.
+- `apps/api/migrations/versions/0019_predictive_reliability.py`: additive Phase 9G protocol/run/
+  metric/candidate/applicability registry with database-enforced immutability.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
@@ -69,6 +76,9 @@
   disposable-DB Phase 9E source/HTTP evaluator, migration round trip, immutability and budgets.
 - `scripts/evaluate_agent_prediction.py`: Phase 9F integration acceptance over synthetic 9B/9C/9D/9E
   records inside the disposable Phase 9E database run.
+- `scripts/evaluate_predictive_reliability.py`, `scripts/check_predictive_reliability.py`,
+  `scripts/phase9g-validation.sh`: Phase 9G canonical offline evaluation, independent arithmetic/
+  provenance/leakage checker, and disposable migration/database acceptance.
 - `scripts/report_agent_prediction.py`: renders benchmark and observability views from the
   exact-head Phase 9F receipt without deriving measurements.
 - `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
@@ -124,6 +134,11 @@ Phase 9F adds an explicitly selected, development/test-only agent read of verifi
 through a dedicated MCP capability. It preserves the 9B/9C horizons, uses low-confidence fixed
 renderers and keeps exact source lineage out of provider input and public AgentRun snapshots.
 See docs/validation/phase-7a-acceptance.md for checkpoint evidence and final PR-head receipts.
+Phase 9G adds offline research evaluation only. It preserves 9B/9C artifacts and thresholds, 9D
+serving approvals, 9E evidence, and 9F agent claims. It cannot expose calibrated values through
+HTTP/MCP/agents; synthetic calibration does not establish real-world calibration or mechanical
+failure probability. See the Phase 9G architecture, runbook, acceptance/evaluation reports,
+traceability ledger, and ADR 0045 under `docs/`.
 
 ## Validation
 
@@ -144,6 +159,11 @@ Phase 9F adds `make test-prediction-agent-integration`, `make phase9f-acceptance
 runs in the Phase 9E disposable database and requires Docker. Its exact-head report is separate from
 the 9E evaluation result.
 Do not claim a gate passed without its executed receipt.
+Phase 9G adds `make test-evaluation-calibration`, `make phase9g-acceptance`,
+`make benchmark-predictive-reliability`, and `make predictive-reliability-observability`. The
+disposable acceptance round-trips migration 0019 and verifies all three 9B tasks, four 9C families,
+immutable lineage, source-table digests, artifact checks, and an independent numerical checker.
+Docker-dependent results remain `CI REQUIRED` until the canonical exact-head workflow passes.
 
 ## Current implementation map
 
@@ -170,4 +190,7 @@ Do not claim a gate passed without its executed receipt.
   It adds no production enablement, diagnosis, collection or vehicle control. See the Phase 9F
   architecture, runbook, ADR 0044, acceptance/evaluation records and 137-section traceability
   ledger under `docs/`.
-- Phases 9G–9H remain planned.
+- Phase 9G adds evaluation contracts, metrics, calibration, anomaly accounting, drift, and source
+  applicability; migration 0019 stores immutable research evidence only. Its runner and independent
+  checker live in `scripts/`; its report and 175-section ledger live under `docs/validation/`.
+- Phase 9H remains planned.

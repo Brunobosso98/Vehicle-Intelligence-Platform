@@ -186,6 +186,31 @@ class Telemetry:
         self.agent_prediction_evidence_grounding = meter.create_counter(
             "agent.prediction_evidence.grounding", unit="{claim}"
         )
+        # Phase 9G labels are closed protocol, source-role, status and reason values only.
+        # Never add vehicle, configuration, session, feature value, path or checksum labels.
+        self.evaluation_runs = meter.create_counter("evaluation.runs", unit="{run}")
+        self.evaluation_failures = meter.create_counter("evaluation.failures", unit="{failure}")
+        self.evaluation_duration = meter.create_histogram("evaluation.duration", unit="s")
+        self.evaluation_rows = meter.create_histogram("evaluation.dataset.rows", unit="{row}")
+        self.evaluation_sessions = meter.create_histogram(
+            "evaluation.dataset.sessions", unit="{session}"
+        )
+        self.evaluation_calibration_candidates = meter.create_counter(
+            "evaluation.calibration.candidates", unit="{candidate}"
+        )
+        self.evaluation_abstentions = meter.create_counter("evaluation.abstentions", unit="{row}")
+        self.evaluation_abstention_reasons = meter.create_counter(
+            "evaluation.abstention.reasons", unit="{row}"
+        )
+        self.evaluation_integrity_violations = meter.create_counter(
+            "evaluation.integrity.violations", unit="{violation}"
+        )
+        self.evaluation_artifact_bytes = meter.create_histogram(
+            "evaluation.research_artifact.bytes", unit="By"
+        )
+        self.evaluation_drift_features = meter.create_counter(
+            "evaluation.drift.features", unit="{feature}"
+        )
         # Labels are deliberately source/outcome only; never vehicle, VIN, session or sample IDs.
         self.imports = meter.create_counter("telemetry.imports", unit="{import}")
         self.import_rows = meter.create_counter("telemetry.import.rows", unit="{sample}")
