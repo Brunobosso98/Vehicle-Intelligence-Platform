@@ -26389,7 +26389,7 @@
       "file_type": "code",
       "norm_label": "_main()",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1938"
+      "source_location": "L1939"
     },
     {
       "id": "scripts_evaluate_predictive_reliability_metric_results",
@@ -134518,7 +134518,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1952",
+      "source_location": "L1953",
       "weight": 1.0
     },
     {
@@ -134614,7 +134614,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1612",
+      "source_location": "L1614",
       "weight": 1.0
     },
     {
@@ -134626,7 +134626,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1620",
+      "source_location": "L1622",
       "weight": 1.0
     },
     {
@@ -134638,7 +134638,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1628",
+      "source_location": "L1630",
       "weight": 1.0
     },
     {
@@ -134650,7 +134650,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1629",
+      "source_location": "L1631",
       "weight": 1.0
     },
     {
@@ -134662,7 +134662,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1632",
+      "source_location": "L1634",
       "weight": 1.0
     },
     {
@@ -134674,7 +134674,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1633",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -134686,7 +134686,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1634",
+      "source_location": "L1636",
       "weight": 1.0
     },
     {
@@ -134698,7 +134698,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1635",
+      "source_location": "L1637",
       "weight": 1.0
     },
     {
@@ -134710,7 +134710,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1636",
+      "source_location": "L1638",
       "weight": 1.0
     },
     {
@@ -134722,7 +134722,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1655",
+      "source_location": "L1657",
       "weight": 1.0
     },
     {
@@ -134734,7 +134734,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1656",
+      "source_location": "L1658",
       "weight": 1.0
     },
     {
@@ -134746,7 +134746,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1657",
+      "source_location": "L1659",
       "weight": 1.0
     },
     {
@@ -134758,7 +134758,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1658",
+      "source_location": "L1660",
       "weight": 1.0
     },
     {
@@ -134770,7 +134770,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1666",
+      "source_location": "L1668",
       "weight": 1.0
     },
     {
@@ -134782,7 +134782,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1667",
+      "source_location": "L1669",
       "weight": 1.0
     },
     {
@@ -134794,7 +134794,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1668",
+      "source_location": "L1670",
       "weight": 1.0
     },
     {
@@ -134806,7 +134806,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1698",
+      "source_location": "L1700",
       "weight": 1.0
     },
     {
@@ -134818,7 +134818,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1740",
+      "source_location": "L1742",
       "weight": 1.0
     },
     {
@@ -134830,7 +134830,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1766",
+      "source_location": "L1768",
       "weight": 1.0
     },
     {
@@ -134842,7 +134842,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1787",
+      "source_location": "L1789",
       "weight": 1.0
     },
     {
@@ -134854,7 +134854,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1801",
+      "source_location": "L1803",
       "weight": 1.0
     },
     {
@@ -134866,7 +134866,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1817",
+      "source_location": "L1819",
       "weight": 1.0
     },
     {
@@ -134878,7 +134878,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1858",
+      "source_location": "L1860",
       "weight": 1.0
     },
     {
@@ -269665,7 +269665,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1938",
+      "source_location": "L1939",
       "weight": 1.0
     },
     {
@@ -286075,7 +286075,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/architecture/phase-9g-evaluation-calibration.md",
-      "source_location": "L113",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -286086,7 +286086,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/architecture/phase-9g-evaluation-calibration.md",
-      "source_location": "L113",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -286097,7 +286097,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/architecture/phase-9g-evaluation-calibration.md",
-      "source_location": "L113",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -286108,7 +286108,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/architecture/phase-9g-evaluation-calibration.md",
-      "source_location": "L113",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -286119,7 +286119,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/architecture/phase-9g-evaluation-calibration.md",
-      "source_location": "L113",
+      "source_location": "L116",
       "weight": 1.0
     },
     {
@@ -327991,7 +327991,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1607",
+      "source_location": "L1609",
       "weight": 0.8
     },
     {
@@ -328002,7 +328002,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1660",
+      "source_location": "L1662",
       "weight": 0.8
     },
     {
@@ -328013,7 +328013,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1707",
+      "source_location": "L1709",
       "weight": 0.8
     },
     {
@@ -328024,7 +328024,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1711",
+      "source_location": "L1713",
       "weight": 0.8
     },
     {
@@ -328035,7 +328035,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "scripts/evaluate_predictive_reliability.py",
-      "source_location": "L1721",
+      "source_location": "L1723",
       "weight": 0.8
     },
     {

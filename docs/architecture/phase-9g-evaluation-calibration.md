@@ -99,6 +99,9 @@ tables before and after evaluation persistence. Each JSONB report is checked aga
 database limit before insertion. Supervised report rows retain the capped metric aggregates and
 per-partition row counts/fingerprints/example-payload checksums; complete row-level score and label
 evidence stays in the ignored `.validation/phase9g/acceptance.json` used by the independent checker.
+Run-scoped 9B evaluation artifacts stay under `.validation/phase9g/model-artifacts/` so the checker
+can verify their registered bytes after the evaluator exits; these files remain research-only and
+are never loaded by serving paths.
 The stored row also carries the checksum of its complete report, which is covered by the evaluation
 run checksum. This keeps the durable registry compact without weakening the independent arithmetic
 check or duplicating feature matrices in JSONB.
