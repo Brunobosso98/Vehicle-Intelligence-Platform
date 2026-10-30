@@ -17,9 +17,10 @@
 - Phase 9C — Anomaly Detection (VERIFIED; merged baseline `7fc4c59` after PR #43)
 - Phase 9D — Prediction Service (merged and verified; see its acceptance record)
 - Phase 9E — PredictionEvidence (merged at baseline `466ce900988bd81e1d968eb319e970955b4011d7`; see its acceptance record)
-- Phase 9F — Agent Integration (implementation and independent acceptance on its dedicated branch; exact-head PR checks determine verified delivery)
-- Phase 9G — Evaluation / Calibration (implementation on the dedicated branch; exact-head
-  independent and canonical checks determine verified delivery)
+- Phase 9F — Agent Integration (merged in baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`)
+- Phase 9G — Evaluation / Calibration (implemented on the dedicated branch; local independent
+  acceptance passed; exact-head PR checks and canonical Docker/full-stack validation determine
+  verified delivery)
 - Phase 9H — Predictive Intelligence UI (planned)
 - Phase 10 — MLOps Platform (planned)
 - Phase 11 — Agent Evals / Red Team (planned)
@@ -38,10 +39,10 @@ evaluation. Phase 9C adds verified offline anomaly scoring. Phase 9D adds an exp
 disabled-by-default controlled serving boundary and is merged. Phase 9E is a provenance layer over
 immutable 9D receipts and is merged at baseline
 `466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F integrates those existing bundles with the
-agent through a controlled MCP scope; it does not start inference. Its exact-head acceptance and
-open PR checks determine delivery status. Phase 9G adds an offline, immutable evaluation and
-research-only calibration foundation; its real-world scientific validity remains not established
-without verified outcomes. Phase 9H remains planned.
+agent through a controlled MCP scope; it does not start inference and is included in merged
+baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G adds an offline, immutable evaluation
+and research-only calibration foundation; its real-world scientific validity remains not
+established without verified outcomes. Phase 9H remains planned.
 
 # Current phase
 

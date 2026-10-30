@@ -170,9 +170,11 @@ next-pull behavior. It does not diagnose failures, serve predictions, or control
 Phase 9C at `c4da7f5` is **VERIFIED** and merged into baseline `7fc4c59` after PR #43 passed its
 canonical full-validation, CI and Security checks. It adds offline anomaly scoring against exact
 same-vehicle/configuration/source references. Scores are statistical deviations, not fault
-diagnoses or failure probabilities. Phase 9D is merged and Phase 9E is merged at baseline
-`466ce900988bd81e1d968eb319e970955b4011d7`. Phase 9F is under controlled integration review;
-its exact-head PR checks determine delivery status. Phases 9G–9H remain planned. See the
+diagnoses or failure probabilities. Phase 9D and 9E are merged, and Phase 9F is included in merged
+baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G's offline evaluation and
+research-only calibration foundation is implemented on its dedicated branch; its exact-head PR
+checks and canonical full-stack gate determine verified delivery. Real-world calibration remains
+`NOT_ESTABLISHED`. Phase 9H remains planned. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
