@@ -29,6 +29,7 @@ def default_protocol(*, seed: int = 9142, max_rows: int = 20_000) -> EvaluationP
         isotonic_minimum_clusters=30,
         reliability_bins=5,
         bootstrap_resamples=200,
+        bootstrap_cluster_identity_policy="sha256_session_fingerprint_sorted_v1",
         seed=seed,
         max_rows=max_rows,
         max_artifact_bytes=65_536,

@@ -7,7 +7,7 @@ store, model-promotion path, or user interface.
 
 ```mermaid
 flowchart LR
-    F[9A immutable FeatureSets and source hashes] --> S[9G protocol v1: chronological session, vehicle and configuration splits]
+    F[9A immutable FeatureSets and source hashes] --> S[9G protocol v2: chronological session, vehicle and configuration splits]
     M[9B registered artifacts and frozen thresholds] --> P[Score later labeled next-pull rows]
     S --> C[CAL: fit identity, sigmoid and eligible isotonic maps]
     C --> V[VAL: select by Brier with fixed tie rule]
@@ -23,7 +23,7 @@ flowchart LR
 
 ## Protocol and partitions
 
-The protocol is `phase9g-protocol-v1`, serialized under schema `phase9g-evaluation-v1`, with a
+The protocol is `phase9g-protocol-v2`, serialized under schema `phase9g-evaluation-v1`, with a
 canonical SHA-256 checksum. The protocol freezes the three Phase 9B tasks, four Phase 9C feature
 families, two detector methods, three calibration methods, reliability bins, support floors,
 bootstrap policy, split fractions, row/artifact bounds, threshold policy, and the ban on promotion.
@@ -53,7 +53,9 @@ version, source/model/label lineage and an explicit `not_for_serving` fence; pic
 
 The supervised report includes Brier score, log loss, five-bin ECE and reliability rows, AUROC,
 average precision, threshold confusion measures, subgroup support, OOD distances, and risk/coverage
-points. Intervals use a deterministic session-cluster bootstrap. Fewer than 20 independent sessions
+points. Intervals use a deterministic session-cluster bootstrap over sorted SHA-256 session
+fingerprints, so the independent checker reproduces the exact seeded samples without receiving raw
+session IDs. Fewer than 20 independent sessions
 are labeled descriptive with undefined intervals. Missing labels and unavailable signals remain
 excluded from scored denominators and appear in explicit coverage/abstention counts.
 
@@ -69,6 +71,9 @@ Missing fuel pressure is an abstention only for the fuel detector, whose require
 Thermal, boost/air, and performance detectors retain their scores for that same case so missingness
 can be measured as a separate confounder; those scores are not labeled fuel-fault detections.
 Duplicate/low-quality telemetry is an abstention for every family.
+Clean and intervention denominators start from all predeclared case attempts. Missing scores and
+alarms stay in the eligible count and reduce coverage; reports show false-alarm rates per scored
+and per attempted eligible clean case separately.
 
 Drift is split into feature distribution, label prevalence, concept/performance, reliability, and
 detector-reference comparisons. PSI and robust location shifts use the training reference only;

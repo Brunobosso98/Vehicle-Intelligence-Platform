@@ -87,12 +87,7 @@ def evaluate_supervised_task(
     calibration_labels = tuple(int(row.target) for row in calibration_rows)
     calibration_ids = tuple(row.row_id for row in calibration_rows)
     calibration_clusters = tuple(row.session_id for row in calibration_rows)
-    calibration_checksum = stable_hash(
-        sorted(
-            (row.row_id, row.input_source_hash, row.target_source_hash, row.target)
-            for row in calibration_rows
-        )
-    )
+    calibration_checksum = calibration_dataset_checksum(calibration_rows)
     training_rows = task_run.training.split.train
     training_vehicles = {row.vehicle_id for row in training_rows}
     evaluation_vehicles = {row.vehicle_id for row in future_rows}
@@ -153,7 +148,7 @@ def evaluate_supervised_task(
                     "configuration_context_fingerprint": (
                         validity_scope.configuration_context_fingerprint
                     ),
-                    "cutoff": validity_scope.cutoff.isoformat(),
+                    "cutoff": validity_scope.model_dump(mode="json")["cutoff"],
                 },
                 model_version_id=str(task_run.model_version_id),
                 model_artifact_checksum=task_run.artifact.checksum,
@@ -212,7 +207,7 @@ def evaluate_supervised_task(
             source_role=source_role,
             fold_id="VALIDATION",
             row_ids=tuple(row.row_id for row in rows),
-            clusters=tuple(row.session_id for row in rows),
+            clusters=_session_cluster_fingerprints(rows),
             bin_count=5,
             bootstrap_resamples=bootstrap_resamples,
             seed=seed,
@@ -233,7 +228,7 @@ def evaluate_supervised_task(
     test_raw = partition_scores["test"]
     test_labels = tuple(int(row.target) for row in test_rows)
     test_ids = tuple(row.row_id for row in test_rows)
-    test_clusters = tuple(row.session_id for row in test_rows)
+    test_clusters = _session_cluster_fingerprints(test_rows)
     raw_test_metrics = binary_metrics(
         test_raw,
         test_labels,
@@ -556,6 +551,20 @@ def _feature_values(rows: tuple[SupervisedRow, ...], feature: str) -> list[float
     return values
 
 
+def calibration_dataset_checksum(rows: tuple[SupervisedRow, ...]) -> str:
+    """Hash calibration lineage using the binary-label encoding in the report contract."""
+    return stable_hash(
+        sorted(
+            (row.row_id, row.input_source_hash, row.target_source_hash, int(row.target))
+            for row in rows
+        )
+    )
+
+
+def _session_cluster_fingerprints(rows: tuple[SupervisedRow, ...]) -> tuple[str, ...]:
+    return tuple(stable_hash(row.session_id) for row in rows)
+
+
 def _example_evidence(
     rows: tuple[SupervisedRow, ...],
     scores: tuple[float, ...],
@@ -646,7 +655,7 @@ def _threshold_sensitivity(
                 source_role=SourceRole.SYNTHETIC,
                 fold_id="VALIDATION",
                 row_ids=tuple(item.row_id for item in validation_rows),
-                clusters=tuple(item.session_id for item in validation_rows),
+                clusters=_session_cluster_fingerprints(validation_rows),
                 bootstrap_resamples=0,
             )["decision"],
         }

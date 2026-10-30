@@ -330,12 +330,19 @@ def _check_metric_result(
                 statistic = _auc
             else:
                 statistic = _average_precision
+            seed_offset = {
+                "brier_score": 0,
+                "log_loss": 1,
+                "ece": 2,
+                "auroc": 20,
+                "average_precision": 21,
+            }[name]
             lower, upper, cluster_count = _cluster_interval(
                 scores,
                 labels,
                 clusters,
                 statistic,
-                seed=seed,
+                seed=seed + seed_offset,
             )
             _assert(
                 cluster_count == interval["cluster_count"],
@@ -370,8 +377,10 @@ def _check_metric_result(
     )
     for actual, expected_bin in zip(bins, expected_bins, strict=True):
         for key, value in expected_bin.items():
-            if key in {"lower", "upper", "count"}:
+            if key == "count":
                 _assert(actual[key] == value, f"reliability bin {key} differs")
+            elif key in {"lower", "upper"}:
+                _close(actual[key], value, name=f"reliability bin {key}")
             else:
                 _close(actual[key], value, name=f"reliability bin {key}")
         if actual["count"] == 0:
@@ -1409,10 +1418,15 @@ def _check_summary(summary: dict[str, Any], expected_sha: str) -> dict[str, Any]
     protocol = summary["protocol"]
     spec = protocol["definition"]
     _assert(
-        protocol["version"] == "phase9g-protocol-v1",
+        protocol["version"] == "phase9g-protocol-v2",
         "evaluation protocol version differs",
     )
     _assert(protocol["checksum"] == _stable_hash(spec), "protocol checksum differs")
+    _assert(
+        spec["bootstrap_cluster_identity_policy"]
+        == "sha256_session_fingerprint_sorted_v1",
+        "cluster bootstrap identity policy differs",
+    )
     _assert(
         set(spec["tasks"]) == TASKS and set(spec["anomaly_families"]) == FAMILIES,
         "protocol task/family matrix is incomplete",

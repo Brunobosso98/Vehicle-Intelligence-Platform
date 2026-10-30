@@ -7,7 +7,7 @@ denominators, and benchmark measurements.
 
 ## Protocol
 
-- Protocol: `phase9g-protocol-v1`; report schema: `phase9g-evaluation-v1`.
+- Protocol: `phase9g-protocol-v2`; report schema: `phase9g-evaluation-v1`.
 - Population: synthetic canonical Phase 9A FeatureSets generated through the existing Phase 9B and
   Phase 9C pipelines. Source role is retained per record.
 - Held-out generator: `phase9g-heldout-v4`; three later windows use four distinct synthetic

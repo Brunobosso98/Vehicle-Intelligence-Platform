@@ -82,13 +82,13 @@ def evaluate_phase9c_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
             all_scenarios.update(item["scenario"] for item in normalized)
             scores = [item["score"] for item in normalized]
             alarms = [item["alarm"] for item in normalized]
-            eligible = [item["eligible"] for item in normalized]
+            eligible_cohort = [True] * len(normalized)
             clean = [item["scenario"] == "clean" for item in normalized]
             clusters = [item["session"] for item in normalized]
             rates = anomaly_alarm_metrics(
                 scores,
                 alarms,
-                eligible,
+                eligible_cohort,
                 clean=clean,
                 clusters=clusters,
             )

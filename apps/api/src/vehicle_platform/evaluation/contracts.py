@@ -3,14 +3,14 @@ from __future__ import annotations
 import math
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vehicle_platform.features.domain import stable_hash
 
 EVALUATION_SCHEMA_VERSION = "phase9g-evaluation-v1"
-PROTOCOL_VERSION = "phase9g-protocol-v1"
+PROTOCOL_VERSION = "phase9g-protocol-v2"
 
 
 class StrictContract(BaseModel):
@@ -370,6 +370,7 @@ class EvaluationProtocol(StrictContract):
     isotonic_minimum_clusters: int = Field(ge=20, le=10_000)
     reliability_bins: int = Field(ge=2, le=10)
     bootstrap_resamples: int = Field(ge=0, le=10_000)
+    bootstrap_cluster_identity_policy: Literal["sha256_session_fingerprint_sorted_v1"]
     seed: int = Field(ge=0, le=2**31 - 1)
     max_rows: int = Field(ge=1, le=100_000)
     max_artifact_bytes: int = Field(ge=1024, le=65_536)

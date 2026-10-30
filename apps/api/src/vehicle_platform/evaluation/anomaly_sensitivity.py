@@ -341,7 +341,7 @@ async def _load_test_cases(
         raise ReferenceSensitivityError(
             "some 9C test cases cannot be resolved to canonical FeatureSets"
         )
-    return tuple(selected[key] for key in sorted(selected))
+    return tuple(selected[key] for key in oracles)
 
 
 def _fit_reference_subsets(

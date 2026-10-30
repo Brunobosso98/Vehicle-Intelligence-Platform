@@ -327,8 +327,8 @@ async def assert_evaluation_immutability(database: Database, run_id: UUID) -> di
     operations = {
         "evaluation_protocols": (
             "UPDATE evaluation_protocols SET schema_version=schema_version "
-            "WHERE protocol_version='phase9g-protocol-v1'",
-            "DELETE FROM evaluation_protocols WHERE protocol_version='phase9g-protocol-v1'",
+            "WHERE protocol_version='phase9g-protocol-v2'",
+            "DELETE FROM evaluation_protocols WHERE protocol_version='phase9g-protocol-v2'",
         ),
         "evaluation_runs": (
             "UPDATE evaluation_runs SET engineering_status=engineering_status WHERE id=:id",

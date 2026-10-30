@@ -563,6 +563,7 @@ def _threshold_metrics(labels: np.ndarray, scores: np.ndarray, threshold: float)
         "negative_support": total - int(np.sum(labels)),
         "precision": precision,
         "recall": recall,
+        "specificity": specificity,
         "f1": f1,
         "balanced_accuracy": balanced_accuracy,
         "false_positive_rate": false_positive / (false_positive + true_negative)

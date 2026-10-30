@@ -77,6 +77,11 @@ from vehicle_platform.evaluation.splitting import (
     assert_disjoint_training_source,
     chronological_calibration_split,
 )
+from vehicle_platform.evaluation.supervised import (
+    _example_evidence,
+    _session_cluster_fingerprints,
+    calibration_dataset_checksum,
+)
 from vehicle_platform.features.domain import stable_hash
 from vehicle_platform.ml.domain import SupervisedRow
 
@@ -164,6 +169,42 @@ def test_quality_duplicate_requires_safe_abstention_for_every_detector() -> None
         )
 
 
+def test_clean_anomaly_denominators_include_abstained_cohort_rows() -> None:
+    rows = _normalize_cases(
+        [
+            {
+                "scenario": "clean",
+                "score": 0.8,
+                "status": "ANOMALOUS",
+                "predicted_anomaly": True,
+                "fold": "session-1",
+            },
+            {
+                "scenario": "clean",
+                "score": None,
+                "status": "INSUFFICIENT_SIGNAL",
+                "predicted_anomaly": None,
+                "fold": "session-2",
+            },
+        ],
+        family="thermal",
+        threshold=0.5,
+    )
+    result = anomaly_alarm_metrics(
+        tuple(row["score"] for row in rows),
+        tuple(row["alarm"] for row in rows),
+        (True,) * len(rows),
+        clean=(True, True),
+        clusters=tuple(row["session"] for row in rows),
+    )
+
+    assert result["clean_eligible"] == 2
+    assert result["clean_scored"] == 1
+    assert result["clean_abstained"] == 1
+    assert result["clean_fpr_per_scored"] == 1.0
+    assert result["clean_fpr_per_eligible"] == 0.5
+
+
 def _sha(label: str) -> str:
     return hashlib.sha256(label.encode()).hexdigest()
 
@@ -226,10 +267,30 @@ def test_persisted_metric_report_caps_examples_to_checksummed_evidence() -> None
     assert body["calibration_examples"][0]["label"] == 1
 
 
+def test_calibration_dataset_checksum_matches_report_evidence_for_boolean_labels() -> None:
+    rows = (_row(0), _row(1), _row(2))
+    evidence = _example_evidence(rows, (0.2, 0.7, 0.9))
+    checker_payload = sorted(
+        (
+            row["example_fingerprint"],
+            row["input_source_checksum"],
+            row["target_source_checksum"],
+            row["label"],
+        )
+        for row in evidence
+    )
+
+    assert calibration_dataset_checksum(rows) == stable_hash(checker_payload)
+    assert _session_cluster_fingerprints(rows) == tuple(
+        row["session_fingerprint"] for row in evidence
+    )
+
+
 def test_protocol_is_versioned_strict_and_frozen() -> None:
     protocol = default_protocol()
 
-    assert protocol.protocol_version == "phase9g-protocol-v1"
+    assert protocol.protocol_version == "phase9g-protocol-v2"
+    assert protocol.bootstrap_cluster_identity_policy == "sha256_session_fingerprint_sorted_v1"
     assert protocol.checksum == stable_hash(protocol.model_dump(mode="json"))
     assert set(protocol.tasks) == {
         "NEXT_PULL_THERMAL_DEGRADATION",
@@ -291,6 +352,7 @@ def test_binary_metrics_recompute_proper_scores_and_exclude_unlabeled() -> None:
     }
     assert result["brier_score"]["denominator"] == 4
     assert result["brier_score"]["uncertainty"]["status"] == "NONINDEPENDENT_DESCRIPTIVE"
+    assert result["decision"]["specificity"] == pytest.approx(0.5)
     assert sum(item["count"] for item in result["reliability_bins"]) == 4
 
 
