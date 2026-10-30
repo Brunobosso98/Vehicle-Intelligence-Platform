@@ -90,7 +90,13 @@ Migration 0019 adds five bounded append-only tables: `evaluation_protocols`, `ev
 triggers reject `UPDATE`, `DELETE`, and `TRUNCATE`. The run links private hashes for the registered
 9A feature schema, 9B label definitions and model artifacts, 9C definitions, reference datasets,
 and detector artifacts. A read-only repeatable-read digest covers the allowlisted 9A–9F source
-tables before and after evaluation persistence.
+tables before and after evaluation persistence. Each JSONB report is checked against the 256 KiB
+database limit before insertion. Supervised report rows retain the capped metric aggregates and
+per-partition row counts/fingerprints/example-payload checksums; complete row-level score and label
+evidence stays in the ignored `.validation/phase9g/acceptance.json` used by the independent checker.
+The stored row also carries the checksum of its complete report, which is covered by the evaluation
+run checksum. This keeps the durable registry compact without weakening the independent arithmetic
+check or duplicating feature matrices in JSONB.
 
 The scientific status is separate from engineering status. A passing implementation can report
 `engineering_pipeline=PASS` while keeping real-world predictive validity and calibration

@@ -3552,9 +3552,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/repository.py": {
-    "mtime": 1793209357.850328,
-    "seen": 1793298043.9984522,
-    "ast_hash": "28e68d64525b74e9270ac4ced28ba9aa",
+    "mtime": 1793359496.3653958,
+    "seen": 1793359632.1527176,
+    "ast_hash": "f8b9f5c33fd1d0c91791c0944245ea34",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/evaluation/splitting.py": {
@@ -3570,9 +3570,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_evaluation.py": {
-    "mtime": 1793358148.9804142,
-    "seen": 1793358285.4117477,
-    "ast_hash": "33c9aedb76354557576930ed2587945d",
+    "mtime": 1793359458.0903304,
+    "seen": 1793359632.1529872,
+    "ast_hash": "9c8e76f9576e5bb8e368214880b42608",
     "semantic_hash": ""
   },
   "scripts/check_predictive_reliability.py": {
@@ -3612,9 +3612,9 @@
     "semantic_hash": ""
   },
   "docs/architecture/phase-9g-evaluation-calibration.md": {
-    "mtime": 1793301743.005393,
-    "seen": 1793301953.7069306,
-    "ast_hash": "b41520ac960d5ea8ee1b8f0066e5a5b1",
+    "mtime": 1793359489.0288424,
+    "seen": 1793359632.1540043,
+    "ast_hash": "88dbd2030667b3bdf9670fd6d7916140",
     "semantic_hash": ""
   },
   "docs/prompts/phase-9g-evaluation-calibration.md": {
@@ -3624,9 +3624,9 @@
     "semantic_hash": ""
   },
   "docs/runbooks/predictive-reliability.md": {
-    "mtime": 1793210361.023278,
-    "seen": 1793298043.9997196,
-    "ast_hash": "6d63b023705b56c0fb9297701ae97a0d",
+    "mtime": 1793359491.7285497,
+    "seen": 1793359632.1542392,
+    "ast_hash": "db7635c53dec39bf275174e1250bab8c",
     "semantic_hash": ""
   },
   "docs/validation/phase-9g-acceptance.md": {

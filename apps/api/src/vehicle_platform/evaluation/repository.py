@@ -17,6 +17,8 @@ from vehicle_platform.features.domain import stable_hash
 from vehicle_platform.infrastructure.database import Database
 
 EVALUATION_NAMESPACE = UUID("0ebd720b-4eb0-47eb-8c03-9a1510a1aa76")
+MAX_METRIC_REPORT_JSONB_BYTES = 262_144
+_EXAMPLE_PARTITIONS = ("calibration_examples", "validation_examples", "test_examples")
 SOURCE_TABLES = (
     "vehicles",
     "vehicle_configurations",
@@ -174,7 +176,10 @@ async def persist_evaluation(
                 )
             ).all()
             if existing_reports:
-                expected_reports = {key: stable_hash(body) for key, body in sorted(reports.items())}
+                expected_reports = {
+                    key: stable_hash(_stored_metric_report_body(body))
+                    for key, body in sorted(reports.items())
+                }
                 actual_reports = {row.report_key: row.report_checksum for row in existing_reports}
                 if actual_reports != expected_reports:
                     raise EvaluationRegistryConflict(
@@ -211,8 +216,13 @@ async def persist_evaluation(
                 }
 
             for key, body in sorted(reports.items()):
-                body_json = _json(body)
-                checksum = stable_hash(body)
+                stored_body = _stored_metric_report_body(body)
+                body_json = _json(stored_body)
+                if _jsonb_text_size(stored_body) > MAX_METRIC_REPORT_JSONB_BYTES:
+                    raise EvaluationRegistryConflict(
+                        f"metric report {key} exceeds the bounded JSONB report size"
+                    )
+                checksum = stable_hash(stored_body)
                 await db.execute(
                     text(
                         "INSERT INTO evaluation_metric_reports("
@@ -361,3 +371,49 @@ async def _mutation_is_blocked(db: Any, statement: str, params: dict[str, UUID])
 
 def _json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False, default=str)
+
+
+def _stored_metric_report_body(body: dict[str, Any]) -> dict[str, Any]:
+    """Persist aggregates and digests; retain full example rows in the local acceptance artifact."""
+    examples = {key: body[key] for key in _EXAMPLE_PARTITIONS if key in body}
+    if not examples:
+        return body
+    stored = {key: value for key, value in body.items() if key not in examples}
+    partitions: dict[str, dict[str, Any]] = {}
+    for key, rows in sorted(examples.items()):
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise EvaluationRegistryConflict(f"metric report {key} has invalid example evidence")
+        fingerprints = [row.get("example_fingerprint") for row in rows]
+        if any(not isinstance(value, str) for value in fingerprints):
+            raise EvaluationRegistryConflict(f"metric report {key} has missing row fingerprints")
+        partitions[key.removesuffix("_examples")] = {
+            "rows": len(rows),
+            "row_fingerprint": stable_hash(sorted(fingerprints)),
+            "example_payload_checksum": stable_hash(rows),
+        }
+    stored["example_evidence"] = {
+        "representation": (
+            "DIGEST_ONLY; full example rows are retained in the local acceptance artifact"
+        ),
+        "full_report_checksum": stable_hash(body),
+        "partitions": partitions,
+    }
+    return stored
+
+
+def _jsonb_text_size(value: Any) -> int:
+    """Conservatively estimate PostgreSQL jsonb::text size, including separator spaces."""
+    compact_size = len(_json(value).encode("utf-8"))
+
+    def separators(item: Any) -> int:
+        if isinstance(item, dict):
+            return (
+                len(item)
+                + max(len(item) - 1, 0)
+                + sum(separators(key) + separators(child) for key, child in item.items())
+            )
+        if isinstance(item, list):
+            return max(len(item) - 1, 0) + sum(separators(child) for child in item)
+        return 0
+
+    return compact_size + separators(value)

@@ -31,6 +31,11 @@ mismatch, over-limit artifacts or rows, changed prior-phase source digests, and 
 The independent checker rejects a mismatched SHA, unsupported receipt schema, invalid checksum,
 missing denominator, altered metric arithmetic, leakage, false claims, or serving-boundary change.
 
+The machine acceptance artifact keeps the complete hashed synthetic row evidence needed to
+independently recompute the metrics. Durable JSONB metric reports store aggregates and partition
+counts/fingerprints/example-payload checksums under the 256 KiB per-report limit; they do not copy
+feature matrices or the full row-level evidence into the database.
+
 ## Interpret the output
 
 `engineering_status=PASS` means the declared offline engineering checks passed for this exact

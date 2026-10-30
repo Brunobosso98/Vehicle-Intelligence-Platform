@@ -67,6 +67,11 @@ from vehicle_platform.evaluation.metrics import (
     reliability_bins,
 )
 from vehicle_platform.evaluation.protocol import default_protocol
+from vehicle_platform.evaluation.repository import (
+    MAX_METRIC_REPORT_JSONB_BYTES,
+    _jsonb_text_size,
+    _stored_metric_report_body,
+)
 from vehicle_platform.evaluation.splitting import (
     EvaluationSplitError,
     assert_disjoint_training_source,
@@ -187,6 +192,38 @@ def test_reference_sensitivity_artifact_root_selection_checks_size_and_checksum(
     current_path.unlink()
     current_path.symlink_to(stale_path)
     assert not _matches_registered_artifact(current_root, relative, checksum, len(expected))
+
+
+def test_persisted_metric_report_caps_examples_to_checksummed_evidence() -> None:
+    body = {
+        "task": "NEXT_PULL_THERMAL_DEGRADATION",
+        "metrics": {"brier": 0.25},
+        "calibration_examples": [
+            {
+                "example_fingerprint": _sha("row-1"),
+                "input_source_checksum": _sha("input-1"),
+                "target_source_checksum": _sha("target-1"),
+                "session_fingerprint": _sha("session-1"),
+                "score": 0.4,
+                "label": 1,
+            }
+        ],
+        "validation_examples": [],
+        "test_examples": [],
+    }
+
+    stored = _stored_metric_report_body(body)
+
+    assert stored["task"] == body["task"]
+    assert stored["metrics"] == body["metrics"]
+    assert "calibration_examples" not in stored
+    assert "validation_examples" not in stored
+    assert "test_examples" not in stored
+    assert stored["example_evidence"]["full_report_checksum"] == stable_hash(body)
+    assert stored["example_evidence"]["partitions"]["calibration"]["rows"] == 1
+    assert _jsonb_text_size({"a": [1, 2]}) == len('{"a":[1,2]}') + 2
+    assert _jsonb_text_size(stored) < MAX_METRIC_REPORT_JSONB_BYTES
+    assert body["calibration_examples"][0]["label"] == 1
 
 
 def test_protocol_is_versioned_strict_and_frozen() -> None:
