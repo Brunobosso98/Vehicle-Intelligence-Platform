@@ -1184,13 +1184,14 @@ def _dataset_manifest(task_reports: dict[str, dict[str, Any]]) -> DatasetManifes
     excluded_fingerprints = sorted(
         fingerprint
         for report in task_reports.values()
-        for fingerprint in (
-            *report["label_availability"]["excluded_pair_fingerprints"],
-            *report["label_availability"]["training_unlabeled_pair_fingerprints"],
-        )
+        for fingerprint in report["label_availability"]["excluded_pair_fingerprints"]
     )
+    if len(excluded_fingerprints) != unlabeled:
+        raise AssertionError("dataset exclusion fingerprints differ from denominator")
     row_ids.extend(excluded_fingerprints)
     row_ids.sort()
+    if len(row_ids) != labeled_count + unlabeled:
+        raise AssertionError("dataset row fingerprints differ from declared support")
     source_dataset_fingerprints = sorted(
         report["label_availability"]["source_dataset_fingerprint"]
         for report in task_reports.values()
