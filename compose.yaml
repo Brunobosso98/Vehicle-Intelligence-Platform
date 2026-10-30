@@ -229,7 +229,7 @@ services:
     ports: ["127.0.0.1:9090:9090"]
   tempo:
     profiles: ["observability"]
-    image: grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949
+    image: grafana/tempo:3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - type: bind
