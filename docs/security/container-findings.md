@@ -20,7 +20,9 @@ observability images remove the expired Go standard-library findings from the pr
 
 There are 92 High package occurrences across all selected images and zero Critical findings. The 87
 API/Web occurrences remain the previously analyzed Debian package findings; the five observability
-occurrences are listed above. The active Grafana and Tempo service ports bind to `127.0.0.1`.
+occurrences are listed above. Kafka's upstream `snappy-java` 1.1.10.7 was replaced with the fixed
+1.1.10.9 artifact after the fresh CI scan found CVE-2026-108106 and CVE-2026-93451; the artifact is
+SHA-256 pinned in the Dockerfile. The active Grafana and Tempo service ports bind to `127.0.0.1`.
 Grafana uses anonymous Viewer access with no configured OIDC/JWT provider. Collector and Tempo
 configuration expose no JWK parsing path; Tempo stores blocks locally and has no S3 SSE-C key. These
 controls narrow the relevant attack paths and do not remove any binary-level finding.
