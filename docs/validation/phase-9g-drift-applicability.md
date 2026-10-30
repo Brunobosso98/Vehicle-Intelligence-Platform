@@ -14,11 +14,11 @@ change/performance comparisons, and 3 calibration comparisons. The latter superv
 use only the labeled synthetic windows. No real/imported unlabeled record was used to estimate
 error, calibration, failure rate, or prevalence.
 
-| Task | Compared OOD features | Warnings at the declared threshold | Interpretation |
-| --- | ---: | ---: | --- |
-| `NEXT_PULL_FUEL_DEVIATION` | 8 | 0 | No feature crossed the training-only warning threshold in this fixture. |
-| `NEXT_PULL_PERFORMANCE_DEGRADATION` | 10 | 0 | No feature crossed the training-only warning threshold in this fixture. |
-| `NEXT_PULL_THERMAL_DEGRADATION` | 7 | 0 | No feature crossed the training-only warning threshold in this fixture. |
+| Task                                | Compared OOD features | Warnings at the declared threshold | Interpretation                                                          |
+| ----------------------------------- | --------------------: | ---------------------------------: | ----------------------------------------------------------------------- |
+| `NEXT_PULL_FUEL_DEVIATION`          |                     8 |                                  0 | No feature crossed the training-only warning threshold in this fixture. |
+| `NEXT_PULL_PERFORMANCE_DEGRADATION` |                    10 |                                  0 | No feature crossed the training-only warning threshold in this fixture. |
+| `NEXT_PULL_THERMAL_DEGRADATION`     |                     7 |                                  0 | No feature crossed the training-only warning threshold in this fixture. |
 
 These zero warnings do not establish OOD sensitivity. The receipt's fixed PSI and robust-shift
 adversaries independently test arithmetic and show that an injected known shift can be surfaced;
@@ -29,13 +29,13 @@ training-only fit boundary was checked and the limitation is retained.
 
 There are 19 versioned applicability assessments:
 
-| Source role / cohort | Assessments | Result |
-| --- | ---: | --- |
-| Synthetic 9B tasks | 3 | `SYNTHETIC_ONLY`; metrics describe only generated observable next-pull labels. |
-| Imported fixture 9B tasks | 3 | `EVALUATION_INSUFFICIENT`; no independent labeled support. |
-| Imported and real-vehicle 9B tasks | 6 | `REAL_DATA_UNLABELED`; distribution/availability descriptions only. |
-| Synthetic 9C detector families | 4 | `EVALUATION_INSUFFICIENT` for general applicability; limited stress results are reported separately. |
-| Synthetic 9D receipt, 9E evidence, and 9F agent evidence | 3 | `EVALUATION_INSUFFICIENT`; these outputs are not outcome labels. |
+| Source role / cohort                                     | Assessments | Result                                                                                               |
+| -------------------------------------------------------- | ----------: | ---------------------------------------------------------------------------------------------------- |
+| Synthetic 9B tasks                                       |           3 | `SYNTHETIC_ONLY`; metrics describe only generated observable next-pull labels.                       |
+| Imported fixture 9B tasks                                |           3 | `EVALUATION_INSUFFICIENT`; no independent labeled support.                                           |
+| Imported and real-vehicle 9B tasks                       |           6 | `REAL_DATA_UNLABELED`; distribution/availability descriptions only.                                  |
+| Synthetic 9C detector families                           |           4 | `EVALUATION_INSUFFICIENT` for general applicability; limited stress results are reported separately. |
+| Synthetic 9D receipt, 9E evidence, and 9F agent evidence |           3 | `EVALUATION_INSUFFICIENT`; these outputs are not outcome labels.                                     |
 
 The evaluation manifest contains 1,162 rows (946 labeled and 216 held-out exclusions), 84 sessions,
 19 synthetic vehicles, and 34 versioned configurations. It uses source role `synthetic`, source

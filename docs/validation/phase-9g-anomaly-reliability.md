@@ -12,16 +12,16 @@ and subtle multivariate controls. Oracle labels are held outside detector inputs
 and registered references are preserved. Numerators and denominators below are raw case counts;
 these small synthetic samples do not support a vehicle-level error-rate claim.
 
-| Family | Method | Clean false alarms | Other-family alarms | Target detections | Quality/signal abstentions | Total alarms | Scored / 30 |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Boost/air | Isolation Forest | 1/8 (12.5%) | 4/12 (33.3%) | 3/4 (75%) | 2/2 | 10 | 28 |
-| Boost/air | Robust MAD | 0/8 (0%) | 4/12 (33.3%) | 4/4 (100%) | 2/2 | 10 | 28 |
-| Fuel | Isolation Forest | 1/8 (12.5%) | 2/12 (16.7%) | 4/4 (100%) | 4/4 | 8 | 26 |
-| Fuel | Robust MAD | 0/8 (0%) | 4/12 (33.3%) | 4/4 (100%) | 4/4 | 10 | 26 |
-| Performance | Isolation Forest | 2/8 (25%) | 3/12 (25%) | 4/4 (100%) | 2/2 | 11 | 28 |
-| Performance | Robust MAD | 0/8 (0%) | 0/12 (0%) | 4/4 (100%) | 2/2 | 5 | 28 |
-| Thermal | Isolation Forest | 4/8 eligible (50%); 4/6 scored (66.7%) | 5/12 (41.7%) | 4/4 (100%) | 4/4 | 14 | 26 |
-| Thermal | Robust MAD | 0/8 eligible and 0/6 scored | 6/12 (50%) | 4/4 (100%) | 4/4 | 11 | 26 |
+| Family      | Method           |                     Clean false alarms | Other-family alarms | Target detections | Quality/signal abstentions | Total alarms | Scored / 30 |
+| ----------- | ---------------- | -------------------------------------: | ------------------: | ----------------: | -------------------------: | -----------: | ----------: |
+| Boost/air   | Isolation Forest |                            1/8 (12.5%) |        4/12 (33.3%) |         3/4 (75%) |                        2/2 |           10 |          28 |
+| Boost/air   | Robust MAD       |                               0/8 (0%) |        4/12 (33.3%) |        4/4 (100%) |                        2/2 |           10 |          28 |
+| Fuel        | Isolation Forest |                            1/8 (12.5%) |        2/12 (16.7%) |        4/4 (100%) |                        4/4 |            8 |          26 |
+| Fuel        | Robust MAD       |                               0/8 (0%) |        4/12 (33.3%) |        4/4 (100%) |                        4/4 |           10 |          26 |
+| Performance | Isolation Forest |                              2/8 (25%) |          3/12 (25%) |        4/4 (100%) |                        2/2 |           11 |          28 |
+| Performance | Robust MAD       |                               0/8 (0%) |           0/12 (0%) |        4/4 (100%) |                        2/2 |            5 |          28 |
+| Thermal     | Isolation Forest | 4/8 eligible (50%); 4/6 scored (66.7%) |        5/12 (41.7%) |        4/4 (100%) |                        4/4 |           14 |          26 |
+| Thermal     | Robust MAD       |            0/8 eligible and 0/6 scored |          6/12 (50%) |        4/4 (100%) |                        4/4 |           11 |          26 |
 
 Thermal had two clean cases that abstained for insufficient thermal signal, so the clean false
 alarm denominator is also shown among the six scored clean controls. Across thermal's 30 cases,
@@ -43,12 +43,12 @@ reference rows). The original registered thresholds and artifacts were not mutat
 fits and thresholds were confined to the local research calculation. Frozen-artifact score-rank
 Spearman correlations varied by family and method:
 
-| Family | Isolation Forest range | Robust MAD range |
-| --- | ---: | ---: |
-| Boost/air | -0.142 to 0.084 | 0.114 to 0.120 |
-| Fuel | 0.070 to 0.167 | -0.094 to -0.094 |
-| Performance | -0.029 to -0.029 | 0.066 to 0.066 |
-| Thermal | 0.680 to 0.748 | 0.896 to 1.000 |
+| Family      | Isolation Forest range | Robust MAD range |
+| ----------- | ---------------------: | ---------------: |
+| Boost/air   |        -0.142 to 0.084 |   0.114 to 0.120 |
+| Fuel        |         0.070 to 0.167 | -0.094 to -0.094 |
+| Performance |       -0.029 to -0.029 |   0.066 to 0.066 |
+| Thermal     |         0.680 to 0.748 |   0.896 to 1.000 |
 
 Several alarm counts also changed by reference size. These are results from the specific
 registered artifacts and test cases, not a broad stability guarantee.
