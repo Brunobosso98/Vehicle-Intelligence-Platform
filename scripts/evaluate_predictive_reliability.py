@@ -1222,7 +1222,7 @@ def _dataset_manifest(task_reports: dict[str, dict[str, Any]]) -> DatasetManifes
     feature_version = next(iter(task_reports.values()))["feature_set_version"]
     return DatasetManifest(
         source_role=SourceRole.SYNTHETIC,
-        source_kind="canonical_phase9a_features_with_phase9g_heldout_synthetic_generator",
+        source_kind="canonical_9a_plus_9g_heldout_synthetic",
         row_count=labeled_count + unlabeled,
         labeled_count=labeled_count,
         unlabeled_count=unlabeled,

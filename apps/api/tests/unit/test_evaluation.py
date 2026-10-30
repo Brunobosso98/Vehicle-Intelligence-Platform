@@ -1074,6 +1074,8 @@ def test_contracts_validate_calibration_candidate_scope_and_support() -> None:
 
 def test_contracts_validate_dataset_fold_and_evidence_provenance() -> None:
     DatasetManifest(**_valid_manifest())
+    with pytest.raises(ValidationError, match="at most 40 characters"):
+        DatasetManifest(**_valid_manifest(source_kind="x" * 41))
     with pytest.raises(ValidationError, match="conserve"):
         DatasetManifest(**_valid_manifest(row_count=11))
     with pytest.raises(ValidationError, match="timezone-aware"):

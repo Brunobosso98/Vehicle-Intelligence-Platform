@@ -1,7 +1,7 @@
 # Graph Report - vip-phase9g-graphify-temp  (2026-10-29)
 
 ## Corpus Check
-- 592 files · ~649,278 words
+- 592 files · ~649,289 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .toml 1)
 
@@ -1191,8 +1191,8 @@ Cohesion: 0.12
 Nodes (15): ASGIApp, Per-process budgets, with no unbounded per-client identifier dictionaries. The…, ResourceBudgetMiddleware, TokenBucket, parametrize, Scope, request_scope(), test_bucket_burst_refill_and_long_idle_never_exceed_capacity() (+7 more)
 
 ### Community 251 - "evaluation/repository.py"
-Cohesion: 0.19
-Nodes (14): EvaluationProtocol, protocol_fingerprint(), default_protocol(), assert_evaluation_immutability(), EvaluationRegistryConflict, _json(), _mutation_is_blocked(), persist_evaluation() (+6 more)
+Cohesion: 0.35
+Nodes (10): assert_evaluation_immutability(), EvaluationRegistryConflict, _json(), _mutation_is_blocked(), persist_evaluation(), Any, UUID, ValueError (+2 more)
 
 ### Community 252 - ".window"
 Cohesion: 0.35
@@ -1219,8 +1219,8 @@ Cohesion: 0.33
 Nodes (6): Boundaries, Context and evidence, Execution and lifecycle, Phase 7A grounded agent, Phase 9F extension, Provider and streaming contracts
 
 ### Community 258 - "supervised.py"
-Cohesion: 0.26
-Nodes (18): Any, source_fingerprint(), _calibration_support(), _decision_changes(), evaluate_supervised_task(), _example_evidence(), _feature_values(), _hypothetical_prevalence() (+10 more)
+Cohesion: 0.17
+Nodes (22): Any, source_fingerprint(), EvaluationProtocol, protocol_fingerprint(), default_protocol(), _calibration_support(), _decision_changes(), evaluate_supervised_task() (+14 more)
 
 ### Community 259 - ".__call__"
 Cohesion: 0.40
@@ -1495,9 +1495,9 @@ Nodes (8): build_parser(), _confirmation(), main(), Any, ArgumentParser, Namespa
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `OpenAIProvider` connect `DeterministicProvider` to `Ask`, `AgentError`, `test_agent_runtime.py`, `Settings`, `test_agent_prediction.py`, `Supervisor`, `Phase 7D real-model validation`, `main.py`, `AgentSettings`, `asyncio`, `test_supervisor_contracts.py`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
+  _High betweenness centrality (0.071) - this node is a cross-community bridge._
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
-  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
 - **Why does `AgentError` connect `AgentError` to `test_agent_repository.py`, `DeterministicProvider`, `.execute_scoped`, `evaluate`, `test_investigation.py`, `test_agent_prediction.py`, `evaluate`, `Supervisor`, `EvidenceClient`, `DeviceCapabilities`, `investigation/service.py`, `asyncio`, `test_investigation_repository.py`, `test_supervisor_contracts.py`, `Envelope`, `datetime`, `AgentRepository`, `InvestigationService`, `knowledge/context.py`, `Ask`, `test_agent_runtime.py`, `main.py`, `AgentSettings`, `agent_router`, `KnowledgeRepository`, `Adapter`?**
   _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**

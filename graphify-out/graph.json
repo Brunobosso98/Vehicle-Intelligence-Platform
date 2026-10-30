@@ -3566,19 +3566,6 @@
       "source_location": "L14"
     },
     {
-      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol",
-      "label": "EvaluationProtocol",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": "evaluationprotocol",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
-      "source_location": "L356"
-    },
-    {
       "id": "apps_api_src_vehicle_platform_evaluation_repository_evaluationregistryconflict",
       "label": "EvaluationRegistryConflict",
       "_callable": true,
@@ -3655,6 +3642,19 @@
       "norm_label": "labeldefinition",
       "source_file": "apps/api/src/vehicle_platform/features/domain.py",
       "source_location": "L289"
+    },
+    {
+      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol",
+      "label": "EvaluationProtocol",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": "evaluationprotocol",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
+      "source_location": "L356"
     },
     {
       "id": "apps_api_src_vehicle_platform_ml_domain_supervisedrow",
@@ -13297,7 +13297,7 @@
       "file_type": "code",
       "norm_label": "test_protocol_rejects_unsafe_or_malformed_variants()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1117"
+      "source_location": "L1119"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_session_cluster_intervals_require_independent_session_support",
@@ -13321,7 +13321,7 @@
       "file_type": "code",
       "norm_label": "test_split_checks_training_vehicle_configuration_pull_and_chronology()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1245"
+      "source_location": "L1247"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_split_rejects_empty_duplicate_small_overlapping_and_leaking_sources",
@@ -16213,7 +16213,7 @@
       "file_type": "code",
       "norm_label": "test_artifact_writer_refuses_unsafe_source_manifest_and_oversize()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1376"
+      "source_location": "L1378"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_calibration_checksum_and_fit_reject_misaligned_invalid_inputs",
@@ -19777,7 +19777,7 @@
       "file_type": "code",
       "norm_label": "test_contracts_validate_complete_run_safety_fences()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1124"
+      "source_location": "L1126"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_contracts_validate_dataset_fold_and_evidence_provenance",
@@ -23980,54 +23980,6 @@
       "source_location": "L25"
     },
     {
-      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol_checksum",
-      "label": ".checksum()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": ".checksum()",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
-      "source_location": "L395"
-    },
-    {
-      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol_fixed_contracts",
-      "label": ".fixed_contracts()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": ".fixed_contracts()",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
-      "source_location": "L381"
-    },
-    {
-      "id": "apps_api_src_vehicle_platform_evaluation_contracts_protocol_fingerprint",
-      "label": "protocol_fingerprint()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": "protocol_fingerprint()",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
-      "source_location": "L446"
-    },
-    {
-      "id": "apps_api_src_vehicle_platform_evaluation_protocol_default_protocol",
-      "label": "default_protocol()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": "default_protocol()",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/protocol.py",
-      "source_location": "L12"
-    },
-    {
       "id": "apps_api_src_vehicle_platform_evaluation_repository_assert_evaluation_immutability",
       "label": "assert_evaluation_immutability()",
       "_callable": true,
@@ -24086,18 +24038,6 @@
       "norm_label": "source_table_digests()",
       "source_file": "apps/api/src/vehicle_platform/evaluation/repository.py",
       "source_location": "L292"
-    },
-    {
-      "id": "apps_api_tests_unit_test_evaluation_test_protocol_is_versioned_strict_and_frozen",
-      "label": "test_protocol_is_versioned_strict_and_frozen()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": "test_protocol_is_versioned_strict_and_frozen()",
-      "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L165"
     },
     {
       "id": "apps_api_src_vehicle_platform_mcp_adapter_adapter_analytical",
@@ -25024,6 +24964,54 @@
       "source_location": "L107"
     },
     {
+      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol_checksum",
+      "label": ".checksum()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": ".checksum()",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
+      "source_location": "L395"
+    },
+    {
+      "id": "apps_api_src_vehicle_platform_evaluation_contracts_evaluationprotocol_fixed_contracts",
+      "label": ".fixed_contracts()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": ".fixed_contracts()",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
+      "source_location": "L381"
+    },
+    {
+      "id": "apps_api_src_vehicle_platform_evaluation_contracts_protocol_fingerprint",
+      "label": "protocol_fingerprint()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": "protocol_fingerprint()",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/contracts.py",
+      "source_location": "L446"
+    },
+    {
+      "id": "apps_api_src_vehicle_platform_evaluation_protocol_default_protocol",
+      "label": "default_protocol()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": "default_protocol()",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/protocol.py",
+      "source_location": "L12"
+    },
+    {
       "id": "apps_api_src_vehicle_platform_evaluation_supervised_calibration_support",
       "label": "_calibration_support()",
       "_callable": true,
@@ -25178,6 +25166,18 @@
       "norm_label": ".__post_init__()",
       "source_file": "apps/api/src/vehicle_platform/ml/domain.py",
       "source_location": "L194"
+    },
+    {
+      "id": "apps_api_tests_unit_test_evaluation_test_protocol_is_versioned_strict_and_frozen",
+      "label": "test_protocol_is_versioned_strict_and_frozen()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": "test_protocol_is_versioned_strict_and_frozen()",
+      "source_file": "apps/api/tests/unit/test_evaluation.py",
+      "source_location": "L165"
     },
     {
       "id": "scripts_evaluate_predictive_reliability_evaluate_predictive_task",
@@ -30097,7 +30097,7 @@
       "file_type": "code",
       "norm_label": "test_artifact_reader_bounds_paths_encoding_json_and_size()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1355"
+      "source_location": "L1357"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_artifact_reader_rejects_resigned_invalid_contracts",
@@ -30109,7 +30109,7 @@
       "file_type": "code",
       "norm_label": "test_artifact_reader_rejects_resigned_invalid_contracts()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1317"
+      "source_location": "L1319"
     },
     {
       "id": "apps_api_tests_unit_test_evaluation_test_calibrator_artifact_round_trip_rejects_tamper_and_symlinks",
@@ -30133,7 +30133,7 @@
       "file_type": "code",
       "norm_label": "_write_identity_artifact()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1270"
+      "source_location": "L1272"
     },
     {
       "id": "apps_api_tests_unit_test_acquisition_test_spool_acknowledges_only_after_publish_and_recovers_in_same_run",
@@ -40393,7 +40393,7 @@
       "file_type": "code",
       "norm_label": "test_metrics_cover_empty_bootstrap_validation_and_boolean_paths()",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1179"
+      "source_location": "L1181"
     },
     {
       "id": "apps_api_src_vehicle_platform_ml_splitting_assert_disjoint_groups",
@@ -64094,17 +64094,6 @@
       "source_location": "L33"
     },
     {
-      "id": "apps_api_src_vehicle_platform_evaluation_protocol",
-      "label": "protocol.py",
-      "_origin": "ast",
-      "community": 251,
-      "community_name": "evaluation/repository.py",
-      "file_type": "code",
-      "norm_label": "protocol.py",
-      "source_file": "apps/api/src/vehicle_platform/evaluation/protocol.py",
-      "source_location": "L1"
-    },
-    {
       "id": "apps_api_src_vehicle_platform_evaluation_repository",
       "label": "evaluation/repository.py",
       "_origin": "ast",
@@ -64742,6 +64731,17 @@
       "norm_label": "any",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "apps_api_src_vehicle_platform_evaluation_protocol",
+      "label": "protocol.py",
+      "_origin": "ast",
+      "community": 258,
+      "community_name": "supervised.py",
+      "file_type": "code",
+      "norm_label": "protocol.py",
+      "source_file": "apps/api/src/vehicle_platform/evaluation/protocol.py",
+      "source_location": "L1"
     },
     {
       "id": "apps_api_src_vehicle_platform_evaluation_supervised",
@@ -119089,7 +119089,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1356",
+      "source_location": "L1358",
       "weight": 1.0
     },
     {
@@ -119101,7 +119101,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1359",
+      "source_location": "L1361",
       "weight": 1.0
     },
     {
@@ -119113,7 +119113,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1320",
+      "source_location": "L1322",
       "weight": 1.0
     },
     {
@@ -119125,7 +119125,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1352",
+      "source_location": "L1354",
       "weight": 1.0
     },
     {
@@ -119137,7 +119137,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1387",
+      "source_location": "L1389",
       "weight": 1.0
     },
     {
@@ -119149,7 +119149,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1406",
+      "source_location": "L1408",
       "weight": 1.0
     },
     {
@@ -119485,7 +119485,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1125",
+      "source_location": "L1127",
       "weight": 1.0
     },
     {
@@ -119497,7 +119497,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1126",
+      "source_location": "L1128",
       "weight": 1.0
     },
     {
@@ -119509,7 +119509,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1130",
+      "source_location": "L1132",
       "weight": 1.0
     },
     {
@@ -119533,7 +119533,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1081",
+      "source_location": "L1083",
       "weight": 1.0
     },
     {
@@ -119545,7 +119545,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1099",
+      "source_location": "L1101",
       "weight": 1.0
     },
     {
@@ -119641,7 +119641,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1181",
+      "source_location": "L1183",
       "weight": 1.0
     },
     {
@@ -119653,7 +119653,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1188",
+      "source_location": "L1190",
       "weight": 1.0
     },
     {
@@ -119665,7 +119665,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1215",
+      "source_location": "L1217",
       "weight": 1.0
     },
     {
@@ -119677,7 +119677,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1222",
+      "source_location": "L1224",
       "weight": 1.0
     },
     {
@@ -119749,7 +119749,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1121",
+      "source_location": "L1123",
       "weight": 1.0
     },
     {
@@ -119809,7 +119809,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1246",
+      "source_location": "L1248",
       "weight": 1.0
     },
     {
@@ -119821,7 +119821,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1247",
+      "source_location": "L1249",
       "weight": 1.0
     },
     {
@@ -119833,7 +119833,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1260",
+      "source_location": "L1262",
       "weight": 1.0
     },
     {
@@ -120025,7 +120025,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1281",
+      "source_location": "L1283",
       "weight": 1.0
     },
     {
@@ -120037,7 +120037,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1283",
+      "source_location": "L1285",
       "weight": 1.0
     },
     {
@@ -134070,7 +134070,7 @@
     },
     {
       "source": "scripts_evaluate_predictive_reliability_integrity_adversaries",
-      "target": "apps_api_src_vehicle_platform_evaluation_anomaly_evaluate_phase9c_receipt",
+      "target": "scripts_evaluate_predictive_reliability_source_detector_ids",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -139669,7 +139669,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1303",
+      "source_location": "L1305",
       "weight": 1.0
     },
     {
@@ -139693,7 +139693,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1106",
+      "source_location": "L1108",
       "weight": 1.0
     },
     {
@@ -146149,7 +146149,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1270",
+      "source_location": "L1272",
       "weight": 1.0
     },
     {
@@ -209621,7 +209621,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1355",
+      "source_location": "L1357",
       "weight": 1.0
     },
     {
@@ -209633,7 +209633,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1317",
+      "source_location": "L1319",
       "weight": 1.0
     },
     {
@@ -209645,7 +209645,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1376",
+      "source_location": "L1378",
       "weight": 1.0
     },
     {
@@ -229614,7 +229614,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1117",
+      "source_location": "L1119",
       "weight": 1.0
     },
     {
@@ -229625,7 +229625,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1124",
+      "source_location": "L1126",
       "weight": 1.0
     },
     {
@@ -229636,7 +229636,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1179",
+      "source_location": "L1181",
       "weight": 1.0
     },
     {
@@ -229647,7 +229647,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1245",
+      "source_location": "L1247",
       "weight": 1.0
     },
     {
@@ -229658,7 +229658,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1270",
+      "source_location": "L1272",
       "weight": 1.0
     },
     {
@@ -229669,7 +229669,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1317",
+      "source_location": "L1319",
       "weight": 1.0
     },
     {
@@ -229680,7 +229680,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1355",
+      "source_location": "L1357",
       "weight": 1.0
     },
     {
@@ -229691,7 +229691,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1376",
+      "source_location": "L1378",
       "weight": 1.0
     },
     {
@@ -314766,7 +314766,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1358",
+      "source_location": "L1360",
       "weight": 0.8
     },
     {
@@ -314777,7 +314777,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1351",
+      "source_location": "L1353",
       "weight": 0.8
     },
     {
@@ -314788,7 +314788,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1380",
+      "source_location": "L1382",
       "weight": 0.8
     },
     {
@@ -314799,7 +314799,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1381",
+      "source_location": "L1383",
       "weight": 0.8
     },
     {
@@ -314810,7 +314810,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1405",
+      "source_location": "L1407",
       "weight": 0.8
     },
     {
@@ -314986,7 +314986,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1125",
+      "source_location": "L1127",
       "weight": 0.8
     },
     {
@@ -314997,7 +314997,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1126",
+      "source_location": "L1128",
       "weight": 0.8
     },
     {
@@ -315008,7 +315008,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1127",
+      "source_location": "L1129",
       "weight": 0.8
     },
     {
@@ -315019,7 +315019,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1132",
+      "source_location": "L1134",
       "weight": 0.8
     },
     {
@@ -315030,7 +315030,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1135",
+      "source_location": "L1137",
       "weight": 0.8
     },
     {
@@ -315041,7 +315041,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1162",
+      "source_location": "L1164",
       "weight": 0.8
     },
     {
@@ -315052,7 +315052,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1166",
+      "source_location": "L1168",
       "weight": 0.8
     },
     {
@@ -315063,7 +315063,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1176",
+      "source_location": "L1178",
       "weight": 0.8
     },
     {
@@ -315085,7 +315085,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1081",
+      "source_location": "L1083",
       "weight": 0.8
     },
     {
@@ -315096,7 +315096,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1096",
+      "source_location": "L1098",
       "weight": 0.8
     },
     {
@@ -315107,7 +315107,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1101",
+      "source_location": "L1103",
       "weight": 0.8
     },
     {
@@ -315239,7 +315239,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1196",
+      "source_location": "L1198",
       "weight": 0.8
     },
     {
@@ -315250,7 +315250,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1226",
+      "source_location": "L1228",
       "weight": 0.8
     },
     {
@@ -315272,7 +315272,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1121",
+      "source_location": "L1123",
       "weight": 0.8
     },
     {
@@ -315327,7 +315327,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1259",
+      "source_location": "L1261",
       "weight": 0.8
     },
     {
@@ -315415,7 +315415,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1274",
+      "source_location": "L1276",
       "weight": 0.8
     },
     {
@@ -315426,7 +315426,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.95,
       "source_file": "apps/api/tests/unit/test_evaluation.py",
-      "source_location": "L1275",
+      "source_location": "L1277",
       "weight": 0.8
     },
     {
