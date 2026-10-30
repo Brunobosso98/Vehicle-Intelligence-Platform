@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import hashlib
+import hmac
 import math
 from collections import defaultdict
 from datetime import timedelta
@@ -10,7 +13,12 @@ import numpy as np
 from scipy.stats import spearmanr  # type: ignore[import-untyped]
 from sqlalchemy import text
 
-from vehicle_platform.anomalies.artifacts import ArtifactStore as AnomalyArtifactStore
+from vehicle_platform.anomalies.artifacts import (
+    MAX_ARTIFACT_BYTES,
+)
+from vehicle_platform.anomalies.artifacts import (
+    ArtifactStore as AnomalyArtifactStore,
+)
 from vehicle_platform.anomalies.detectors import DetectorFitError, fit_detector, score_observation
 from vehicle_platform.anomalies.domain import AnomalyReferenceDataset, ReferenceRow, SourceRole
 from vehicle_platform.anomalies.repository import _reference_row
@@ -162,17 +170,65 @@ async def _find_artifact_root(
     roots: tuple[Path, ...], database: Database, detector_id: str
 ) -> Path:
     async with database.session() as db:
-        relative = await db.scalar(
-            text("SELECT artifact_path FROM anomaly_detector_versions WHERE id=:id"),
-            {"id": detector_id},
+        metadata = (
+            (
+                await db.execute(
+                    text(
+                        "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
+                        "FROM anomaly_detector_versions WHERE id=:id"
+                    ),
+                    {"id": detector_id},
+                )
+            )
+            .mappings()
+            .one_or_none()
         )
-    if not isinstance(relative, str):
-        raise ReferenceSensitivityError("registered detector path is missing")
+    if metadata is None:
+        raise ReferenceSensitivityError("registered detector artifact metadata is missing")
+    relative = metadata["artifact_path"]
+    checksum = metadata["artifact_checksum"]
+    size = metadata["artifact_size_bytes"]
+    if (
+        not isinstance(relative, str)
+        or not isinstance(checksum, str)
+        or len(checksum) != 64
+        or any(character not in "0123456789abcdef" for character in checksum)
+        or not isinstance(size, int)
+        or not 1 <= size <= MAX_ARTIFACT_BYTES
+    ):
+        raise ReferenceSensitivityError("registered detector artifact metadata is invalid")
+    relative_path = Path(relative)
+    if relative_path.is_absolute() or ".." in relative_path.parts or "\\" in relative:
+        raise ReferenceSensitivityError("registered detector artifact path is unsafe")
     for root in roots:
-        path = root / relative
-        if path.is_file() and not path.is_symlink():
+        if await asyncio.to_thread(
+            _matches_registered_artifact, root, relative_path, checksum, size
+        ):
             return root
-    raise ReferenceSensitivityError("registered detector artifact file is unavailable")
+    raise ReferenceSensitivityError(
+        "registered detector artifact file is unavailable or mismatched"
+    )
+
+
+def _matches_registered_artifact(root: Path, relative: Path, checksum: str, size: int) -> bool:
+    if relative.is_absolute() or ".." in relative.parts or not 1 <= size <= MAX_ARTIFACT_BYTES:
+        return False
+    path = root / relative
+    if path.is_symlink() or not path.is_file():
+        return False
+    try:
+        root_resolved = root.resolve(strict=True)
+        path_resolved = path.resolve(strict=True)
+        path_resolved.relative_to(root_resolved)
+        if path_resolved.stat().st_size != size:
+            return False
+        digest = hashlib.sha256()
+        with path_resolved.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return hmac.compare_digest(digest.hexdigest(), checksum)
 
 
 async def _load_reference_dataset(

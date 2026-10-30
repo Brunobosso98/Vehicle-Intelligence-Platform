@@ -17,6 +17,7 @@ from vehicle_platform.evaluation.anomaly import (
     _normalize_cases,
     _scenario_matrix,
 )
+from vehicle_platform.evaluation.anomaly_sensitivity import _matches_registered_artifact
 from vehicle_platform.evaluation.applicability import assess_source_applicability
 from vehicle_platform.evaluation.artifacts import (
     EvaluationArtifactError,
@@ -160,6 +161,32 @@ def test_quality_duplicate_requires_safe_abstention_for_every_detector() -> None
 
 def _sha(label: str) -> str:
     return hashlib.sha256(label.encode()).hexdigest()
+
+
+def test_reference_sensitivity_artifact_root_selection_checks_size_and_checksum(
+    tmp_path: Path,
+) -> None:
+    relative = Path("thermal/robust_mad/detector-a00000001.joblib")
+    stale_root = tmp_path / "stale"
+    current_root = tmp_path / "current"
+    stale_path = stale_root / relative
+    current_path = current_root / relative
+    stale_path.parent.mkdir(parents=True)
+    current_path.parent.mkdir(parents=True)
+    stale_path.write_bytes(b"stale artifact with same relative path")
+    expected = b"registered detector bytes"
+    current_path.write_bytes(expected)
+    checksum = hashlib.sha256(expected).hexdigest()
+
+    assert not _matches_registered_artifact(stale_root, relative, checksum, len(expected))
+    assert _matches_registered_artifact(current_root, relative, checksum, len(expected))
+    assert not _matches_registered_artifact(current_root, relative, checksum, len(expected) + 1)
+    assert not _matches_registered_artifact(
+        current_root, Path("../current") / relative, checksum, len(expected)
+    )
+    current_path.unlink()
+    current_path.symlink_to(stale_path)
+    assert not _matches_registered_artifact(current_root, relative, checksum, len(expected))
 
 
 def test_protocol_is_versioned_strict_and_frozen() -> None:
