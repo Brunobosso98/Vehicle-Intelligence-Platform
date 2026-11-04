@@ -1518,15 +1518,15 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1793818064.9286113,
-    "seen": 1793822170.3337424,
-    "ast_hash": "56e68d3a30a84d5eac2cdd07c5710b5f",
+    "mtime": 1793823793.7594392,
+    "seen": 1793826097.892294,
+    "ast_hash": "e2b7613c0116ba83c7239c245efe7272",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
-    "mtime": 1793803737.996493,
-    "seen": 1793816546.9540873,
-    "ast_hash": "50c39a2ebe6cb80919f9357f4418c8cd",
+    "mtime": 1793823265.4266994,
+    "seen": 1793826097.892296,
+    "ast_hash": "018d85c607925822e972c4099345cc5a",
     "semantic_hash": ""
   },
   "docs/security/threat-model.md": {
@@ -3762,9 +3762,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/predictive-workspace.tsx": {
-    "mtime": 1793807059.9364347,
-    "seen": 1793816546.9532914,
-    "ast_hash": "82906689a773197d125d71a7dad59a74",
+    "mtime": 1793826454.5581808,
+    "seen": 1793826728.574566,
+    "ast_hash": "ceb7b8dd4deeaafa07cbbf3312fb504c",
     "semantic_hash": ""
   },
   "apps/web/src/lib/predictive/demo-fixture.json": {
@@ -3792,9 +3792,9 @@
     "semantic_hash": ""
   },
   "apps/web/tests/e2e/predictive.spec.ts": {
-    "mtime": 1793820694.2655568,
-    "seen": 1793822170.332482,
-    "ast_hash": "e9a3ac4eea5df10142d39fa8eabe1bd0",
+    "mtime": 1793826713.7849271,
+    "seen": 1793826728.5746145,
+    "ast_hash": "aee2b848be6068818cb1b4651677f12c",
     "semantic_hash": ""
   },
   "apps/web/tests/predictive-auth-routes.test.ts": {
@@ -3834,15 +3834,15 @@
     "semantic_hash": ""
   },
   "scripts/phase9h-validation.sh": {
-    "mtime": 1793800968.2889583,
-    "seen": 1793816546.9536507,
-    "ast_hash": "9692fc4e946f9eced68f430f5a21aa86",
+    "mtime": 1793824746.4273314,
+    "seen": 1793826097.8918228,
+    "ast_hash": "7bdc0d2fa7fec11f74ee41c0f6ca7dc0",
     "semantic_hash": ""
   },
   "scripts/phase9h_acceptance.py": {
-    "mtime": 1793815617.8362446,
-    "seen": 1793816546.953653,
-    "ast_hash": "74b8db4477b5c6f7810c2aa2dab46682",
+    "mtime": 1793826691.2543676,
+    "seen": 1793826728.5749712,
+    "ast_hash": "8cf6a3bc011a28f05681219617a8e010",
     "semantic_hash": ""
   },
   ".github/workflows/phase9h-acceptance.yml": {
@@ -3876,15 +3876,15 @@
     "semantic_hash": ""
   },
   "docs/security/phase-9h-security-review.md": {
-    "mtime": 1793818064.9575584,
-    "seen": 1793822170.3337512,
-    "ast_hash": "2ec51c332896f244f243a8c150ed41ba",
+    "mtime": 1793826373.3495817,
+    "seen": 1793826728.5754874,
+    "ast_hash": "981f8cd251b1f506f167be138716b441",
     "semantic_hash": ""
   },
   "docs/validation/phase-9h-acceptance.md": {
-    "mtime": 1793819137.5035977,
-    "seen": 1793822170.3339384,
-    "ast_hash": "daf8076ba926cbd778eced28fe8c4cea",
+    "mtime": 1793826779.5009668,
+    "seen": 1793827387.1754212,
+    "ast_hash": "661cbc9da3549b7dbc55a1e3dbc0def2",
     "semantic_hash": ""
   },
   "docs/validation/phase-9h-security-accessibility.md": {
@@ -3900,45 +3900,21 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-9h-ui-evaluation.md": {
-    "mtime": 1793815670.7247746,
-    "seen": 1793816546.9542089,
-    "ast_hash": "3693e7321683dd3d63c1301b76d4c156",
-    "semantic_hash": ""
-  },
-  "docs/validation/screenshots/phase-9h/synthetic-anomaly-desktop.png": {
-    "mtime": 1793815395.5936127,
-    "seen": 1793816546.95426,
-    "ast_hash": "58c8c153b12796bba8f4c9d6cd3f40e8",
-    "semantic_hash": ""
-  },
-  "docs/validation/screenshots/phase-9h/synthetic-mobile.png": {
-    "mtime": 1793815395.720978,
-    "seen": 1793816546.9542627,
-    "ast_hash": "6bfbe78bbefd56054baf9c13be2fb74c",
-    "semantic_hash": ""
-  },
-  "docs/validation/screenshots/phase-9h/synthetic-overview-desktop.png": {
-    "mtime": 1793815395.5636027,
-    "seen": 1793816546.9542654,
-    "ast_hash": "629006fde1fc72c14cb78ba2199fca2d",
-    "semantic_hash": ""
-  },
-  "docs/validation/screenshots/phase-9h/synthetic-research-desktop.png": {
-    "mtime": 1793815395.6451483,
-    "seen": 1793816546.9542677,
-    "ast_hash": "34567e7a57ccaf3a294377f98344b42a",
-    "semantic_hash": ""
-  },
-  "docs/validation/screenshots/phase-9h/synthetic-tablet.png": {
-    "mtime": 1793815395.686168,
-    "seen": 1793816546.9542696,
-    "ast_hash": "f2489011dcfc1e34c7a115eff7ccd5c0",
+    "mtime": 1793822698.9894967,
+    "seen": 1793826097.8924184,
+    "ast_hash": "43b5e4c6fbfff3ae831d558c7913c0d1",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_phase9h_research_summary.py": {
     "mtime": 1793819375.559704,
     "seen": 1793822170.332234,
     "ast_hash": "94802cf7c8732020e3dfd717d69d25ee",
+    "semantic_hash": ""
+  },
+  "apps/api/tests/unit/test_phase9h_acceptance.py": {
+    "mtime": 1793824952.0325222,
+    "seen": 1793826097.891355,
+    "ast_hash": "d85cfd49c7bc83138ec0aaae3e759470",
     "semantic_hash": ""
   }
 }

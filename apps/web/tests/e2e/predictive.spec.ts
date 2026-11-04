@@ -279,11 +279,14 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     const oraclePath = process.env.PHASE9H_ORACLE;
     expect(oraclePath, "independent database oracle is required").toBeTruthy();
     const oracle = JSON.parse(await readFile(oraclePath!, "utf8")) as {
+      schema_version: string;
       vehicle_id: string;
+      vehicle_ids: string[];
       supervised_tasks: string[];
       anomaly_families: string[];
       records: Array<{
         receipt_id: string;
+        vehicle_id: string;
         result_type: string;
         task: string | null;
         family: string | null;
@@ -306,6 +309,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         recorded_at: string;
       }>;
     };
+    expect(oracle.schema_version).toBe("phase9h-source-oracle-v2");
     const baseURL = process.env.WEB_BASE_URL ?? "http://127.0.0.1:3000";
     const apiSecret = process.env.PREDICTION_OPERATOR_TOKEN ?? "";
     const browserRequests: Array<{
@@ -327,9 +331,10 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       `${baseURL}/api/predictive/vehicles`,
     );
     expect(unauthenticated.status()).toBe(401);
-    expect(JSON.stringify(await unauthenticated.json())).not.toContain(
-      oracle.vehicle_id,
-    );
+    const unauthenticatedBody = JSON.stringify(await unauthenticated.json());
+    for (const vehicleId of oracle.vehicle_ids) {
+      expect(unauthenticatedBody).not.toContain(vehicleId);
+    }
 
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(
@@ -358,41 +363,124 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     await expect(
       page.getByRole("table", { name: /Histórico persistido/i }),
     ).toBeVisible();
-    const historyResponse = (await page.evaluate(async (vehicleId) => {
-      const response = await fetch(
-        `/api/predictive/vehicles/${encodeURIComponent(vehicleId)}/receipts?limit=20&offset=0`,
-        { cache: "no-store" },
-      );
-      return { status: response.status, value: await response.json() };
-    }, oracle.vehicle_id)) as {
-      status: number;
-      value: {
-        items: Array<{
-          prediction: Record<string, unknown>;
-          evidence_available: boolean;
-          evidence_completeness: string | null;
-          evidence_integrity: string | null;
-          session_id: string;
-          pull_id: string;
-          recorded_at: string;
-        }>;
-      };
+    type HistoryItem = {
+      prediction: Record<string, unknown>;
+      evidence_available: boolean;
+      evidence_completeness: string | null;
+      evidence_integrity: string | null;
+      session_id: string;
+      pull_id: string;
+      recorded_at: string;
     };
-    expect(historyResponse.status).toBe(200);
-    const sourceItems = new Map(
-      historyResponse.value.items.map((item) => [
-        String(item.prediction.receipt_id),
-        item,
-      ]),
-    );
+    const vehicleSelector = page.getByLabel("Veículo permitido");
+    const authorizedVehicleResponse = (await page.evaluate(async () => {
+      const response = await fetch("/api/predictive/vehicles", {
+        cache: "no-store",
+      });
+      return { status: response.status, value: await response.json() };
+    })) as {
+      status: number;
+      value: { vehicles: Array<{ vehicleId: string }> };
+    };
+    expect(authorizedVehicleResponse.status).toBe(200);
+    expect(
+      authorizedVehicleResponse.value.vehicles.map((item) => item.vehicleId),
+    ).toEqual(oracle.vehicle_ids);
+    await expect(vehicleSelector).toHaveValue(oracle.vehicle_id);
+    const vehicleOptions = await vehicleSelector
+      .locator("option")
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value),
+      );
+    expect(vehicleOptions).toEqual(oracle.vehicle_ids);
+    await expect
+      .poll(() => page.locator(".receipt-table tbody tr").count())
+      .toBeGreaterThan(0);
+    const historyByVehicle = new Map<string, HistoryItem[]>();
+    let activeVehicleId = await vehicleSelector.inputValue();
+    for (const vehicleId of oracle.vehicle_ids) {
+      if (activeVehicleId !== vehicleId) {
+        const responsePromise = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname ===
+            `/api/predictive/vehicles/${vehicleId}/receipts`,
+        );
+        await vehicleSelector.selectOption(vehicleId);
+        expect((await responsePromise).status()).toBe(200);
+        await expect(vehicleSelector).toHaveValue(vehicleId);
+        activeVehicleId = vehicleId;
+      }
+      const historyResponse = (await page.evaluate(async (scopeId) => {
+        const response = await fetch(
+          `/api/predictive/vehicles/${encodeURIComponent(scopeId)}/receipts?limit=20&offset=0`,
+          { cache: "no-store" },
+        );
+        return { status: response.status, value: await response.json() };
+      }, vehicleId)) as {
+        status: number;
+        value: { items: HistoryItem[] };
+      };
+      expect(historyResponse.status).toBe(200);
+      historyByVehicle.set(vehicleId, historyResponse.value.items);
+      await expect(
+        page.locator(".receipt-table tbody tr").first(),
+      ).toHaveAttribute(
+        "data-receipt-id",
+        String(historyResponse.value.items[0]?.prediction.receipt_id),
+      );
+    }
+    const sourceItems = new Map<
+      string,
+      { vehicleId: string; item: HistoryItem }
+    >();
+    for (const [vehicleId, items] of historyByVehicle) {
+      for (const item of items) {
+        sourceItems.set(String(item.prediction.receipt_id), {
+          vehicleId,
+          item,
+        });
+      }
+    }
+    const switchVehicle = async (vehicleId: string) => {
+      if (activeVehicleId === vehicleId) return;
+      const responsePromise = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname ===
+          `/api/predictive/vehicles/${vehicleId}/receipts`,
+      );
+      await vehicleSelector.selectOption(vehicleId);
+      expect((await responsePromise).status()).toBe(200);
+      await expect(vehicleSelector).toHaveValue(vehicleId);
+      const firstReceiptId = String(
+        historyByVehicle.get(vehicleId)?.[0]?.prediction.receipt_id,
+      );
+      await expect(
+        page.locator(".receipt-table tbody tr").first(),
+      ).toHaveAttribute("data-receipt-id", firstReceiptId);
+      activeVehicleId = vehicleId;
+    };
+    const rowFor = (vehicleId: string, receiptId: string) =>
+      (historyByVehicle.get(vehicleId) ?? []).findIndex(
+        (item) => item.prediction.receipt_id === receiptId,
+      );
+    const selectReceipt = async (record: (typeof oracle.records)[number]) => {
+      await switchVehicle(record.vehicle_id);
+      const rowIndex = rowFor(record.vehicle_id, record.receipt_id);
+      expect(rowIndex).toBeGreaterThanOrEqual(0);
+      const row = page.locator(".receipt-table tbody tr").nth(rowIndex);
+      await expect(row).toHaveAttribute("data-receipt-id", record.receipt_id);
+      await row.locator(".table-select").click();
+    };
     const sourceEvidence = new Map<string, Record<string, unknown>>();
     for (const expected of oracle.records) {
-      const item = sourceItems.get(expected.receipt_id);
+      const source = sourceItems.get(expected.receipt_id);
       expect(
-        item,
+        source,
         `receipt ${expected.receipt_id} must be in the authorized history`,
       ).toBeTruthy();
-      const prediction = item!.prediction;
+      expect(source!.vehicleId).toBe(expected.vehicle_id);
+      const item = source!.item;
+      const prediction = item.prediction;
       expect(prediction.result_type).toBe(expected.result_type);
       expect(prediction.task).toBe(expected.task);
       expect(prediction.family).toBe(expected.family);
@@ -409,12 +497,12 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       expect(prediction.model_version_id).toBe(expected.model_version_id);
       expect(prediction.detector_version_id).toBe(expected.detector_version_id);
       expect(prediction.quality).toEqual(expected.quality);
-      expect(item!.session_id).toBe(expected.session_id);
-      expect(item!.pull_id).toBe(expected.pull_id);
-      expect(item!.recorded_at).toBe(expected.recorded_at);
-      expect(item!.evidence_available).toBe(expected.evidence_id !== null);
-      expect(item!.evidence_completeness).toBe(expected.evidence_completeness);
-      expect(item!.evidence_integrity).toBe(expected.evidence_integrity);
+      expect(item.session_id).toBe(expected.session_id);
+      expect(item.pull_id).toBe(expected.pull_id);
+      expect(item.recorded_at).toBe(expected.recorded_at);
+      expect(item.evidence_available).toBe(expected.evidence_id !== null);
+      expect(item.evidence_completeness).toBe(expected.evidence_completeness);
+      expect(item.evidence_integrity).toBe(expected.evidence_integrity);
       if (expected.evidence_id) {
         const evidenceResponse = (await page.evaluate(
           async ({ vehicleId, receiptId }) => {
@@ -424,7 +512,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
             );
             return { status: response.status, value: await response.json() };
           },
-          { vehicleId: oracle.vehicle_id, receiptId: expected.receipt_id },
+          { vehicleId: expected.vehicle_id, receiptId: expected.receipt_id },
         )) as { status: number; value: Record<string, unknown> };
         expect(evidenceResponse.status).toBe(200);
         expect(evidenceResponse.value.evidence_id).toBe(expected.evidence_id);
@@ -457,6 +545,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         .map((item) => item.family)
         .filter(Boolean).length,
     ).toBe(4);
+    await switchVehicle(oracle.vehicle_id);
     await save(page, "persisted-overview-desktop.png");
     await expect(page.getByText("NOT_ESTABLISHED").first()).toBeVisible();
 
@@ -465,6 +554,21 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       `${baseURL}/api/predictive/vehicles/${foreignVehicle}/receipts`,
     );
     expect(foreign.status()).toBe(404);
+    if (oracle.vehicle_ids.length > 1) {
+      const otherScopeRecord = oracle.records.find(
+        (item) => item.vehicle_id !== oracle.vehicle_id,
+      );
+      expect(otherScopeRecord).toBeTruthy();
+      const crossVehicle = await page.request.get(
+        `${baseURL}/api/predictive/vehicles/${oracle.vehicle_id}/receipts/${otherScopeRecord!.receipt_id}`,
+      );
+      expect(crossVehicle.status()).toBe(404);
+      const crossVehicleBody = JSON.stringify(await crossVehicle.json());
+      expect(crossVehicleBody).not.toContain(otherScopeRecord!.receipt_id);
+      if (otherScopeRecord!.score !== null) {
+        expect(crossVehicleBody).not.toContain(String(otherScopeRecord!.score));
+      }
+    }
     const guessed = await page.request.get(
       `${baseURL}/api/predictive/vehicles/${oracle.vehicle_id}/receipts/00000000-0000-4000-8000-000000000002`,
     );
@@ -487,15 +591,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       (item) => item.status === "READY_SCORE" && item.score !== null,
     );
     expect(firstScored).toBeTruthy();
-    const rowFor = (receiptId: string) =>
-      historyResponse.value.items.findIndex(
-        (item) => item.prediction.receipt_id === receiptId,
-      );
-    await page
-      .locator(".receipt-table tbody tr")
-      .nth(rowFor(firstScored!.receipt_id))
-      .locator(".table-select")
-      .click();
+    await selectReceipt(firstScored!);
     await expect(
       page.getByText(String(firstScored!.score), { exact: true }).first(),
     ).toBeVisible();
@@ -511,11 +607,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       (item) => item.evidence_completeness === "PARTIAL",
     );
     if (partial) {
-      await page
-        .locator(".receipt-table tbody tr")
-        .nth(rowFor(partial.receipt_id))
-        .locator(".table-select")
-        .click();
+      await selectReceipt(partial);
       await expect(page.getByText("PARTIAL").first()).toBeVisible();
       await page.locator("#evidence").scrollIntoViewIfNeeded();
       await save(page, "persisted-partial-evidence.png", false);
@@ -524,11 +616,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       item.status.startsWith("ABSTAINED"),
     );
     if (abstained) {
-      await page
-        .locator(".receipt-table tbody tr")
-        .nth(rowFor(abstained.receipt_id))
-        .locator(".table-select")
-        .click();
+      await selectReceipt(abstained);
       await expect(page.getByText("No score was produced.")).toBeVisible();
       await page.locator("#evidence").scrollIntoViewIfNeeded();
       await save(page, "persisted-abstained.png", false);
@@ -546,27 +634,17 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       sourceEvidence.has(item.receipt_id),
     );
     expect(mismatch).toBeTruthy();
-    const selectedIndex = await page
-      .locator(".receipt-table tbody tr.is-selected")
-      .evaluate((row) =>
-        Array.from(row.parentElement?.children ?? []).indexOf(row),
-      );
-    if (
-      historyResponse.value.items[selectedIndex]?.prediction.receipt_id ===
-      mismatch!.receipt_id
-    ) {
-      const alternate = oracle.records.find(
-        (item) => item.receipt_id !== mismatch!.receipt_id,
-      );
-      expect(alternate).toBeTruthy();
-      await page
-        .locator(".receipt-table tbody tr")
-        .nth(rowFor(alternate!.receipt_id))
-        .locator(".table-select")
-        .click();
-    }
+    const alternate =
+      oracle.records.find(
+        (item) =>
+          item.vehicle_id === mismatch!.vehicle_id &&
+          item.receipt_id !== mismatch!.receipt_id,
+      ) ??
+      oracle.records.find((item) => item.receipt_id !== mismatch!.receipt_id);
+    expect(alternate).toBeTruthy();
+    await selectReceipt(alternate!);
     await page.route(
-      `**/api/predictive/vehicles/${oracle.vehicle_id}/receipts/${mismatch!.receipt_id}/evidence`,
+      `**/api/predictive/vehicles/${mismatch!.vehicle_id}/receipts/${mismatch!.receipt_id}/evidence`,
       async (route) => {
         const source = sourceEvidence.get(mismatch!.receipt_id)!;
         await route.fulfill({
@@ -579,11 +657,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         });
       },
     );
-    await page
-      .locator(".receipt-table tbody tr")
-      .nth(rowFor(mismatch!.receipt_id))
-      .locator(".table-select")
-      .click();
+    await selectReceipt(mismatch!);
     await expect(
       page.getByText(
         "Projeção não confere com o escopo da receipt. Detalhes foram ocultados.",

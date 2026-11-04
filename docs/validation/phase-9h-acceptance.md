@@ -1,8 +1,8 @@
 # Phase 9H independent acceptance
 
-**Status: NOT VERIFIED.** Implementation and the independent acceptance harness are present. This
-record must be tied to the final branch SHA and completed by exact-head GitHub Actions before Phase
-9H can be declared verified.
+**Exact-head status:** See [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57).
+This page records the independent acceptance design and local evidence; GitHub checks and their
+artifacts are the source of truth for the current branch SHA.
 
 ## Scope and oracle
 
@@ -12,6 +12,17 @@ only to prepare controlled fixtures, and builds a direct, read-only PostgreSQL o
 receipt columns and response bodies. It requires all three 9B supervised tasks and all four 9C
 anomaly families. The browser then uses the real Next.js BFF and actual API routes to read original
 9D receipts, 9E projections and existing 9F AgentRun context.
+
+The 9E evaluator can place its accepted synthetic receipts on more than one vehicle. The oracle
+retains each receipt's source vehicle and emits a sorted, unique allowlist of only those fixture
+vehicle IDs (bounded by the BFF/API limit of 20). The browser selects each allowed scope, checks its
+original values and evidence, and verifies that requesting a receipt through another allowed
+vehicle scope returns a nondisclosing 404.
+
+The first exact-head attempt at `5ffe99d` verified the 9G snapshot and produced 11 9E receipts, then
+stopped in oracle preparation because the old checker incorrectly required a single vehicle. The
+corrected checker now preserves per-receipt vehicle scope; its focused tests cover multiple scopes,
+deduplication, empty input and the 20-ID bound.
 
 The oracle compares exact scores, frozen thresholds, decisions, model/detector versions, horizons,
 source roles, quality, requested/effective cutoffs, receipt IDs, evidence IDs, completeness and
@@ -38,43 +49,36 @@ evaluation mutation is permitted during browsing.
 
 ## Evidence
 
-| Gate                                                         | Local result                                                               | Exact-head result |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------- | ----------------- |
-| API unit, typing, lint, branch coverage                      | **PASS** — 1,413 tests; 95.89% line, 90.11% branch coverage                | Pending           |
-| React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                   | Pending           |
-| Generated OpenAPI contract check                             | **PASS**                                                                   | Pending           |
-| Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                          | Pending           |
-| Synthetic Playwright, screenshots, axe and responsive checks | **PASS** — 1 Chromium E2E; axe 0, console errors 0, overflow 0 px          | Pending           |
-| 500-point chart benchmark                                    | **PASS** — p50 507.52 ms, p95 609.85 ms in local jsdom                     | Pending           |
-| Actual API + disposable DB + BFF + persisted-value parity    | Harness stopped at missing Docker CLI; **CI REQUIRED**                     | Pending           |
-| No-write database digest before/after browsing               | Not executed without disposable PostgreSQL: **CI REQUIRED**                | Pending           |
-| Locked dependency and secret scans                           | **PASS** — pip-audit clean, pnpm audit clean, gitleaks found no leaks      | Pending           |
-| Trivy filesystem scan                                        | **INCOMPLETE** — Helm config scan hit context deadline; no clean result    | Pending           |
-| Container image scans and expired exception policy           | See [security review](../security/phase-9h-security-review.md); unresolved | Pending           |
-| Canonical full-stack/regression workflow                     | **CI REQUIRED** for Docker-backed gates                                    | Pending           |
-| Required GitHub Actions on exact final SHA                   | Final SHA pending                                                          | Pending           |
-| PR to `main`, open and unmerged                              | Pending                                                                    | Pending           |
+| Gate                                                         | Local result                                                                                                                                    |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit, typing, lint, branch coverage                      | **PASS** — 1,416 tests; 95.89% line, 90.11% branch coverage                                                                                     |
+| React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                                                                                        |
+| Generated OpenAPI contract check                             | **PASS**                                                                                                                                        |
+| Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                                                                                               |
+| Synthetic Playwright, screenshots, axe and responsive checks | **PASS** — 1 Chromium E2E; axe 0, console errors 0, overflow 0 px                                                                               |
+| 500-point chart benchmark                                    | **PASS** — p50 507.52 ms, p95 609.85 ms in local jsdom                                                                                          |
+| Actual API + disposable DB + BFF + persisted-value parity    | Docker CLI exists, but the daemon is unavailable; **CI REQUIRED**                                                                               |
+| No-write database digest before/after browsing               | Not executed without disposable PostgreSQL: **CI REQUIRED**                                                                                     |
+| Locked dependency and secret scans                           | **PASS** — pip-audit clean, pnpm audit clean, gitleaks found no leaks                                                                           |
+| Trivy filesystem scan                                        | **PASS** — no High/Critical findings on an ext4 copy of tracked and nonignored source; direct `/mnt/c` scan stopped after 5:42 without a report |
+| Container image scans and exception policy                   | **PASS** on prior head `5ffe99d` in Security run `41906643193`: 93 accepted High, 0 Critical, 0 blocked; final-head result is on PR #57         |
+| Canonical full-stack/regression workflow                     | **CI REQUIRED** for Docker-backed gates                                                                                                         |
 
 The runner writes source and browser evidence under ignored `.validation/phase9h/`, including the
 direct oracle, `acceptance.json`, independent-check log, per-mode Playwright metrics, screenshots,
 traces and service logs. Generated screenshots are kept out of Git; their reproducible capture IDs
 and commands are documented in [the UI evaluation](phase-9h-ui-evaluation.md). CI must upload this
 directory from the same PR-head SHA used by the independent check. Local acceptance is not a pass
-when Docker is unavailable.
+when Docker is unavailable. The local `make verify-cloud` run completed its code, test, build,
+contract, documentation, and Phase 0–5 checks, then stopped at the slow mounted-path Trivy scan;
+the ext4 source-copy scan above completed successfully.
 
 ## Required final checks
 
-- [ ] Remote branch SHA equals the final implementation SHA.
-- [ ] Three 9B tasks and four 9C families match direct original rows and response payloads.
-- [ ] Complete, partial, abstained and unverifiable evidence remain distinct.
-- [ ] UI browsing changes none of the digested 9A–9G source, prediction, evidence, agent or
-      evaluation tables.
-- [ ] Login, expiry, logout, cross-vehicle, guessed IDs, CSRF, SSRF/configured-origin, generic-proxy
-      bypass, source-role mismatch, stale async state and secret disclosure are checked.
-- [ ] Synthetic demo is isolated and never used to hide unavailable persisted data.
-- [ ] Quality, Integration E2E, canonical full-stack, Security, Dependency Review, CodeQL Python,
-      CodeQL JavaScript/TypeScript and Phase 9H independent UI acceptance pass on this exact SHA.
-- [ ] PR targets `main`, remains open and is not merged.
+The latest [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57)
+must show the remote branch SHA, 9B/9C source parity, distinct evidence states, a no-write digest,
+all access-control and secret-disclosure tests, synthetic demo isolation, every required quality,
+security and canonical full-stack job, and an open unmerged PR targeting `main`.
 
 ## Scientific limitations
 

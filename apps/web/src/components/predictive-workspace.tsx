@@ -1523,6 +1523,7 @@ export function PredictiveWorkspace({
                           return (
                             <tr
                               key={p.receipt_id}
+                              data-receipt-id={p.receipt_id}
                               className={selected ? "is-selected" : undefined}
                               aria-selected={selected}
                             >

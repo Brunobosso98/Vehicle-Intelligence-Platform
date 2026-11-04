@@ -6,10 +6,12 @@ import argparse
 import asyncio
 import hashlib
 import json
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.engine import RowMapping
 from vehicle_platform.core.config import Settings
 from vehicle_platform.infrastructure.database import Database
 
@@ -117,6 +119,17 @@ def _report_receipts(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return expected
 
 
+def _vehicle_scope_ids(rows: Iterable[RowMapping]) -> list[str]:
+    vehicle_ids = sorted({str(row["vehicle_id"]) for row in rows})
+    if not vehicle_ids:
+        raise RuntimeError("The source oracle contains no vehicle scopes.")
+    if len(vehicle_ids) > 20:
+        raise RuntimeError(
+            "The source oracle exceeds the 20-vehicle controlled operator allowlist."
+        )
+    return vehicle_ids
+
+
 async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
     if not REPORT_9E.exists():
         raise RuntimeError("Run Phase 9E acceptance before Phase 9H.")
@@ -157,11 +170,7 @@ async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
         raise RuntimeError(
             f"Expected {len(expected)} original receipts; found {len(rows)}."
         )
-    vehicles = {str(row["vehicle_id"]) for row in rows}
-    if len(vehicles) != 1:
-        raise RuntimeError(
-            "The independent synthetic acceptance spans multiple vehicle scopes."
-        )
+    vehicle_ids = _vehicle_scope_ids(rows)
     for row in rows:
         original = dict(row["response_body"])
         key = str(row["id"])
@@ -256,11 +265,20 @@ async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
         raise RuntimeError(
             "The source oracle must contain all three 9B tasks and four 9C families."
         )
+    records_per_vehicle = {
+        vehicle_id: sum(record["vehicle_id"] == vehicle_id for record in records)
+        for vehicle_id in vehicle_ids
+    }
+    default_vehicle_id = min(
+        vehicle_ids,
+        key=lambda vehicle_id: (-records_per_vehicle[vehicle_id], vehicle_id),
+    )
     baseline = await _digests(database)
     payload = {
-        "schema_version": "phase9h-source-oracle-v1",
+        "schema_version": "phase9h-source-oracle-v2",
         "git_sha": git_sha,
-        "vehicle_id": next(iter(vehicles)),
+        "vehicle_id": default_vehicle_id,
+        "vehicle_ids": vehicle_ids,
         "source_role": "synthetic",
         "real_world_predictive_validity": "NOT_ESTABLISHED",
         "records": records,
@@ -279,7 +297,7 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
     oracle = json.loads(ORACLE.read_text(encoding="utf-8"))
     checksum = oracle.pop("oracle_checksum", None)
     if (
-        oracle.get("schema_version") != "phase9h-source-oracle-v1"
+        oracle.get("schema_version") != "phase9h-source-oracle-v2"
         or oracle.get("git_sha") != git_sha
     ):
         raise RuntimeError(
@@ -330,6 +348,7 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
         "status": "PASS",
         "real_world_predictive_validity": "NOT_ESTABLISHED",
         "authorized_vehicle_id": oracle["vehicle_id"],
+        "authorized_vehicle_ids": oracle.get("vehicle_ids", [oracle["vehicle_id"]]),
         "source_records": len(oracle["records"]),
         "supervised_tasks": oracle["supervised_tasks"],
         "anomaly_families": oracle["anomaly_families"],

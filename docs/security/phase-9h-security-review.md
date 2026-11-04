@@ -1,10 +1,13 @@
 # Phase 9H security review — 2026-11-04
 
-**Current delivery status: NOT VERIFIED.** The canonical Docker/full-stack run on
+**Current Security gate status:** See [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57)
+for the current branch SHA. The canonical Docker/full-stack run on
 `0ed6553243346e7bf37854d7722ea14570ea6eba` completed the Phase 0–9G regressions, but final
 enforcement failed for generic E2E, container security and the preflight 9H research-summary
-comparison. The security failure was caused by expired risk records. The updated, evidence-based
-records below have not yet been exercised by the mandatory Security workflow on the final SHA.
+comparison. The refreshed records then passed the mandatory Security workflow on
+`5ffe99d60d8e809450fd6177e8449c3780c1a442` (run `41906643193`): 93 accepted High package
+occurrences, zero Criticals and zero blocked findings; Dependency Review and both CodeQL jobs also
+passed. That is evidence for `5ffe99d`; the current release result is reported by the PR checks.
 
 ## Predictive operator boundary
 
@@ -21,10 +24,12 @@ This is not customer identity, tenant isolation or vehicle-owner authorization. 
 unsuitable for public ingress or shared users. Deployment and network controls must keep it local
 or in a controlled test environment.
 
-## Exact canonical image scan
+## Security workflow image scan on `5ffe99d`
 
-The canonical run `41890926830` scanned the images built from the PR code using Trivy 0.76.1 and
-the refreshed 2026-11-04 database. Machine-readable reports are in the run artifact under
+Security run `41906643193` scanned the images built from the PR code using Trivy 0.76.1 and
+the refreshed 2026-11-04 database. Its job log records the policy totals; the Security workflow did
+not publish downloadable machine-readable reports. The canonical run `41890926830` separately
+retained detailed reports under
 `security/images/`. Selected runtime totals were 93 High package occurrences and zero Criticals:
 
 | Image                                 | Scan result         | Findings                                                                       |
@@ -93,11 +98,10 @@ unlisted SQLite finding received a thirteenth exact image/CVE/package record aft
 No Critical finding is excepted, no scanner scope was removed, and no severity was downgraded.
 
 The old canonical run correctly failed because the policy rejected the expired records before it
-could match findings. As a local preflight, the current exception file was evaluated against all
-eight selected-image Trivy reports retained by that run: every report returned **PASS**, with 0
-Criticals and 0 blocked High findings. This confirms the report-to-exception matching but does not
-replace a fresh `make security` run on the final SHA. The Security workflow and canonical
-full-stack gate must pass after this review is pushed.
+could match findings. The refreshed exception file passed policy evaluation for the selected images
+in Security run `41906643193`, with 0 Criticals and 0 blocked High findings. This does not replace a
+fresh scan on the final SHA. Security run `41906643193` passed on `5ffe99d`; Security and canonical
+full-stack checks must pass again after the current fix is pushed.
 
 ## Dependency, filesystem and secrets scans
 
@@ -114,8 +118,9 @@ The canonical report for `0ed6553` records:
 - `E2E`: failed because a generic production-container browser test expected a test-only demo
   button, and it ran a live-oracle test without an oracle. Both cases are now gated against the
   actual server session response and the disposable-database harness.
-- `Container security`: failed because records expired on November 1 and 2, 2026. Updated records
-  and exact-report policy preflight are present locally; fresh CI scanning is still required.
+- `Container security`: failed because records expired on November 1 and 2, 2026. Refreshed records
+  passed the Security workflow on `5ffe99d` (run `41906643193`); fresh final-SHA scanning is still
+  required.
 - `Phase 9H`: stopped before disposable database/browser acceptance because the 9G bootstrap
   confidence-interval endpoint changed across fresh synthetic cohorts. A narrow 0.020 interval
   endpoint tolerance now validates finite, ordered, bounded intervals; all point metrics,

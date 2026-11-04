@@ -49,6 +49,7 @@ apps/api/.venv/bin/python scripts/evaluate_prediction_evidence.py \
 apps/api/.venv/bin/python scripts/phase9h_acceptance.py prepare --expected-sha "$expected_sha" \
   | tee "$evidence/oracle-preparation.log"
 vehicle_id="$(apps/api/.venv/bin/python -c 'import json; print(json.load(open(".validation/phase9h/source-oracle.json"))["vehicle_id"])')"
+vehicle_scope="$(apps/api/.venv/bin/python -c 'import json; print(",".join(json.load(open(".validation/phase9h/source-oracle.json"))["vehicle_ids"]))')"
 
 api_port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')"
 web_port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')"
@@ -57,7 +58,7 @@ ui_secret="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
 session_secret="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
 export PREDICTION_SERVICE_ENABLED=true
 export PREDICTION_OPERATOR_TOKEN="$api_secret"
-export PREDICTION_OPERATOR_VEHICLE_IDS="$vehicle_id"
+export PREDICTION_OPERATOR_VEHICLE_IDS="$vehicle_scope"
 export PREDICTION_TRUSTED_NETWORKS="127.0.0.1/32,::1/128"
 export PREDICTION_REQUESTS_PER_MINUTE=120
 export API_BASE_URL="http://127.0.0.1:${api_port}"
@@ -65,7 +66,7 @@ export PREDICTIVE_UI_ENABLED=true
 export PREDICTIVE_UI_ORIGIN="http://127.0.0.1:${web_port}"
 export PREDICTIVE_UI_OPERATOR_SECRET="$ui_secret"
 export PREDICTIVE_UI_SESSION_SECRET="$session_secret"
-export PREDICTIVE_UI_ALLOWED_VEHICLE_IDS="$vehicle_id"
+export PREDICTIVE_UI_ALLOWED_VEHICLE_IDS="$vehicle_scope"
 export PREDICTIVE_UI_API_ALLOWED_HOSTS=127.0.0.1
 export PREDICTIVE_UI_DEMO_ENABLED=true
 export PREDICTIVE_UI_COOKIE_SECURE=false
