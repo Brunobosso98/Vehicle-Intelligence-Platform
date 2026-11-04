@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from ipaddress import ip_network
 from typing import Literal
 from urllib.parse import parse_qs, urlparse
+from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     prediction_request_timeout_seconds: float = Field(default=8, gt=0, le=30)
     prediction_body_timeout_seconds: float = Field(default=2, gt=0, le=10)
     prediction_max_future_cutoff_seconds: int = Field(default=5, ge=0, le=60)
+    prediction_operator_vehicle_ids: str = Field(default="", max_length=800)
 
     @field_validator("git_sha", "build_timestamp", mode="before")
     @classmethod
@@ -90,6 +92,22 @@ class Settings(BaseSettings):
                 raise ValueError("Prediction serving cannot trust a public network")
             normalized.append(str(network))
         return ",".join(dict.fromkeys(normalized))
+
+    @field_validator("prediction_operator_vehicle_ids")
+    @classmethod
+    def bounded_operator_vehicle_scope(cls, value: str) -> str:
+        items = [item.strip() for item in value.split(",") if item.strip()]
+        if len(items) > 20:
+            raise ValueError("Prediction operator vehicle scope must contain at most 20 IDs")
+        try:
+            identifiers = [str(UUID(item)) for item in items]
+        except ValueError as error:
+            raise ValueError(
+                "Prediction operator vehicle scope contains an invalid UUID"
+            ) from error
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("Prediction operator vehicle scope must not contain duplicates")
+        return ",".join(identifiers)
 
     @model_validator(mode="after")
     def production(self) -> "Settings":

@@ -3407,6 +3407,74 @@
         "title": "ObjectiveResponse",
         "type": "object"
       },
+      "PredictionAgentRunContext": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/PredictionAgentRunLink" },
+            "maxItems": 20,
+            "title": "Items",
+            "type": "array"
+          },
+          "receipt_id": {
+            "format": "uuid",
+            "title": "Receipt Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "phase9h-agent-context-v1",
+            "default": "phase9h-agent-context-v1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": ["receipt_id", "items"],
+        "title": "PredictionAgentRunContext",
+        "type": "object"
+      },
+      "PredictionAgentRunLink": {
+        "additionalProperties": false,
+        "properties": {
+          "completeness": {
+            "enum": ["COMPLETE", "PARTIAL", "ABSTAINED"],
+            "title": "Completeness",
+            "type": "string"
+          },
+          "horizon": {
+            "enum": ["NEXT_PULL", "AFTER_PULL_OFFLINE"],
+            "title": "Horizon",
+            "type": "string"
+          },
+          "integrity": {
+            "enum": ["VERIFIED", "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"],
+            "title": "Integrity",
+            "type": "string"
+          },
+          "run_id": { "format": "uuid", "title": "Run Id", "type": "string" },
+          "source_role": { "$ref": "#/components/schemas/SourceRole" },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["running", "completed", "failed", "cancelled"],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "started_at",
+          "status",
+          "source_role",
+          "horizon",
+          "completeness",
+          "integrity"
+        ],
+        "title": "PredictionAgentRunLink",
+        "type": "object"
+      },
       "PredictionBindingResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3793,6 +3861,133 @@
           "coverage"
         ],
         "title": "PredictionQuality",
+        "type": "object"
+      },
+      "PredictionReceiptHistoryItem": {
+        "additionalProperties": false,
+        "description": "A vehicle-scoped, read-only projection over one persisted 9D receipt.",
+        "properties": {
+          "captured_binding_state": {
+            "$ref": "#/components/schemas/ServingEventType"
+          },
+          "configuration_id": {
+            "anyOf": [
+              { "format": "uuid", "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Configuration Id"
+          },
+          "current_binding_state": {
+            "$ref": "#/components/schemas/ServingEventType"
+          },
+          "evidence_available": {
+            "title": "Evidence Available",
+            "type": "boolean"
+          },
+          "evidence_completeness": {
+            "anyOf": [
+              {
+                "enum": ["COMPLETE", "PARTIAL", "ABSTAINED"],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Evidence Completeness"
+          },
+          "evidence_integrity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "VERIFIED",
+                  "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+                  "FAILED_SOURCE_MISMATCH",
+                  "NOT_VERIFIABLE",
+                  "UNSUPPORTED_SCHEMA"
+                ],
+                "type": "string"
+              },
+              { "type": "null" }
+            ],
+            "title": "Evidence Integrity"
+          },
+          "prediction": { "$ref": "#/components/schemas/PredictionResponse" },
+          "pull_id": { "format": "uuid", "title": "Pull Id", "type": "string" },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_type": {
+            "anyOf": [
+              { "maxLength": 24, "type": "string" },
+              { "type": "null" }
+            ],
+            "title": "Source Type"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prediction",
+          "recorded_at",
+          "vehicle_id",
+          "session_id",
+          "pull_id",
+          "configuration_id",
+          "evidence_available",
+          "captured_binding_state",
+          "current_binding_state"
+        ],
+        "title": "PredictionReceiptHistoryItem",
+        "type": "object"
+      },
+      "PredictionReceiptHistoryPage": {
+        "additionalProperties": false,
+        "properties": {
+          "has_more": { "title": "Has More", "type": "boolean" },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionReceiptHistoryItem"
+            },
+            "maxItems": 20,
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "maximum": 500,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "phase9h-receipt-history-v1",
+            "default": "phase9h-receipt-history-v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "total": {
+            "maximum": 500,
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": ["items", "total", "limit", "offset", "has_more"],
+        "title": "PredictionReceiptHistoryPage",
         "type": "object"
       },
       "PredictionResponse": {
@@ -4663,6 +4858,17 @@
         "required": ["signal", "priority", "target_hz", "estimated_hz"],
         "title": "SamplingPlanResponse",
         "type": "object"
+      },
+      "ServingEventType": {
+        "enum": [
+          "APPROVED",
+          "ACTIVATED",
+          "REVOKED",
+          "SUPERSEDED",
+          "ROLLED_BACK"
+        ],
+        "title": "ServingEventType",
+        "type": "string"
       },
       "SessionCreate": {
         "properties": {
@@ -8316,6 +8522,596 @@
         },
         "security": [{ "PredictionOperatorBearer": [] }],
         "summary": "Materialize Evidence",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/vehicles/{vehicle_id}/runs": {
+      "get": {
+        "operationId": "prediction_service_vehicle_receipt_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 500,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "receipt_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Receipt Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "result_kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "enum": ["next_pull", "anomaly"], "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Result Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/MLTask" },
+                { "type": "null" }
+              ],
+              "title": "Task"
+            }
+          },
+          {
+            "in": "query",
+            "name": "family",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["thermal", "boost_air", "performance", "fuel"],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Family"
+            }
+          },
+          {
+            "in": "query",
+            "name": "horizon",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["NEXT_PULL", "AFTER_PULL_OFFLINE"],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Horizon"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_role",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/SourceRole" },
+                { "type": "null" }
+              ],
+              "title": "Source Role"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "$ref": "#/components/schemas/PredictionStatus" },
+                { "type": "null" }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Session Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pull_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Pull Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "configuration_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "uuid", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Configuration Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recorded_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Recorded From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "recorded_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "format": "date-time", "type": "string" },
+                { "type": "null" }
+              ],
+              "title": "Recorded To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_completeness",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": ["COMPLETE", "PARTIAL", "ABSTAINED"],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Evidence Completeness"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_integrity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "VERIFIED",
+                    "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+                    "FAILED_SOURCE_MISMATCH",
+                    "NOT_VERIFIABLE",
+                    "UNSUPPORTED_SCHEMA"
+                  ],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ],
+              "title": "Evidence Integrity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionReceiptHistoryPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Vehicle Receipt History",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}": {
+      "get": {
+        "operationId": "prediction_service_vehicle_receipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PredictionResponse" }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Vehicle Receipt",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}/agent-context": {
+      "get": {
+        "operationId": "prediction_service_receipt_agent_context",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionAgentRunContext"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Receipt Agent Context",
+        "tags": ["prediction-service"]
+      }
+    },
+    "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}/evidence": {
+      "get": {
+        "operationId": "prediction_service_vehicle_receipt_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "receipt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Receipt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionEvidenceProjection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [{ "PredictionOperatorBearer": [] }],
+        "summary": "Vehicle Receipt Evidence",
         "tags": ["prediction-service"]
       }
     },

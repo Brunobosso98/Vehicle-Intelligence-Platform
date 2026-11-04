@@ -295,3 +295,27 @@ after research persistence. These controls establish local consistency and bound
 cryptographic signature against a privileged database operator. Synthetic calibration is never
 represented as mechanical-failure probability; real-world validity remains not established without
 verified outcome labels.
+
+## Phase 9H predictive intelligence UI
+
+The operator workspace inherits a narrow local/test boundary rather than claiming user or vehicle
+owner authorization. It is disabled by default and always disabled in production. Browser access
+requires an independent operator secret, a 30-minute HttpOnly/SameSite-Strict session bound to
+server-side session state, CSRF and exact-origin checks, plus a server-side vehicle allowlist that
+must also match the API grant. The 9D bearer remains server-only.
+
+The BFF accepts fixed GET route shapes, a fixed allowlisted API host, bounded identifiers and query
+fields, an eight-second timeout, one-megabyte response cap, rate/concurrency limits, manual redirect
+rejection and `no-store` responses. The generic domain proxy denies normalized predictive aliases.
+Database queries are vehicle-scoped and read-only. Source/evidence scope disagreement fails closed.
+The UI never triggers inference, training, evidence materialization/verification, agent execution,
+evaluation or calibration promotion. The checksummed synthetic 9G summary and explicit demo fixture
+remain separate from stored predictions.
+
+Tests cover authentication/session lifecycle, cross-vehicle and guessed IDs, CSRF, upstream
+host/path and response limits, proxy bypass, source-role and evidence mismatches, secret disclosure,
+stale vehicle responses and read-only table digests. The independent digest and persisted browser
+journey require the disposable database; canonical full-stack CI must pass on the final SHA. See the
+[Phase 9H architecture](../architecture/phase-9h-predictive-intelligence-ui.md),
+[validation review](../validation/phase-9h-security-accessibility.md) and
+[security review](phase-9h-security-review.md).

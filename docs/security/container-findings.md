@@ -1,6 +1,12 @@
 # Container scan findings and risk review
 
-## Current review — 2026-10-30
+## Historical review — 2026-10-30 (superseded)
+
+The current review is [Phase 9H security review — 2026-11-04](phase-9h-security-review.md). This
+section preserves the previous exact-image scan and its risk analysis for reference; its image
+findings and exception dates are not current acceptance evidence. The November review refreshes
+Trivy, scans current observability candidates, replaces the affected Collector distribution, and
+records the still-expired Tempo/Grafana/API/Web exceptions without extending them.
 
 Fresh Trivy 0.75.0 scans used the refreshed vulnerability database and the exact images selected in
 `compose.yaml`. All selected images have zero Critical findings. API and Web retain their analyzed

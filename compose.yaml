@@ -95,6 +95,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENVIRONMENT: development
+      PREDICTION_SERVICE_ENABLED: ${PREDICTION_SERVICE_ENABLED:-false}
+      PREDICTION_OPERATOR_TOKEN: ${PREDICTION_OPERATOR_TOKEN:-}
+      PREDICTION_OPERATOR_VEHICLE_IDS: ${PREDICTION_OPERATOR_VEHICLE_IDS:-}
+      PREDICTION_TRUSTED_NETWORKS: ${PREDICTION_TRUSTED_NETWORKS:-127.0.0.0/8,172.30.91.3/32,::1/128}
       APP_VERSION: ${APP_VERSION:-0.1.0}
       NO_PROXY: localhost,127.0.0.1,api,db,otel-collector,tempo
       KAFKA_BOOTSTRAP_SERVERS: broker:9092
@@ -105,6 +109,10 @@ services:
       VIP_AGENT_MCP_URL: http://mcp:8001/mcp
       VIP_AGENT_MCP_TOKEN: ${VIP_MCP_TOKEN:-}
       VIP_AGENT_INVESTIGATION_TOKEN: ${VIP_AGENT_INVESTIGATION_TOKEN:-}
+    networks:
+      default: {}
+      predictive_bff:
+        ipv4_address: 172.30.91.2
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -189,6 +197,21 @@ services:
         BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-1970-01-01T00:00:00Z}
     environment:
       API_BASE_URL: http://api:8000
+      ENVIRONMENT: development
+      PREDICTION_SERVICE_ENABLED: ${PREDICTION_SERVICE_ENABLED:-false}
+      PREDICTION_OPERATOR_TOKEN: ${PREDICTION_OPERATOR_TOKEN:-}
+      PREDICTIVE_UI_ENABLED: ${PREDICTIVE_UI_ENABLED:-false}
+      PREDICTIVE_UI_ORIGIN: ${PREDICTIVE_UI_ORIGIN:-http://localhost:3000}
+      PREDICTIVE_UI_OPERATOR_SECRET: ${PREDICTIVE_UI_OPERATOR_SECRET:-}
+      PREDICTIVE_UI_SESSION_SECRET: ${PREDICTIVE_UI_SESSION_SECRET:-}
+      PREDICTIVE_UI_ALLOWED_VEHICLE_IDS: ${PREDICTIVE_UI_ALLOWED_VEHICLE_IDS:-}
+      PREDICTIVE_UI_API_ALLOWED_HOSTS: api
+      PREDICTIVE_UI_DEMO_ENABLED: ${PREDICTIVE_UI_DEMO_ENABLED:-false}
+      PREDICTIVE_UI_COOKIE_SECURE: ${PREDICTIVE_UI_COOKIE_SECURE:-false}
+    networks:
+      default: {}
+      predictive_bff:
+        ipv4_address: 172.30.91.3
     ports: ["127.0.0.1:3000:3000"]
     depends_on:
       api: { condition: service_healthy }
@@ -197,9 +220,10 @@ services:
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
     restart: unless-stopped
+
   otel-collector:
     profiles: ["observability"]
-    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.164.0@sha256:340c9ca6a36617084c6661bdc4f0fe92b7cda5a805d61673ec8db375fddc522b
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       - type: bind
@@ -267,6 +291,12 @@ services:
         bind:
           create_host_path: false
     ports: ["127.0.0.1:3001:3000"]
+networks:
+  predictive_bff:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.91.0/24
 volumes:
   postgres-data:
   prometheus-data:

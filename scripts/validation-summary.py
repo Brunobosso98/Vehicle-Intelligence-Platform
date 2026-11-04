@@ -24,6 +24,7 @@ labels = {
     "Phase 9E prediction evidence": "PHASE9E",
     "Phase 9F agent prediction integration": "PHASE9F",
     "Phase 9G evaluation and calibration": "PHASE9G",
+    "Phase 9H predictive intelligence UI": "PHASE9H",
 }
 outcome_status = {
     "success": "PASS",

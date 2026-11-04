@@ -442,6 +442,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/prediction-service/vehicles/{vehicle_id}/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Vehicle Receipt History */
+    get: operations["prediction_service_vehicle_receipt_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Vehicle Receipt */
+    get: operations["prediction_service_vehicle_receipt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}/agent-context": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Receipt Agent Context */
+    get: operations["prediction_service_receipt_agent_context"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/prediction-service/vehicles/{vehicle_id}/runs/{receipt_id}/evidence": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Vehicle Receipt Evidence */
+    get: operations["prediction_service_vehicle_receipt_evidence"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/prediction-service/versions": {
     parameters: {
       query?: never;
@@ -3151,6 +3219,56 @@ export interface components {
       /** Recipe Key */
       recipe_key: string;
     };
+    /** PredictionAgentRunContext */
+    PredictionAgentRunContext: {
+      /** Items */
+      items: components["schemas"]["PredictionAgentRunLink"][];
+      /**
+       * Receipt Id
+       * Format: uuid
+       */
+      receipt_id: string;
+      /**
+       * Schema Version
+       * @default phase9h-agent-context-v1
+       * @constant
+       */
+      schema_version: "phase9h-agent-context-v1";
+    };
+    /** PredictionAgentRunLink */
+    PredictionAgentRunLink: {
+      /**
+       * Completeness
+       * @enum {string}
+       */
+      completeness: "COMPLETE" | "PARTIAL" | "ABSTAINED";
+      /**
+       * Horizon
+       * @enum {string}
+       */
+      horizon: "NEXT_PULL" | "AFTER_PULL_OFFLINE";
+      /**
+       * Integrity
+       * @enum {string}
+       */
+      integrity: "VERIFIED" | "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE";
+      /**
+       * Run Id
+       * Format: uuid
+       */
+      run_id: string;
+      source_role: components["schemas"]["SourceRole"];
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "running" | "completed" | "failed" | "cancelled";
+    };
     /** PredictionBindingResponse */
     PredictionBindingResponse: {
       /**
@@ -3320,6 +3438,72 @@ export interface components {
        * @enum {string}
        */
       quality_class: "high" | "degraded" | "insufficient" | "unavailable";
+    };
+    /**
+     * PredictionReceiptHistoryItem
+     * @description A vehicle-scoped, read-only projection over one persisted 9D receipt.
+     */
+    PredictionReceiptHistoryItem: {
+      captured_binding_state: components["schemas"]["ServingEventType"];
+      /** Configuration Id */
+      configuration_id: string | null;
+      current_binding_state: components["schemas"]["ServingEventType"];
+      /** Evidence Available */
+      evidence_available: boolean;
+      /** Evidence Completeness */
+      evidence_completeness?: ("COMPLETE" | "PARTIAL" | "ABSTAINED") | null;
+      /** Evidence Integrity */
+      evidence_integrity?:
+        | (
+            | "VERIFIED"
+            | "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+            | "FAILED_SOURCE_MISMATCH"
+            | "NOT_VERIFIABLE"
+            | "UNSUPPORTED_SCHEMA"
+          )
+        | null;
+      prediction: components["schemas"]["PredictionResponse"];
+      /**
+       * Pull Id
+       * Format: uuid
+       */
+      pull_id: string;
+      /**
+       * Recorded At
+       * Format: date-time
+       */
+      recorded_at: string;
+      /**
+       * Session Id
+       * Format: uuid
+       */
+      session_id: string;
+      /** Source Type */
+      source_type?: string | null;
+      /**
+       * Vehicle Id
+       * Format: uuid
+       */
+      vehicle_id: string;
+    };
+    /** PredictionReceiptHistoryPage */
+    PredictionReceiptHistoryPage: {
+      /** Has More */
+      has_more: boolean;
+      /** Items */
+      items: components["schemas"]["PredictionReceiptHistoryItem"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /**
+       * Schema Version
+       * @default phase9h-receipt-history-v1
+       * @constant
+       */
+      schema_version: "phase9h-receipt-history-v1";
+      /** Total */
+      total: number;
     };
     /** PredictionResponse */
     PredictionResponse: {
@@ -3769,6 +3953,12 @@ export interface components {
       /** Target Hz */
       target_hz: number;
     };
+    /**
+     * ServingEventType
+     * @enum {string}
+     */
+    ServingEventType:
+      "APPROVED" | "ACTIVATED" | "REVOKED" | "SUPERSEDED" | "ROLLED_BACK";
     /** SessionCreate */
     SessionCreate: {
       /** Configuration Id */
@@ -6532,6 +6722,374 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PredictionEvidenceMaterializeResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_vehicle_receipt_history: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        receipt_id?: string | null;
+        result_kind?: ("next_pull" | "anomaly") | null;
+        task?: components["schemas"]["MLTask"] | null;
+        family?: ("thermal" | "boost_air" | "performance" | "fuel") | null;
+        horizon?: ("NEXT_PULL" | "AFTER_PULL_OFFLINE") | null;
+        source_role?: components["schemas"]["SourceRole"] | null;
+        status?: components["schemas"]["PredictionStatus"] | null;
+        session_id?: string | null;
+        pull_id?: string | null;
+        configuration_id?: string | null;
+        recorded_from?: string | null;
+        recorded_to?: string | null;
+        evidence_completeness?: ("COMPLETE" | "PARTIAL" | "ABSTAINED") | null;
+        evidence_integrity?:
+          | (
+              | "VERIFIED"
+              | "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+              | "FAILED_SOURCE_MISMATCH"
+              | "NOT_VERIFIABLE"
+              | "UNSUPPORTED_SCHEMA"
+            )
+          | null;
+      };
+      header?: never;
+      path: {
+        vehicle_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionReceiptHistoryPage"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_vehicle_receipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_receipt_agent_context: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionAgentRunContext"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Too Many Requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  prediction_service_vehicle_receipt_evidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vehicle_id: string;
+        receipt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PredictionEvidenceProjection"];
         };
       };
       /** @description Unauthorized */

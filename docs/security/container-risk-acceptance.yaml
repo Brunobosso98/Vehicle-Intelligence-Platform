@@ -128,24 +128,6 @@ exceptions:
     rationale:
       The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither
       service executes Perl or accepts archive uploads.
-  - id: collector-cve-2026-116587
-    images:
-      - ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.164.0@sha256:340c9ca6a36617084c6661bdc4f0fe92b7cda5a805d61673ec8db375fddc522b
-    vulnerability_id: CVE-2026-116587
-    packages:
-      - github.com/go-jose/go-jose/v4
-    owner: repository-maintainer
-    reviewed_on: "2026-10-30"
-    expires: "2026-11-02"
-    remediation_condition:
-      Replace with a compatible official image embedding go-jose 4.1.6 or later, rescan,
-      and review again by 2026-11-02.
-    rationale:
-      The binary contains go-jose 4.1.5, which is affected when attacker-controlled RSA JWK values
-      are parsed. The checked-in Collector pipeline enables only OTLP/HTTP receiving, batch and memory limiting,
-      health checks, and OTLP/HTTP exporting; it configures no JWT/JWK authentication extension. Published
-      endpoints bind to 127.0.0.1. These controls narrow reachability but do not remove the binary-level
-      finding.
   - id: tempo-cve-2026-116587
     images:
       - grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949
