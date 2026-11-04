@@ -1,5 +1,13 @@
 # Container scan findings and risk review
 
+## Current Alpine package refresh — 2026-11-04
+
+The canonical CI image build exposed that Alpine's repository had advanced `libexpat` to
+`2.10.0-r0` while the hardened TimescaleDB and Kafka recipes still pinned `2.9.0-r0`. Both
+Dockerfiles now pin the patched package version selected by `apk upgrade`. The images must be
+rebuilt, scanned, and integration-tested on the final Phase 9H commit before this refresh is
+considered verified.
+
 ## Historical review — 2026-10-30 (superseded)
 
 The current review is [Phase 9H security review — 2026-11-04](phase-9h-security-review.md). This

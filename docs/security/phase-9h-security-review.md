@@ -29,6 +29,11 @@ The first 2026-11-04 locked Python dependency audit identified seven High adviso
 6.21.4. The subsequent locked `pip-audit` reported no known vulnerabilities, and the focused PDF
 parser/security regression passed 83 tests.
 
+The first exact-head Docker workflows exposed stale `libexpat` pins in the hardened TimescaleDB and
+Kafka images: Alpine had advanced from `2.9.0-r0` to `2.10.0-r0`, but the Dockerfiles still requested
+the older version after `apk upgrade`. Both recipes now pin `2.10.0-r0`. Final-head image build,
+scan, and database acceptance are required to validate this fix.
+
 The latest local `make security-cloud` run passed the knowledge-security check, gitleaks (no
 secrets), locked `pip-audit` (no known vulnerabilities) and the production Node audit. Its Trivy
 filesystem/IaC scan did **not** produce a result: Trivy 0.76.1 exited with
