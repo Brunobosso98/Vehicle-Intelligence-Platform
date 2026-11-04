@@ -1,66 +1,127 @@
 # Phase 9H security review — 2026-11-04
 
-**Disposition: NOT VERIFIED.** The 9H code adds a disabled-by-default development/test historical
-operator surface. Fresh scans show High findings and recorded exception dates have expired on
-November 1 or 2, 2026. No expiry was extended to force a passing result.
+**Current delivery status: NOT VERIFIED.** The canonical Docker/full-stack run on
+`0ed6553243346e7bf37854d7722ea14570ea6eba` completed the Phase 0–9G regressions, but final
+enforcement failed for generic E2E, container security and the preflight 9H research-summary
+comparison. The security failure was caused by expired risk records. The updated, evidence-based
+records below have not yet been exercised by the mandatory Security workflow on the final SHA.
 
-## Boundary implemented
+## Predictive operator boundary
 
-The BFF uses a fixed configured origin and host allowlist, GET-only route grammar, server-only 9D
-bearer injection, a 30-minute HMAC-protected session plus server-side revocation state, a separate
-operator credential, exact Origin/Referer and CSRF checks, shared explicit vehicle UUID allowlists,
-fixed path/query validation, login/request throttles, a four-request concurrency cap, eight-second
-timeout, one-megabyte response cap, redirect rejection, abort support and private `no-store`
-responses. The same predictive namespace is blocked through the generic domain proxy. API reads are
-vehicle-scoped, bounded, read-only and nondisclosing for foreign IDs.
+The BFF is disabled by default and rejected in production. It uses a fixed configured API origin
+and host allowlist, GET-only route grammar, server-only 9D bearer injection, a 30-minute
+HMAC-protected session plus server-side revocation state, a separate operator credential, exact
+Origin/Referer and CSRF checks, explicit vehicle UUID allowlists, fixed path/query validation,
+login/request throttles, a four-request concurrency cap, eight-second timeout, one-megabyte
+response cap, redirect rejection, abort support and private `no-store` responses. The same
+predictive namespace is blocked through the generic domain proxy. API reads are vehicle-scoped,
+bounded, read-only and nondisclosing for foreign IDs.
 
 This is not customer identity, tenant isolation or vehicle-owner authorization. The boundary is
-unsuitable for public ingress or shared users; deployment and network controls must keep it local
+unsuitable for public ingress or shared users. Deployment and network controls must keep it local
 or in a controlled test environment.
 
-## Fresh image scans
+## Exact canonical image scan
 
-Trivy 0.76.1 was installed from the pinned release checksum in `scripts/install-security-tools.sh`;
-its database was refreshed on 2026-11-04. Exact registry images were scanned by digest into ignored
-`.validation/phase9h/security/` reports.
+The canonical run `41890926830` scanned the images built from the PR code using Trivy 0.76.1 and
+the refreshed 2026-11-04 database. Machine-readable reports are in the run artifact under
+`security/images/`. Selected runtime totals were 93 High package occurrences and zero Criticals:
 
-The first 2026-11-04 locked Python dependency audit identified seven High advisories in `pypdf`
-6.21.2, used only by the isolated PDF extraction worker. The exact pin and lockfile were updated to
-6.21.4. The subsequent locked `pip-audit` reported no known vulnerabilities, and the focused PDF
-parser/security regression passed 83 tests.
+| Image                                 | Scan result         | Findings                                                                       |
+| ------------------------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| `vehicle-platform-api:local`          | 45 High, 0 Critical | Eight previously reviewed Debian CVEs plus `CVE-2026-119373` in `libsqlite3-0` |
+| `vehicle-platform-web:local`          | 44 High, 0 Critical | Eight previously reviewed Debian CVEs plus `CVE-2026-119373` in `libsqlite3-0` |
+| `vehicle-platform-timescaledb:local`  | 0 High, 0 Critical  | Current hardened runtime image                                                 |
+| `vehicle-platform-kafka:local`        | 0 High, 0 Critical  | Current patched Alpine runtime image                                           |
+| Collector core 0.164.0, pinned digest | 0 High, 0 Critical  | Replaced the contrib image that contained affected go-jose                     |
+| Prometheus 3.15.1, pinned digest      | 0 High, 0 Critical  | No current High or Critical findings                                           |
+| Tempo 3.0.5, pinned digest            | 1 High, 0 Critical  | `CVE-2026-116587`, embedded go-jose 4.1.4                                      |
+| Grafana 12.4.14, pinned digest        | 3 High, 0 Critical  | `CVE-2026-116587`, `CVE-2026-21728`, `CVE-2026-28377`                          |
 
-The first exact-head Docker workflows exposed stale `libexpat` pins in the hardened TimescaleDB and
-Kafka images: Alpine had advanced from `2.9.0-r0` to `2.10.0-r0`, but the Dockerfiles still requested
-the older version after `apk upgrade`. Both recipes now pin `2.10.0-r0`. Final-head image build,
-scan, and database acceptance are required to validate this fix.
+The separate scan of the pinned upstream TimescaleDB base image reported 96 High and 3 Critical
+occurrences. It is not the selected Compose runtime image and is not evaluated as a runtime image by
+`scripts/security-policy.py`. The final TimescaleDB image scan reported zero High/Critical: the
+Dockerfile rebuilds `gosu` and `timescaledb-tune` with the pinned Go 1.26.10 builder and removes the
+vulnerable `timescaledb-parallel-copy` binary. No Critical finding is excepted for a selected
+runtime image.
 
-The latest local `make security-cloud` run passed the knowledge-security check, gitleaks (no
-secrets), locked `pip-audit` (no known vulnerabilities) and the production Node audit. Its Trivy
-filesystem/IaC scan did **not** produce a result: Trivy 0.76.1 exited with
-`helm scan config error: context deadline exceeded` under its default five-minute scan timeout.
-This is an incomplete scan, not a clean report. A retry with the documented longer timeout and the
-exact-head Security job remain required.
+## API and Web package findings
 
-| Image                                                                                            | Finding                                                                                              | Action/status                                                                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| OpenTelemetry Collector contrib 0.164.0                                                          | 1 High, `CVE-2026-116587`, go-jose 4.1.5 (fixed 4.1.6)                                               | Replaced with official core 0.164.0 digest `sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750`; Trivy core scan reported 0 High/Critical. Runtime component compatibility still requires CI. |
-| Tempo 3.0.5 digest `sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949`     | 1 High, `CVE-2026-116587`, go-jose 4.1.4 (fixed 4.1.6)                                               | Existing exception expired 2026-11-02; retained visibly, not extended. Tempo 3.1.1 was also scanned and retains the finding.                                                                                       |
-| Grafana 12.4.14 digest `sha256:ae509d9ae8c1021ca32ec370a9ca975d40165eda9fccd1e1102d317ff8787cd7` | 3 High: `CVE-2026-116587` go-jose 4.1.4; `CVE-2026-21728` and `CVE-2026-28377` embedded Tempo module | Existing exceptions expired 2026-11-02; not extended. Grafana 13.3.0 candidate reported 39 High occurrences and was not adopted.                                                                                   |
-| API and Web built images                                                                         | Recorded package-specific Debian High findings                                                       | Docker is unavailable locally, so current exact built-image scan and policy result are **CI REQUIRED**. Eight existing finding exceptions expire 2026-11-01 and remain expired.                                    |
+The current images contain 89 High package occurrences across nine Debian CVEs. Debian's tracker
+shows the listed Trixie packages remain vulnerable; fixes for several are available only in
+unstable, and the remaining Trixie entries are no-DSA, postponed or awaiting a point release.
+These are operating-system packages rather than locked Python or Node dependencies.
 
-The collector change is limited to the configured core receiver/exporter/processors and health
-check. Canonical Docker validation must prove the image starts with the checked-in config and
-passes OTLP/health smoke before the replacement is operationally accepted.
+The newly reported `CVE-2026-119373` affects `libsqlite3-0` 3.46.1-7+deb13u2. Debian lists Trixie
+as vulnerable and the fixed package in unstable. The upstream issue requires a detail=none FTS5
+table with negative row IDs and then a prefix `MATCH` query. The application creates no FTS5 table
+and issues no FTS5 `MATCH` query. Its SQLite embedding ledger uses ordinary tables and parameterized
+queries; vehicle records use PostgreSQL. The finding is recorded separately for the exact API/Web
+image aliases and package, with a short review expiry. [Debian's current SQLite tracker entry](https://security-tracker.debian.org/tracker/CVE-2026-119373)
+documents the affected Trixie version and fixed unstable version.
 
-The policy in [security automation](automation.md) blocks unlisted High and all Critical findings;
-expired exceptions do not authorize a pass. `make security-cloud` covers locked dependencies,
-secrets and filesystem/IaC only. Full image and exception evaluation requires `make security` in
-Docker-capable CI.
+The other Debian package groups and their application-level constraints are recorded in
+[`container-risk-acceptance.yaml`](container-risk-acceptance.yaml): the ncurses issue is in the
+unused `infocmp` CLI; the systemd issue requires a logged-in systemd-homed user; the ACL issue
+requires a privileged pathname API call; the util-linux issues require privileged mount helpers,
+`nsenter` or fstab-authorized mount flows; and the Perl issue requires processing a crafted archive.
+These service containers run as UID 10001, read-only, with all capabilities dropped and
+`no-new-privileges`; those constraints are mitigations, not claims that the packages are fixed.
 
-## Required follow-up
+## Vendor image review and residual findings
 
-1. Scan final source/API/Web images through the canonical policy on the exact PR SHA.
-2. Fix introduced High/Critical findings; do not extend existing expiries outside the documented
-   policy review and approval process.
-3. Confirm the core Collector configuration starts and passes health/OTLP smoke.
-4. Require Security, Dependency Review and both CodeQL workflows to pass on the same final SHA.
+The current official Tempo release listing identifies 3.1.1 as latest; the repository's earlier
+candidate scan found the same `go-jose` 4.1.4 finding in 3.1.1. The current official Grafana
+listing identifies 13.3.0 as latest; the repository's candidate scan found 39 High occurrences, so
+it was not selected as a security fix. No compatible candidate was established that removes the
+remaining embedded-module findings. Tempo and Grafana bind to loopback; Tempo uses local storage
+without OIDC/JWT/JWK authentication, and Grafana exposes anonymous Viewer access only. These
+controls reduce reachability but do not remove binary findings.
+
+The go-jose vendor fix is version 4.1.6 or later. Grafana's embedded Tempo module fixes the two
+Tempo findings at 2.10.2 and 2.10.3 or later respectively. The time-bounded records identify these
+specific remediation conditions and expire on 2026-11-18. See the [Tempo release history](https://github.com/grafana/tempo/releases),
+[Grafana release history](https://github.com/grafana/grafana/releases), and
+[go-jose advisory](https://github.com/go-jose/go-jose/security/advisories/GHSA-mgcc-cww5-fp2q).
+
+## Reviewed exceptions and policy result
+
+The 12 previously expired records were reviewed against the exact 2026-11-04 reports and current
+vendor/Debian status. They now have `reviewed_on: 2026-11-04`, the `repository-maintainer` owner,
+finding-specific mitigations and remediation conditions, and a short `2026-11-18` expiry. The
+unlisted SQLite finding received a thirteenth exact image/CVE/package record after source review.
+No Critical finding is excepted, no scanner scope was removed, and no severity was downgraded.
+
+The old canonical run correctly failed because the policy rejected the expired records before it
+could match findings. As a local preflight, the current exception file was evaluated against all
+eight selected-image Trivy reports retained by that run: every report returned **PASS**, with 0
+Criticals and 0 blocked High findings. This confirms the report-to-exception matching but does not
+replace a fresh `make security` run on the final SHA. The Security workflow and canonical
+full-stack gate must pass after this review is pushed.
+
+## Dependency, filesystem and secrets scans
+
+The exact canonical artifact reports zero High/Critical filesystem or IaC findings, zero locked
+Python dependency findings, zero Node audit findings and an empty Gitleaks result. The earlier
+dependency issue in `pypdf` 6.21.2 was fixed by pinning 6.21.4; the focused parser/security
+regression passed 83 tests. The Alpine `libexpat` pins in TimescaleDB and Kafka were refreshed to
+2.10.0-r0, and both selected images scanned with zero High/Critical findings.
+
+## Exact-run failures and follow-up
+
+The canonical report for `0ed6553` records:
+
+- `E2E`: failed because a generic production-container browser test expected a test-only demo
+  button, and it ran a live-oracle test without an oracle. Both cases are now gated against the
+  actual server session response and the disposable-database harness.
+- `Container security`: failed because records expired on November 1 and 2, 2026. Updated records
+  and exact-report policy preflight are present locally; fresh CI scanning is still required.
+- `Phase 9H`: stopped before disposable database/browser acceptance because the 9G bootstrap
+  confidence-interval endpoint changed across fresh synthetic cohorts. A narrow 0.020 interval
+  endpoint tolerance now validates finite, ordered, bounded intervals; all point metrics,
+  thresholds, reliability bins and other aggregates remain exact.
+
+The canonical report also shows Phases 0–9G, Docker builds, migrations, database, stack, stream,
+observability, and historical E2E components passed. The 9H persisted-value parity, no-write digest,
+and access-control browser checks remain unproved until the corrected exact-head acceptance job
+completes.

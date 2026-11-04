@@ -20,6 +20,15 @@ before browser access and after it. The independent checker also verifies oracle
 checksums, browser mode labels, axe results, console errors, viewport overflow, private API host
 requests and bearer disclosure.
 
+The UI keeps the committed 9G summary tied to its original source receipt. A fresh acceptance run
+must still match task support, frozen thresholds, selected research maps, rounded point metrics,
+reliability bins, anomaly counts and applicability aggregates exactly. The 9G harness creates fresh
+synthetic cohort identities, so finite 200-resample cluster-bootstrap confidence interval endpoints
+can move between runs. The checker allows at most 0.020 absolute movement per endpoint for Brier and
+ECE intervals; it rejects malformed, unordered, out-of-range or more widely shifted bounds. This
+tolerance applies only to the displayed research uncertainty bounds and does not change any model,
+threshold, serving decision or evaluation report.
+
 The browser journey exercises rejected and accepted login, session lifecycle, vehicle and guessed
 receipt isolation, CSRF rejection, generic proxy bypass, source/evidence mismatch hiding, partial
 evidence, abstention, research summary, desktop/mobile behavior, and demo separation. API/component
@@ -31,7 +40,7 @@ evaluation mutation is permitted during browsing.
 
 | Gate                                                         | Local result                                                               | Exact-head result |
 | ------------------------------------------------------------ | -------------------------------------------------------------------------- | ----------------- |
-| API unit, typing, lint, branch coverage                      | **PASS** — 1,408 tests; 95.89% line, 90.11% branch coverage                | Pending           |
+| API unit, typing, lint, branch coverage                      | **PASS** — 1,413 tests; 95.89% line, 90.11% branch coverage                | Pending           |
 | React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                   | Pending           |
 | Generated OpenAPI contract check                             | **PASS**                                                                   | Pending           |
 | Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                          | Pending           |
@@ -48,8 +57,10 @@ evaluation mutation is permitted during browsing.
 
 The runner writes source and browser evidence under ignored `.validation/phase9h/`, including the
 direct oracle, `acceptance.json`, independent-check log, per-mode Playwright metrics, screenshots,
-traces and service logs. CI must upload this directory from the same PR-head SHA used by the
-independent check. Local acceptance is not a pass when Docker is unavailable.
+traces and service logs. Generated screenshots are kept out of Git; their reproducible capture IDs
+and commands are documented in [the UI evaluation](phase-9h-ui-evaluation.md). CI must upload this
+directory from the same PR-head SHA used by the independent check. Local acceptance is not a pass
+when Docker is unavailable.
 
 ## Required final checks
 

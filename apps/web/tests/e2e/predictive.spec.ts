@@ -89,15 +89,73 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     let demoInteractiveMs = 0;
     const browserErrors: string[] = [];
     page.on("pageerror", (error) => browserErrors.push(error.message));
+    if (process.env.PREDICTIVE_UI_DEMO_ENABLED === "true") {
+      const baseURL = process.env.WEB_BASE_URL ?? "http://127.0.0.1:3000";
+      const sessionWarmup = await page.request.get(
+        `${baseURL}/api/predictive/session`,
+      );
+      expect(sessionWarmup.status()).toBe(200);
+      expect(await sessionWarmup.json()).toMatchObject({
+        enabled: false,
+        authenticated: false,
+        demoEnabled: true,
+      });
+      const demoWarmup = await page.request.get(
+        `${baseURL}/api/predictive/demo`,
+      );
+      expect(demoWarmup.status()).toBe(200);
+      expect(await demoWarmup.json()).toMatchObject({
+        label: "DADOS SIMULADOS PARA DEMONSTRAÇÃO",
+        persistedPrediction: false,
+        servingRequest: false,
+      });
+      const scienceWarmup = await page.request.get(
+        `${baseURL}/api/predictive/demo-science`,
+      );
+      expect(scienceWarmup.status()).toBe(200);
+      expect(await scienceWarmup.json()).toMatchObject({
+        scope: "SYNTHETIC_ONLY",
+        realWorldCalibration: "NOT_ESTABLISHED",
+        servingPromotion: false,
+      });
+    }
     await page.setViewportSize({ width: 1440, height: 1000 });
+    const sessionResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/predictive/session",
+    );
     await page.goto("/predictive", { waitUntil: "networkidle" });
     await expect(
       page.getByRole("heading", { name: "Predictive intelligence" }),
     ).toBeVisible();
     operatorGateReadyMs = Date.now() - navigationStartedAt;
-    await expect(
-      page.getByRole("button", { name: "Abrir demonstração sintética" }),
-    ).toBeVisible();
+    const sessionResponse = await sessionResponsePromise;
+    expect(sessionResponse.status()).toBe(200);
+    const session = (await sessionResponse.json()) as {
+      enabled: boolean;
+      authenticated: boolean;
+      demoEnabled: boolean;
+    };
+    const demoButton = page.getByRole("button", {
+      name: "Abrir demonstração sintética",
+    });
+    if (!session.demoEnabled) {
+      expect(session).toEqual({
+        enabled: false,
+        authenticated: false,
+        demoEnabled: false,
+      });
+      await expect(
+        page.getByText("Visualização privada controlada"),
+      ).toBeVisible();
+      await expect(demoButton).toHaveCount(0);
+      await expect(page.getByLabel("Credencial local do operador")).toHaveCount(
+        0,
+      );
+      await save(page, "operator-gate-production-desktop.png");
+      return;
+    }
+    await expect(demoButton).toBeVisible();
     await save(page, "operator-gate-desktop.png");
 
     const demoStartedAt = Date.now();
@@ -214,6 +272,10 @@ test.describe("Phase 9H explicit synthetic UI", () => {
   test("authorized live BFF values match immutable 9D/9E database receipts", async ({
     page,
   }) => {
+    test.skip(
+      !process.env.PHASE9H_ORACLE,
+      "requires the disposable-database Phase 9H acceptance harness",
+    );
     const oraclePath = process.env.PHASE9H_ORACLE;
     expect(oraclePath, "independent database oracle is required").toBeTruthy();
     const oracle = JSON.parse(await readFile(oraclePath!, "utf8")) as {

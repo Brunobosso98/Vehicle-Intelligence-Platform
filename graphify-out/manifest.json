@@ -888,8 +888,8 @@
     "semantic_hash": "15570564726d7dc591e6924cb5f450f1"
   },
   "apps/web/next-env.d.ts": {
-    "mtime": 1793815395.4281955,
-    "seen": 1793816546.9532251,
+    "mtime": 1793821083.2533884,
+    "seen": 1793822170.3323033,
     "ast_hash": "8195d2c60ce847a459ae9d308d6a5724",
     "semantic_hash": "8195d2c60ce847a459ae9d308d6a5724"
   },
@@ -1518,9 +1518,9 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1793804988.8844013,
-    "seen": 1793816546.9540846,
-    "ast_hash": "3ccabb14a257340221f7d1331145d7f5",
+    "mtime": 1793818064.9286113,
+    "seen": 1793822170.3337424,
+    "ast_hash": "56e68d3a30a84d5eac2cdd07c5710b5f",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
@@ -3792,9 +3792,9 @@
     "semantic_hash": ""
   },
   "apps/web/tests/e2e/predictive.spec.ts": {
-    "mtime": 1793807064.438062,
-    "seen": 1793816546.9533398,
-    "ast_hash": "cc0fc22d68f1bff24007990ff7d710fd",
+    "mtime": 1793820694.2655568,
+    "seen": 1793822170.332482,
+    "ast_hash": "e9a3ac4eea5df10142d39fa8eabe1bd0",
     "semantic_hash": ""
   },
   "apps/web/tests/predictive-auth-routes.test.ts": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": ""
   },
   "scripts/check_phase9h_research_summary.py": {
-    "mtime": 1793800565.4659772,
-    "seen": 1793816546.953503,
-    "ast_hash": "0b4710f15b3ed7238e9b8df2baed15cd",
+    "mtime": 1793819623.5874343,
+    "seen": 1793822170.3327003,
+    "ast_hash": "de4093b522a292986fdc46140ac10fd3",
     "semantic_hash": ""
   },
   "scripts/phase9h-validation.sh": {
@@ -3876,15 +3876,15 @@
     "semantic_hash": ""
   },
   "docs/security/phase-9h-security-review.md": {
-    "mtime": 1793815534.220322,
-    "seen": 1793816546.9540894,
-    "ast_hash": "5f1f60b54c8b94f943a1f48686158af0",
+    "mtime": 1793818064.9575584,
+    "seen": 1793822170.3337512,
+    "ast_hash": "2ec51c332896f244f243a8c150ed41ba",
     "semantic_hash": ""
   },
   "docs/validation/phase-9h-acceptance.md": {
-    "mtime": 1793815669.9423766,
-    "seen": 1793816546.9542022,
-    "ast_hash": "823c2ad50d2a8c393352f8ddd3c527fb",
+    "mtime": 1793819137.5035977,
+    "seen": 1793822170.3339384,
+    "ast_hash": "daf8076ba926cbd778eced28fe8c4cea",
     "semantic_hash": ""
   },
   "docs/validation/phase-9h-security-accessibility.md": {
@@ -3933,6 +3933,12 @@
     "mtime": 1793815395.686168,
     "seen": 1793816546.9542696,
     "ast_hash": "f2489011dcfc1e34c7a115eff7ccd5c0",
+    "semantic_hash": ""
+  },
+  "apps/api/tests/unit/test_phase9h_research_summary.py": {
+    "mtime": 1793819375.559704,
+    "seen": 1793822170.332234,
+    "ast_hash": "94802cf7c8732020e3dfd717d69d25ee",
     "semantic_hash": ""
   }
 }

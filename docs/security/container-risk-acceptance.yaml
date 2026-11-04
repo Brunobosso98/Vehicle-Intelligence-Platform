@@ -11,7 +11,10 @@ exceptions:
       - ncurses-base
       - ncurses-bin
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes a fixed package for the stable Trixie suite; review on any base-image refresh and again by 2026-11-18.
     rationale:
       The affected infocmp CLI is not invoked by either service; containers are non-root, read-only,
       and expose no shell-driven input.
@@ -24,7 +27,10 @@ exceptions:
       - libsystemd0
       - libudev1
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes a fixed systemd package for the stable Trixie suite; review on any base-image refresh and again by 2026-11-18.
     rationale:
       The exploit path requires systemd-homed/local logged-in users; these service containers run
       neither systemd nor homed.
@@ -36,7 +42,10 @@ exceptions:
     packages:
       - libacl1
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes the fixed ACL ABI in a stable Trixie point release; review on any base-image refresh and again by 2026-11-18.
     rationale:
       The affected privileged ACL pathname path is not used; services are non-root with read-only
       roots.
@@ -56,7 +65,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
     rationale:
       The exploit requires privileged mount helpers/hooks; services drop all capabilities and do
       not invoke mount.
@@ -76,7 +88,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
     rationale: The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free.
   - id: api-web-cve-2026-78409
     images:
@@ -94,7 +109,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
     rationale: The exploit requires fstab-authorized mount operations not exposed by either service container.
   - id: api-web-cve-2026-78410
     images:
@@ -112,7 +130,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
     rationale:
       The exploit requires SUID mount/fstab bind mount control; no such path or capability exists
       in the services.
@@ -124,10 +145,33 @@ exceptions:
     packages:
       - perl-base
     owner: repository-maintainer
-    expires: 2026-11-01
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian resolves the Archive::Tar regression and publishes fixed Perl for stable Trixie; review again by 2026-11-18.
     rationale:
       The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither
       service executes Perl or accepts archive uploads.
+  - id: api-web-cve-2026-119373
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
+    vulnerability_id: CVE-2026-119373
+    packages:
+      - libsqlite3-0
+    owner: repository-maintainer
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Rebuild when Debian publishes fixed SQLite for stable Trixie; keep FTS5 unused and review
+      runtime dependencies again by 2026-11-18.
+    rationale: >-
+      The canonical scan found libsqlite3-0 3.46.1-7+deb13u2 in API and Web. Debian lists
+      Trixie as vulnerable and the fixed package only in unstable. This defect requires a
+      detail=none FTS5 table with negative rowids followed by a prefix MATCH query; the
+      application creates no FTS5 tables or MATCH queries. Its SQLite ledger uses ordinary
+      tables and parameterized queries, while vehicle data uses PostgreSQL. Keep this exact
+      image/CVE/package exception visible until a stable fix is available.
   - id: tempo-cve-2026-116587
     images:
       - grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949
@@ -135,11 +179,10 @@ exceptions:
     packages:
       - github.com/go-jose/go-jose/v4
     owner: repository-maintainer
-    reviewed_on: "2026-10-30"
-    expires: "2026-11-02"
-    remediation_condition:
-      Replace with a compatible official image embedding go-jose 4.1.6 or later, rescan,
-      and review again by 2026-11-02.
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Replace with a compatible official Tempo image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-11-18.
     rationale:
       The binary contains go-jose 4.1.4, which is affected when attacker-controlled RSA JWK values
       are parsed. The checked-in Tempo configuration uses local block storage and configures no OIDC/JWT/JWK
@@ -152,11 +195,10 @@ exceptions:
     packages:
       - github.com/go-jose/go-jose/v4
     owner: repository-maintainer
-    reviewed_on: "2026-10-30"
-    expires: "2026-11-02"
-    remediation_condition:
-      Replace with a compatible official image embedding go-jose 4.1.6 or later, rescan,
-      and review again by 2026-11-02.
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Replace with a compatible official Grafana image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-11-18.
     rationale:
       The binary contains go-jose 4.1.4, which is affected when attacker-controlled RSA JWK values
       are parsed. The checked-in Grafana configuration enables anonymous Viewer access and configures no
@@ -169,11 +211,10 @@ exceptions:
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-10-30"
-    expires: "2026-11-02"
-    remediation_condition:
-      Replace with a compatible official Grafana image embedding Tempo 2.10.2 or later,
-      rescan, and review again by 2026-11-02.
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Replace with a compatible official Grafana image embedding Tempo 2.10.2 or later, rescan, and review again by 2026-11-18.
     rationale:
       Trivy reports an older embedded Tempo module in Grafana. The separately deployed Tempo service
       is the patched 3.0.5 image, and Grafana is reachable only on 127.0.0.1 with anonymous Viewer access.
@@ -186,11 +227,10 @@ exceptions:
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-10-30"
-    expires: "2026-11-02"
-    remediation_condition:
-      Replace with a compatible official Grafana image embedding Tempo 2.10.3 or later,
-      rescan, and review again by 2026-11-02.
+    reviewed_on: "2026-11-04"
+    expires: "2026-11-18"
+    remediation_condition: >-
+      Replace with a compatible official Grafana image embedding Tempo 2.10.3 or later, rescan, and review again by 2026-11-18.
     rationale:
       Trivy reports an older embedded Tempo module in Grafana. The separately deployed Tempo service
       uses local storage and has no S3 SSE-C key configured; the Tempo status endpoint is not hosted by

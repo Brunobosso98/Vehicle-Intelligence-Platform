@@ -4,28 +4,42 @@
 The captures below are actual Playwright Chromium screenshots of the explicitly labeled synthetic
 demo. They do not represent persisted vehicle results.
 
-## Screenshots
+## Screenshot captures
 
-Desktop, tablet and mobile captures were visually reviewed after the final local Playwright run.
-The page keeps the incumbent dark engineering style, separates the synthetic banner from private
+Desktop, tablet and mobile captures were visually reviewed after the local Playwright run. The
+page keeps the incumbent dark engineering style, separates the synthetic banner from private
 operator data, displays exact scores and thresholds, retains table access to chart values, and
 states scientific limitations next to the relevant result. Mobile stacks the metadata and history
 rows without clipping. The synthetic research summary remains clearly labeled as a non-production
 study.
 
-![Synthetic predictive overview](screenshots/phase-9h/synthetic-overview-desktop.png)
+Generated PNGs are not checked into source control. The local Playwright artifact is
+`.validation/phase9h/screenshots/`; the JSON measurements are in
+`.validation/phase9h/playwright/synthetic-ui-metrics.json`. To reproduce the synthetic captures,
+start a test-only Next.js development server with `PREDICTIVE_UI_DEMO_ENABLED=true`, then run
+`PREDICTIVE_UI_DEMO_ENABLED=true PHASE9H_SCREENSHOT_DIR="$PWD/.validation/phase9h/screenshots" pnpm --filter @vehicle-platform/web exec playwright test predictive.spec.ts --project chromium -g "Phase 9H explicit synthetic UI"`.
+For the persisted database-backed capture IDs, run `make phase9h-acceptance` on a Docker-capable
+host. The current local capture IDs are:
 
-![Synthetic anomaly detail](screenshots/phase-9h/synthetic-anomaly-desktop.png)
+| Capture ID                   | File                                     | State                                          |
+| ---------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| `synthetic-operator-gate`    | `operator-gate-desktop.png`              | Explicit synthetic demo entry                  |
+| `synthetic-overview`         | `synthetic-overview-desktop.png`         | Selected vehicle and scored overview           |
+| `synthetic-history`          | `synthetic-history-desktop.png`          | Pull history and filters                       |
+| `synthetic-anomaly`          | `synthetic-anomaly-desktop.png`          | Detector family and original threshold         |
+| `synthetic-abstained`        | `synthetic-abstained-desktop.png`        | Abstained model result                         |
+| `synthetic-partial-evidence` | `synthetic-partial-evidence-desktop.png` | Partial evidence and missing-data details      |
+| `synthetic-research`         | `synthetic-research-desktop.png`         | Synthetic-only 9G research                     |
+| `synthetic-tablet`           | `synthetic-tablet.png`                   | 768 px responsive layout                       |
+| `synthetic-mobile`           | `synthetic-mobile.png`                   | 390 px responsive layout                       |
+| `production-operator-gate`   | `operator-gate-production-desktop.png`   | Disabled private experience in production mode |
 
-![Synthetic Phase 9G research summary](screenshots/phase-9h/synthetic-research-desktop.png)
-
-![Synthetic tablet layout](screenshots/phase-9h/synthetic-tablet.png)
-
-![Synthetic 390 px mobile layout](screenshots/phase-9h/synthetic-mobile.png)
-
-The complete, uncommitted local screenshot set is also under ignored
-`.validation/phase9h/screenshots/`. Docker-backed acceptance captures persisted operator, receipt,
-evidence, research and mobile states separately as a CI artifact.
+The separate Docker-backed `make phase9h-acceptance` run writes real controlled-mode captures to
+the same ignored artifact. Its required capture IDs include `persisted-login-denied`,
+`persisted-overview-desktop`, `persisted-scored-receipt`, `persisted-partial-evidence`,
+`persisted-abstained`, `persisted-proof-mismatch`, `persisted-research-desktop`, and
+`persisted-mobile`. These database-backed captures must be reviewed from the exact-head CI artifact;
+synthetic captures do not substitute for them.
 
 ## Browser and chart measurements
 
@@ -33,8 +47,8 @@ Measured from the successful local Chromium synthetic-demo run on 2026-11-04:
 
 | Measurement                                |                                    Result | Scope                                                                         |
 | ------------------------------------------ | ----------------------------------------: | ----------------------------------------------------------------------------- |
-| Operator page ready                        |                                 18,636 ms | Local Next.js development server; includes cold compile, not a production SLA |
-| Synthetic demo interactive                 |                                  1,981 ms | Local Next.js development server                                              |
+| Operator page ready                        |                                 18,162 ms | Local Next.js development server; includes cold compile, not a production SLA |
+| Synthetic demo interactive                 |                                  1,434 ms | Local Next.js development server                                              |
 | Responsive overflow                        |              0 px at 1440, 768 and 390 px | Chromium document width                                                       |
 | Axe violations                             |                                         0 | WCAG 2.2 AA-related tags on the 390 px synthetic screen                       |
 | Browser page/console errors                |                                         0 | Captured page errors                                                          |
@@ -58,12 +72,12 @@ validity.
 
 ## Remaining visual evidence
 
-| View                                                                                 | Evidence                                 | Status                                      |
-| ------------------------------------------------------------------------------------ | ---------------------------------------- | ------------------------------------------- |
-| Synthetic desktop overview, history, anomaly, abstention, partial evidence, research | Committed Chromium screenshots above     | PASS                                        |
-| Synthetic 768 px tablet and 390 px mobile                                            | Committed Chromium screenshots above     | PASS; zero horizontal overflow              |
-| Persisted operator, receipt and evidence details                                     | Disposable DB + protected BFF + Chromium | **CI REQUIRED**; Docker unavailable locally |
-| Persisted mode axe, secret-disclosure and network metrics                            | Exact-head Phase 9H workflow             | **CI REQUIRED**                             |
+| View                                                                                 | Evidence                                        | Status                                      |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------- |
+| Synthetic desktop overview, history, anomaly, abstention, partial evidence, research | Ignored Playwright artifacts; capture IDs above | PASS                                        |
+| Synthetic 768 px tablet and 390 px mobile                                            | Ignored Playwright artifacts; capture IDs above | PASS; zero horizontal overflow              |
+| Persisted operator, receipt and evidence details                                     | Disposable DB + protected BFF + Chromium        | **CI REQUIRED**; Docker unavailable locally |
+| Persisted mode axe, secret-disclosure and network metrics                            | Exact-head Phase 9H workflow                    | **CI REQUIRED**                             |
 
 All displayed synthetic values are fixture values. Original persisted numerical parity can only be
 claimed after the independent database oracle and exact-head browser acceptance pass.

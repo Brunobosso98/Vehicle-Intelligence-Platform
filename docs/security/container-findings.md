@@ -1,5 +1,47 @@
 # Container scan findings and risk review
 
+## Canonical Phase 9H scan — 2026-11-04
+
+The canonical Docker/full-stack workflow built and scanned the Phase 9H PR image set at
+`0ed6553243346e7bf37854d7722ea14570ea6eba` with Trivy 0.76.1 and its refreshed 2026-11-04
+database (run [`41890926830`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/41890926830)).
+The exact reports are retained in that run's `security/images/` artifact. Selected runtime images
+had 93 High package occurrences and zero Critical findings:
+
+| Component               | Selected image                       |             Findings | Review                                                                         |
+| ----------------------- | ------------------------------------ | -------------------: | ------------------------------------------------------------------------------ |
+| API                     | `vehicle-platform-api:local`         | 45 High / 0 Critical | Eight previously reviewed Debian CVEs plus `CVE-2026-119373` in `libsqlite3-0` |
+| Web                     | `vehicle-platform-web:local`         | 44 High / 0 Critical | Eight previously reviewed Debian CVEs plus `CVE-2026-119373` in `libsqlite3-0` |
+| TimescaleDB             | `vehicle-platform-timescaledb:local` |  0 High / 0 Critical | Rebuilt helper binaries; vulnerable parallel-copy binary removed               |
+| Kafka                   | `vehicle-platform-kafka:local`       |  0 High / 0 Critical | Patched runtime image                                                          |
+| OpenTelemetry Collector | 0.164.0, pinned digest               |  0 High / 0 Critical | Core distribution selected in place of affected contrib image                  |
+| Prometheus              | 3.15.1, pinned digest                |  0 High / 0 Critical | No current High or Critical findings                                           |
+| Tempo                   | 3.0.5, pinned digest                 |  1 High / 0 Critical | `CVE-2026-116587`, embedded go-jose 4.1.4                                      |
+| Grafana                 | 12.4.14, pinned digest               |  3 High / 0 Critical | `CVE-2026-116587`, `CVE-2026-21728`, `CVE-2026-28377`                          |
+
+The separate upstream TimescaleDB base scan reported 96 High and 3 Critical occurrences. Those
+findings are not in the selected runtime: the repository rebuilds `gosu` and `timescaledb-tune`
+with its pinned Go builder and removes `timescaledb-parallel-copy`; the selected final image scan
+reported zero High and Critical findings.
+
+The API and Web counts include 89 package occurrences across nine Debian CVEs. The ninth,
+`CVE-2026-119373`, is in `libsqlite3-0` 3.46.1-7+deb13u2. [Debian's tracker](https://security-tracker.debian.org/tracker/CVE-2026-119373)
+describes the affected Trixie package and the FTS5 prefix-query preconditions; the application has no FTS5 tables or
+`MATCH` queries and uses PostgreSQL for vehicle records. The exact image/CVE/package exposure
+review is in [`phase-9h-security-review.md`](phase-9h-security-review.md), and all accepted records
+are listed in [`container-risk-acceptance.yaml`](container-risk-acceptance.yaml). No Criticals,
+unlisted findings, scanner exclusions or severity downgrades are accepted. The prior run correctly
+failed policy enforcement because 12 records had expired; after reviewing current evidence, 13
+exact records are now time limited through 2026-11-18. Their matching against the retained reports
+passed local policy preflight, but the refreshed policy still requires a new Security workflow and
+canonical full-stack run on the final Phase 9H SHA.
+
+The selected image scan is not yet a clean vulnerability result: it contains accepted, time-limited
+High findings. Acceptance depends on those exact records matching, the expiry being enforced, and
+the final-head CI scans passing. The canonical run at the SHA above also failed generic E2E and
+stopped Phase 9H before disposable-database/browser acceptance; it is historical diagnostic
+evidence, not final delivery validation.
+
 ## Current Alpine package refresh — 2026-11-04
 
 The canonical CI image build exposed that Alpine's repository had advanced `libexpat` to
@@ -12,9 +54,10 @@ considered verified.
 
 The current review is [Phase 9H security review — 2026-11-04](phase-9h-security-review.md). This
 section preserves the previous exact-image scan and its risk analysis for reference; its image
-findings and exception dates are not current acceptance evidence. The November review refreshes
-Trivy, scans current observability candidates, replaces the affected Collector distribution, and
-records the still-expired Tempo/Grafana/API/Web exceptions without extending them.
+findings and exception dates are not current acceptance evidence. The November review refreshed
+Trivy, scanned current observability candidates, replaced the affected Collector distribution,
+reviewed the expired records against the new reports and vulnerability status, and recorded the
+resulting short-lived exact-image acceptances.
 
 Fresh Trivy 0.75.0 scans used the refreshed vulnerability database and the exact images selected in
 `compose.yaml`. All selected images have zero Critical findings. API and Web retain their analyzed
@@ -108,7 +151,7 @@ package, or ignored scanner exit code is used.
 
 The dated reports below preserve earlier scanner evidence and rationale. Their image selections,
 counts, and dispositions are historical; the current inventory and expiry dates are in the
-2026-10-21 review at the top of this document.
+2026-11-04 review at the top of this document.
 
 ### Third-party infrastructure scan — pre-hardening (superseded)
 

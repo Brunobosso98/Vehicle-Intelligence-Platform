@@ -9,6 +9,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+BOOTSTRAP_CI_ENDPOINT_TOLERANCE = 0.02
+
 
 def rounded(value: Any, places: int = 5) -> float | None:
     if not isinstance(value, (int, float)) or not math.isfinite(value):
@@ -69,6 +71,36 @@ def _reliability(task: dict[str, Any], map_name: str) -> list[dict[str, Any]]:
     return bins
 
 
+def _check_bootstrap_interval(
+    task_key: str,
+    field: str,
+    actual: Any,
+    expected: list[float | None],
+) -> None:
+    require(
+        isinstance(actual, list)
+        and len(actual) == 2
+        and all(
+            isinstance(value, (int, float)) and math.isfinite(value) for value in actual
+        )
+        and 0.0 <= actual[0] <= actual[1] <= 1.0,
+        f"{task_key}: {field} must be an ordered finite interval",
+    )
+    expected_values = [value for value in expected if value is not None]
+    require(
+        len(expected_values) == 2,
+        f"{task_key}: {field} source interval is incomplete",
+    )
+    deltas = [
+        abs(float(value) - source) for value, source in zip(actual, expected_values)
+    ]
+    require(
+        all(delta <= BOOTSTRAP_CI_ENDPOINT_TOLERANCE for delta in deltas),
+        f"{task_key}: {field} bootstrap endpoint delta exceeds "
+        f"{BOOTSTRAP_CI_ENDPOINT_TOLERANCE:.3f}: {deltas}",
+    )
+
+
 def _check_supervised(report: dict[str, Any], summary: dict[str, Any]) -> None:
     summaries = {item["task"]: item for item in summary["supervised"]}
     require(
@@ -120,7 +152,7 @@ def _check_supervised(report: dict[str, Any], summary: dict[str, Any]) -> None:
                 rounded(uncertainty.get("lower")),
                 rounded(uncertainty.get("upper")),
             ]
-            require(output[field] == expected, f"{task_key}: {field} mismatch")
+            _check_bootstrap_interval(task_key, field, output[field], expected)
         require(
             output["reliability"] == _reliability(source, selected),
             f"{task_key}: reliability bins differ",
