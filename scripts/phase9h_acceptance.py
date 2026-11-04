@@ -130,6 +130,25 @@ def _vehicle_scope_ids(rows: Iterable[RowMapping]) -> list[str]:
     return vehicle_ids
 
 
+def _same_number(left: Any, right: Any) -> bool:
+    if left is None or right is None:
+        return left is None and right is None
+    if isinstance(left, bool) or isinstance(right, bool):
+        return False
+    try:
+        return abs(float(left) - float(right)) <= 1e-12
+    except (TypeError, ValueError):
+        return False
+
+
+def _stored_decision_matches(stored: str | None, response_value: Any) -> bool:
+    if response_value is None:
+        return stored is None
+    if type(response_value) is not bool:
+        return False
+    return stored == str(response_value)
+
+
 async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
     if not REPORT_9E.exists():
         raise RuntimeError("Run Phase 9E acceptance before Phase 9H.")
@@ -185,27 +204,40 @@ async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
             if original.get("result_type") == "next_pull"
             else original.get("anomaly_score")
         )
-        if (
-            original.get("receipt_id") != key
-            or original.get("result_type") != row["result_kind"]
-            or original.get("horizon") != row["horizon"]
-            or original.get("status") != row["status"]
-            or original.get("source_role") != row["source_role"]
-            or original.get("requested_cutoff")
-            != row["requested_cutoff"].isoformat().replace("+00:00", "Z")
-            or original.get("effective_cutoff")
-            != (
-                row["effective_cutoff"].isoformat().replace("+00:00", "Z")
-                if row["effective_cutoff"]
-                else None
-            )
-            or score != response_score
-            or original.get("threshold") != row["threshold"]
-            or original.get("decision") != row["decision"]
-            or original.get("quality") != row["quality_summary"]
-        ):
+        mismatches: list[str] = []
+        if original.get("receipt_id") != key:
+            mismatches.append("receipt_id")
+        if original.get("result_type") != row["result_kind"]:
+            mismatches.append("result_type")
+        if original.get("horizon") != row["horizon"]:
+            mismatches.append("horizon")
+        if original.get("status") != row["status"]:
+            mismatches.append("status")
+        if original.get("source_role") != row["source_role"]:
+            mismatches.append("source_role")
+        if original.get("requested_cutoff") != row[
+            "requested_cutoff"
+        ].isoformat().replace("+00:00", "Z"):
+            mismatches.append("requested_cutoff")
+        expected_effective_cutoff = (
+            row["effective_cutoff"].isoformat().replace("+00:00", "Z")
+            if row["effective_cutoff"]
+            else None
+        )
+        if original.get("effective_cutoff") != expected_effective_cutoff:
+            mismatches.append("effective_cutoff")
+        if not _same_number(score, response_score):
+            mismatches.append("score")
+        if not _same_number(original.get("threshold"), row["threshold"]):
+            mismatches.append("threshold")
+        if not _stored_decision_matches(row["decision"], original.get("decision")):
+            mismatches.append("decision")
+        if original.get("quality") != row["quality_summary"]:
+            mismatches.append("quality")
+        if mismatches:
             raise RuntimeError(
-                f"Persisted columns and original response differ for {key}."
+                f"Persisted columns and original response differ for {key}: "
+                f"{', '.join(mismatches)}."
             )
         records.append(
             {

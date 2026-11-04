@@ -24,6 +24,13 @@ stopped in oracle preparation because the old checker incorrectly required a sin
 corrected checker now preserves per-receipt vehicle scope; its focused tests cover multiple scopes,
 deduplication, empty input and the 20-ID bound.
 
+The `0f5caf2` attempt then generated 11 receipts across all required tasks/families and passed the
+fresh 9G summary check, but stopped before browser access: the source oracle compared response
+boolean decisions with the 9D text column representation (`"True"` / `"False"`). The persisted
+schema intentionally stores that column as text. The oracle now checks that storage encoding
+explicitly, reports differing field names, and uses the same `1e-12` float comparison as the 9D
+history repository while preserving the original numeric values for browser parity.
+
 The oracle compares exact scores, frozen thresholds, decisions, model/detector versions, horizons,
 source roles, quality, requested/effective cutoffs, receipt IDs, evidence IDs, completeness and
 integrity. A canonical digest covers source, receipt, evidence, AgentRun and 9G evaluation tables
@@ -51,7 +58,7 @@ evaluation mutation is permitted during browsing.
 
 | Gate                                                         | Local result                                                                                                                                    |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit, typing, lint, branch coverage                      | **PASS** — 1,416 tests; 95.89% line, 90.11% branch coverage                                                                                     |
+| API unit, typing, lint, branch coverage                      | **PASS** — 1,428 tests; 95.89% line, 90.11% branch coverage                                                                                     |
 | React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                                                                                        |
 | Generated OpenAPI contract check                             | **PASS**                                                                                                                                        |
 | Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                                                                                               |
