@@ -1,7 +1,7 @@
-# Graph Report - phase9h-graphify-540bb54  (2026-11-05)
+# Graph Report - phase9h-graphify-8eb3fa7  (2026-11-05)
 
 ## Corpus Check
-- 631 files · ~705,453 words
+- 631 files · ~705,504 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: (none) 13, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `540bb548`
+- Built from commit: `8eb3fa7f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
