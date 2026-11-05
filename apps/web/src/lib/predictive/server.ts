@@ -58,6 +58,8 @@ const SERVING_STATES = new Set([
   "SUPERSEDED",
   "ROLLED_BACK",
 ]);
+const PRIVATE_EVIDENCE_FIELD =
+  /(?:vin|plate|license|gps|latitude|longitude|\blat\b|\blon\b|owner|user|email)/i;
 
 type Session = { expiresAt: number; csrf: string };
 type RuntimeState = {
@@ -1019,28 +1021,15 @@ export function safeEvidence(
         "Evidence facts were malformed.",
       );
     const item = fact;
-    const privateKey =
-      /(?:vin|plate|license|gps|latitude|longitude|\blat\b|\blon\b|owner|user|email)/i.test(
-        String(item.key),
-      );
-    const factValue = item.value;
-    const safeFactValue =
-      factValue === null ||
-      typeof factValue === "boolean" ||
-      (typeof factValue === "number" && Number.isFinite(factValue)) ||
-      (typeof factValue === "string" && factValue.length <= 500) ||
-      (Array.isArray(factValue) &&
-        factValue.length <= 32 &&
-        factValue.every(
-          (part) => typeof part === "string" && part.length <= 120,
-        ));
-    if (!safeFactValue)
+    const privateKey = PRIVATE_EVIDENCE_FIELD.test(String(item.key));
+    const sanitizedFact = sanitizeEvidenceFactValue(item.value);
+    if (!sanitizedFact.valid)
       throw new PredictiveError(
         502,
         "INVALID_EVIDENCE",
         "Evidence fact values were malformed.",
       );
-    const value = privateKey ? null : factValue;
+    const value = privateKey ? null : sanitizedFact.value;
     return {
       fact_id: item.id,
       key: item.key,
@@ -1048,11 +1037,12 @@ export function safeEvidence(
       value,
       unit: item.unit,
       quality: item.quality,
-      missing_reason: privateKey
-        ? "REDACTED_FOR_OPERATOR_UI"
-        : typeof item.missing_reason === "string"
-          ? item.missing_reason
-          : null,
+      missing_reason:
+        privateKey || sanitizedFact.redacted
+          ? "REDACTED_FOR_OPERATOR_UI"
+          : typeof item.missing_reason === "string"
+            ? item.missing_reason
+            : null,
       meaning: item.meaning,
     };
   });
@@ -1230,6 +1220,69 @@ export function safeAgentContext(
     receipt_id: expectedReceiptId,
     items,
   };
+}
+
+type SanitizedFactValue = {
+  valid: boolean;
+  value: unknown;
+  redacted: boolean;
+};
+
+function sanitizeEvidenceFactValue(value: unknown): SanitizedFactValue {
+  return sanitizeEvidenceJsonValue(value, 0, { nodes: 0 });
+}
+
+function sanitizeEvidenceJsonValue(
+  value: unknown,
+  depth: number,
+  budget: { nodes: number },
+): SanitizedFactValue {
+  budget.nodes += 1;
+  if (depth > 8 || budget.nodes > 2048)
+    return { valid: false, value: null, redacted: false };
+  if (value === null || typeof value === "boolean")
+    return { valid: true, value, redacted: false };
+  if (typeof value === "number")
+    return Number.isFinite(value)
+      ? { valid: true, value, redacted: false }
+      : { valid: false, value: null, redacted: false };
+  if (typeof value === "string")
+    return value.length <= 4096
+      ? { valid: true, value, redacted: false }
+      : { valid: false, value: null, redacted: false };
+  if (Array.isArray(value)) {
+    if (value.length > 64)
+      return { valid: false, value: null, redacted: false };
+    const sanitized: unknown[] = [];
+    let redacted = false;
+    for (const item of value) {
+      const child = sanitizeEvidenceJsonValue(item, depth + 1, budget);
+      if (!child.valid) return child;
+      sanitized.push(child.value);
+      redacted ||= child.redacted;
+    }
+    return { valid: true, value: sanitized, redacted };
+  }
+  if (!isRecord(value) || Object.keys(value).length > 32)
+    return { valid: false, value: null, redacted: false };
+  const sanitized: Record<string, unknown> = Object.create(null) as Record<
+    string,
+    unknown
+  >;
+  let redacted = false;
+  for (const [key, item] of Object.entries(value)) {
+    if (key.length > 160) return { valid: false, value: null, redacted: false };
+    if (PRIVATE_EVIDENCE_FIELD.test(key)) {
+      sanitized[key] = null;
+      redacted = true;
+      continue;
+    }
+    const child = sanitizeEvidenceJsonValue(item, depth + 1, budget);
+    if (!child.valid) return child;
+    sanitized[key] = child.value;
+    redacted ||= child.redacted;
+  }
+  return { valid: true, value: sanitized, redacted };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

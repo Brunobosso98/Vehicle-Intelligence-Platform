@@ -654,16 +654,42 @@ describe("predictive server boundary", () => {
       { ...projection.facts[0], quality: null },
       { ...projection.facts[0], meaning: "x".repeat(241) },
       { ...projection.facts[0], unit: "x".repeat(49) },
-      { ...projection.facts[0], value: { private: true } },
       {
         ...projection.facts[0],
-        value: Array.from({ length: 33 }, () => "signal"),
+        value: Object.fromEntries(
+          Array.from({ length: 33 }, (_, index) => [`field_${index}`, index]),
+        ),
       },
-      { ...projection.facts[0], value: ["x".repeat(121)] },
+      {
+        ...projection.facts[0],
+        value: Array.from({ length: 65 }, () => "signal"),
+      },
+      { ...projection.facts[0], value: "x".repeat(4097) },
+      {
+        ...projection.facts[0],
+        value: {
+          level_1: {
+            level_2: {
+              level_3: {
+                level_4: {
+                  level_5: {
+                    level_6: {
+                      level_7: {
+                        level_8: { level_9: { too_deep: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     ];
-    for (const fact of malformedFacts)
-      expect(() =>
-        server.safeEvidence({ ...projection, facts: [fact] }, vehicleId),
+    for (const [index, fact] of malformedFacts.entries())
+      expect(
+        () => server.safeEvidence({ ...projection, facts: [fact] }, vehicleId),
+        `fact case ${index}`,
       ).toThrow();
     for (const value of [
       { ...projection, facts: "not-an-array" },
@@ -706,6 +732,34 @@ describe("predictive server boundary", () => {
       gaps: [{ code: "SIGNAL_UNAVAILABLE" }],
       claims: [{ claim_id: "claim-1" }],
     });
+
+    const nestedProjection = server.safeEvidence(
+      {
+        ...projection,
+        facts: [
+          {
+            ...projection.facts[0],
+            key: "derived_summary",
+            value: {
+              sample_count: 4,
+              source: { kind: "telemetry", vehicle_vin: "SYNTHETIC-PRIVATE" },
+              labels: ["synthetic", { email: "hidden@example.test" }],
+            },
+          },
+        ],
+      },
+      vehicleId,
+    );
+    expect(nestedProjection.facts).toMatchObject([
+      {
+        value: {
+          sample_count: 4,
+          source: { kind: "telemetry", vehicle_vin: null },
+          labels: ["synthetic", { email: null }],
+        },
+        missing_reason: "REDACTED_FOR_OPERATOR_UI",
+      },
+    ]);
   });
 
   it("validates paged history and receipt-linked AgentRun context", async () => {
