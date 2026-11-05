@@ -766,6 +766,22 @@ describe("predictive server boundary", () => {
     expect(server.safeHistory(page, vehicleId)).toMatchObject({
       items: [{ current_binding_state: "REVOKED" }],
     });
+    expect(
+      server.safeHistory(
+        {
+          ...page,
+          items: [
+            {
+              ...page.items[0],
+              pull_id: "5a812cc1-be1d-a40b-23d2-d6bede77f463",
+            },
+          ],
+        },
+        vehicleId,
+      ),
+    ).toMatchObject({
+      items: [{ pull_id: "5a812cc1-be1d-a40b-23d2-d6bede77f463" }],
+    });
     const invalidPages = [
       null,
       { ...page, schema_version: "old" },

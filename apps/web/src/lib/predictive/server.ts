@@ -35,7 +35,7 @@ const HISTORY_QUERY_KEYS = new Set([
   "evidence_integrity",
 ]);
 const UUID_PATTERN_CASE_INSENSITIVE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PREDICTION_STATUSES = new Set([
   "READY_SCORE",
   "ABSTAINED_INSUFFICIENT_SIGNAL",
