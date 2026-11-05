@@ -1,7 +1,29 @@
-# Phase 9H security review — 2026-11-04
+# Phase 9H security review — 2026-11-05
 
-**Current Security gate status:** See [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57)
-for the current branch SHA. The canonical Docker/full-stack run on
+**Current Security gate status:** The exact scan on `5e402da98524d2c6ffea422feb74e2980cf8f555`
+(run [`42084749877`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42084749877))
+failed policy enforcement: API reported 46 High / 0 Critical with one blocked finding; Web reported
+45 High / 0 Critical with one blocked finding. The other selected runtime image scans passed, as
+did Dependency Review and both CodeQL jobs. The current result for a later branch SHA is shown by
+[PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57).
+
+The 2026-11-05 Trivy database introduced one new High occurrence in each application image. The
+Security workflow did not publish its JSON reports. A local Trivy 0.76.1 scan of both exact pinned
+base digests identified the new candidate as `CVE-2026-76844` in `zlib1g`
+`1:1.3.dfsg+really1.3.1-1+b1`; the final-image count increased by exactly one in each image.
+Debian bug #1153063 says Trixie remains vulnerable and contains an upstream backport patch, but no
+fixed Trixie package is published. This identification is pending confirmation by the next exact
+final-image scan. [Debian bug #1153063](https://go.mail-archive.com/debian-bugs-dist%40lists.debian.org/msg2131737.html)
+and the [CVE description](https://www.suse.com/security/cve/CVE-2026-76844.html) describe a heap
+buffer overflow after a failed write followed by a later `gz*` write.
+
+The repository search found no direct zlib/gzip API calls in application code; the only match is a
+test confirming that inbound `Content-Encoding: gzip` is unsupported. This does not prove that a
+runtime dependency cannot reach the library behavior. The new exact API/Web exception is reviewed
+through 2026-11-12 and requires a rebuild as soon as Debian publishes a stable fix. It is not a
+remediation claim and does not renew any previous exception.
+
+The canonical Docker/full-stack run on
 `0ed6553243346e7bf37854d7722ea14570ea6eba` completed the Phase 0–9G regressions, but final
 enforcement failed for generic E2E, container security and the preflight 9H research-summary
 comparison. The refreshed records then passed the mandatory Security workflow on
@@ -94,14 +116,15 @@ specific remediation conditions and expire on 2026-11-18. See the [Tempo release
 The 12 previously expired records were reviewed against the exact 2026-11-04 reports and current
 vendor/Debian status. They now have `reviewed_on: 2026-11-04`, the `repository-maintainer` owner,
 finding-specific mitigations and remediation conditions, and a short `2026-11-18` expiry. The
-unlisted SQLite finding received a thirteenth exact image/CVE/package record after source review.
-No Critical finding is excepted, no scanner scope was removed, and no severity was downgraded.
+SQLite finding received an exact image/CVE/package record after source review. The new zlib record
+has a separate 2026-11-12 expiry because Debian has not published a stable fix. No Critical finding
+is excepted, no scanner scope was removed, and no severity was downgraded.
 
 The old canonical run correctly failed because the policy rejected the expired records before it
 could match findings. The refreshed exception file passed policy evaluation for the selected images
-in Security run `41906643193`, with 0 Criticals and 0 blocked High findings. This does not replace a
-fresh scan on the final SHA. Security run `41906643193` passed on `5ffe99d`; Security and canonical
-full-stack checks must pass again after the current fix is pushed.
+in Security run `41906643193`, with 0 Criticals and 0 blocked High findings. That result applies only
+to `5ffe99d`. The new zlib record requires a fresh exact-image scan and a policy pass on the final
+SHA; it does not convert the failed `5e402da` run into a pass.
 
 ## Dependency, filesystem and secrets scans
 

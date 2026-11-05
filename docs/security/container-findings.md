@@ -1,5 +1,25 @@
 # Container scan findings and risk review
 
+## Current Phase 9H security run — 2026-11-05
+
+Security run [`42084749877`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42084749877)
+on `5e402da98524d2c6ffea422feb74e2980cf8f555` failed with one unaccepted High occurrence in each
+application image: API 46 High / 0 Critical, Web 45 High / 0 Critical. The remaining selected image
+scans passed. The Security job did not retain downloadable Trivy JSON, so the new finding is
+identified from the one-count increase and local scans of the exact pinned API and Web base digests.
+Those scans report `CVE-2026-76844` in `zlib1g` 1:1.3.dfsg+really1.3.1-1+b1. Final-image confirmation
+is required on the next Security run.
+
+Debian bug #1153063 says the Trixie package remains vulnerable and provides a backport patch, while
+Debian has not published a fixed stable package. The new exact API/Web record is time-limited through
+2026-11-12 in [`container-risk-acceptance.yaml`](container-risk-acceptance.yaml). The vulnerability
+requires a failed underlying write followed by another gzip write; a repository search found no
+direct zlib/gzip API calls, but does not prove that runtime dependencies cannot reach the code.
+See [Debian bug #1153063](https://go.mail-archive.com/debian-bugs-dist%40lists.debian.org/msg2131737.html)
+and the [CVE description](https://www.suse.com/security/cve/CVE-2026-76844.html). This is a recorded
+residual risk, not a claim that zlib was remediated. No existing exception expiry was extended by
+this new record.
+
 ## Canonical Phase 9H scan — 2026-11-04
 
 The canonical Docker/full-stack workflow built and scanned the Phase 9H PR image set at

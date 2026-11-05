@@ -46,6 +46,9 @@ export ENVIRONMENT=test
 # authorized synthetic receipts before the read-only browser session starts.
 apps/api/.venv/bin/python scripts/evaluate_prediction_evidence.py \
   | tee "$evidence/phase9e-source-run.log"
+# The 9E migration round-trip intentionally ends at 0018. Restore the current
+# schema before the 9H oracle snapshots every protected table, including 9G.
+(cd apps/api && .venv/bin/alembic upgrade head && .venv/bin/alembic current --check-heads)
 apps/api/.venv/bin/python scripts/phase9h_acceptance.py prepare --expected-sha "$expected_sha" \
   | tee "$evidence/oracle-preparation.log"
 vehicle_id="$(apps/api/.venv/bin/python -c 'import json; print(json.load(open(".validation/phase9h/source-oracle.json"))["vehicle_id"])')"

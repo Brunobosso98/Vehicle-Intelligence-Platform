@@ -32,6 +32,13 @@ the boolean representation; the `de8d50c` run exposed the anomaly-literal form. 
 validates both encodings, reports differing field names, and uses the same `1e-12` float comparison
 as the 9D history repository while preserving original numeric values for browser parity.
 
+The `5e402da` source run generated and persisted 11 receipts, but the no-write oracle stopped before
+browser access because it queried the 9G `evaluation_protocols` table after the 9E migration test had
+intentionally left the disposable database at revision `0018`. The 9E evaluator round-trips its own
+migrations through `0018`; the 9H harness now reapplies `head` and checks Alembic head status after
+fixture generation and before digesting any tables. This makes the complete 9G table set available
+to the no-write digest without changing production data or 9D/9E source records.
+
 The oracle compares exact scores, frozen thresholds, decisions, model/detector versions, horizons,
 source roles, quality, requested/effective cutoffs, receipt IDs, evidence IDs, completeness and
 integrity. A canonical digest covers source, receipt, evidence, AgentRun and 9G evaluation tables
@@ -57,20 +64,20 @@ evaluation mutation is permitted during browsing.
 
 ## Evidence
 
-| Gate                                                         | Local result                                                                                                                                    |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| API unit, typing, lint, branch coverage                      | **PASS** — 1,432 tests; 95.89% line, 90.11% branch coverage                                                                                     |
-| React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                                                                                        |
-| Generated OpenAPI contract check                             | **PASS**                                                                                                                                        |
-| Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                                                                                               |
-| Synthetic Playwright, screenshots, axe and responsive checks | **PASS** — 1 Chromium E2E; axe 0, console errors 0, overflow 0 px                                                                               |
-| 500-point chart benchmark                                    | **PASS** — p50 507.52 ms, p95 609.85 ms in local jsdom                                                                                          |
-| Actual API + disposable DB + BFF + persisted-value parity    | Docker CLI exists, but the daemon is unavailable; **CI REQUIRED**                                                                               |
-| No-write database digest before/after browsing               | Not executed without disposable PostgreSQL: **CI REQUIRED**                                                                                     |
-| Locked dependency and secret scans                           | **PASS** — pip-audit clean, pnpm audit clean, gitleaks found no leaks                                                                           |
-| Trivy filesystem scan                                        | **PASS** — no High/Critical findings on an ext4 copy of tracked and nonignored source; direct `/mnt/c` scan stopped after 5:42 without a report |
-| Container image scans and exception policy                   | **PASS** on prior head `5ffe99d` in Security run `41906643193`: 93 accepted High, 0 Critical, 0 blocked; final-head result is on PR #57         |
-| Canonical full-stack/regression workflow                     | **CI REQUIRED** for Docker-backed gates                                                                                                         |
+| Gate                                                         | Local result                                                                                                                                                                    |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit, typing, lint, branch coverage                      | **PASS** — 1,432 tests; 95.89% line, 90.11% branch coverage                                                                                                                     |
+| React/Vitest, strict TypeScript, ESLint                      | **PASS** — 116 tests; 91.00% statements, 85.57% branches                                                                                                                        |
+| Generated OpenAPI contract check                             | **PASS**                                                                                                                                                                        |
+| Documentation/context and repository formatting              | **PASS** — `make docs-check`, `pnpm format:check`                                                                                                                               |
+| Synthetic Playwright, screenshots, axe and responsive checks | **PASS** — 1 Chromium E2E; axe 0, console errors 0, overflow 0 px                                                                                                               |
+| 500-point chart benchmark                                    | **PASS** — p50 507.52 ms, p95 609.85 ms in local jsdom                                                                                                                          |
+| Actual API + disposable DB + BFF + persisted-value parity    | **FAILED on `5e402da`** — 11 source receipts created; acceptance stopped before browser because the 9E migration round-trip left revision `0018`; fixed harness awaits next SHA |
+| No-write database digest before/after browsing               | **NOT REACHED on `5e402da`** — missing `evaluation_protocols`; rerun after restoring Alembic head and require browser digest proof                                              |
+| Locked dependency and secret scans                           | **PASS** — pip-audit clean, pnpm audit clean, gitleaks found no leaks                                                                                                           |
+| Trivy filesystem scan                                        | **PASS** — no High/Critical findings on an ext4 copy of tracked and nonignored source; direct `/mnt/c` scan stopped after 5:42 without a report                                 |
+| Container image scans and exception policy                   | **FAILED on `5e402da`** — 1 blocked High each in API/Web; exact zlib record added with 2026-11-12 expiry; final-image scan required                                             |
+| Canonical full-stack/regression workflow                     | Docker is unavailable locally; exact-final-SHA GitHub Actions run remains mandatory                                                                                             |
 
 The runner writes source and browser evidence under ignored `.validation/phase9h/`, including the
 direct oracle, `acceptance.json`, independent-check log, per-mode Playwright metrics, screenshots,
