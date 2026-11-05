@@ -221,6 +221,10 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     await expect(
       page.getByText("DADOS SIMULADOS PARA DEMONSTRAÇÃO"),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Carregar resumo" }).click();
+    await expect(
+      page.getByText(/Real-world calibration: NOT_ESTABLISHED/i),
+    ).toBeVisible();
     await expect
       .poll(async () =>
         page.evaluate(

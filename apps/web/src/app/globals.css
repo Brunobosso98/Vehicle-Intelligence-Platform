@@ -1592,6 +1592,10 @@ button:disabled {
     width: 100%;
   }
 
+  .research-report .table-scroll table {
+    min-width: 0;
+  }
+
   .table-scroll thead {
     position: absolute;
     width: 1px;

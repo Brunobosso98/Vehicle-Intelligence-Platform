@@ -14,7 +14,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const MAX_SESSION_MS = 30 * 60 * 1000;
-const MAX_REQUESTS_PER_MINUTE = 180;
+const MAX_REQUESTS_PER_MINUTE = 60;
 const MAX_CONCURRENT_REQUESTS = 4;
 const HISTORY_QUERY_KEYS = new Set([
   "limit",

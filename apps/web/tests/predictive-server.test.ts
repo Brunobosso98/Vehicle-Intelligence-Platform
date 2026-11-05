@@ -171,7 +171,7 @@ describe("predictive server boundary", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
     const path = `/api/v1/prediction-service/vehicles/${vehicleId}/runs`;
-    for (let index = 0; index < 180; index += 1)
+    for (let index = 0; index < 60; index += 1)
       await server.predictionApiGet(request() as never, path);
 
     let rateLimitError: unknown;
@@ -190,7 +190,7 @@ describe("predictive server boundary", () => {
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("60");
     expect(await response.json()).toMatchObject({ code: "RATE_LIMITED" });
-    expect(fetchMock).toHaveBeenCalledTimes(180);
+    expect(fetchMock).toHaveBeenCalledTimes(60);
   });
 
   it("caps and preserves upstream Retry-After values", async () => {
