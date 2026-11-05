@@ -258,7 +258,10 @@ async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
                 "effective_cutoff": original.get("effective_cutoff"),
                 "score": score,
                 "threshold": row["threshold"],
-                "decision": row["decision"],
+                # Compare the typed persisted response JSON in the UI oracle.
+                # The legacy SQL column stores boolean decisions as text and is
+                # validated above by _stored_decision_matches.
+                "decision": original.get("decision"),
                 "model_version_id": original.get("model_version_id"),
                 "detector_version_id": original.get("detector_version_id"),
                 "vehicle_id": str(row["vehicle_id"]),
