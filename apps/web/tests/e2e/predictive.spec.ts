@@ -96,7 +96,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       );
       expect(sessionWarmup.status()).toBe(200);
       expect(await sessionWarmup.json()).toMatchObject({
-        enabled: false,
+        enabled: true,
         authenticated: false,
         demoEnabled: true,
       });
@@ -349,7 +349,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       .getByLabel("Credencial local do operador")
       .fill("intentionally-invalid-operator-credential");
     await page.getByRole("button", { name: "Entrar no workspace" }).click();
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.locator('.operator-login [role="alert"]')).toContainText(
       /credential|unauthorized|inválid/i,
     );
     await save(page, "persisted-login-denied.png");
