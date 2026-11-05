@@ -133,10 +133,14 @@ const evidence = {
   limitations: ["Snapshot only; it is not a new verification."],
 };
 
-function jsonResponse(body: unknown, status = 200) {
+function jsonResponse(
+  body: unknown,
+  status = 200,
+  additionalHeaders: Record<string, string> = {},
+) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...additionalHeaders },
   });
 }
 
@@ -151,6 +155,7 @@ type PrivateApiOptions = {
   loginStatus?: number;
   vehiclesStatus?: number;
   historyStatus?: number;
+  retryAfter?: string;
   moreHistory?: boolean;
   historyItems?: unknown[];
   detailBody?: unknown;
@@ -249,6 +254,7 @@ function installPrivateApi(options: PrivateApiOptions = {}) {
         ? jsonResponse(
             { error: "History upstream failed." },
             options.historyStatus,
+            options.retryAfter ? { "retry-after": options.retryAfter } : {},
           )
         : jsonResponse({
             schema_version: "phase9h-receipt-history-v1",
@@ -758,6 +764,21 @@ describe("Predictive Intelligence workspace", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Tentar novamente" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("DADOS SIMULADOS PARA DEMONSTRAÇÃO"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the Retry-After delay on rate-limited history reads", async () => {
+    installPrivateApi({ historyStatus: 429, retryAfter: "17" });
+    const user = userEvent.setup();
+    render(<PredictiveWorkspace />);
+    await logIn(user);
+    expect(
+      await screen.findByText(
+        "History upstream failed. Aguarde 17 s antes de tentar novamente.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("DADOS SIMULADOS PARA DEMONSTRAÇÃO"),

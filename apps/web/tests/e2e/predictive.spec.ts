@@ -534,17 +534,19 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       }
     }
     expect(
-      oracle.records
-        .filter((item) => item.result_type === "next_pull")
-        .map((item) => item.task)
-        .filter(Boolean).length,
-    ).toBe(3);
+      new Set(
+        oracle.records.flatMap((item) =>
+          item.result_type === "next_pull" && item.task ? [item.task] : [],
+        ),
+      ),
+    ).toEqual(new Set(oracle.supervised_tasks));
     expect(
-      oracle.records
-        .filter((item) => item.result_type === "anomaly")
-        .map((item) => item.family)
-        .filter(Boolean).length,
-    ).toBe(4);
+      new Set(
+        oracle.records.flatMap((item) =>
+          item.result_type === "anomaly" && item.family ? [item.family] : [],
+        ),
+      ),
+    ).toEqual(new Set(oracle.anomaly_families));
     await switchVehicle(oracle.vehicle_id);
     await save(page, "persisted-overview-desktop.png");
     await expect(page.getByText("NOT_ESTABLISHED").first()).toBeVisible();

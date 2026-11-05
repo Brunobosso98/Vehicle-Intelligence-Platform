@@ -20,5 +20,8 @@ export function json(body: unknown, status = 200): NextResponse {
 
 export function failure(error: unknown): NextResponse {
   const result = errorPayload(error);
-  return json(result.body, result.status);
+  const response = json(result.body, result.status);
+  if (result.status === 429)
+    response.headers.set("Retry-After", String(result.retryAfterSeconds ?? 1));
+  return response;
 }

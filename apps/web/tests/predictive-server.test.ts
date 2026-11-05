@@ -38,6 +38,9 @@ describe("predictive server boundary", () => {
     vi.resetModules();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+    delete (
+      globalThis as typeof globalThis & { __vipPredictiveState?: unknown }
+    ).__vipPredictiveState;
     configureEnabled();
   });
 
@@ -156,6 +159,72 @@ describe("predictive server boundary", () => {
         "/api/v1/prediction-service/../vehicles",
       ),
     ).rejects.toThrow("Invalid predictive request");
+  });
+
+  it("bounds predictive read requests and returns a retry hint when limited", async () => {
+    const server = await serverModule();
+    const fetchMock = vi.fn<typeof fetch>(
+      async () =>
+        new Response("{}", {
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const path = `/api/v1/prediction-service/vehicles/${vehicleId}/runs`;
+    for (let index = 0; index < 180; index += 1)
+      await server.predictionApiGet(request() as never, path);
+
+    let rateLimitError: unknown;
+    try {
+      await server.predictionApiGet(request() as never, path);
+    } catch (error) {
+      rateLimitError = error;
+    }
+    expect(rateLimitError).toMatchObject({
+      status: 429,
+      code: "RATE_LIMITED",
+      retryAfterSeconds: 60,
+    });
+    const { failure } = await import("../src/app/api/predictive/_response");
+    const response = failure(rateLimitError);
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("60");
+    expect(await response.json()).toMatchObject({ code: "RATE_LIMITED" });
+    expect(fetchMock).toHaveBeenCalledTimes(180);
+  });
+
+  it("caps and preserves upstream Retry-After values", async () => {
+    const server = await serverModule();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("{}", {
+            status: 429,
+            headers: {
+              "content-type": "application/json",
+              "retry-after": "9000",
+            },
+          }),
+      ),
+    );
+    let upstreamError: unknown;
+    try {
+      await server.predictionApiGet(
+        request() as never,
+        `/api/v1/prediction-service/vehicles/${vehicleId}/runs`,
+      );
+    } catch (error) {
+      upstreamError = error;
+    }
+    expect(upstreamError).toMatchObject({
+      status: 429,
+      code: "UPSTREAM_RATE_LIMITED",
+      retryAfterSeconds: 300,
+    });
+    const { failure } = await import("../src/app/api/predictive/_response");
+    const response = failure(upstreamError);
+    expect(response.headers.get("retry-after")).toBe("300");
   });
 
   it("rejects upstream redirects, oversized bodies, invalid content types and upstream errors", async () => {

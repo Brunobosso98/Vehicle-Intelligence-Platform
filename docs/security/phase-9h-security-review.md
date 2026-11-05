@@ -1,11 +1,27 @@
 # Phase 9H security review — 2026-11-05
 
-**Current Security gate status:** The exact scan on `5e402da98524d2c6ffea422feb74e2980cf8f555`
-(run [`42084749877`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42084749877))
-failed policy enforcement: API reported 46 High / 0 Critical with one blocked finding; Web reported
-45 High / 0 Critical with one blocked finding. The other selected runtime image scans passed, as
-did Dependency Review and both CodeQL jobs. The current result for a later branch SHA is shown by
-[PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57).
+**Reviewed Security gate status:** PASS on PR head
+`e27dbc264558b6468846b5929ad197fa8b89cd94` in run
+[`42112442920`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42112442920).
+Trivy 0.76.1 found 95 High package occurrences across the selected runtime images; all matched
+current image/CVE/package records, with 0 Critical and 0 blocked findings. Dependency Review and
+both CodeQL jobs also passed on this exact SHA. The Security workflow did not retain downloadable
+Trivy JSON; the final-image counts below come from the exact run log.
+
+| Selected runtime image  | High / accepted | Critical | Policy result |
+| ----------------------- | --------------: | -------: | ------------- |
+| API                     |         46 / 46 |        0 | PASS          |
+| Web                     |         45 / 45 |        0 | PASS          |
+| Kafka                   |           0 / 0 |        0 | PASS          |
+| TimescaleDB             |           0 / 0 |        0 | PASS          |
+| OpenTelemetry Collector |           0 / 0 |        0 | PASS          |
+| Prometheus              |           0 / 0 |        0 | PASS          |
+| Tempo                   |           1 / 1 |        0 | PASS          |
+| Grafana                 |           3 / 3 |        0 | PASS          |
+
+The 95 accepted High occurrences remain visible residual risk and do not represent remediation.
+API/Web `CVE-2026-76844` in zlib has a short expiry of 2026-11-12. The other package and vendor
+image exceptions expire 2026-11-18 and require replacement/rescan as fixes become available.
 
 The 2026-11-05 Trivy database introduced one new High occurrence in each application image. The
 Security workflow did not publish its JSON reports. A local Trivy 0.76.1 scan of both exact pinned
@@ -46,7 +62,7 @@ This is not customer identity, tenant isolation or vehicle-owner authorization. 
 unsuitable for public ingress or shared users. Deployment and network controls must keep it local
 or in a controlled test environment.
 
-## Security workflow image scan on `5ffe99d`
+## Previous Security workflow image scan on `5ffe99d`
 
 Security run `41906643193` scanned the images built from the PR code using Trivy 0.76.1 and
 the refreshed 2026-11-04 database. Its job log records the policy totals; the Security workflow did
@@ -74,7 +90,7 @@ runtime image.
 
 ## API and Web package findings
 
-The current images contain 89 High package occurrences across nine Debian CVEs. Debian's tracker
+At that earlier SHA, the images contained 89 High package occurrences across nine Debian CVEs. Debian's tracker
 shows the listed Trixie packages remain vulnerable; fixes for several are available only in
 unstable, and the remaining Trixie entries are no-DSA, postponed or awaiting a point release.
 These are operating-system packages rather than locked Python or Node dependencies.
@@ -122,9 +138,9 @@ is excepted, no scanner scope was removed, and no severity was downgraded.
 
 The old canonical run correctly failed because the policy rejected the expired records before it
 could match findings. The refreshed exception file passed policy evaluation for the selected images
-in Security run `41906643193`, with 0 Criticals and 0 blocked High findings. That result applies only
-to `5ffe99d`. The new zlib record requires a fresh exact-image scan and a policy pass on the final
-SHA; it does not convert the failed `5e402da` run into a pass.
+in Security run `41906643193`, with 0 Criticals and 0 blocked High findings; that result applied only
+to `5ffe99d`. The new zlib record was then confirmed in the exact final-image scan on `e27dbc2` and
+matched the reviewed API/Web exception. It does not convert the failed `5e402da` run into a pass.
 
 ## Dependency, filesystem and secrets scans
 

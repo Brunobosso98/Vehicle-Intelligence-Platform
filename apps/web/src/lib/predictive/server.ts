@@ -14,7 +14,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const MAX_SESSION_MS = 30 * 60 * 1000;
-const MAX_REQUESTS_PER_MINUTE = 60;
+const MAX_REQUESTS_PER_MINUTE = 180;
 const MAX_CONCURRENT_REQUESTS = 4;
 const HISTORY_QUERY_KEYS = new Set([
   "limit",
@@ -88,11 +88,18 @@ export type PredictiveProblem = {
 export class PredictiveError extends Error {
   status: number;
   code: string;
+  retryAfterSeconds: number | null;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    retryAfterSeconds: number | null = null,
+  ) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -390,6 +397,7 @@ function admitRequest(): () => void {
       429,
       "RATE_LIMITED",
       "Predictive request limit reached. Try again shortly.",
+      60,
     );
   }
   if (state.inFlight >= MAX_CONCURRENT_REQUESTS) {
@@ -397,6 +405,7 @@ function admitRequest(): () => void {
       429,
       "CAPACITY_LIMITED",
       "Predictive workspace is busy. Try again shortly.",
+      1,
     );
   }
   state.requests.push(now);
@@ -404,6 +413,17 @@ function admitRequest(): () => void {
   return () => {
     state.inFlight = Math.max(0, state.inFlight - 1);
   };
+}
+
+function boundedRetryAfter(value: string | null, fallbackSeconds = 60): number {
+  if (!value) return fallbackSeconds;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds))
+    return Math.max(1, Math.min(300, Math.ceil(seconds)));
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp)
+    ? Math.max(1, Math.min(300, Math.ceil((timestamp - Date.now()) / 1000)))
+    : fallbackSeconds;
 }
 
 async function boundedResponseText(response: Response): Promise<string> {
@@ -537,6 +557,7 @@ export async function predictionApiGet(
           429,
           "UPSTREAM_RATE_LIMITED",
           "Predictive service is busy. Try again shortly.",
+          boundedRetryAfter(response.headers.get("retry-after")),
         );
       if (response.status === 503 || response.status === 504)
         throw new PredictiveError(
@@ -655,16 +676,19 @@ function validateHistoryFilter(key: string, value: string): void {
 export function errorPayload(error: unknown): {
   status: number;
   body: { error: string; code: string };
+  retryAfterSeconds: number | null;
 } {
   if (error instanceof PredictiveError) {
     return {
       status: error.status,
       body: { error: error.message, code: error.code },
+      retryAfterSeconds: error.retryAfterSeconds,
     };
   }
   return {
     status: 500,
     body: { error: "Predictive request failed.", code: "INTERNAL_ERROR" },
+    retryAfterSeconds: null,
   };
 }
 

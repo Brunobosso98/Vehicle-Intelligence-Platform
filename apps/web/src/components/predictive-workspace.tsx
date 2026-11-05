@@ -220,9 +220,15 @@ async function responseError(response: Response): Promise<Error> {
   } catch {
     /* use the route status below */
   }
-  return new Error(
-    detail.error ?? `A solicitação falhou (${response.status}).`,
-  );
+  const message = detail.error ?? `A solicitação falhou (${response.status}).`;
+  const retryAfter = Number(response.headers.get("retry-after"));
+  if (response.status === 429 && Number.isFinite(retryAfter)) {
+    const seconds = Math.max(1, Math.min(300, Math.ceil(retryAfter)));
+    return new Error(
+      `${message} Aguarde ${seconds} s antes de tentar novamente.`,
+    );
+  }
+  return new Error(message);
 }
 
 export function ScoreChart({
