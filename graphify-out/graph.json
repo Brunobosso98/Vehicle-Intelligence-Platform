@@ -2861,7 +2861,7 @@
       "file_type": "code",
       "norm_label": "historyitem",
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L366"
+      "source_location": "L370"
     },
     {
       "id": "apps_api_src_vehicle_platform_api_domain_contracts_importresult",
@@ -251347,7 +251347,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L366",
+      "source_location": "L370",
       "weight": 1.0
     },
     {
@@ -347140,5 +347140,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f01117fd151921ad1bd1cd4fae52be89baff594d"
+  "built_at_commit": "6423342c43968022fd08a6751bce34f92a570eea"
 }

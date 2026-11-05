@@ -1,7 +1,7 @@
-# Graph Report - phase9h-graphify-f01117f  (2026-11-05)
+# Graph Report - phase9h-graphify-6423342  (2026-11-05)
 
 ## Corpus Check
-- 631 files · ~706,417 words
+- 631 files · ~706,430 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: (none) 13, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f01117fd`
+- Built from commit: `6423342c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1458,9 +1458,9 @@ Nodes (9): Evidence, Phase 9H independent acceptance, Required final checks, Sci
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `OpenAIProvider` connect `DeterministicProvider` to `AgentError`, `phase7d_eval.py`, `test_agents.py`, `agents/schemas.py`, `Supervisor`, `Database`, `Phase 7D real-model validation`, `AgentSettings`, `main.py`?**
-  _High betweenness centrality (0.077) - this node is a cross-community bridge._
+  _High betweenness centrality (0.078) - this node is a cross-community bridge._
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `prompts/phase-7d-real-model-validation.md`, `DeterministicProvider`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
 - **Why does `AgentError` connect `AgentError` to `phase7d_eval.py`, `test_agents.py`, `DeterministicProvider`, `resolve_context`, `test_investigation.py`, `test_agent_prediction.py`, `evaluate_agent_prediction.py`, `Supervisor`, `json`, `investigation/service.py`, `agents/service.py`, `DeviceCapabilities`, `agents/schemas.py`, `test_investigation_repository.py`, `InvestigationService`, `knowledge_router`, `Envelope`, `AgentSettings`, `main.py`, `test_knowledge.py`, `Adapter`?**
   _High betweenness centrality (0.060) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
