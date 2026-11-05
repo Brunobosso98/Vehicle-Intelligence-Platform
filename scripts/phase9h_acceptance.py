@@ -144,9 +144,11 @@ def _same_number(left: Any, right: Any) -> bool:
 def _stored_decision_matches(stored: str | None, response_value: Any) -> bool:
     if response_value is None:
         return stored is None
-    if type(response_value) is not bool:
-        return False
-    return stored == str(response_value)
+    if type(response_value) is bool:
+        return stored == str(response_value)
+    if type(response_value) is str and response_value in {"ANOMALOUS", "INLIER"}:
+        return stored == response_value
+    return False
 
 
 async def prepare(database: Database, git_sha: str) -> dict[str, Any]:

@@ -39,10 +39,14 @@ def test_vehicle_scope_rejects_an_empty_source_set():
     [
         ("True", True, True),
         ("False", False, True),
+        ("ANOMALOUS", "ANOMALOUS", True),
+        ("INLIER", "INLIER", True),
         (None, None, True),
         ("True", False, False),
+        ("INLIER", "ANOMALOUS", False),
         (None, True, False),
         ("True", 1, False),
+        ("UNKNOWN", "UNKNOWN", False),
     ],
 )
 def test_stored_decision_matches_text_column_representation(stored, response, matches):
