@@ -14,7 +14,8 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const MAX_SESSION_MS = 30 * 60 * 1000;
-const MAX_REQUESTS_PER_MINUTE = 60;
+const DEFAULT_REQUESTS_PER_MINUTE = 60;
+const MAX_REQUESTS_PER_MINUTE = 120;
 const MAX_CONCURRENT_REQUESTS = 4;
 const HISTORY_QUERY_KEYS = new Set([
   "limit",
@@ -391,8 +392,15 @@ export function revokeSession(request: NextRequest): void {
 
 function admitRequest(): () => void {
   const now = Date.now();
+  const configuredLimit = Number(
+    process.env.PREDICTIVE_UI_REQUESTS_PER_MINUTE ??
+      DEFAULT_REQUESTS_PER_MINUTE,
+  );
+  const requestLimit = Number.isSafeInteger(configuredLimit)
+    ? Math.max(1, Math.min(MAX_REQUESTS_PER_MINUTE, configuredLimit))
+    : DEFAULT_REQUESTS_PER_MINUTE;
   state.requests = state.requests.filter((time) => time > now - 60_000);
-  if (state.requests.length >= MAX_REQUESTS_PER_MINUTE) {
+  if (state.requests.length >= requestLimit) {
     throw new PredictiveError(
       429,
       "RATE_LIMITED",

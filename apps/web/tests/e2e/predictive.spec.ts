@@ -473,6 +473,10 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       const row = page.locator(".receipt-table tbody tr").nth(rowIndex);
       await expect(row).toHaveAttribute("data-receipt-id", record.receipt_id);
       await row.locator(".table-select").click();
+      await expect(row).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator("#evidence .section-source code")).toHaveText(
+        record.receipt_id,
+      );
     };
     const sourceEvidence = new Map<string, Record<string, unknown>>();
     const waitForEvidence = async (record: (typeof oracle.records)[number]) => {

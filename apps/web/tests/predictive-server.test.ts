@@ -193,6 +193,30 @@ describe("predictive server boundary", () => {
     expect(fetchMock).toHaveBeenCalledTimes(60);
   });
 
+  it("never exceeds the coordinated 9D predictive read budget", async () => {
+    vi.stubEnv("PREDICTIVE_UI_REQUESTS_PER_MINUTE", "999");
+    const server = await serverModule();
+    const fetchMock = vi.fn<typeof fetch>(
+      async () =>
+        new Response("{}", {
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const path = `/api/v1/prediction-service/vehicles/${vehicleId}/runs`;
+    for (let index = 0; index < 120; index += 1)
+      await server.predictionApiGet(request() as never, path);
+
+    await expect(
+      server.predictionApiGet(request() as never, path),
+    ).rejects.toMatchObject({
+      status: 429,
+      code: "RATE_LIMITED",
+      retryAfterSeconds: 60,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(120);
+  });
+
   it("caps and preserves upstream Retry-After values", async () => {
     const server = await serverModule();
     vi.stubGlobal(

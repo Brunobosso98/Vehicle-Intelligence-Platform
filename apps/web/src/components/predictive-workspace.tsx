@@ -909,6 +909,7 @@ export function PredictiveWorkspace({
           setEvidenceState("missing");
         } else if (evidenceResponse.ok) {
           const projection = (await evidenceResponse.json()) as Evidence;
+          if (controller.signal.aborted) return null;
           if (!evidenceMatches(original, projection)) {
             setEvidence(null);
             setEvidenceState("failed");
@@ -930,6 +931,7 @@ export function PredictiveWorkspace({
           const context = (await agentResponse.json()) as {
             items: AgentLink[];
           };
+          if (controller.signal.aborted) return null;
           setAgentLinks(context.items);
         } else setAgentLinks([]);
         return null;
@@ -1070,6 +1072,15 @@ export function PredictiveWorkspace({
 
   function selectReceipt(receiptId: string) {
     preferredReceiptId.current = receiptId;
+    if (receiptId === selectedReceiptId) {
+      replaceShareState(vehicleId, receiptId);
+      return;
+    }
+    setDetail(null);
+    setEvidence(null);
+    setAgentLinks([]);
+    setDetailState("loading");
+    setEvidenceState("loading");
     setSelectedReceiptId(receiptId);
     replaceShareState(vehicleId, receiptId);
   }
