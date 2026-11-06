@@ -10,7 +10,13 @@ type AgentRun = components["schemas"]["AgentRun"];
 type Audit = components["schemas"]["RunAudit"];
 type AgentEvent = components["schemas"]["StreamEvent"];
 
-export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
+export function AgentWorkspace({
+  vehicleId,
+  initialRunId,
+}: {
+  vehicleId: string;
+  initialRunId?: string;
+}) {
   const [question, setQuestion] = useState("");
   const [run, setRun] = useState<AgentRun | null>(null);
   const [audit, setAudit] = useState<Audit | null>(null);
@@ -24,6 +30,7 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
   const cursor = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const mounted = useRef(true);
+  const initialRunLoaded = useRef<string | null>(null);
   const base = `/api/domain/vehicles/${encodeURIComponent(vehicleId)}/agent-runs`;
 
   useEffect(() => {
@@ -57,6 +64,24 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
     }
     return current;
   }
+
+  useEffect(() => {
+    if (
+      !initialRunId ||
+      !vehicleId ||
+      initialRunLoaded.current === initialRunId
+    )
+      return;
+    initialRunLoaded.current = initialRunId;
+    void loadRun(initialRunId).catch(() => {
+      if (!mounted.current) return;
+      setError(
+        "A investigação vinculada não está disponível para este veículo.",
+      );
+    });
+    // This read-only deep link loads an existing run; it never starts an investigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialRunId, vehicleId]);
 
   function observe(id: string) {
     stream.current?.close();
@@ -217,6 +242,7 @@ export function AgentWorkspace({ vehicleId }: { vehicleId: string }) {
   const result = run?.result;
   return (
     <section
+      id="agent-workspace"
       className="telemetry-card agent-workspace"
       aria-labelledby="agent-heading"
     >

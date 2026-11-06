@@ -41,10 +41,13 @@ from vehicle_platform.predictions.domain import (
     AnomalyRequest,
     FeatureSnapshot,
     NextPullRequest,
+    PredictionAgentRunContext,
     PredictionError,
     PredictionKind,
     PredictionLineage,
     PredictionQuality,
+    PredictionReceiptHistoryFilters,
+    PredictionReceiptHistoryPage,
     PredictionResponse,
     PredictionStatus,
     ServingBinding,
@@ -411,6 +414,41 @@ class PredictionService:
                 404, "PREDICTION_RECEIPT_NOT_FOUND", "Prediction receipt not found"
             )
         return result
+
+    async def receipt_history(
+        self, vehicle_id: UUID, filters: PredictionReceiptHistoryFilters
+    ) -> PredictionReceiptHistoryPage:
+        self._authorize_history_vehicle(vehicle_id)
+        return await self.repository.receipt_history(vehicle_id, filters)
+
+    async def receipt_for_vehicle(
+        self, vehicle_id: UUID, receipt_id: UUID
+    ) -> PredictionResponse | None:
+        page = await self.receipt_history(
+            vehicle_id,
+            PredictionReceiptHistoryFilters(limit=1, offset=0, receipt_id=receipt_id),
+        )
+        return page.items[0].prediction if page.items else None
+
+    async def agent_context(self, vehicle_id: UUID, receipt_id: UUID) -> PredictionAgentRunContext:
+        self._authorize_history_vehicle(vehicle_id)
+        receipt = await self.repository.receipt_history(
+            vehicle_id,
+            PredictionReceiptHistoryFilters(limit=1, offset=0, receipt_id=receipt_id),
+        )
+        if not receipt.items:
+            raise PredictionError(
+                404, "PREDICTION_RECEIPT_NOT_FOUND", "Prediction receipt not found"
+            )
+        return await self.repository.agent_context(vehicle_id, receipt_id)
+
+    def _authorize_history_vehicle(self, vehicle_id: UUID) -> None:
+        allowed = set(self.settings.prediction_operator_vehicle_ids.split(","))
+        if not allowed or str(vehicle_id) not in allowed:
+            # Deliberately nondisclosing: unknown and out-of-scope vehicles look alike.
+            raise PredictionError(
+                404, "PREDICTION_RECEIPT_NOT_FOUND", "Prediction receipt not found"
+            )
 
     async def inspect_candidate(self, result_kind: str, version_id: UUID) -> ServingCandidate:
         expected_checksum = default_feature_version().checksum

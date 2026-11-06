@@ -174,7 +174,9 @@ diagnoses or failure probabilities. Phase 9D and 9E are merged, and Phase 9F is 
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G's offline evaluation and
 research-only calibration foundation is implemented on its dedicated branch; its exact-head PR
 checks and canonical full-stack gate determine verified delivery. Real-world calibration remains
-`NOT_ESTABLISHED`. Phase 9H remains planned. See the
+`NOT_ESTABLISHED`. Phase 9H is implemented on its existing branch; its exact-head local, security,
+database-backed, browser, and GitHub Actions evidence is recorded separately and remains **NOT
+VERIFIED** until every required gate and the independent receipt-parity acceptance pass. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
@@ -260,3 +262,28 @@ disposable database, migration, registered-artifact, and independent-checker gat
 observability commands render only from the same current-SHA receipt. Real-world predictive
 validity and calibration remain `NOT_ESTABLISHED` without verified outcomes. Docker-dependent
 acceptance is `CI REQUIRED` without a usable daemon.
+
+## Phase 9H predictive intelligence UI
+
+Phase 9H adds an integrated, historical, read-only predictive workspace to the existing Next.js
+application. Real 9D/9E reads are available only through a disabled-by-default development/test
+operator gate and a server-only BFF with an explicit vehicle allowlist, short-lived signed session,
+CSRF/origin checks, fixed API host/path, bounded requests, and `no-store` responses. Production
+cannot enable the operator UI. The explicitly marked synthetic demo is isolated from persisted
+receipts. No UI action runs inference, training, evidence materialization, agent execution,
+calibration promotion, live predictive monitoring, or ECU control.
+
+The workspace preserves exact stored scores, thresholds, versions, source role, cutoff and evidence
+state; it links existing AgentRuns and displays only a checksum-verified Phase 9G research summary.
+Anomaly scores are not health percentages, engineering scores are not failure probabilities, and
+synthetic Phase 9G calibration does not establish real-world validity. See the
+[architecture](docs/architecture/phase-9h-predictive-intelligence-ui.md),
+[operator runbook](docs/runbooks/predictive-intelligence-ui.md),
+[acceptance record](docs/validation/phase-9h-acceptance.md),
+[UI evaluation](docs/validation/phase-9h-ui-evaluation.md),
+[security/accessibility review](docs/validation/phase-9h-security-accessibility.md),
+[security findings](docs/security/phase-9h-security-review.md),
+[185-requirement traceability ledger](docs/validation/phase-9h-traceability-ledger.md), and
+[ADR 0046](docs/adr/0046-phase9h-protected-predictive-ui.md). Use `make phase9h-acceptance` for
+the independent actual-API, disposable-database, protected BFF and Playwright oracle. Docker-backed
+database and exact-image checks remain `CI REQUIRED` in environments without Docker.

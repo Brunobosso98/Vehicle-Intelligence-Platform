@@ -1,0 +1,212 @@
+{
+  "schemaVersion": "phase9h-demo-fixture-v1",
+  "fixtureVersion": "predictive-ui-demo-2026-01",
+  "label": "DADOS SIMULADOS PARA DEMONSTRAÇÃO",
+  "sourceRole": "synthetic",
+  "vehicleLabel": "Veículo de demonstração — sem vínculo com um veículo real",
+  "vehicleId": "DEMO-VEHICLE-9H",
+  "generatedAt": "2026-01-15T12:00:00Z",
+  "persistedPrediction": false,
+  "servingRequest": false,
+  "items": [
+    {
+      "prediction": {
+        "schema_version": "phase9d-prediction-response-v1",
+        "result_type": "next_pull",
+        "task": "NEXT_PULL_FUEL_DEVIATION",
+        "family": null,
+        "horizon": "NEXT_PULL",
+        "status": "READY_SCORE",
+        "reason_code": null,
+        "receipt_id": "demo-receipt-9h-fuel-01",
+        "requested_cutoff": "2026-01-15T11:50:00Z",
+        "effective_cutoff": "2026-01-15T11:49:55Z",
+        "source_role": "synthetic",
+        "model_version_id": "demo-model-9b-fuel-v1",
+        "detector_version_id": null,
+        "feature_set_version": "phase9a-pull-v2-demo",
+        "decision": true,
+        "engineering_validation_score": 0.4217,
+        "anomaly_score": null,
+        "threshold": 0.4,
+        "score_is_probability": false,
+        "interpretation": "Illustrative supervised engineering score for a synthetic demonstration fixture.",
+        "limitation": "Not a real vehicle result, failure probability, diagnosis, or serving decision.",
+        "quality": {
+          "quality_class": "degraded",
+          "observed_feature_count": 7,
+          "expected_feature_count": 9,
+          "coverage": 0.7778,
+          "missing_reason_counts": { "unavailable_signal": 2 }
+        }
+      },
+      "recorded_at": "2026-01-15T11:51:02Z",
+      "vehicle_id": "DEMO-VEHICLE-9H",
+      "session_id": "DEMO-SESSION-01",
+      "pull_id": "DEMO-PULL-01",
+      "configuration_id": null,
+      "source_type": "synthetic-demo-fixture",
+      "evidence_available": true,
+      "evidence_completeness": "PARTIAL",
+      "evidence_integrity": "NOT_VERIFIABLE",
+      "captured_binding_state": "ACTIVATED",
+      "current_binding_state": "ACTIVATED"
+    },
+    {
+      "prediction": {
+        "schema_version": "phase9d-prediction-response-v1",
+        "result_type": "anomaly",
+        "task": null,
+        "family": "thermal",
+        "horizon": "AFTER_PULL_OFFLINE",
+        "status": "READY_SCORE",
+        "reason_code": null,
+        "receipt_id": "demo-receipt-9h-thermal-02",
+        "requested_cutoff": "2026-01-15T11:45:00Z",
+        "effective_cutoff": "2026-01-15T11:44:58Z",
+        "source_role": "synthetic",
+        "model_version_id": null,
+        "detector_version_id": "demo-detector-9c-thermal-v1",
+        "feature_set_version": "phase9a-pull-v2-demo",
+        "decision": "ANOMALOUS",
+        "engineering_validation_score": null,
+        "anomaly_score": 1.72,
+        "threshold": 1.5,
+        "score_is_probability": false,
+        "interpretation": "Illustrative offline statistical deviation within a synthetic fixture.",
+        "limitation": "Not an engine-health percentage, confirmed fault, or component diagnosis.",
+        "quality": {
+          "quality_class": "high",
+          "observed_feature_count": 8,
+          "expected_feature_count": 8,
+          "coverage": 1,
+          "missing_reason_counts": {}
+        }
+      },
+      "recorded_at": "2026-01-15T11:45:20Z",
+      "vehicle_id": "DEMO-VEHICLE-9H",
+      "session_id": "DEMO-SESSION-01",
+      "pull_id": "DEMO-PULL-02",
+      "configuration_id": null,
+      "source_type": "synthetic-demo-fixture",
+      "evidence_available": false,
+      "evidence_completeness": null,
+      "evidence_integrity": null,
+      "captured_binding_state": "ACTIVATED",
+      "current_binding_state": "REVOKED"
+    },
+    {
+      "prediction": {
+        "schema_version": "phase9d-prediction-response-v1",
+        "result_type": "next_pull",
+        "task": "NEXT_PULL_THERMAL_DEGRADATION",
+        "family": null,
+        "horizon": "NEXT_PULL",
+        "status": "ABSTAINED_INSUFFICIENT_SIGNAL",
+        "reason_code": "FEATURE_SET_UNAVAILABLE",
+        "receipt_id": "demo-receipt-9h-thermal-03",
+        "requested_cutoff": "2026-01-15T11:40:00Z",
+        "effective_cutoff": null,
+        "source_role": "synthetic",
+        "model_version_id": "demo-model-9b-thermal-v1",
+        "detector_version_id": null,
+        "feature_set_version": null,
+        "decision": null,
+        "engineering_validation_score": null,
+        "anomaly_score": null,
+        "threshold": 0.5,
+        "score_is_probability": false,
+        "interpretation": "No score was produced because this synthetic example lacks required signal coverage.",
+        "limitation": "Abstention is unavailable evidence, not a normal or healthy result.",
+        "quality": {
+          "quality_class": "unavailable",
+          "observed_feature_count": 0,
+          "expected_feature_count": 8,
+          "coverage": 0,
+          "missing_reason_counts": { "unavailable_signal": 8 }
+        }
+      },
+      "recorded_at": "2026-01-15T11:40:15Z",
+      "vehicle_id": "DEMO-VEHICLE-9H",
+      "session_id": "DEMO-SESSION-01",
+      "pull_id": "DEMO-PULL-03",
+      "configuration_id": null,
+      "source_type": "synthetic-demo-fixture",
+      "evidence_available": true,
+      "evidence_completeness": "ABSTAINED",
+      "evidence_integrity": "NOT_VERIFIABLE",
+      "captured_binding_state": "ACTIVATED",
+      "current_binding_state": "ACTIVATED"
+    }
+  ],
+  "evidence": {
+    "demo-receipt-9h-fuel-01": {
+      "evidence_id": "demo-evidence-01",
+      "receipt_id": "demo-receipt-9h-fuel-01",
+      "score": 0.4217,
+      "threshold": 0.4,
+      "completeness": "PARTIAL",
+      "integrity": "NOT_VERIFIABLE",
+      "coverage": 0.7778,
+      "observed_feature_count": 7,
+      "expected_feature_count": 9,
+      "artifact_availability": "UNAVAILABLE",
+      "cutoff": "2026-01-15T11:49:55Z",
+      "missing_reason_counts": { "unavailable_signal": 2 },
+      "available_signals": [
+        "manifold_pressure",
+        "intake_air_temperature",
+        "engine_speed"
+      ],
+      "gaps": [
+        { "code": "SIGNAL_UNAVAILABLE", "reason_code": "unavailable_signal" }
+      ],
+      "facts": [
+        {
+          "fact_id": "demo-fact-1",
+          "key": "observed feature coverage",
+          "fact_type": "QUALITY_INDICATOR",
+          "value": 0.7778,
+          "unit": null,
+          "cutoff": "2026-01-15T11:49:55Z",
+          "cutoff_eligible": true,
+          "quality": "LIMITED",
+          "missing_reason": null,
+          "observed_at": "2026-01-15T11:49:40Z",
+          "available_at": "2026-01-15T11:49:40Z",
+          "source_window_start": "2026-01-15T11:49:00Z",
+          "source_window_end": "2026-01-15T11:49:40Z",
+          "ordinal": 0,
+          "meaning": "Synthetic example coverage; no vehicle measurement."
+        }
+      ],
+      "claims": [],
+      "limitations": [
+        "This fixture is synthetic and cannot be used to assess a real vehicle."
+      ]
+    },
+    "demo-receipt-9h-thermal-03": {
+      "evidence_id": "demo-evidence-03",
+      "receipt_id": "demo-receipt-9h-thermal-03",
+      "score": null,
+      "threshold": 0.5,
+      "completeness": "ABSTAINED",
+      "integrity": "NOT_VERIFIABLE",
+      "coverage": 0,
+      "observed_feature_count": 0,
+      "expected_feature_count": 8,
+      "artifact_availability": "UNAVAILABLE",
+      "cutoff": "2026-01-15T11:40:00Z",
+      "missing_reason_counts": { "unavailable_signal": 8 },
+      "available_signals": [],
+      "gaps": [
+        { "code": "INPUT_ABSTAINED", "reason_code": "FEATURE_SET_UNAVAILABLE" }
+      ],
+      "facts": [],
+      "claims": [],
+      "limitations": [
+        "Abstention indicates unavailable evidence in this synthetic fixture."
+      ]
+    }
+  }
+}

@@ -12,8 +12,13 @@ from vehicle_platform.features.domain import canonical_json, stable_hash
 from vehicle_platform.infrastructure.database import Database
 from vehicle_platform.predictions.domain import (
     FeatureSnapshot,
+    PredictionAgentRunContext,
+    PredictionAgentRunLink,
     PredictionError,
     PredictionKind,
+    PredictionReceiptHistoryFilters,
+    PredictionReceiptHistoryItem,
+    PredictionReceiptHistoryPage,
     PredictionResponse,
     PullContext,
     ServingBinding,
@@ -24,6 +29,17 @@ from vehicle_platform.predictions.domain import (
 CONTROLLED_SCOPE = "controlled-engineering-dataset"
 FEATURE_SET_VERSION = "phase9a-pull-v2"
 _SERVE_ROLES = {role.value: role for role in SourceRole if role is not SourceRole.MIXED}
+
+
+def _same_number(left: object, right: object) -> bool:
+    if left is None or right is None:
+        return left is None and right is None
+    if not isinstance(left, (int, float, str)) or not isinstance(right, (int, float, str)):
+        return False
+    try:
+        return abs(float(left) - float(right)) <= 1e-12
+    except (TypeError, ValueError):
+        return False
 
 
 def slot_key(
@@ -694,6 +710,192 @@ class PredictionRepository:
                 )
             ).scalar_one_or_none()
         return PredictionResponse.model_validate(json_object(body)) if body is not None else None
+
+    async def receipt_history(
+        self,
+        vehicle_id: UUID,
+        filters: PredictionReceiptHistoryFilters,
+    ) -> PredictionReceiptHistoryPage:
+        limit, offset = filters.limit, filters.offset
+        recorded_from, recorded_to = filters.recorded_from, filters.recorded_to
+        if not 1 <= limit <= 20 or not 0 <= offset <= 500:
+            raise PredictionError(422, "PREDICTION_INVALID_PAGE", "Invalid page bounds")
+        if recorded_from is not None and recorded_to is not None and recorded_from > recorded_to:
+            raise PredictionError(422, "PREDICTION_INVALID_DATE_RANGE", "Invalid date range")
+        if any(
+            value is not None and value.utcoffset() is None
+            for value in (recorded_from, recorded_to)
+        ):
+            raise PredictionError(
+                422, "PREDICTION_INVALID_DATE_RANGE", "Date filters must include a timezone"
+            )
+
+        predicates = [
+            "p.vehicle_id=:vehicle_id",
+            "r.schema_version='phase9d-prediction-response-v1'",
+        ]
+        params: dict[str, Any] = {
+            "vehicle_id": vehicle_id,
+            "limit": limit,
+            "offset": offset,
+        }
+        for column, key, value in (
+            ("r.id", "receipt_id", filters.receipt_id),
+            ("r.result_kind", "result_kind", filters.result_kind),
+            ("r.horizon", "horizon", filters.horizon),
+            ("r.source_role", "source_role", filters.source_role),
+            ("r.status", "status", filters.status),
+            ("p.session_id", "session_id", filters.session_id),
+            ("p.id", "pull_id", filters.pull_id),
+            (
+                "COALESCE(p.configuration_id,s.configuration_id)",
+                "configuration_id",
+                filters.configuration_id,
+            ),
+            ("r.created_at >= :recorded_from", "recorded_from", recorded_from),
+            ("r.created_at <= :recorded_to", "recorded_to", recorded_to),
+        ):
+            if value is not None:
+                if key in {"recorded_from", "recorded_to"}:
+                    predicates.append(column)
+                else:
+                    predicates.append(f"{column}=:{key}")
+                params[key] = value
+        if filters.task is not None:
+            predicates.append("r.response_body->>'task'=:task")
+            params["task"] = filters.task
+        if filters.family is not None:
+            predicates.append("r.response_body->>'family'=:family")
+            params["family"] = filters.family
+        if filters.evidence_completeness is not None:
+            predicates.append("b.completeness=:evidence_completeness")
+            params["evidence_completeness"] = filters.evidence_completeness
+        if filters.evidence_integrity is not None:
+            predicates.append("b.integrity=:evidence_integrity")
+            params["evidence_integrity"] = filters.evidence_integrity
+
+        where = " AND ".join(predicates)
+        joins = (
+            " FROM prediction_receipts r "
+            "JOIN pulls p ON p.id=r.pull_id "
+            "JOIN driving_sessions s ON s.id=p.session_id AND s.vehicle_id=p.vehicle_id "
+            "LEFT JOIN prediction_evidence_bundles b ON b.receipt_id=r.id "
+            "AND b.schema_version='phase9e-prediction-evidence-v1' "
+        )
+        async with self.database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION READ ONLY"))
+            total = await db.scalar(text(f"SELECT count(*){joins}WHERE {where}"), params)
+            rows = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT r.id,r.response_body,r.created_at,r.result_kind,r.horizon,r.status,"
+                            "r.source_role,r.engineering_validation_score,r.anomaly_score,r.threshold,"
+                            "r.requested_cutoff,r.effective_cutoff,p.vehicle_id,p.session_id,p.id AS pull_id,"
+                            "COALESCE(p.configuration_id,s.configuration_id) AS configuration_id,"
+                            "s.source_type,b.id AS evidence_id,b.completeness AS evidence_completeness,"
+                            "b.integrity AS evidence_integrity,captured.event_type AS captured_binding_state,"
+                            "current.event_type AS current_binding_state"
+                            + joins
+                            + "JOIN prediction_serving_events captured ON captured.id=r.binding_event_id "
+                            "JOIN LATERAL (SELECT event_type FROM prediction_serving_events e "
+                            "WHERE e.binding_id=r.binding_id ORDER BY e.event_number DESC LIMIT 1) current ON true "
+                            + f"WHERE {where} ORDER BY r.created_at DESC,r.id DESC LIMIT :limit OFFSET :offset"
+                        ),
+                        params,
+                    )
+                )
+                .mappings()
+                .all()
+            )
+
+        items: list[PredictionReceiptHistoryItem] = []
+        for row in rows:
+            prediction = PredictionResponse.model_validate(json_object(row["response_body"]))
+            stored_score = row["engineering_validation_score"]
+            if stored_score is None:
+                stored_score = row["anomaly_score"]
+            response_score = (
+                prediction.engineering_validation_score
+                if prediction.result_type == "next_pull"
+                else prediction.anomaly_score
+            )
+            if (
+                prediction.receipt_id != row["id"]
+                or prediction.result_type != row["result_kind"]
+                or prediction.horizon != row["horizon"]
+                or prediction.status.value != row["status"]
+                or prediction.source_role.value != row["source_role"]
+                or prediction.requested_cutoff != row["requested_cutoff"]
+                or prediction.effective_cutoff != row["effective_cutoff"]
+                or not _same_number(response_score, stored_score)
+                or not _same_number(prediction.threshold, row["threshold"])
+            ):
+                raise PredictionError(
+                    409,
+                    "PREDICTION_RECEIPT_SOURCE_MISMATCH",
+                    "Stored prediction receipt fields are inconsistent",
+                )
+            items.append(
+                PredictionReceiptHistoryItem(
+                    prediction=prediction,
+                    recorded_at=row["created_at"],
+                    vehicle_id=row["vehicle_id"],
+                    session_id=row["session_id"],
+                    pull_id=row["pull_id"],
+                    configuration_id=row["configuration_id"],
+                    source_type=row["source_type"],
+                    evidence_available=row["evidence_id"] is not None,
+                    evidence_completeness=row["evidence_completeness"],
+                    evidence_integrity=row["evidence_integrity"],
+                    captured_binding_state=row["captured_binding_state"],
+                    current_binding_state=row["current_binding_state"],
+                )
+            )
+        return PredictionReceiptHistoryPage(
+            items=items,
+            total=min(int(total or 0), 500),
+            limit=limit,
+            offset=offset,
+            has_more=int(total or 0) > offset + len(items),
+        )
+
+    async def agent_context(self, vehicle_id: UUID, receipt_id: UUID) -> PredictionAgentRunContext:
+        async with self.database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION READ ONLY"))
+            rows = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT l.agent_run_id,a.started_at,a.status,l.source_role,l.horizon,"
+                            "l.completeness,l.integrity FROM agent_prediction_evidence_links l "
+                            "JOIN agent_runs a ON a.id=l.agent_run_id "
+                            "WHERE l.source_vehicle_id=:vehicle_id AND l.receipt_id=:receipt_id "
+                            "AND a.vehicle_id=:vehicle_id "
+                            "GROUP BY l.agent_run_id,a.started_at,a.status,l.source_role,l.horizon,"
+                            "l.completeness,l.integrity ORDER BY a.started_at DESC,l.agent_run_id LIMIT 20"
+                        ),
+                        {"vehicle_id": vehicle_id, "receipt_id": receipt_id},
+                    )
+                )
+                .mappings()
+                .all()
+            )
+        return PredictionAgentRunContext(
+            receipt_id=receipt_id,
+            items=[
+                PredictionAgentRunLink(
+                    run_id=row["agent_run_id"],
+                    started_at=row["started_at"],
+                    status=row["status"],
+                    source_role=row["source_role"],
+                    horizon=row["horizon"],
+                    completeness=row["completeness"],
+                    integrity=row["integrity"],
+                )
+                for row in rows
+            ],
+        )
 
     async def _append_event(
         self,

@@ -6,12 +6,25 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, Query, Request, Security
 from fastapi.security import HTTPBearer
-from pydantic import BaseModel, ConfigDict
+from pydantic import AwareDatetime, BaseModel, ConfigDict
 
+from vehicle_platform.anomalies.domain import SourceRole
 from vehicle_platform.api.contracts import ErrorResponse
+from vehicle_platform.ml.domain import MLTask
 from vehicle_platform.prediction_evidence.domain import PredictionEvidenceProjection
 from vehicle_platform.prediction_evidence.service import PredictionEvidenceService
-from vehicle_platform.predictions.domain import AnomalyRequest, NextPullRequest, PredictionResponse
+from vehicle_platform.predictions.domain import (
+    AnomalyFamily,
+    AnomalyRequest,
+    NextPullRequest,
+    PredictionAgentRunContext,
+    PredictionError,
+    PredictionKind,
+    PredictionReceiptHistoryFilters,
+    PredictionReceiptHistoryPage,
+    PredictionResponse,
+    PredictionStatus,
+)
 from vehicle_platform.predictions.service import PredictionService
 
 _bearer = HTTPBearer(auto_error=False, scheme_name="PredictionOperatorBearer")
@@ -141,6 +154,92 @@ def prediction_router(
         request.state.prediction_endpoint = "receipt"
         return await service.receipt(receipt_id)
 
+    @router.get(
+        "/vehicles/{vehicle_id}/runs",
+        response_model=PredictionReceiptHistoryPage,
+        operation_id="prediction_service_vehicle_receipt_history",
+        responses={**error_responses, 404: {"model": ErrorResponse}},
+        dependencies=[Security(_bearer)],
+    )
+    async def vehicle_receipt_history(
+        vehicle_id: UUID,
+        request: Request,
+        limit: int = Query(default=20, ge=1, le=20),
+        offset: int = Query(default=0, ge=0, le=500),
+        receipt_id: UUID | None = None,
+        result_kind: PredictionKind | None = None,
+        task: MLTask | None = None,
+        family: AnomalyFamily | None = None,
+        horizon: Literal["NEXT_PULL", "AFTER_PULL_OFFLINE"] | None = None,
+        source_role: SourceRole | None = None,
+        status: PredictionStatus | None = None,
+        session_id: UUID | None = None,
+        pull_id: UUID | None = None,
+        configuration_id: UUID | None = None,
+        recorded_from: AwareDatetime | None = None,
+        recorded_to: AwareDatetime | None = None,
+        evidence_completeness: Literal["COMPLETE", "PARTIAL", "ABSTAINED"] | None = None,
+        evidence_integrity: Literal[
+            "VERIFIED",
+            "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+            "FAILED_SOURCE_MISMATCH",
+            "NOT_VERIFIABLE",
+            "UNSUPPORTED_SCHEMA",
+        ]
+        | None = None,
+    ) -> PredictionReceiptHistoryPage:
+        request.state.prediction_endpoint = "receipt_history"
+        filters = PredictionReceiptHistoryFilters(
+            limit=limit,
+            offset=offset,
+            receipt_id=receipt_id,
+            result_kind=result_kind,
+            task=task,
+            family=family,
+            horizon=horizon,
+            source_role=source_role,
+            status=status,
+            session_id=session_id,
+            pull_id=pull_id,
+            configuration_id=configuration_id,
+            recorded_from=recorded_from,
+            recorded_to=recorded_to,
+            evidence_completeness=evidence_completeness,
+            evidence_integrity=evidence_integrity,
+        )
+        return await service.receipt_history(vehicle_id, filters)
+
+    @router.get(
+        "/vehicles/{vehicle_id}/runs/{receipt_id}",
+        response_model=PredictionResponse,
+        operation_id="prediction_service_vehicle_receipt",
+        responses={**error_responses, 404: {"model": ErrorResponse}},
+        dependencies=[Security(_bearer)],
+    )
+    async def vehicle_receipt(
+        vehicle_id: UUID, receipt_id: UUID, request: Request
+    ) -> PredictionResponse:
+        request.state.prediction_endpoint = "vehicle_receipt"
+        result = await service.receipt_for_vehicle(vehicle_id, receipt_id)
+        if result is None:
+            raise PredictionError(
+                404, "PREDICTION_RECEIPT_NOT_FOUND", "Prediction receipt not found"
+            )
+        return result
+
+    @router.get(
+        "/vehicles/{vehicle_id}/runs/{receipt_id}/agent-context",
+        response_model=PredictionAgentRunContext,
+        operation_id="prediction_service_receipt_agent_context",
+        responses={**error_responses, 404: {"model": ErrorResponse}},
+        dependencies=[Security(_bearer)],
+    )
+    async def receipt_agent_context(
+        vehicle_id: UUID, receipt_id: UUID, request: Request
+    ) -> PredictionAgentRunContext:
+        request.state.prediction_endpoint = "agent_context_read"
+        return await service.agent_context(vehicle_id, receipt_id)
+
     if evidence_service is not None:
 
         @router.post(
@@ -187,6 +286,24 @@ def prediction_router(
             receipt_id: UUID, request: Request
         ) -> PredictionEvidenceProjection:
             request.state.prediction_endpoint = "evidence_read"
+            return await evidence_service.read_for_receipt(receipt_id)
+
+        @router.get(
+            "/vehicles/{vehicle_id}/runs/{receipt_id}/evidence",
+            response_model=PredictionEvidenceProjection,
+            operation_id="prediction_service_vehicle_receipt_evidence",
+            responses={**error_responses, 404: {"model": ErrorResponse}},
+            dependencies=[Security(_bearer)],
+        )
+        async def vehicle_receipt_evidence(
+            vehicle_id: UUID, receipt_id: UUID, request: Request
+        ) -> PredictionEvidenceProjection:
+            request.state.prediction_endpoint = "vehicle_evidence_read"
+            receipt = await service.receipt_for_vehicle(vehicle_id, receipt_id)
+            if receipt is None:
+                raise PredictionError(
+                    404, "PREDICTION_RECEIPT_NOT_FOUND", "Prediction receipt not found"
+                )
             return await evidence_service.read_for_receipt(receipt_id)
 
         @router.post(

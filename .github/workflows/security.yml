@@ -30,6 +30,14 @@ jobs:
       - run: make bootstrap containers
       - run: bash scripts/install-security-tools.sh
       - run: make security
+      - name: Retain machine-readable container scan reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: container-security-${{ github.sha }}
+          path: .validation/security/
+          if-no-files-found: warn
+          retention-days: 14
   codeql:
     runs-on: ubuntu-latest
     permissions:

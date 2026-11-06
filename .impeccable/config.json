@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-06T18:41:03.649Z",
+        "reason": "Agent: preserve the incumbent platform type stack; the baseline body rule uses Arial and the chart labels match it for consistency."
+      }
+    ]
+  }
+}
