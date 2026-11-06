@@ -379,6 +379,62 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
         )
     if persisted_metrics.get("internalApiHostRequests") != 0:
         raise RuntimeError("The browser contacted the private API host directly.")
+    completeness_states = {"COMPLETE", "PARTIAL", "ABSTAINED"}
+    integrity_states = {
+        "VERIFIED",
+        "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        "FAILED_SOURCE_MISMATCH",
+        "NOT_VERIFIABLE",
+        "UNSUPPORTED_SCHEMA",
+    }
+    expected_proof_states = {
+        (completeness, integrity)
+        for completeness in completeness_states
+        for integrity in integrity_states
+    }
+    proof_matrix = persisted_metrics.get("proofStateMatrix")
+    actual_proof_states = (
+        {
+            (item.get("completeness"), item.get("integrity"))
+            for item in proof_matrix
+            if isinstance(item, dict)
+        }
+        if isinstance(proof_matrix, list)
+        else set()
+    )
+    if len(proof_matrix or []) != 15 or actual_proof_states != expected_proof_states:
+        raise RuntimeError(
+            "The browser did not exercise every COMPLETE/PARTIAL/ABSTAINED × "
+            "integrity state exactly once."
+        )
+    source_receipt_ids = {item["receipt_id"] for item in oracle["records"]}
+    for item in proof_matrix:
+        completeness = item["completeness"]
+        integrity = item["integrity"]
+        expected_trusted = integrity == "VERIFIED"
+        expected_claim = expected_trusted and completeness != "ABSTAINED"
+        if (
+            item.get("response_overlay") is not True
+            or item.get("source_receipt_id") not in source_receipt_ids
+            or item.get("facts_visible") is not expected_trusted
+            or item.get("claim_visible") is not expected_claim
+            or item.get("limitation_visible") is not (not expected_trusted)
+        ):
+            raise RuntimeError(
+                "The evidence proof-state browser matrix violated its source-bound "
+                f"claim restrictions for {completeness} × {integrity}."
+            )
+    screenshot_names = {
+        name for result in metrics.values() for name in result.get("screenshots", [])
+    }
+    screenshot_root = EVIDENCE / "screenshots"
+    missing_screenshots = sorted(
+        name for name in screenshot_names if not (screenshot_root / name).is_file()
+    )
+    if missing_screenshots:
+        raise RuntimeError(
+            f"Screenshot manifest references missing captures: {missing_screenshots}"
+        )
     report = {
         "schema_version": "phase9h-independent-acceptance-v1",
         "git_sha": git_sha,
@@ -400,6 +456,12 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
         "database_before_ui": oracle["database_before_ui"],
         "database_after_ui": after,
         "mutated_tables": changed,
+        "evidence_proof_state_matrix": {
+            "status": "PASS",
+            "combinations": len(actual_proof_states),
+            "source": persisted_metrics.get("proofStateMatrixSource"),
+            "ui_overlays_are_persisted_9e_rows": False,
+        },
         "ui_metrics": metrics,
         "browser_evidence": str(EVIDENCE / "playwright"),
         "status_checks": [
@@ -407,6 +469,8 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
             "4_phase_9c_families",
             "persisted_response_matches_columns",
             "phase_9e_evidence_scope_and_state",
+            "15_phase_9e_proof_state_combinations_and_claim_restrictions",
+            "playwright_screenshot_manifest_files_exist",
             "ui_browse_no_database_mutations",
             "synthetic_demo_separate_from_persisted_reads",
             "wcag_2_2_aa_and_zero_browser_console_errors",

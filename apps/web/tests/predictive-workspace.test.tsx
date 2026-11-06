@@ -381,6 +381,91 @@ async function logIn(user: ReturnType<typeof userEvent.setup>) {
 describe("Predictive Intelligence workspace", () => {
   beforeEach(() => vi.unstubAllGlobals());
 
+  it.each(
+    ["COMPLETE", "PARTIAL", "ABSTAINED"].flatMap((completeness) =>
+      [
+        "VERIFIED",
+        "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        "FAILED_SOURCE_MISMATCH",
+        "NOT_VERIFIABLE",
+        "UNSUPPORTED_SCHEMA",
+      ].map((integrity) => [completeness, integrity] as const),
+    ),
+  )(
+    "applies the evidence claim restriction for %s × %s",
+    async (completeness, integrity) => {
+      installPrivateApi({
+        evidenceBody: {
+          ...evidence,
+          completeness,
+          integrity,
+          claims: [
+            {
+              claim_id: "claim-01",
+              template: "descriptive association",
+              category: "STATISTICAL_ASSOCIATION",
+              fact_ids: ["feature-01"],
+            },
+          ],
+        },
+      });
+      const user = userEvent.setup();
+      render(<PredictiveWorkspace initialVehicleId={vehicleId} />);
+      await logIn(user);
+
+      const panel = document.getElementById("evidence");
+      expect(panel).not.toBeNull();
+      const evidencePanel = within(panel as HTMLElement);
+      expect(
+        (await evidencePanel.findAllByText(integrity, { exact: true })).length,
+      ).toBeGreaterThan(0);
+      expect(
+        evidencePanel.getByText(completeness, { exact: true }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByText("0.46317", { exact: true }).length,
+      ).toBeGreaterThan(0);
+
+      if (integrity === "VERIFIED") {
+        expect(
+          evidencePanel.getByText("Fatos de origem e qualidade"),
+        ).toBeInTheDocument();
+        if (completeness === "ABSTAINED") {
+          expect(
+            evidencePanel.queryByText(/descriptive association/),
+          ).not.toBeInTheDocument();
+        } else {
+          expect(
+            evidencePanel.getByText(/descriptive association/),
+          ).toBeInTheDocument();
+        }
+      } else {
+        expect(evidencePanel.getByRole("alert")).toHaveTextContent(
+          /Interpretação limitada/i,
+        );
+        expect(
+          evidencePanel.queryByText("Fatos de origem e qualidade"),
+        ).not.toBeInTheDocument();
+        expect(
+          evidencePanel.queryByText(/descriptive association/),
+        ).not.toBeInTheDocument();
+        expect(
+          evidencePanel.getByText(
+            /não pode sustentar uma interpretação afirmativa/i,
+          ),
+        ).toBeInTheDocument();
+      }
+
+      if (completeness === "PARTIAL") {
+        expect(
+          evidencePanel.getByText(
+            /esta origem não representa um grafo completo/i,
+          ),
+        ).toBeInTheDocument();
+      }
+    },
+  );
+
   it("keeps the synthetic demonstration explicit, isolated and usable without prediction credentials", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       const path = pathFor(input);

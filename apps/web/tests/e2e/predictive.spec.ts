@@ -641,6 +641,144 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       await save(page, "persisted-abstained.png", false);
     }
 
+    const proofCompleteness = ["COMPLETE", "PARTIAL", "ABSTAINED"] as const;
+    const proofIntegrities = [
+      "VERIFIED",
+      "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+      "FAILED_SOURCE_MISMATCH",
+      "NOT_VERIFIABLE",
+      "UNSUPPORTED_SCHEMA",
+    ] as const;
+    const proofStateMatrix: Array<{
+      completeness: (typeof proofCompleteness)[number];
+      integrity: (typeof proofIntegrities)[number];
+      source_receipt_id: string;
+      source_role: string;
+      facts_visible: boolean;
+      claim_visible: boolean;
+      limitation_visible: boolean;
+      response_overlay: true;
+    }> = [];
+    const proofOverlayByReceipt = new Map<
+      string,
+      {
+        completeness: (typeof proofCompleteness)[number];
+        integrity: (typeof proofIntegrities)[number];
+      }
+    >();
+    await page.route(
+      "**/api/predictive/vehicles/*/receipts/*/evidence",
+      async (route) => {
+        const receiptId = new URL(route.request().url()).pathname
+          .split("/")
+          .at(-2);
+        const overlay = receiptId
+          ? proofOverlayByReceipt.get(receiptId)
+          : undefined;
+        const source = receiptId ? sourceEvidence.get(receiptId) : undefined;
+        if (!overlay || !source) {
+          await route.continue();
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ...source,
+            completeness: overlay.completeness,
+            integrity: overlay.integrity,
+            claims:
+              overlay.completeness === "ABSTAINED"
+                ? []
+                : [
+                    {
+                      claim_id: "phase9h-proof-matrix-claim",
+                      template: "test-only descriptive association",
+                      category: "STATISTICAL_ASSOCIATION",
+                      fact_ids: [],
+                    },
+                  ],
+          }),
+        });
+      },
+    );
+    const scoredForMatrix = firstScored!;
+    const abstainedForMatrix = oracle.records.find(
+      (item) => item.status.startsWith("ABSTAINED") && item.evidence_id,
+    );
+    expect(
+      abstainedForMatrix,
+      "the source oracle needs an abstention receipt",
+    ).toBeTruthy();
+    for (const completeness of proofCompleteness) {
+      const record =
+        completeness === "ABSTAINED" ? abstainedForMatrix! : scoredForMatrix;
+      const alternate = oracle.records.find(
+        (item) =>
+          item.vehicle_id === record.vehicle_id &&
+          item.receipt_id !== record.receipt_id,
+      );
+      expect(alternate, "the selected receipt must be switchable").toBeTruthy();
+      for (const integrity of proofIntegrities) {
+        await selectReceipt(alternate!);
+        proofOverlayByReceipt.set(record.receipt_id, {
+          completeness,
+          integrity,
+        });
+        await selectReceipt(record);
+        const evidencePanel = page.locator("#evidence");
+        await expect(
+          evidencePanel.locator(".evidence-detail .state-pill"),
+        ).toHaveText(integrity);
+        await expect(
+          evidencePanel.getByText(completeness, { exact: true }),
+        ).toBeVisible();
+        const factsVisible = await evidencePanel
+          .getByRole("heading", { name: "Fatos de origem e qualidade" })
+          .isVisible()
+          .catch(() => false);
+        const claimVisible = await evidencePanel
+          .getByText(/test-only descriptive association/)
+          .isVisible()
+          .catch(() => false);
+        const limitationVisible = await evidencePanel
+          .getByRole("alert")
+          .isVisible()
+          .catch(() => false);
+        expect(factsVisible).toBe(integrity === "VERIFIED");
+        expect(claimVisible).toBe(
+          integrity === "VERIFIED" && completeness !== "ABSTAINED",
+        );
+        expect(limitationVisible).toBe(integrity !== "VERIFIED");
+        if (completeness === "PARTIAL") {
+          await expect(
+            evidencePanel.getByText(
+              /esta origem não representa um grafo completo/i,
+            ),
+          ).toBeVisible();
+        }
+        if (completeness === "PARTIAL" && integrity === "VERIFIED") {
+          await save(page, "proof-state-partial-overlay.png", false);
+        }
+        if (completeness === "PARTIAL" && integrity === "NOT_VERIFIABLE") {
+          await save(page, "proof-state-not-verifiable-overlay.png", false);
+        }
+        proofStateMatrix.push({
+          completeness,
+          integrity,
+          source_receipt_id: record.receipt_id,
+          source_role: record.source_role,
+          facts_visible: factsVisible,
+          claim_visible: claimVisible,
+          limitation_visible: limitationVisible,
+          response_overlay: true,
+        });
+        proofOverlayByReceipt.delete(record.receipt_id);
+      }
+    }
+    expect(proofStateMatrix).toHaveLength(15);
+    await page.unrouteAll({ behavior: "wait" });
+
     await page
       .getByRole("button", { name: "Carregar resumo científico" })
       .click();
@@ -780,12 +918,17 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         "persisted-login-denied.png",
         "persisted-overview-desktop.png",
         "persisted-scored-receipt.png",
-        "persisted-partial-evidence.png",
         "persisted-abstained.png",
+        ...(partial ? ["persisted-partial-evidence.png"] : []),
+        "proof-state-partial-overlay.png",
+        "proof-state-not-verifiable-overlay.png",
         "persisted-proof-mismatch.png",
         "persisted-research-desktop.png",
         "persisted-mobile.png",
       ],
+      proofStateMatrix,
+      proofStateMatrixSource:
+        "test-only BFF response overlays bound to disposable-database oracle receipt IDs; these UI states are not persisted 9E rows",
     });
     const activeSessionResponse = await page.request.get(
       `${baseURL}/api/predictive/session`,

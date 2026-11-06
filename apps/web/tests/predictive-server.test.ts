@@ -715,6 +715,23 @@ describe("predictive server boundary", () => {
     for (const value of invalid)
       expect(() => server.safeEvidence(value, vehicleId)).toThrow();
 
+    for (const completeness of ["COMPLETE", "PARTIAL", "ABSTAINED"] as const) {
+      for (const integrity of [
+        "VERIFIED",
+        "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        "FAILED_SOURCE_MISMATCH",
+        "NOT_VERIFIABLE",
+        "UNSUPPORTED_SCHEMA",
+      ] as const) {
+        expect(
+          server.safeEvidence(
+            { ...projection, completeness, integrity },
+            vehicleId,
+          ),
+        ).toMatchObject({ completeness, integrity });
+      }
+    }
+
     const malformedFacts = [
       null,
       { ...projection.facts[0], id: "x".repeat(81) },

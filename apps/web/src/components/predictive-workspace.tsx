@@ -373,8 +373,38 @@ function EvidencePanel({ evidence }: { evidence: Evidence | null }) {
         indica integridade nem resultado normal.
       </div>
     );
+  const verified = evidence.integrity === "VERIFIED";
+  const integrityMessage: Record<string, string> = {
+    VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE:
+      "A origem foi conferida, mas o artefato histórico não está disponível. Fatos e vínculos de interpretação ficam ocultos.",
+    FAILED_SOURCE_MISMATCH:
+      "A cadeia de origem não confere. Fatos e vínculos de interpretação ficam ocultos.",
+    NOT_VERIFIABLE:
+      "Não foi possível verificar a cadeia de origem. Fatos e vínculos de interpretação ficam ocultos.",
+    UNSUPPORTED_SCHEMA:
+      "O formato de evidência não pode ser validado. Fatos e vínculos de interpretação ficam ocultos.",
+  };
+  const displayClaims =
+    evidence.completeness === "ABSTAINED"
+      ? evidence.claims.filter((claim) => claim.category === "ABSTENTION")
+      : evidence.claims;
   return (
     <div className="evidence-detail">
+      {!verified && (
+        <div className="source-mismatch" role="alert">
+          <strong>Interpretação limitada · {evidence.integrity}</strong>
+          <p>
+            {integrityMessage[evidence.integrity] ??
+              "A integridade da evidência não foi confirmada. Fatos e vínculos de interpretação ficam ocultos."}
+          </p>
+        </div>
+      )}
+      {evidence.completeness === "PARTIAL" && (
+        <div className="science-warning" role="status">
+          Projeção parcial. As lacunas abaixo descrevem o que não foi incluído;
+          esta origem não representa um grafo completo.
+        </div>
+      )}
       <dl className="predictive-metadata">
         <div>
           <dt>Integridade do snapshot</dt>
@@ -390,43 +420,55 @@ function EvidencePanel({ evidence }: { evidence: Evidence | null }) {
           <dt>Completude</dt>
           <dd>{evidence.completeness}</dd>
         </div>
-        <div>
-          <dt>Cutoff efetivo</dt>
-          <dd>
-            <time dateTime={evidence.cutoff}>{localTime(evidence.cutoff)}</time>
-          </dd>
-        </div>
-        <div>
-          <dt>Cobertura de features</dt>
-          <dd>
-            {exact(evidence.coverage)} · {evidence.observed_feature_count}/
-            {evidence.expected_feature_count}
-          </dd>
-        </div>
-        <div>
-          <dt>Artefato</dt>
-          <dd>{evidence.artifact_availability}</dd>
-        </div>
-        <div>
-          <dt>Sinais disponíveis</dt>
-          <dd>
-            {evidence.available_signals.length
-              ? evidence.available_signals.join(", ")
-              : "Nenhum listado"}
-          </dd>
-        </div>
-        <div>
-          <dt>Missing signal counts</dt>
-          <dd>
-            {Object.entries(evidence.missing_reason_counts).length
-              ? Object.entries(evidence.missing_reason_counts)
-                  .map(([reason, count]) => `${reason}: ${count}`)
-                  .join(" · ")
-              : "Nenhum sinal ausente registrado"}
-          </dd>
-        </div>
+        {verified && (
+          <>
+            <div>
+              <dt>Cutoff efetivo</dt>
+              <dd>
+                <time dateTime={evidence.cutoff}>
+                  {localTime(evidence.cutoff)}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt>Cobertura de features</dt>
+              <dd>
+                {exact(evidence.coverage)} · {evidence.observed_feature_count}/
+                {evidence.expected_feature_count}
+              </dd>
+            </div>
+            <div>
+              <dt>Artefato</dt>
+              <dd>{evidence.artifact_availability}</dd>
+            </div>
+            <div>
+              <dt>Sinais disponíveis</dt>
+              <dd>
+                {evidence.available_signals.length
+                  ? evidence.available_signals.join(", ")
+                  : "Nenhum listado"}
+              </dd>
+            </div>
+            <div>
+              <dt>Missing signal counts</dt>
+              <dd>
+                {Object.entries(evidence.missing_reason_counts).length
+                  ? Object.entries(evidence.missing_reason_counts)
+                      .map(([reason, count]) => `${reason}: ${count}`)
+                      .join(" · ")
+                  : "Nenhum sinal ausente registrado"}
+              </dd>
+            </div>
+          </>
+        )}
       </dl>
-      {evidence.gaps.length > 0 && (
+      {!verified && (
+        <p className="science-warning">
+          A receipt original permanece disponível como registro histórico. Esta
+          projeção não pode sustentar uma interpretação afirmativa.
+        </p>
+      )}
+      {verified && evidence.gaps.length > 0 && (
         <section className="evidence-subsection">
           <h4>Lacunas registradas</h4>
           <ul>
@@ -439,55 +481,61 @@ function EvidencePanel({ evidence }: { evidence: Evidence | null }) {
           </ul>
         </section>
       )}
-      <section className="evidence-subsection">
-        <h4>Fatos de origem e qualidade</h4>
-        {evidence.facts.length ? (
-          <div className="table-scroll">
-            <table className="evidence-table">
-              <caption>
-                Resumo dos fatos publicados pela projeção segura 9E; o grafo de
-                origem permanece no servidor
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Fato</th>
-                  <th scope="col">Valor</th>
-                  <th scope="col">Qualidade</th>
-                  <th scope="col">Tipo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {evidence.facts.map((fact, index) => (
-                  <tr key={String(fact.fact_id ?? index)}>
-                    <td data-label="Fato">
-                      {String(fact.meaning ?? fact.key ?? "Fato sem descrição")}
-                      <small>{String(fact.key ?? "Chave não publicada")}</small>
-                    </td>
-                    <td data-label="Valor">
-                      {fact.value === null || fact.value === undefined
-                        ? "Ausente"
-                        : String(fact.value)}
-                      {fact.unit ? ` ${String(fact.unit)}` : ""}
-                    </td>
-                    <td data-label="Qualidade">
-                      {String(fact.quality ?? "Indisponível")}
-                    </td>
-                    <td data-label="Tipo">
-                      {String(fact.fact_type ?? "Não publicado")}
-                    </td>
+      {verified && (
+        <section className="evidence-subsection">
+          <h4>Fatos de origem e qualidade</h4>
+          {evidence.facts.length ? (
+            <div className="table-scroll">
+              <table className="evidence-table">
+                <caption>
+                  Resumo dos fatos publicados pela projeção segura 9E; o grafo
+                  de origem permanece no servidor
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Fato</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Qualidade</th>
+                    <th scope="col">Tipo</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p>
-            Nenhum fato projetado. A projeção pode estar abstida ou sem dados de
-            origem.
-          </p>
-        )}
-      </section>
-      {evidence.facts.some((fact) => fact.missing_reason) && (
+                </thead>
+                <tbody>
+                  {evidence.facts.map((fact, index) => (
+                    <tr key={String(fact.fact_id ?? index)}>
+                      <td data-label="Fato">
+                        {String(
+                          fact.meaning ?? fact.key ?? "Fato sem descrição",
+                        )}
+                        <small>
+                          {String(fact.key ?? "Chave não publicada")}
+                        </small>
+                      </td>
+                      <td data-label="Valor">
+                        {fact.value === null || fact.value === undefined
+                          ? "Ausente"
+                          : String(fact.value)}
+                        {fact.unit ? ` ${String(fact.unit)}` : ""}
+                      </td>
+                      <td data-label="Qualidade">
+                        {String(fact.quality ?? "Indisponível")}
+                      </td>
+                      <td data-label="Tipo">
+                        {String(fact.fact_type ?? "Não publicado")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>
+              Nenhum fato projetado. A projeção pode estar abstida ou sem dados
+              de origem.
+            </p>
+          )}
+        </section>
+      )}
+      {verified && evidence.facts.some((fact) => fact.missing_reason) && (
         <section className="evidence-subsection">
           <h4>Missing observations</h4>
           <ul>
@@ -501,11 +549,11 @@ function EvidencePanel({ evidence }: { evidence: Evidence | null }) {
           </ul>
         </section>
       )}
-      {evidence.claims.length > 0 && (
+      {verified && displayClaims.length > 0 && (
         <section className="evidence-subsection">
           <h4>Vínculos de interpretação</h4>
           <ul>
-            {evidence.claims.map((claim, index) => (
+            {displayClaims.map((claim, index) => (
               <li key={String(claim.claim_id ?? index)}>
                 {String(claim.category ?? "Vínculo")}:{" "}
                 {String(claim.template ?? "referência")}
@@ -517,11 +565,12 @@ function EvidencePanel({ evidence }: { evidence: Evidence | null }) {
           </ul>
         </section>
       )}
-      {evidence.limitations.map((limitation) => (
-        <p className="science-warning" key={limitation}>
-          {limitation}
-        </p>
-      ))}
+      {verified &&
+        evidence.limitations.map((limitation) => (
+          <p className="science-warning" key={limitation}>
+            {limitation}
+          </p>
+        ))}
       <p className="evidence-fingerprint">
         ID da evidência: <code>{evidence.evidence_id}</code>
       </p>
