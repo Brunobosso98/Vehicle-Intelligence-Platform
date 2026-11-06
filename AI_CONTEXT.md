@@ -62,7 +62,8 @@
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/app/predictive` and `apps/web/src/components/predictive-workspace.tsx`: Phase 9H
   historical predictive workspace, explicitly isolated synthetic demo, evidence details and
-  research-only summary.
+  research-only summary; restored pages revalidate the operator session before exposing private
+  content.
 - `apps/web/src/lib/predictive/server.ts`, `apps/web/src/app/api/predictive`: server-only,
   development/test operator BFF with bounded session/vehicle scope, CSRF and fixed-origin reads.
   It is disabled by default and unavailable in production.

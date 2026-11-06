@@ -1769,7 +1769,7 @@
       "file_type": "code",
       "norm_label": "agentlink",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L86"
+      "source_location": "L93"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_apierror",
@@ -1782,7 +1782,7 @@
       "file_type": "code",
       "norm_label": "apierror",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L166"
+      "source_location": "L173"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_demofixture",
@@ -1795,7 +1795,7 @@
       "file_type": "code",
       "norm_label": "demofixture",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L153"
+      "source_location": "L160"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_evidence",
@@ -1808,7 +1808,7 @@
       "file_type": "code",
       "norm_label": "evidence",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L65"
+      "source_location": "L72"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_historyitem",
@@ -1821,7 +1821,7 @@
       "file_type": "code",
       "norm_label": "historyitem",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L43"
+      "source_location": "L50"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_historypage",
@@ -1834,7 +1834,7 @@
       "file_type": "code",
       "norm_label": "historypage",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L57"
+      "source_location": "L64"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_prediction",
@@ -1847,7 +1847,7 @@
       "file_type": "code",
       "norm_label": "prediction",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L14"
+      "source_location": "L21"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_research",
@@ -1860,7 +1860,7 @@
       "file_type": "code",
       "norm_label": "research",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L118"
+      "source_location": "L125"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_researchtask",
@@ -1873,7 +1873,7 @@
       "file_type": "code",
       "norm_label": "researchtask",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L95"
+      "source_location": "L102"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_sessionview",
@@ -1886,7 +1886,7 @@
       "file_type": "code",
       "norm_label": "sessionview",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L7"
+      "source_location": "L14"
     },
     {
       "id": "apps_web_tests_predictive_workspace_test_privateapioptions",
@@ -2861,7 +2861,7 @@
       "file_type": "code",
       "norm_label": "historyitem",
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L370"
+      "source_location": "L369"
     },
     {
       "id": "apps_api_src_vehicle_platform_api_domain_contracts_importresult",
@@ -15072,7 +15072,7 @@
       "file_type": "code",
       "norm_label": "chartid()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1875"
+      "source_location": "L1952"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_demoworkspace",
@@ -15084,7 +15084,7 @@
       "file_type": "code",
       "norm_label": "demoworkspace()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2267"
+      "source_location": "L2344"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_evidencematches",
@@ -15096,7 +15096,7 @@
       "file_type": "code",
       "norm_label": "evidencematches()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2037"
+      "source_location": "L2114"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_evidencepanel",
@@ -15108,7 +15108,7 @@
       "file_type": "code",
       "norm_label": "evidencepanel()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L361"
+      "source_location": "L368"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_exact",
@@ -15120,7 +15120,7 @@
       "file_type": "code",
       "norm_label": "exact()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L190"
+      "source_location": "L197"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_formatname",
@@ -15132,7 +15132,7 @@
       "file_type": "code",
       "norm_label": "formatname()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L208"
+      "source_location": "L215"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_localtime",
@@ -15144,7 +15144,7 @@
       "file_type": "code",
       "norm_label": "localtime()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L196"
+      "source_location": "L203"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiondetail",
@@ -15156,7 +15156,7 @@
       "file_type": "code",
       "norm_label": "predictiondetail()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1900"
+      "source_location": "L1977"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace",
@@ -15168,7 +15168,7 @@
       "file_type": "code",
       "norm_label": "predictiveworkspace()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L525"
+      "source_location": "L532"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_applyfilters",
@@ -15180,7 +15180,7 @@
       "file_type": "code",
       "norm_label": "applyfilters()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L932"
+      "source_location": "L1009"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_opendemo",
@@ -15192,7 +15192,7 @@
       "file_type": "code",
       "norm_label": "opendemo()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L896"
+      "source_location": "L973"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_openscience",
@@ -15204,7 +15204,7 @@
       "file_type": "code",
       "norm_label": "openscience()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L914"
+      "source_location": "L991"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_selectreceipt",
@@ -15216,7 +15216,7 @@
       "file_type": "code",
       "norm_label": "selectreceipt()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L938"
+      "source_location": "L1015"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_signin",
@@ -15228,7 +15228,7 @@
       "file_type": "code",
       "norm_label": "signin()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L848"
+      "source_location": "L919"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_predictiveworkspace_signout",
@@ -15240,7 +15240,7 @@
       "file_type": "code",
       "norm_label": "signout()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L878"
+      "source_location": "L952"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_replacesharestate",
@@ -15252,7 +15252,7 @@
       "file_type": "code",
       "norm_label": "replacesharestate()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2055"
+      "source_location": "L2132"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_researchpanel",
@@ -15264,7 +15264,7 @@
       "file_type": "code",
       "norm_label": "researchpanel()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2064"
+      "source_location": "L2141"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_responseerror",
@@ -15276,7 +15276,7 @@
       "file_type": "code",
       "norm_label": "responseerror()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L216"
+      "source_location": "L223"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_samereceipt",
@@ -15288,7 +15288,7 @@
       "file_type": "code",
       "norm_label": "samereceipt()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1882"
+      "source_location": "L1959"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_scorechart",
@@ -15300,7 +15300,7 @@
       "file_type": "code",
       "norm_label": "scorechart()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L234"
+      "source_location": "L241"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_scoreof",
@@ -15312,7 +15312,7 @@
       "file_type": "code",
       "norm_label": "scoreof()",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L184"
+      "source_location": "L191"
     },
     {
       "id": "apps_web_tests_predictive_chart_performance_test_percentile",
@@ -15336,7 +15336,7 @@
       "file_type": "code",
       "norm_label": "installprivateapi()",
       "source_file": "apps/web/tests/predictive-workspace.test.tsx",
-      "source_location": "L197"
+      "source_location": "L205"
     },
     {
       "id": "apps_web_tests_predictive_workspace_test_jsonresponse",
@@ -15360,7 +15360,7 @@
       "file_type": "code",
       "norm_label": "login()",
       "source_file": "apps/web/tests/predictive-workspace.test.tsx",
-      "source_location": "L355"
+      "source_location": "L372"
     },
     {
       "id": "apps_web_tests_predictive_workspace_test_pathfor",
@@ -51294,7 +51294,7 @@
       "file_type": "code",
       "norm_label": "sourcelabels",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L177"
+      "source_location": "L184"
     },
     {
       "id": "apps_web_src_components_predictive_workspace_statuslabels",
@@ -51305,7 +51305,7 @@
       "file_type": "code",
       "norm_label": "statuslabels",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L168"
+      "source_location": "L175"
     },
     {
       "id": "apps_web_tests_predictive_chart_performance_test",
@@ -138001,7 +138001,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2285",
+      "source_location": "L2362",
       "weight": 1.0
     },
     {
@@ -138013,7 +138013,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2298",
+      "source_location": "L2375",
       "weight": 1.0
     },
     {
@@ -138025,7 +138025,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2343",
+      "source_location": "L2420",
       "weight": 1.0
     },
     {
@@ -138037,7 +138037,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2403",
+      "source_location": "L2480",
       "weight": 1.0
     },
     {
@@ -138049,7 +138049,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L389",
+      "source_location": "L396",
       "weight": 1.0
     },
     {
@@ -138061,7 +138061,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L395",
+      "source_location": "L402",
       "weight": 1.0
     },
     {
@@ -138073,7 +138073,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1907",
+      "source_location": "L1984",
       "weight": 1.0
     },
     {
@@ -138085,7 +138085,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1917",
+      "source_location": "L1994",
       "weight": 1.0
     },
     {
@@ -138097,7 +138097,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1940",
+      "source_location": "L2017",
       "weight": 1.0
     },
     {
@@ -138109,7 +138109,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1962",
+      "source_location": "L2039",
       "weight": 1.0
     },
     {
@@ -138121,7 +138121,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1543",
+      "source_location": "L1620",
       "weight": 1.0
     },
     {
@@ -138133,7 +138133,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1558",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -138145,7 +138145,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1558",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -138157,7 +138157,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L644",
+      "source_location": "L715",
       "weight": 1.0
     },
     {
@@ -138169,7 +138169,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L717",
+      "source_location": "L788",
       "weight": 1.0
     },
     {
@@ -138181,7 +138181,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L776",
+      "source_location": "L847",
       "weight": 1.0
     },
     {
@@ -138193,7 +138193,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L791",
+      "source_location": "L862",
       "weight": 1.0
     },
     {
@@ -138205,7 +138205,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L839",
+      "source_location": "L910",
       "weight": 1.0
     },
     {
@@ -138217,7 +138217,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L901",
+      "source_location": "L978",
       "weight": 1.0
     },
     {
@@ -138229,7 +138229,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L924",
+      "source_location": "L1001",
       "weight": 1.0
     },
     {
@@ -138241,7 +138241,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L941",
+      "source_location": "L1018",
       "weight": 1.0
     },
     {
@@ -138253,7 +138253,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L860",
+      "source_location": "L932",
       "weight": 1.0
     },
     {
@@ -138265,7 +138265,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L885",
+      "source_location": "L961",
       "weight": 1.0
     },
     {
@@ -138277,7 +138277,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2132",
+      "source_location": "L2209",
       "weight": 1.0
     },
     {
@@ -138289,7 +138289,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L241",
+      "source_location": "L248",
       "weight": 1.0
     },
     {
@@ -138301,7 +138301,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L283",
+      "source_location": "L290",
       "weight": 1.0
     },
     {
@@ -138313,7 +138313,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L333",
+      "source_location": "L340",
       "weight": 1.0
     },
     {
@@ -138325,7 +138325,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L333",
+      "source_location": "L340",
       "weight": 1.0
     },
     {
@@ -139153,7 +139153,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/tests/predictive-workspace.test.tsx",
-      "source_location": "L202",
+      "source_location": "L214",
       "weight": 1.0
     },
     {
@@ -146394,6 +146394,18 @@
     },
     {
       "source": "apps_web_src_components_predictive_workspace_predictiveworkspace",
+      "target": "apps_web_src_components_predictive_workspace_predictiveworkspace_selectreceipt",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "apps/web/src/components/predictive-workspace.tsx",
+      "source_location": "L1015",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_web_src_components_predictive_workspace_predictiveworkspace",
       "target": "apps_web_src_components_predictive_workspace_predictiveworkspace_signin",
       "relation": "contains",
       "_origin": "ast",
@@ -146401,7 +146413,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L848",
+      "source_location": "L919",
       "weight": 1.0
     },
     {
@@ -146413,7 +146425,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L878",
+      "source_location": "L952",
       "weight": 1.0
     },
     {
@@ -146425,7 +146437,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L896",
+      "source_location": "L973",
       "weight": 1.0
     },
     {
@@ -146437,19 +146449,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L914",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_web_src_components_predictive_workspace_predictiveworkspace",
-      "target": "apps_web_src_components_predictive_workspace_predictiveworkspace_selectreceipt",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L938",
+      "source_location": "L991",
       "weight": 1.0
     },
     {
@@ -146689,7 +146689,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/tests/predictive-workspace.test.tsx",
-      "source_location": "L197",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
@@ -146701,7 +146701,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/tests/predictive-workspace.test.tsx",
-      "source_location": "L355",
+      "source_location": "L372",
       "weight": 1.0
     },
     {
@@ -203993,6 +203993,19 @@
     },
     {
       "source": "apps_web_src_components_predictive_workspace",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "apps/web/src/components/predictive-workspace.tsx",
+      "source_location": "L12",
+      "type_only": true,
+      "weight": 1.0
+    },
+    {
+      "source": "apps_web_src_components_predictive_workspace",
       "target": "ref_next",
       "relation": "imports_from",
       "_origin": "ast",
@@ -204001,19 +204014,6 @@
       "context": "import",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
       "source_location": "L3",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_web_src_components_predictive_workspace",
-      "target": "ref_react",
-      "relation": "imports_from",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "import",
-      "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L5",
-      "type_only": true,
       "weight": 1.0
     },
     {
@@ -250186,18 +250186,29 @@
     },
     {
       "source": "apps_web_src_components_predictive_workspace",
+      "target": "apps_web_src_components_predictive_workspace_researchtask",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "apps/web/src/components/predictive-workspace.tsx",
+      "source_location": "L102",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_web_src_components_predictive_workspace",
       "target": "apps_web_src_components_predictive_workspace_research",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L118",
+      "source_location": "L125",
       "weight": 1.0
     },
     {
       "source": "apps_web_src_components_predictive_workspace",
-      "target": "apps_web_src_components_predictive_workspace_prediction",
+      "target": "apps_web_src_components_predictive_workspace_sessionview",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -250214,7 +250225,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L153",
+      "source_location": "L160",
       "weight": 1.0
     },
     {
@@ -250225,7 +250236,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L166",
+      "source_location": "L173",
       "weight": 1.0
     },
     {
@@ -250236,7 +250247,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L168",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
@@ -250247,7 +250258,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L177",
+      "source_location": "L184",
       "weight": 1.0
     },
     {
@@ -250258,7 +250269,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L184",
+      "source_location": "L191",
       "weight": 1.0
     },
     {
@@ -250269,7 +250280,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1875",
+      "source_location": "L1952",
       "weight": 1.0
     },
     {
@@ -250280,7 +250291,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1882",
+      "source_location": "L1959",
       "weight": 1.0
     },
     {
@@ -250291,7 +250302,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L190",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -250302,7 +250313,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L1900",
+      "source_location": "L1977",
       "weight": 1.0
     },
     {
@@ -250313,7 +250324,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L196",
+      "source_location": "L203",
+      "weight": 1.0
+    },
+    {
+      "source": "apps_web_src_components_predictive_workspace",
+      "target": "apps_web_src_components_predictive_workspace_prediction",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "apps/web/src/components/predictive-workspace.tsx",
+      "source_location": "L21",
       "weight": 1.0
     },
     {
@@ -250324,7 +250346,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2037",
+      "source_location": "L2114",
       "weight": 1.0
     },
     {
@@ -250335,7 +250357,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2055",
+      "source_location": "L2132",
       "weight": 1.0
     },
     {
@@ -250346,7 +250368,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2064",
+      "source_location": "L2141",
       "weight": 1.0
     },
     {
@@ -250357,7 +250379,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L208",
+      "source_location": "L215",
       "weight": 1.0
     },
     {
@@ -250368,7 +250390,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L216",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
@@ -250379,7 +250401,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L2267",
+      "source_location": "L2344",
       "weight": 1.0
     },
     {
@@ -250390,7 +250412,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L234",
+      "source_location": "L241",
       "weight": 1.0
     },
     {
@@ -250401,7 +250423,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L361",
+      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -250412,7 +250434,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L43",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -250423,7 +250445,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L525",
+      "source_location": "L532",
       "weight": 1.0
     },
     {
@@ -250434,7 +250456,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L57",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -250445,18 +250467,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L65",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_web_src_components_predictive_workspace",
-      "target": "apps_web_src_components_predictive_workspace_sessionview",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L7",
+      "source_location": "L72",
       "weight": 1.0
     },
     {
@@ -250467,18 +250478,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L86",
-      "weight": 1.0
-    },
-    {
-      "source": "apps_web_src_components_predictive_workspace",
-      "target": "apps_web_src_components_predictive_workspace_researchtask",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L95",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -250489,7 +250489,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L932",
+      "source_location": "L1009",
       "weight": 1.0
     },
     {
@@ -251347,7 +251347,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L370",
+      "source_location": "L369",
       "weight": 1.0
     },
     {
@@ -347140,5 +347140,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6423342c43968022fd08a6751bce34f92a570eea"
+  "built_at_commit": "8f16052c5af4c52dcd8fb7110dc4d70cc123fad8"
 }

@@ -316,6 +316,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     expect(oracle.schema_version).toBe("phase9h-source-oracle-v2");
     const baseURL = process.env.WEB_BASE_URL ?? "http://127.0.0.1:3000";
     const apiSecret = process.env.PREDICTION_OPERATOR_TOKEN ?? "";
+    const uiSecret = process.env.PREDICTIVE_UI_OPERATOR_SECRET ?? "";
     const browserRequests: Array<{
       url: string;
       body: string;
@@ -357,9 +358,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       /credential|unauthorized|inválid/i,
     );
     await save(page, "persisted-login-denied.png");
-    await page
-      .getByLabel("Credencial local do operador")
-      .fill(process.env.PREDICTIVE_UI_OPERATOR_SECRET ?? "");
+    await page.getByLabel("Credencial local do operador").fill(uiSecret);
     await page.getByRole("button", { name: "Entrar no workspace" }).click();
     await expect(
       page.getByRole("heading", { name: "Visão geral" }),
@@ -476,6 +475,20 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       await row.locator(".table-select").click();
     };
     const sourceEvidence = new Map<string, Record<string, unknown>>();
+    const waitForEvidence = async (record: (typeof oracle.records)[number]) => {
+      await page.locator("#evidence").scrollIntoViewIfNeeded();
+      if (record.evidence_id) {
+        const source = sourceEvidence.get(record.receipt_id);
+        expect(source).toBeTruthy();
+        await expect(page.locator(".evidence-fingerprint code")).toHaveText(
+          String(source!.evidence_id),
+        );
+      } else {
+        await expect(
+          page.getByText(/não tem projeção de evidência disponível/i),
+        ).toBeVisible();
+      }
+    };
     for (const expected of oracle.records) {
       const source = sourceItems.get(expected.receipt_id);
       expect(
@@ -606,7 +619,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         .getByText(`threshold ${firstScored!.threshold}`, { exact: false })
         .first(),
     ).toBeVisible();
-    await page.locator("#evidence").scrollIntoViewIfNeeded();
+    await waitForEvidence(firstScored!);
     await save(page, "persisted-scored-receipt.png", false);
 
     const partial = oracle.records.find(
@@ -615,7 +628,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     if (partial) {
       await selectReceipt(partial);
       await expect(page.getByText("PARTIAL").first()).toBeVisible();
-      await page.locator("#evidence").scrollIntoViewIfNeeded();
+      await waitForEvidence(partial);
       await save(page, "persisted-partial-evidence.png", false);
     }
     const abstained = oracle.records.find((item) =>
@@ -624,7 +637,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     if (abstained) {
       await selectReceipt(abstained);
       await expect(page.getByText("No score was produced.")).toBeVisible();
-      await page.locator("#evidence").scrollIntoViewIfNeeded();
+      await waitForEvidence(abstained);
       await save(page, "persisted-abstained.png", false);
     }
 
@@ -774,9 +787,43 @@ test.describe("Phase 9H explicit synthetic UI", () => {
         "persisted-mobile.png",
       ],
     });
-    await page.getByRole("button", { name: "Encerrar sessão" }).click();
-    await expect(page.getByLabel("Credencial local do operador")).toBeVisible();
+    const activeSessionResponse = await page.request.get(
+      `${baseURL}/api/predictive/session`,
+    );
+    expect(activeSessionResponse.status()).toBe(200);
+    const activeSession = (await activeSessionResponse.json()) as {
+      authenticated: boolean;
+      csrfToken?: string;
+    };
+    expect(activeSession.authenticated).toBe(true);
+    expect(activeSession.csrfToken).toBeTruthy();
+    const revokedSession = await page.request.post(
+      `${baseURL}/api/predictive/auth/logout`,
+      {
+        headers: {
+          origin: baseURL,
+          "x-csrf-token": activeSession.csrfToken!,
+        },
+      },
+    );
+    expect(revokedSession.status()).toBe(200);
+    await page.goto("/", { waitUntil: "networkidle" });
     await page.goBack();
+    await expect(page.getByLabel("Credencial local do operador")).toBeVisible();
+    await expect(
+      page.getByRole("table", { name: /Histórico persistido/i }),
+    ).toHaveCount(0);
+    if (firstScored?.score !== null && firstScored?.score !== undefined) {
+      await expect(
+        page.getByText(String(firstScored.score), { exact: true }),
+      ).toHaveCount(0);
+    }
+    await page.getByLabel("Credencial local do operador").fill(uiSecret);
+    await page.getByRole("button", { name: "Entrar no workspace" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Visão geral" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Encerrar sessão" }).click();
     await expect(page.getByLabel("Credencial local do operador")).toBeVisible();
   });
 });

@@ -150,6 +150,14 @@ function pathFor(input: RequestInfo | URL): string {
 
 type PrivateApiOptions = {
   authenticatedSession?: boolean;
+  sessionFailureAt?: number;
+  sessionResponses?: Array<{
+    enabled: boolean;
+    authenticated: boolean;
+    demoEnabled: boolean;
+    csrfToken?: string;
+    expiresAt?: number;
+  }>;
   empty?: boolean;
   expireVehicles?: boolean;
   loginStatus?: number;
@@ -195,18 +203,27 @@ type PrivateApiOptions = {
 };
 
 function installPrivateApi(options: PrivateApiOptions = {}) {
+  let sessionRequest = 0;
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
     const requestUrl = new URL(String(input), "http://localhost");
     const path = requestUrl.pathname;
-    if (path === "/api/predictive/session")
-      return jsonResponse({
-        enabled: true,
-        authenticated: options.authenticatedSession ?? false,
-        demoEnabled: true,
-        ...(options.authenticatedSession
-          ? { csrfToken: "csrf-session-token" }
-          : {}),
-      });
+    if (path === "/api/predictive/session") {
+      const currentRequest = sessionRequest;
+      sessionRequest += 1;
+      if (options.sessionFailureAt === currentRequest)
+        return jsonResponse({ error: "Session status unavailable." }, 503);
+      const configured = options.sessionResponses?.[currentRequest];
+      return jsonResponse(
+        configured ?? {
+          enabled: true,
+          authenticated: options.authenticatedSession ?? false,
+          demoEnabled: true,
+          ...(options.authenticatedSession
+            ? { csrfToken: "csrf-session-token" }
+            : {}),
+        },
+      );
+    }
     if (path === "/api/predictive/auth/login")
       return options.loginStatus
         ? jsonResponse(
@@ -505,6 +522,88 @@ describe("Predictive Intelligence workspace", () => {
         new Headers(init?.headers).has("authorization"),
       ),
     ).toBe(false);
+  });
+
+  it("hides persisted private data while revalidating a restored page and clears it after revocation", async () => {
+    installPrivateApi({
+      authenticatedSession: true,
+      sessionResponses: [
+        {
+          enabled: true,
+          authenticated: true,
+          demoEnabled: true,
+          csrfToken: "csrf-session-token",
+        },
+        { enabled: true, authenticated: false, demoEnabled: true },
+      ],
+    });
+    render(<PredictiveWorkspace initialVehicleId={vehicleId} />);
+    const persistedHistory = await screen.findByRole("table", {
+      name: /Histórico persistido/i,
+    });
+    expect(persistedHistory).toBeInTheDocument();
+    expect(screen.getAllByText("0.46317").length).toBeGreaterThan(0);
+
+    act(() => {
+      const pageHide = new Event("pagehide");
+      Object.defineProperty(pageHide, "persisted", { value: false });
+      window.dispatchEvent(pageHide);
+      const pageShow = new Event("pageshow");
+      Object.defineProperty(pageShow, "persisted", { value: false });
+      window.dispatchEvent(pageShow);
+    });
+    expect(
+      screen.getByRole("table", { name: /Histórico persistido/i }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      const pageHide = new Event("pagehide");
+      Object.defineProperty(pageHide, "persisted", { value: true });
+      window.dispatchEvent(pageHide);
+    });
+    expect(
+      screen.queryByRole("table", { name: /Histórico persistido/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("0.46317")).not.toBeInTheDocument();
+
+    act(() => {
+      const pageShow = new Event("pageshow");
+      Object.defineProperty(pageShow, "persisted", { value: true });
+      window.dispatchEvent(pageShow);
+    });
+
+    expect(
+      await screen.findByLabelText("Credencial local do operador"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("table", { name: /Histórico persistido/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("0.46317")).not.toBeInTheDocument();
+  });
+
+  it("clears the restored workspace when session revalidation is unavailable", async () => {
+    installPrivateApi({ authenticatedSession: true, sessionFailureAt: 1 });
+    render(<PredictiveWorkspace initialVehicleId={vehicleId} />);
+    expect(
+      await screen.findByRole("table", { name: /Histórico persistido/i }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      const pageHide = new Event("pagehide");
+      Object.defineProperty(pageHide, "persisted", { value: true });
+      window.dispatchEvent(pageHide);
+      const pageShow = new Event("pageshow");
+      Object.defineProperty(pageShow, "persisted", { value: true });
+      window.dispatchEvent(pageShow);
+    });
+
+    expect(
+      await screen.findByText("Não foi possível revalidar a sessão protegida."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("table", { name: /Histórico persistido/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("0.46317")).not.toBeInTheDocument();
   });
 
   it("shows an anomaly receipt with its original local score and threshold", async () => {

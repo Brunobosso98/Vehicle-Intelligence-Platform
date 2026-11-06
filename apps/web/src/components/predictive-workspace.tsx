@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { FormEvent } from "react";
 
 type SessionView = {
@@ -532,6 +539,7 @@ export function PredictiveWorkspace({
   const [mode, setMode] = useState<
     "checking" | "disabled" | "signedOut" | "ready" | "failed" | "demo"
   >("checking");
+  const modeRef = useRef(mode);
   const [csrf, setCsrf] = useState("");
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
   const [demoEnabled, setDemoEnabled] = useState(false);
@@ -545,6 +553,8 @@ export function PredictiveWorkspace({
     initialReceiptId ?? "",
   );
   const preferredReceiptId = useRef(initialReceiptId ?? "");
+  const authEpochRef = useRef(0);
+  const restorePendingRef = useRef(false);
   const [detail, setDetail] = useState<Prediction | null>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [evidenceState, setEvidenceState] = useState<
@@ -580,6 +590,9 @@ export function PredictiveWorkspace({
   });
   const [filters, setFilters] = useState(draftFilters);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  useLayoutEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
   const clearPrivateState = useCallback(() => {
     setVehicles([]);
     setVehicleId("");
@@ -616,9 +629,67 @@ export function PredictiveWorkspace({
   }, []);
 
   useEffect(() => {
+    const revalidate = async () => {
+      const requestEpoch = ++authEpochRef.current;
+      setMode("checking");
+      try {
+        const response = await fetch("/api/predictive/session", {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("SESSION_REVALIDATION_FAILED");
+        const session = (await response.json()) as SessionView;
+        if (requestEpoch !== authEpochRef.current) return;
+        setDemoEnabled(session.demoEnabled === true);
+        if (!session.enabled) {
+          clearPrivateState();
+          setCsrf("");
+          setSessionExpiresAt(null);
+          setMode("disabled");
+          return;
+        }
+        if (session.authenticated && session.csrfToken) {
+          setCsrf(session.csrfToken);
+          setSessionExpiresAt(session.expiresAt ?? Date.now() + 30 * 60 * 1000);
+          setMode("ready");
+          return;
+        }
+        clearPrivateState();
+        setCsrf("");
+        setSessionExpiresAt(null);
+        setMode("signedOut");
+        setMessage("Sua sessão foi encerrada. Entre novamente para continuar.");
+      } catch {
+        if (requestEpoch !== authEpochRef.current) return;
+        clearPrivateState();
+        setCsrf("");
+        setSessionExpiresAt(null);
+        setMode("failed");
+        setMessage("Não foi possível revalidar a sessão protegida.");
+      }
+    };
+    const handlePageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted || modeRef.current !== "ready") return;
+      restorePendingRef.current = true;
+      setMode("checking");
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted || !restorePendingRef.current) return;
+      restorePendingRef.current = false;
+      void revalidate();
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("pageshow", handlePageShow);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [clearPrivateState]);
+
+  useEffect(() => {
     if (mode !== "ready" || sessionExpiresAt === null) return;
     const timeout = window.setTimeout(
       () => {
+        authEpochRef.current += 1;
         clearPrivateState();
         setCsrf("");
         setSessionExpiresAt(null);
@@ -847,6 +918,7 @@ export function PredictiveWorkspace({
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const requestEpoch = ++authEpochRef.current;
     setLoginError("");
     const value = credential;
     setCredential("");
@@ -862,11 +934,13 @@ export function PredictiveWorkspace({
         csrfToken: string;
         expiresIn?: number;
       };
+      if (requestEpoch !== authEpochRef.current) return;
       setCsrf(result.csrfToken);
       setSessionExpiresAt(Date.now() + (result.expiresIn ?? 1800) * 1000);
       setMode("ready");
       setMessage("");
     } catch (error) {
+      if (requestEpoch !== authEpochRef.current) return;
       setLoginError(
         error instanceof Error
           ? error.message
@@ -876,6 +950,8 @@ export function PredictiveWorkspace({
   }
 
   async function signOut() {
+    const requestEpoch = ++authEpochRef.current;
+    setMode("checking");
     try {
       const response = await fetch("/api/predictive/auth/logout", {
         method: "POST",
@@ -886,6 +962,7 @@ export function PredictiveWorkspace({
     } catch {
       /* local state is cleared even if the network is unavailable */
     }
+    if (requestEpoch !== authEpochRef.current) return;
     clearPrivateState();
     setCsrf("");
     setSessionExpiresAt(null);

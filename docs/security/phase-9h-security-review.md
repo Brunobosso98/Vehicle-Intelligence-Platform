@@ -57,6 +57,11 @@ login/request throttles, a four-request concurrency cap, eight-second timeout, o
 response cap, redirect rejection, abort support and private `no-store` responses. The same
 predictive namespace is blocked through the generic domain proxy. API reads are vehicle-scoped,
 bounded, read-only and nondisclosing for foreign IDs.
+On `pagehide`, the client switches out of its authorized view before it can enter the browser's
+back/forward cache. A persisted `pageshow` requests same-origin session status with
+`cache: no-store`; private content returns only after the server confirms the session. Revoked
+sessions clear the receipt, evidence, vehicle and research state, while errors leave the workspace
+closed.
 
 This is not customer identity, tenant isolation or vehicle-owner authorization. The boundary is
 unsuitable for public ingress or shared users. Deployment and network controls must keep it local

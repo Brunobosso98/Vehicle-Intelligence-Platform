@@ -38,7 +38,10 @@ MAC are checked against a bounded server-side session registry. The cookie is Ht
 SameSite=Strict, scoped to `/api/predictive`, and Secure for HTTPS or when explicitly configured.
 Login and logout require the configured exact Origin (or same-origin Referer); logout also requires
 the session CSRF token. A successful new login revokes an older valid session. The UI clears its
-private state on logout, explicit expiry, a 401 scope failure, and vehicle changes.
+private state on logout, explicit expiry, a 401 scope failure, and vehicle changes. Before an
+authorized page enters the browser back/forward cache, the client hides the private workspace.
+On restoration it revalidates the uncached server session; revoked or unavailable sessions clear
+private state and fail closed before the workspace can render again.
 
 `predictiveEnabled()` returns false in production regardless of supplied secrets or flags. It also
 fails closed unless both the existing 9D service and the independent UI operator boundary are
