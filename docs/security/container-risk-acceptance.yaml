@@ -195,6 +195,7 @@ exceptions:
   - id: api-cve-2026-119374
     images:
       - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-119374
     packages:
       - libsqlite3-0
@@ -204,16 +205,18 @@ exceptions:
     remediation_condition: >-
       Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
       operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
-      and review again by 2026-11-20.
+      and review again by 2026-11-20. Web also carries the package because Debian's
+      util-linux/liblastlog2 dependency chain prevents removal without removing base utilities.
     rationale: >-
       The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
       version only in unstable. The application ledger creates only ordinary requests/cache/counters
       tables, does not issue FTS5 MATCH queries or enable secure_delete, and does not accept uploaded
       SQLite databases. The reported FTS5 secure-delete path is not reached by current application code;
-      the system package remains present and is not claimed as remediated.
+      the system package remains present in both runtime images and is not claimed as remediated.
   - id: api-cve-2026-119379
     images:
       - vehicle-platform-api:local
+      - vehicle-platform-web:local
     vulnerability_id: CVE-2026-119379
     packages:
       - libsqlite3-0
@@ -223,13 +226,14 @@ exceptions:
     remediation_condition: >-
       Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
       operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
-      and review again by 2026-11-20.
+      and review again by 2026-11-20. Web also carries the package because Debian's
+      util-linux/liblastlog2 dependency chain prevents removal without removing base utilities.
     rationale: >-
       The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
       version only in unstable. Application code uses ordinary ledger queries and does not call the
       SQLite session/change-set APIs or accept attacker-supplied change sets or database files. The
       described sqlite3changeset_apply path is not reached by current application code; the system
-      package remains present and is not claimed as remediated.
+      package remains present in both runtime images and is not claimed as remediated.
   - id: api-web-cve-2026-85091
     images:
       - vehicle-platform-api:local

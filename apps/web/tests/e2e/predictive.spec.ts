@@ -710,29 +710,32 @@ test.describe("Phase 9H explicit synthetic UI", () => {
           ? proofOverlayByReceipt.get(receiptId)
           : undefined;
         const source = receiptId ? sourceEvidence.get(receiptId) : undefined;
-        if (!overlay || !source) {
+        if (!source) {
           await route.continue();
           return;
         }
+        const body = overlay
+          ? {
+              ...source,
+              completeness: overlay.completeness,
+              integrity: overlay.integrity,
+              claims:
+                overlay.completeness === "ABSTAINED"
+                  ? []
+                  : [
+                      {
+                        claim_id: "phase9h-proof-matrix-claim",
+                        template: "test-only descriptive association",
+                        category: "STATISTICAL_ASSOCIATION",
+                        fact_ids: [],
+                      },
+                    ],
+            }
+          : source;
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({
-            ...source,
-            completeness: overlay.completeness,
-            integrity: overlay.integrity,
-            claims:
-              overlay.completeness === "ABSTAINED"
-                ? []
-                : [
-                    {
-                      claim_id: "phase9h-proof-matrix-claim",
-                      template: "test-only descriptive association",
-                      category: "STATISTICAL_ASSOCIATION",
-                      fact_ids: [],
-                    },
-                  ],
-          }),
+          body: JSON.stringify(body),
         });
       },
     );
@@ -962,7 +965,7 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       ],
       proofStateMatrix,
       proofStateMatrixSource:
-        "test-only BFF response overlays bound to disposable-database oracle receipt IDs; these UI states are not persisted 9E rows",
+        "test-only Playwright response overlays bound to disposable-database oracle receipt IDs and immutable source evidence; these UI states are not persisted 9E rows",
     });
     const activeSessionResponse = await page.request.get(
       `${baseURL}/api/predictive/session`,
