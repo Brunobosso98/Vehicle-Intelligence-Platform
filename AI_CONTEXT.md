@@ -217,5 +217,7 @@ and records browser/accessibility/performance evidence. Local Docker-dependent a
   PR #55 is merged in the Phase 9H baseline. Synthetic calibration does not establish real-world
   predictive validity.
 - Phase 9H adds the protected historical UI, read-only API projections, static 9G research summary,
-  threat model, runbook and 185-section ledger. Delivery is **NOT VERIFIED** until exact-head
-  independent acceptance, security, canonical full-stack and GitHub Actions checks pass.
+  threat model, runbook and 185-section ledger. PR #57 remains open and unmerged; its exact-head
+  check page is the live authority for independent acceptance, security, canonical full-stack and
+  GitHub Actions delivery status. The BFF remains disabled in production and is not customer or
+  vehicle-owner authorization.

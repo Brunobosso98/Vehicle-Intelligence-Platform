@@ -1,5 +1,34 @@
 # Container scan findings and risk review
 
+## Latest exact-head Security scan — 2026-11-06
+
+Security run [`42236159288`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288)
+passed repository policy on implementation SHA `801caee54086701ff8ef55c36b69a0b5aa1c4adc`.
+The machine-readable reports are in
+[`container-security-43073c13dd12ecb36defc00d0becefd3bb833d7c`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288/artifacts/13511327058).
+There were 101 accepted High package occurrences, zero Critical findings and zero blocked Highs:
+
+| Component               | Selected image                       | High / accepted | Critical | Policy |
+| ----------------------- | ------------------------------------ | --------------: | -------: | ------ |
+| API                     | `vehicle-platform-api:local`         |         49 / 49 |        0 | PASS   |
+| Web                     | `vehicle-platform-web:local`         |         48 / 48 |        0 | PASS   |
+| TimescaleDB             | `vehicle-platform-timescaledb:local` |           0 / 0 |        0 | PASS   |
+| Kafka                   | `vehicle-platform-kafka:local`       |           0 / 0 |        0 | PASS   |
+| OpenTelemetry Collector | pinned 0.164.0 image                 |           0 / 0 |        0 | PASS   |
+| Prometheus              | pinned 3.15.1 image                  |           0 / 0 |        0 | PASS   |
+| Tempo                   | pinned 3.0.5 image                   |           1 / 1 |        0 | PASS   |
+| Grafana                 | pinned 12.4.14 image                 |           3 / 3 |        0 | PASS   |
+
+Accepted Highs remain visible time-bounded risk, not fixed findings. Freshly surfaced API/Web
+records include SQLite `CVE-2026-119374` and `CVE-2026-119379` and zlib `CVE-2026-85091`; they
+were reviewed 2026-11-06 and expire 2026-11-20. Prior Debian and vendor records retain their
+individual November 12 or 18 expiries. Details and exact scope are in
+[`phase-9h-security-review.md`](phase-9h-security-review.md) and
+[`container-risk-acceptance.yaml`](container-risk-acceptance.yaml). The Security job also passed
+filesystem/IaC, locked dependency, secret scans, Dependency Review and both CodeQL jobs. This scan
+proves only the implementation SHA; current exact-head image and delivery results are linked from
+[PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks).
+
 ## Reviewed exact-head scan — 2026-11-05
 
 Security run [`42112442920`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42112442920)

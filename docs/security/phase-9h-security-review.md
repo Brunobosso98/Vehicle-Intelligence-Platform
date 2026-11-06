@@ -1,4 +1,38 @@
-# Phase 9H security review — 2026-11-05
+# Phase 9H security review — 2026-11-06
+
+## Latest exact-head Security scan — 2026-11-06
+
+Security run [`42236159288`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288)
+passed on implementation SHA `801caee54086701ff8ef55c36b69a0b5aa1c4adc`. Its Trivy and policy
+artifact is
+[`container-security-43073c13dd12ecb36defc00d0becefd3bb833d7c`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288/artifacts/13511327058).
+The selected runtime images produced 101 accepted High package occurrences, zero Criticals and
+zero blocked Highs:
+
+| Selected runtime image  | High / accepted | Critical | Policy result |
+| ----------------------- | --------------: | -------: | ------------- |
+| API                     |         49 / 49 |        0 | PASS          |
+| Web                     |         48 / 48 |        0 | PASS          |
+| Kafka                   |           0 / 0 |        0 | PASS          |
+| TimescaleDB             |           0 / 0 |        0 | PASS          |
+| OpenTelemetry Collector |           0 / 0 |        0 | PASS          |
+| Prometheus              |           0 / 0 |        0 | PASS          |
+| Tempo                   |           1 / 1 |        0 | PASS          |
+| Grafana                 |           3 / 3 |        0 | PASS          |
+
+These are policy-accepted residual findings, not remediations. The refreshed image reports add
+`CVE-2026-119374` and `CVE-2026-119379` in Debian SQLite and `CVE-2026-85091` in Debian zlib to the
+API/Web risk records, reviewed 2026-11-06 and expiring 2026-11-20. Prior API/Web records remain
+time-limited through 2026-11-12 or 2026-11-18, according to their individual entries in
+[`container-risk-acceptance.yaml`](container-risk-acceptance.yaml). The Web SQLite package remains
+because Debian's util-linux/liblastlog2 dependency chain prevents removal without deleting base
+utilities. The policy scan did not lower severity or disable scanning.
+
+The same Security workflow passed Dependency Review and both CodeQL language jobs. Its filesystem,
+IaC, locked-dependency and Gitleaks artifacts report no High/Critical findings or leaks. The current
+exact-head image scan and required delivery results are linked from
+[PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks); this
+scan proves only the implementation SHA above.
 
 **Reviewed Security gate status:** PASS on PR head
 `e27dbc264558b6468846b5929ad197fa8b89cd94` in run

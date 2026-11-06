@@ -220,6 +220,12 @@ function formatName(value: string | null | undefined): string {
     .toLocaleLowerCase("pt-BR");
 }
 
+function chartTick(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const rounded = Number(value.toPrecision(3));
+  return Object.is(rounded, -0) ? "0" : String(rounded);
+}
+
 async function responseError(response: Response): Promise<Error> {
   let detail: ApiError = {};
   try {
@@ -303,6 +309,7 @@ export function ScoreChart({
           const value = max - fraction * (max - min);
           return (
             <g key={fraction}>
+              <title>{`Valor exato do eixo: ${exact(value)}`}</title>
               <line
                 className="chart-grid"
                 x1={left}
@@ -315,8 +322,9 @@ export function ScoreChart({
                 x={left - 9}
                 y={y + 4}
                 textAnchor="end"
+                aria-label={`Valor exato do eixo: ${exact(value)}`}
               >
-                {value.toString()}
+                {chartTick(value)}
               </text>
             </g>
           );
@@ -360,7 +368,8 @@ export function ScoreChart({
       </svg>
       <p className="chart-footnote">
         Pontos em ordem cronológica · traços mostram o threshold original de
-        cada receipt · sem interpolação.
+        cada receipt · sem interpolação. Rótulos do eixo usam três algarismos
+        significativos; a tabela preserva os scores e thresholds exatos.
       </p>
     </figure>
   );

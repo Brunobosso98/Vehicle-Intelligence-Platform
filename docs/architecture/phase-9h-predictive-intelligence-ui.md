@@ -55,7 +55,10 @@ receipt UUID, limited to twenty rows per request and 500 rows per operator histo
 original pull/session and captured/current binding events, verifies the persisted receipt body
 against the stored result columns, and runs in a PostgreSQL read-only transaction. Receipt detail,
 evidence, and AgentRun context all bind to the same allowlisted vehicle and exact receipt. Unknown
-and out-of-scope vehicles are nondisclosing 404 responses.
+and out-of-scope vehicles are nondisclosing 404 responses. The BFF admits at most four concurrent
+upstream reads and defaults to sixty reads per minute. `PREDICTIVE_UI_REQUESTS_PER_MINUTE` can lower
+that budget or raise it to the hard ceiling of 120, matching the controlled 9D operator budget;
+429 responses include a bounded `Retry-After` value.
 
 The BFF validates the exact schema version and projects only supported result fields. It omits
 9D lineage, raw feature matrices, private fingerprints, 9E source node identifiers/checksums and

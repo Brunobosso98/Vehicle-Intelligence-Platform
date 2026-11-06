@@ -17,11 +17,16 @@ PREDICTION_OPERATOR_VEHICLE_IDS=<comma-separated fixture vehicle UUIDs>
 PREDICTIVE_UI_ENABLED=true
 PREDICTIVE_UI_OPERATOR_SECRET=<independent browser operator credential>
 PREDICTIVE_UI_SESSION_SECRET=<independent session MAC secret>
+PREDICTIVE_UI_REQUESTS_PER_MINUTE=60
 PREDICTIVE_UI_ALLOWED_VEHICLE_IDS=<same bounded vehicle UUIDs>
 PREDICTIVE_UI_ORIGIN=http://localhost:3000
 PREDICTIVE_UI_API_ALLOWED_HOSTS=api,localhost,127.0.0.1,::1
 PREDICTIVE_UI_DEMO_ENABLED=false
 ```
+
+The server applies a rolling request budget with a default of 60 reads per minute and a hard cap of 120. Set `PREDICTIVE_UI_REQUESTS_PER_MINUTE` only when the controlled read workflow needs a different
+budget; keep it at or below the 9D operator limit. Four upstream reads may run concurrently. A 429
+response includes `Retry-After`, which callers must honor.
 
 For HTTPS set `PREDICTIVE_UI_COOKIE_SECURE=true`. Compose defaults to a private API/web network and
 the web service allowlists `api` as its upstream hostname. If the fixed subnet conflicts with a

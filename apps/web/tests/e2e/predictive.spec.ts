@@ -31,7 +31,7 @@ async function saveBrowserMetrics(
       (entry) => new URL(entry.name).pathname === "/api/predictive/demo",
     );
     const charts = Array.from(
-      document.querySelectorAll(".predictive-chart svg"),
+      document.querySelectorAll<SVGSVGElement>(".predictive-chart svg"),
     );
     return {
       viewport: { width: innerWidth, height: innerHeight },
@@ -65,11 +65,24 @@ async function saveBrowserMetrics(
       charts: charts.map((chart) => ({
         accessibleName: chart.querySelector("title")?.textContent ?? "",
         axisTickCount: chart.querySelectorAll(".chart-axis").length,
+        axisLabelOverflowCount: Array.from(
+          chart.querySelectorAll<SVGTextElement>(".chart-axis"),
+        ).filter((label) => {
+          const bounds = label.getBBox();
+          const viewBox = chart.viewBox.baseVal;
+          return (
+            bounds.x < viewBox.x ||
+            bounds.x + bounds.width > viewBox.x + viewBox.width
+          );
+        }).length,
         pointCount: chart.querySelectorAll(".chart-point").length,
         thresholdCount: chart.querySelectorAll(".chart-threshold").length,
       })),
     };
   });
+  expect(
+    browser.charts.every((chart) => chart.axisLabelOverflowCount === 0),
+  ).toBe(true);
   const artifactRoot = resolve(
     process.env.PHASE9H_ARTIFACT_DIR ?? "../../.validation/phase9h/playwright",
   );
@@ -445,22 +458,27 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       }
     }
     const switchVehicle = async (vehicleId: string) => {
-      if (activeVehicleId === vehicleId) return;
-      const responsePromise = page.waitForResponse(
-        (response) =>
-          new URL(response.url()).pathname ===
-          `/api/predictive/vehicles/${vehicleId}/receipts`,
-      );
-      await vehicleSelector.selectOption(vehicleId);
-      expect((await responsePromise).status()).toBe(200);
+      if (activeVehicleId !== vehicleId) {
+        const responsePromise = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname ===
+            `/api/predictive/vehicles/${vehicleId}/receipts`,
+        );
+        await vehicleSelector.selectOption(vehicleId);
+        expect((await responsePromise).status()).toBe(200);
+        activeVehicleId = vehicleId;
+      }
       await expect(vehicleSelector).toHaveValue(vehicleId);
-      const firstReceiptId = String(
-        historyByVehicle.get(vehicleId)?.[0]?.prediction.receipt_id,
+      const selectedRow = page.locator(
+        ".receipt-table tbody tr[aria-selected='true']",
       );
-      await expect(
-        page.locator(".receipt-table tbody tr").first(),
-      ).toHaveAttribute("data-receipt-id", firstReceiptId);
-      activeVehicleId = vehicleId;
+      await expect(selectedRow).toHaveCount(1);
+      const selectedReceiptId =
+        await selectedRow.getAttribute("data-receipt-id");
+      expect(selectedReceiptId).toBeTruthy();
+      await expect(page.locator("#evidence .section-source code")).toHaveText(
+        selectedReceiptId!,
+      );
     };
     const rowFor = (vehicleId: string, receiptId: string) =>
       (historyByVehicle.get(vehicleId) ?? []).findIndex(
