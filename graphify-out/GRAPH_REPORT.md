@@ -1,7 +1,7 @@
 # Graph Report - vip-phase9h-graphify  (2026-11-06)
 
 ## Corpus Check
-- 631 files · ~710,058 words
+- 631 files · ~710,062 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .example 1)
 
@@ -1634,7 +1634,7 @@ Nodes (5): Evidence, Phase 9H independent acceptance, Required final checks, Sci
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `OpenAIProvider` connect `OpenAIProvider` to `AgentError`, `phase7d_eval.py`, `runtime.py`, `test_agents.py`, `typing`, `Supervisor`, `test_agent_runtime.py`, `Settings`, `Phase 7D real-model validation`, `AgentSettings`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+  _High betweenness centrality (0.080) - this node is a cross-community bridge._
 - **Why does `Phase 7D real-model validation` connect `Phase 7D real-model validation` to `OpenAIProvider`, `prompts/phase-7d-real-model-validation.md`?**
   _High betweenness centrality (0.080) - this node is a cross-community bridge._
 - **Why does `AgentError` connect `AgentError` to `phase7d_eval.py`, `runtime.py`, `test_agents.py`, `Envelope`, `test_agent_runtime.py`, `Settings`, `resolve_context`, `test_agent_repository.py`, `test_investigation.py`, `test_agent_prediction.py`, `typing`, `evaluate`, `Supervisor`, `pathlib`, `response`, `agents/schemas.py`, `AgentRun`, `OpenAIProvider`, `test_investigation_repository.py`, `canonical_hash`, `InvestigationPlan`, `knowledge_router`, `MCPSettings`, `EvidenceClient`, `AgentSettings`, `api/errors.py`, `KnowledgeService`?**

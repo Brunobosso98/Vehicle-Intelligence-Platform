@@ -194,7 +194,9 @@ test.describe("Phase 9H explicit synthetic UI", () => {
 
     const rows = page.locator(".receipt-table tbody tr");
     await rows.nth(1).locator(".table-select").click();
-    await expect(page.getByText("1.72").first()).toBeVisible();
+    await expect(
+      page.locator(".demo-record .predictive-metadata > div:first-child dd"),
+    ).toHaveText("1.72");
     await expect(page.getByText("AFTER_PULL_OFFLINE").first()).toBeVisible();
     await page.locator(".demo-record").scrollIntoViewIfNeeded();
     await save(page, "synthetic-anomaly-desktop.png", false);
