@@ -1,7 +1,7 @@
 # Graph Report - vip-phase9h-graphify  (2026-11-06)
 
 ## Corpus Check
-- 631 files · ~710,062 words
+- 631 files · ~710,108 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .example 1)
 

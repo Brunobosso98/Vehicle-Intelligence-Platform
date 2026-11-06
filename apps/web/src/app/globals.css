@@ -1461,6 +1461,69 @@ button:disabled {
   }
 }
 
+@media (min-width: 681px) and (max-width: 1000px) {
+  .receipt-history-scroll {
+    overflow: visible;
+    border: 0;
+  }
+
+  .receipt-history-scroll .receipt-table,
+  .receipt-history-scroll .receipt-table tbody,
+  .receipt-history-scroll .receipt-table tr,
+  .receipt-history-scroll .receipt-table th,
+  .receipt-history-scroll .receipt-table td {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .receipt-history-scroll .receipt-table {
+    table-layout: auto;
+  }
+
+  .receipt-history-scroll .receipt-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .receipt-history-scroll .receipt-table tbody tr {
+    margin-bottom: 11px;
+    padding: 3px 12px;
+    border: 1px solid var(--predictive-rule);
+    background: var(--predictive-panel);
+  }
+
+  .receipt-history-scroll .receipt-table tbody th,
+  .receipt-history-scroll .receipt-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.2fr);
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid #354242;
+    overflow-wrap: anywhere;
+  }
+
+  .receipt-history-scroll .receipt-table tbody td::before,
+  .receipt-history-scroll .receipt-table tbody th::before {
+    content: attr(data-label);
+    color: var(--predictive-dim);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .receipt-history-scroll .receipt-table tbody tr:last-child > * {
+    border-bottom: 1px solid #354242;
+  }
+}
+
 @media (max-width: 680px) {
   .predictive-main {
     width: min(100% - 32px, 1440px);

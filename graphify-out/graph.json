@@ -2094,7 +2094,7 @@
       "file_type": "code",
       "norm_label": "historyitem",
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L384"
+      "source_location": "L409"
     },
     {
       "id": "apps_api_src_vehicle_platform_agents_openai_provider_openaiprovider",
@@ -138376,7 +138376,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L324",
+      "source_location": "L312",
       "weight": 1.0
     },
     {
@@ -138388,7 +138388,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/web/src/components/predictive-workspace.tsx",
-      "source_location": "L326",
+      "source_location": "L327",
       "weight": 1.0
     },
     {
@@ -251433,7 +251433,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/tests/e2e/predictive.spec.ts",
-      "source_location": "L384",
+      "source_location": "L409",
       "weight": 1.0
     },
     {

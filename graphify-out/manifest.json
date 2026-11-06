@@ -3762,9 +3762,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/predictive-workspace.tsx": {
-    "mtime": 1793976968.640633,
-    "seen": 1793977026.3825927,
-    "ast_hash": "1705865e1de43546f212839a4f304ce6",
+    "mtime": 1793981382.2637036,
+    "seen": 1793981462.9422786,
+    "ast_hash": "9e53e017d6375e27fe3b6696133df9bf",
     "semantic_hash": ""
   },
   "apps/web/src/lib/predictive/demo-fixture.json": {
@@ -3792,9 +3792,9 @@
     "semantic_hash": ""
   },
   "apps/web/tests/e2e/predictive.spec.ts": {
-    "mtime": 1793979890.572054,
-    "seen": 1793979951.090009,
-    "ast_hash": "08c8ecf9a659a3f02a7ae5aac3ec05e0",
+    "mtime": 1793981382.2889826,
+    "seen": 1793981462.942452,
+    "ast_hash": "d3823fcd797e4e06d7e6c277c695d416",
     "semantic_hash": ""
   },
   "apps/web/tests/predictive-auth-routes.test.ts": {

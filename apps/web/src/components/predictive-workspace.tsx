@@ -1658,7 +1658,7 @@ export function PredictiveWorkspace({
               )}
               {historyState === "ready" && history && (
                 <>
-                  <div className="table-scroll">
+                  <div className="table-scroll receipt-history-scroll">
                     <table className="receipt-table">
                       <caption>
                         Histórico persistido; selecione uma linha para ver o
@@ -2523,7 +2523,7 @@ function DemoWorkspace({
             heading={group.heading}
           />
         ))}
-        <div className="table-scroll">
+        <div className="table-scroll receipt-history-scroll">
           <table className="receipt-table">
             <caption>
               Fixture sintética de demonstração; nenhum item é uma receipt real

@@ -40,6 +40,11 @@ async function saveBrowserMetrics(
         0,
         document.documentElement.scrollWidth - innerWidth,
       ),
+      receiptTableOverflowPx: Array.from(
+        document.querySelectorAll<HTMLElement>(".receipt-history-scroll"),
+      ).map((container) =>
+        Math.max(0, container.scrollWidth - container.clientWidth),
+      ),
       resourceCount: sameOrigin.length,
       encodedTransferBytes: sameOrigin.reduce(
         (total, entry) => total + entry.transferSize,
@@ -82,6 +87,9 @@ async function saveBrowserMetrics(
   });
   expect(
     browser.charts.every((chart) => chart.axisLabelOverflowCount === 0),
+  ).toBe(true);
+  expect(
+    browser.receiptTableOverflowPx.every((overflow) => overflow === 0),
   ).toBe(true);
   const artifactRoot = resolve(
     process.env.PHASE9H_ARTIFACT_DIR ?? "../../.validation/phase9h/playwright",
@@ -254,18 +262,35 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       .analyze();
     expect(accessibility.violations).toEqual([]);
     expect(browserErrors).toEqual([]);
-    const responsiveOverflow: Array<{ width: number; overflowPx: number }> = [];
+    const responsiveOverflow: Array<{
+      width: number;
+      overflowPx: number;
+      receiptTableOverflowPx: number;
+    }> = [];
     for (const width of [1440, 768, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      responsiveOverflow.push({
-        width,
-        overflowPx: await page.evaluate(() =>
-          Math.max(0, document.documentElement.scrollWidth - innerWidth),
-        ),
-      });
+      responsiveOverflow.push(
+        await page.evaluate(() => ({
+          width: innerWidth,
+          overflowPx: Math.max(
+            0,
+            document.documentElement.scrollWidth - innerWidth,
+          ),
+          receiptTableOverflowPx: Math.max(
+            0,
+            ...Array.from(
+              document.querySelectorAll<HTMLElement>(".receipt-history-scroll"),
+            ).map((container) => container.scrollWidth - container.clientWidth),
+          ),
+        })),
+      );
     }
     expect(
-      responsiveOverflow.every((measurement) => measurement.overflowPx === 0),
+      responsiveOverflow.every(
+        (measurement) =>
+          measurement.overflowPx === 0 &&
+          measurement.receiptTableOverflowPx === 0,
+      ),
     ).toBe(true);
     await saveBrowserMetrics(page, "synthetic-ui-metrics.json", {
       mode: "synthetic-demo",
