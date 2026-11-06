@@ -1,7 +1,7 @@
 # Graph Report - vip-phase9h-graphify  (2026-11-06)
 
 ## Corpus Check
-- 631 files · ~710,108 words
+- 631 files · ~710,221 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 20 file(s) not represented in the graph (top: (none) 12, .Dockerfile 2, .example 1)
 
@@ -330,7 +330,7 @@
 - test_database.py
 - Phase 9H requirement traceability ledger
 - report_predictive_reliability.py
-- Phase 9H security review — 2026-11-05
+- Phase 9H security review — 2026-11-06
 - ReplayAdapter
 - Elm327Adapter
 - ADR 0046: Controlled server-side predictive UI boundary
@@ -1477,9 +1477,9 @@ Nodes (5): Acceptance notes, Environment and validation evidence, Execution sequ
 Cohesion: 0.22
 Nodes (7): main(), Any, Path, Render measured Phase 9G benchmark and observability receipts., _receipt(), Hash the exact reviewable working tree without printing file contents., subprocess
 
-### Community 336 - "Phase 9H security review — 2026-11-05"
+### Community 336 - "Phase 9H security review — 2026-11-06"
 Cohesion: 0.22
-Nodes (9): API and Web package findings, Dependency, filesystem and secrets scans, Exact-run failures and follow-up, Latest exact-head Security scan — 2026-11-06, Phase 9H security review — 2026-11-05, Predictive operator boundary, Previous Security workflow image scan on `5ffe99d`, Reviewed exceptions and policy result (+1 more)
+Nodes (9): API and Web package findings, Dependency, filesystem and secrets scans, Exact-run failures and follow-up, Latest exact-head Security scan — 2026-11-06, Phase 9H security review — 2026-11-06, Predictive operator boundary, Previous Security workflow image scan on `5ffe99d`, Reviewed exceptions and policy result (+1 more)
 
 ### Community 337 - "ReplayAdapter"
 Cohesion: 0.22

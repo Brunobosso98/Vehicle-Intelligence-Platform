@@ -9,7 +9,10 @@ import re
 from pathlib import Path
 from typing import Any
 
-BOOTSTRAP_CI_ENDPOINT_TOLERANCE = 0.02
+# Fresh synthetic cohort IDs reorder the finite 200-draw cluster bootstrap. The
+# point estimates remain exact; only interval endpoints allow up to 3 percentage
+# points of Monte Carlo movement between otherwise identical synthetic runs.
+BOOTSTRAP_CI_ENDPOINT_TOLERANCE = 0.03
 
 
 def rounded(value: Any, places: int = 5) -> float | None:

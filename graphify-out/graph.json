@@ -28056,7 +28056,7 @@
       "file_type": "code",
       "norm_label": "test_bootstrap_interval_outside_tolerance_fails()",
       "source_file": "apps/api/tests/unit/test_phase9h_research_summary.py",
-      "source_location": "L30"
+      "source_location": "L36"
     },
     {
       "id": "apps_api_tests_unit_test_phase9h_research_summary_test_current_fresh_source_bootstrap_intervals_are_within_documented_tolerance",
@@ -28080,7 +28080,7 @@
       "file_type": "code",
       "norm_label": "test_malformed_bootstrap_interval_fails()",
       "source_file": "apps/api/tests/unit/test_phase9h_research_summary.py",
-      "source_location": "L44"
+      "source_location": "L50"
     },
     {
       "id": "apps_api_tests_unit_test_shared_claim_instructions_test_binding_priority_keeps_quantity_before_incidental_metadata",
@@ -29688,7 +29688,7 @@
       "file_type": "code",
       "norm_label": "_alarm_ratio()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L162"
+      "source_location": "L165"
     },
     {
       "id": "scripts_check_phase9h_research_summary_check",
@@ -29700,7 +29700,7 @@
       "file_type": "code",
       "norm_label": "check()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L223"
+      "source_location": "L226"
     },
     {
       "id": "scripts_check_phase9h_research_summary_check_anomaly",
@@ -29712,7 +29712,7 @@
       "file_type": "code",
       "norm_label": "_check_anomaly()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L166"
+      "source_location": "L169"
     },
     {
       "id": "scripts_check_phase9h_research_summary_check_bootstrap_interval",
@@ -29724,7 +29724,7 @@
       "file_type": "code",
       "norm_label": "_check_bootstrap_interval()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L74"
+      "source_location": "L77"
     },
     {
       "id": "scripts_check_phase9h_research_summary_check_supervised",
@@ -29736,7 +29736,7 @@
       "file_type": "code",
       "norm_label": "_check_supervised()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L104"
+      "source_location": "L107"
     },
     {
       "id": "scripts_check_phase9h_research_summary_main",
@@ -29748,7 +29748,7 @@
       "file_type": "code",
       "norm_label": "main()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L314"
+      "source_location": "L317"
     },
     {
       "id": "scripts_check_phase9h_research_summary_reliability",
@@ -29760,7 +29760,7 @@
       "file_type": "code",
       "norm_label": "_reliability()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L30"
+      "source_location": "L33"
     },
     {
       "id": "scripts_check_phase9h_research_summary_require",
@@ -29772,7 +29772,7 @@
       "file_type": "code",
       "norm_label": "require()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L21"
+      "source_location": "L24"
     },
     {
       "id": "scripts_check_phase9h_research_summary_rounded",
@@ -29784,7 +29784,7 @@
       "file_type": "code",
       "norm_label": "rounded()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L15"
+      "source_location": "L18"
     },
     {
       "id": "scripts_check_phase9h_research_summary_test_metric",
@@ -29796,7 +29796,7 @@
       "file_type": "code",
       "norm_label": "_test_metric()",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L26"
+      "source_location": "L29"
     },
     {
       "id": "apps_api_src_vehicle_platform_acquisition_cli_replay_run_inspect",
@@ -79423,43 +79423,43 @@
       "label": "API and Web package findings",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "api and web package findings",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L129"
+      "source_location": "L130"
     },
     {
       "id": "docs_security_phase_9h_security_review_dependency_filesystem_and_secrets_scans",
       "label": "Dependency, filesystem and secrets scans",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "dependency, filesystem and secrets scans",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L183"
+      "source_location": "L184"
     },
     {
       "id": "docs_security_phase_9h_security_review_exact_run_failures_and_follow_up",
       "label": "Exact-run failures and follow-up",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "exact-run failures and follow-up",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L191"
+      "source_location": "L192"
     },
     {
       "id": "docs_security_phase_9h_security_review_latest_exact_head_security_scan_2026_11_06",
       "label": "Latest exact-head Security scan \u2014 2026-11-06",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "latest exact-head security scan \u2014 2026-11-06",
@@ -79467,14 +79467,14 @@
       "source_location": "L3"
     },
     {
-      "id": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
-      "label": "Phase 9H security review \u2014 2026-11-05",
+      "id": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
+      "label": "Phase 9H security review \u2014 2026-11-06",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "phase 9h security review \u2014 2026-11-05",
+      "norm_label": "phase 9h security review \u2014 2026-11-06",
       "source_file": "docs/security/phase-9h-security-review.md",
       "source_location": "L1"
     },
@@ -79483,48 +79483,48 @@
       "label": "Predictive operator boundary",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "predictive operator boundary",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L83"
+      "source_location": "L84"
     },
     {
       "id": "docs_security_phase_9h_security_review_previous_security_workflow_image_scan_on_5ffe99d",
       "label": "Previous Security workflow image scan on `5ffe99d`",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "previous security workflow image scan on `5ffe99d`",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L103"
+      "source_location": "L104"
     },
     {
       "id": "docs_security_phase_9h_security_review_reviewed_exceptions_and_policy_result",
       "label": "Reviewed exceptions and policy result",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "reviewed exceptions and policy result",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L168"
+      "source_location": "L169"
     },
     {
       "id": "docs_security_phase_9h_security_review_vendor_image_review_and_residual_findings",
       "label": "Vendor image review and residual findings",
       "_origin": "ast",
       "community": 336,
-      "community_name": "Phase 9H security review \u2014 2026-11-05",
+      "community_name": "Phase 9H security review \u2014 2026-11-06",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "vendor image review and residual findings",
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L152"
+      "source_location": "L153"
     },
     {
       "id": "scripts_observability_phases_py_datetime",
@@ -82121,7 +82121,7 @@
       "node_kind": "heading",
       "norm_label": "required final checks",
       "source_file": "docs/validation/phase-9h-acceptance.md",
-      "source_location": "L98"
+      "source_location": "L99"
     },
     {
       "id": "docs_validation_phase_9h_acceptance_scientific_limitations",
@@ -82133,7 +82133,7 @@
       "node_kind": "heading",
       "norm_label": "scientific limitations",
       "source_file": "docs/validation/phase-9h-acceptance.md",
-      "source_location": "L105"
+      "source_location": "L106"
     },
     {
       "id": "docs_validation_phase_9h_acceptance_scope_and_oracle",
@@ -139888,7 +139888,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L226",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -139900,7 +139900,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L282",
+      "source_location": "L285",
       "weight": 1.0
     },
     {
@@ -139912,7 +139912,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L283",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -139924,7 +139924,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L169",
+      "source_location": "L172",
       "weight": 1.0
     },
     {
@@ -139936,7 +139936,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L187",
+      "source_location": "L190",
       "weight": 1.0
     },
     {
@@ -139948,7 +139948,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L80",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -139960,7 +139960,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L106",
+      "source_location": "L109",
       "weight": 1.0
     },
     {
@@ -139972,7 +139972,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L114",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -139984,7 +139984,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L146",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -139996,7 +139996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L155",
+      "source_location": "L158",
       "weight": 1.0
     },
     {
@@ -140008,7 +140008,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L157",
+      "source_location": "L160",
       "weight": 1.0
     },
     {
@@ -140020,7 +140020,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L326",
+      "source_location": "L329",
       "weight": 1.0
     },
     {
@@ -150016,7 +150016,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "apps/api/tests/unit/test_phase9h_research_summary.py",
-      "source_location": "L40",
+      "source_location": "L46",
       "weight": 1.0
     },
     {
@@ -155776,7 +155776,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L223",
+      "source_location": "L226",
       "weight": 1.0
     },
     {
@@ -155788,7 +155788,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L166",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
@@ -155800,7 +155800,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L104",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -155812,7 +155812,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L30",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -222337,7 +222337,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L223",
+      "source_location": "L226",
       "weight": 1.0
     },
     {
@@ -222349,7 +222349,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L74",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -222361,7 +222361,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L15",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -225661,7 +225661,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L26",
+      "source_location": "L29",
       "weight": 1.0
     },
     {
@@ -246483,7 +246483,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_phase9h_research_summary.py",
-      "source_location": "L30",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -246494,7 +246494,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/tests/unit/test_phase9h_research_summary.py",
-      "source_location": "L44",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -280313,7 +280313,7 @@
     },
     {
       "source": "docs_security_phase_9h_security_review",
-      "target": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "target": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -280323,73 +280323,73 @@
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_previous_security_workflow_image_scan_on_5ffe99d",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L103",
+      "source_location": "L104",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_api_and_web_package_findings",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L129",
+      "source_location": "L130",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_vendor_image_review_and_residual_findings",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L152",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_reviewed_exceptions_and_policy_result",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L168",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_dependency_filesystem_and_secrets_scans",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L183",
+      "source_location": "L184",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_exact_run_failures_and_follow_up",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L191",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_latest_exact_head_security_scan_2026_11_06",
       "relation": "contains",
       "_origin": "ast",
@@ -280400,14 +280400,14 @@
       "weight": 1.0
     },
     {
-      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_05",
+      "source": "docs_security_phase_9h_security_review_phase_9h_security_review_2026_11_06",
       "target": "docs_security_phase_9h_security_review_predictive_operator_boundary",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/security/phase-9h-security-review.md",
-      "source_location": "L83",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -283025,7 +283025,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-9h-acceptance.md",
-      "source_location": "L105",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -283047,7 +283047,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/validation/phase-9h-acceptance.md",
-      "source_location": "L98",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -284411,18 +284411,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L104",
-      "weight": 1.0
-    },
-    {
-      "source": "scripts_check_phase9h_research_summary",
-      "target": "scripts_check_phase9h_research_summary_rounded",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L15",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -284433,7 +284422,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L162",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -284444,18 +284433,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L166",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
       "source": "scripts_check_phase9h_research_summary",
-      "target": "scripts_check_phase9h_research_summary_require",
+      "target": "scripts_check_phase9h_research_summary_rounded",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L21",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -284466,7 +284455,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L223",
+      "source_location": "L226",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_check_phase9h_research_summary",
+      "target": "scripts_check_phase9h_research_summary_require",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/check_phase9h_research_summary.py",
+      "source_location": "L24",
       "weight": 1.0
     },
     {
@@ -284477,18 +284477,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L26",
-      "weight": 1.0
-    },
-    {
-      "source": "scripts_check_phase9h_research_summary",
-      "target": "scripts_check_phase9h_research_summary_reliability",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L30",
+      "source_location": "L29",
       "weight": 1.0
     },
     {
@@ -284499,7 +284488,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L314",
+      "source_location": "L317",
+      "weight": 1.0
+    },
+    {
+      "source": "scripts_check_phase9h_research_summary",
+      "target": "scripts_check_phase9h_research_summary_reliability",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/check_phase9h_research_summary.py",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -284510,7 +284510,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "scripts/check_phase9h_research_summary.py",
-      "source_location": "L74",
+      "source_location": "L77",
       "weight": 1.0
     },
     {

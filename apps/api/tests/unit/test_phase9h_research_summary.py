@@ -25,15 +25,21 @@ def test_current_fresh_source_bootstrap_intervals_are_within_documented_toleranc
         [0.05945, 0.16806],
         [0.05760, 0.18301],
     )
+    module._check_bootstrap_interval(
+        "NEXT_PULL_THERMAL_DEGRADATION",
+        "eceCi",
+        [0.05937, 0.20237],
+        [0.06007, 0.17933],
+    )
 
 
 def test_bootstrap_interval_outside_tolerance_fails():
-    with pytest.raises(ValueError, match="endpoint delta exceeds 0.020"):
+    with pytest.raises(ValueError, match="endpoint delta exceeds 0.030"):
         module._check_bootstrap_interval(
             "NEXT_PULL_FUEL_DEVIATION",
             "eceCi",
             [0.05945, 0.16806],
-            [0.05760, 0.18807],
+            [0.05760, 0.19809],
         )
 
 

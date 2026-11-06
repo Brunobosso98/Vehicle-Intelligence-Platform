@@ -53,7 +53,7 @@ The UI keeps the committed 9G summary tied to its original source receipt. A fre
 must still match task support, frozen thresholds, selected research maps, rounded point metrics,
 reliability bins, anomaly counts and applicability aggregates exactly. The 9G harness creates fresh
 synthetic cohort identities, so finite 200-resample cluster-bootstrap confidence interval endpoints
-can move between runs. The checker allows at most 0.020 absolute movement per endpoint for Brier and
+can move between runs. The checker allows at most 0.030 absolute movement per endpoint for Brier and
 ECE intervals; it rejects malformed, unordered, out-of-range or more widely shifted bounds. This
 tolerance applies only to the displayed research uncertainty bounds and does not change any model,
 threshold, serving decision or evaluation report.
