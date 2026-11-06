@@ -2,10 +2,11 @@
 
 ## Latest exact-head Security scan — 2026-11-06
 
-Security run [`42236159288`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288)
-passed on implementation SHA `801caee54086701ff8ef55c36b69a0b5aa1c4adc`. Its Trivy and policy
-artifact is
-[`container-security-43073c13dd12ecb36defc00d0becefd3bb833d7c`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288/artifacts/13511327058).
+Security run [`42252152655`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152655)
+passed for PR head `ddee2eefe75ec2b91e1ee112fd35b4cd4f51cb04`. Its Trivy and policy artifact is
+[`container-security-c6018836d260b9688dfbc7ece2cd8cd581491051`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152655/artifacts/13520458340).
+The image-scan metadata identifies the GitHub pull-request merge candidate commit; the workflow head
+and PR code tested are ddee2ee. Dependency Review and both CodeQL jobs passed in the same run.
 The selected runtime images produced 101 accepted High package occurrences, zero Criticals and
 zero blocked Highs:
 
@@ -34,7 +35,7 @@ exact-head image scan and required delivery results are linked from
 [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks); this
 scan proves only the implementation SHA above.
 
-**Reviewed Security gate status:** PASS on PR head
+**Historical Security gate status:** PASS on PR head
 `e27dbc264558b6468846b5929ad197fa8b89cd94` in run
 [`42112442920`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42112442920).
 Trivy 0.76.1 found 95 High package occurrences across the selected runtime images; all matched
@@ -207,7 +208,8 @@ The canonical report for `0ed6553` records:
   exact. The wider allowance covers only Monte Carlo movement in displayed synthetic research
   intervals and does not alter evaluation reports or serving behavior.
 
-The canonical report also shows Phases 0–9G, Docker builds, migrations, database, stack, stream,
-observability, and historical E2E components passed. The 9H persisted-value parity, no-write digest,
-and access-control browser checks remain unproved until the corrected exact-head acceptance job
-completes.
+The later canonical [run 42252152685](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152685)
+passed Phases 0–9H on ddee2ee, including Docker builds, migrations, database, full stack, stream,
+observability, independent Phase 9H parity, no-write digest and access-control browser checks. That
+run's exact SHA and outcome are historical evidence; the final documentation commit must pass the
+current PR check set before delivery.

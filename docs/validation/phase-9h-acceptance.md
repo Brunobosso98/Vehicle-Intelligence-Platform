@@ -1,11 +1,12 @@
 # Phase 9H independent acceptance
 
 **Exact-head acceptance status: follow the current [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks).**
-The completed independent run [42236159195](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159195)
-passed on `801caee54086701ff8ef55c36b69a0b5aa1c4adc`. Review of its screenshots found clipped
-long 9C axis labels and an overview captured during evidence loading. The current branch corrects
-tick formatting and makes the browser acceptance wait for the selected receipt; its exact-head
-artifact and verdict are linked from the PR checks page.
+The latest complete implementation run, [Phase 9H acceptance 42252152633](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633),
+passed on `ddee2eefe75ec2b91e1ee112fd35b4cd4f51cb04`; its screenshots and machine-readable results
+are in [artifact 13521557235](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633/artifacts/13521557235).
+The canonical [Phase 0–9H full-stack run 42252152685](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152685)
+also passed on that SHA. The current PR check page remains authoritative for the final documentation
+commit and its exact-head rerun.
 
 ## Scope and oracle
 
@@ -67,27 +68,29 @@ evaluation mutation is permitted during browsing.
 
 ## Evidence
 
-| Gate                                                                    | Local result                                                                                                                                                                   |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| API unit, typing, lint, branch coverage                                 | **PASS** — 1,432 tests; 95.89% line, 90.11% branch coverage                                                                                                                    |
-| React/Vitest, strict TypeScript, ESLint                                 | **PASS locally** — 138 tests; 90.04% statements, 85.14% branches, 91.96% lines on the current working tree                                                                     |
-| Generated OpenAPI contract check                                        | **PASS**                                                                                                                                                                       |
-| Documentation/context and repository formatting                         | **PASS** — `make docs-check`, `pnpm format:check`                                                                                                                              |
-| Synthetic and persisted Playwright, screenshots, axe, responsive checks | Independent Chromium acceptance is required on the current PR head; it records axe, console, responsive and chart-axis bounds                                                  |
-| 500-point chart benchmark                                               | **PASS** — p50 507.52 ms, p95 609.85 ms in local jsdom; browser charts measured separately in the CI artifact                                                                  |
-| Actual API + disposable DB + BFF + persisted-value parity               | Latest completed run **PASS** — 11 original persisted receipts; 3 supervised tasks, 4 anomaly families, exact source checks and protected BFF browser reads                    |
-| No-write database digest before/after browsing                          | **PASS** — before/after digests matched for every captured source table; no mutated tables                                                                                     |
-| Locked dependency, filesystem and secret scans                          | **PASS on exact-head Security run** — no High/Critical lockfile/filesystem or IaC findings; Gitleaks reported no leaks                                                         |
-| Trivy selected container images                                         | **PASS by repository policy** — 101 High occurrences accepted with exact, dated records; 0 Critical and 0 blocked findings; residual risk remains visible                      |
-| Docker integration E2E                                                  | Passed on source revision `801caee`; current exact-head result is on [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks)             |
-| Canonical full-stack/regression workflow                                | Current exact-head result is on [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks); the earlier 9H rate-limit failure was corrected |
+| Gate                                                                    | Local result                                                                                                                                                               |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API unit, typing, lint, branch coverage                                 | **PASS** — 1,432 tests; 95.89% line, 90.11% branch coverage                                                                                                                |
+| React/Vitest, strict TypeScript, ESLint                                 | **PASS locally** — 138 tests; 90.04% statements, 85.14% branches, 91.96% lines on the current working tree                                                                 |
+| Generated OpenAPI contract check                                        | **PASS**                                                                                                                                                                   |
+| Documentation/context and repository formatting                         | **PASS** — `make docs-check`, `pnpm format:check`                                                                                                                          |
+| Synthetic and persisted Playwright, screenshots, axe, responsive checks | **PASS on ddee2ee** — 0 axe violations, 0 console errors, zero measured overflow, chart-axis bounds checked; final SHA follows PR checks                                   |
+| 500-point chart benchmark                                               | **PASS** — p50 109.28 ms, p95 126.11 ms over five jsdom render samples; 2,521 nodes and 56,155,944-byte approximate heap delta; not a production SLA                       |
+| Actual API + disposable DB + BFF + persisted-value parity               | **PASS on ddee2ee** — 11 original persisted receipts; all 3 supervised tasks and 4 anomaly families; exact score/threshold/receipt/evidence parity and protected BFF reads |
+| No-write database digest before/after browsing                          | **PASS on ddee2ee** — before/after digests matched across every captured source table; `mutated_tables=[]`                                                                 |
+| Locked dependency, filesystem and secret scans                          | **PASS on exact-head Security run** — no High/Critical lockfile/filesystem or IaC findings; Gitleaks reported no leaks                                                     |
+| Trivy selected container images                                         | **PASS by repository policy** — 101 High occurrences accepted with exact, dated records; 0 Critical and 0 blocked findings; residual risk remains visible                  |
+| Docker integration E2E                                                  | **PASS on ddee2ee** — [Quality + Integration E2E run 42252152639](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152639)                  |
+| Canonical full-stack/regression workflow                                | **PASS on ddee2ee** — [run 42252152685](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152685), Phases 0–9H and FULL GATE PASS            |
 
 The runner writes source and browser evidence under ignored `.validation/phase9h/`, including the
 direct oracle, `acceptance.json`, independent-check log, per-mode Playwright metrics, screenshots,
-traces and service logs. The latest completed source artifact is available from
-[run 42236159195](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159195);
-the corrected current-head artifact is linked from the PR check page. Generated screenshots remain
-out of Git; capture IDs and measurements are recorded in [the UI evaluation](phase-9h-ui-evaluation.md).
+traces and service logs. The ddee2ee artifact is available from
+[Phase 9H run 42252152633](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633)
+and [artifact 13521557235](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633/artifacts/13521557235).
+Generated screenshots remain out of Git; capture IDs and measurements are recorded in [the UI
+evaluation](phase-9h-ui-evaluation.md). The final documentation commit must still pass the PR's
+exact-head checks.
 The independent runner used a fresh disposable
 database and actual API/9D/9E routes; its proof-state browser overlays remained source-bound test
 states and were not represented as persisted 9E rows. The local `make verify-cloud` run passed its

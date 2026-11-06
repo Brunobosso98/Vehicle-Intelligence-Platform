@@ -1,13 +1,12 @@
 # Phase 9H UI evaluation
 
-**Visual review is iterative; the current exact-head screenshots and verdict are linked from [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks).**
-The completed Chromium run [42236159195](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159195)
-used disposable synthetic receipts through the protected BFF and kept demo fixtures separate. Manual
-review of those captures found long 9C tick labels clipped at the chart edge and an overview saved
-before its evidence load completed. The current branch rounds chart-axis labels to three significant
-digits, keeps original values in the receipt table, checks SVG label bounds, and waits for the
-selected receipt before saving the overview. The corrected captures require review from the current
-exact-head artifact before delivery is declared verified.
+**Visual review is iterative; the final exact-head screenshots and verdict are linked from [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks).**
+The latest Chromium acceptance [42252152633](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633)
+passed on `ddee2eefe75ec2b91e1ee112fd35b4cd4f51cb04`; [artifact 13521557235](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633/artifacts/13521557235)
+contains the corrected screenshots and metrics. The earlier clipped 9C axis labels and early overview
+capture were fixed. The tablet history now uses readable labeled rows, and automated checks report no
+chart-label or responsive/table overflow. The final documentation commit's screenshot artifact remains
+the delivery authority.
 
 ## Screenshot captures
 
@@ -18,9 +17,9 @@ chart values, and states scientific limitations next to results. Mobile stacks m
 without horizontal clipping. The 9G summary is synthetic-only, offline research.
 
 Generated PNGs are not checked into source control. The ignored local capture directory is
-`.validation/phase9h/screenshots/`; the reviewed discovery artifact is attached to
-[run 42236159195](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159195).
-The corrected current-head artifact is available from the Phase 9H job linked on the PR checks page.
+`.validation/phase9h/screenshots/`; the reviewed exact-head artifact is attached to
+[run 42252152633](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633)
+([artifact 13521557235](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633/artifacts/13521557235)).
 The JSON measurements are in `.validation/phase9h/playwright/synthetic-ui-metrics.json` and
 `.validation/phase9h/playwright/persisted-ui-metrics.json`. To reproduce the synthetic captures,
 start a test-only Next.js development server with `PREDICTIVE_UI_DEMO_ENABLED=true`, then run
@@ -67,26 +66,26 @@ also covered 1440 px and 768 px):
 
 | Measurement                                    |                           Result | Scope                                                     |
 | ---------------------------------------------- | -------------------------------: | --------------------------------------------------------- |
-| Operator entry ready                           |                         2,571 ms | Synthetic route/session readiness                         |
-| Synthetic demo interactive                     |                           119 ms | After explicit demo controls became available             |
+| Operator entry ready                           |                         2,700 ms | Synthetic route/session readiness                         |
+| Synthetic demo interactive                     |                            95 ms | After explicit demo controls became available             |
 | Synthetic responsive overflow                  |     0 px at 1440, 768 and 390 px | Chromium document width                                   |
 | Persisted responsive overflow                  |                   0 px at 390 px | Protected-read browser measurement                        |
 | Axe violations                                 |                                0 | WCAG 2.2 AA-related tags in both modes                    |
 | Browser console errors                         |                                0 | Both captured Chromium journeys                           |
-| Persisted resources / browser requests         |                          97 / 98 | 390 × 844 protected-read browser run                      |
-| Persisted client scripts, encoded bytes        |                 11 / 6,687,735 B | Client script count and transfer bytes                    |
-| Persisted client scripts, decoded bytes        |                     29,367,504 B | Decoded client script bytes                               |
-| Persisted all-resource encoded / decoded bytes |         6,959,418 / 29,640,879 B | 97 browser resources; development-harness measurement     |
+| Persisted resources / browser requests         |                        101 / 102 | 390 × 844 protected-read browser run                      |
+| Persisted client scripts, encoded bytes        |                 17 / 6,694,820 B | Client script count and transfer bytes                    |
+| Persisted client scripts, decoded bytes        |                     29,376,593 B | Decoded client script bytes                               |
+| Persisted all-resource encoded / decoded bytes |         6,943,485 / 29,628,422 B | 101 browser resources; development-harness measurement    |
 | Synthetic fixture encoded / decoded bytes      |                  5,916 / 5,916 B | Explicit demo endpoint                                    |
-| DOM nodes                                      |         717 persisted / 484 demo | 390 px; fixture and UI nodes included                     |
+| DOM nodes                                      |         726 persisted / 490 demo | 390 px; fixture and UI nodes included                     |
 | Persisted charts                               | 3; 3 ticks, 1 point, 1 threshold | One source record per supervised task in this viewport    |
 | Synthetic charts                               | 2; 3 ticks, 1 point, 1 threshold | Explicit demo fixture                                     |
-| Next.js page response                          |         298 ms cold / 22 ms warm | `web.log`; development response includes cold compilation |
+| Next.js page response                          |         298 ms cold / 21 ms warm | `web.log`; development response includes cold compilation |
 
 The bounded 500-point SVG benchmark rendered 500 points and 500 threshold marks in five jsdom
-samples. Median was 507.52 ms, p95 was 609.85 ms, the chart rendered 2,518 nodes, and the
-approximate heap delta was 59,189,208 bytes. This is a component-render approximation, not a
-browser or production SLA. The protected-mode page transferred about 6.9 MB encoded / 29.6 MB
+samples. Median was 109.28 ms, p95 was 126.11 ms, the chart rendered 2,521 nodes, and the
+approximate heap delta was 56,155,944 bytes. This is a component-render approximation, not a
+browser or production SLA. The protected-mode page transferred about 6.94 MB encoded / 29.63 MB
 decoded across all resources in this development harness; this is context, not a production bundle
 budget. The benchmark JSON receipt is `.validation/phase9h/playwright/chart-500-render.json`.
 
@@ -97,15 +96,15 @@ requests. No screenshot is evidence of statistical validity.
 
 ## Remaining visual evidence
 
-| View                                                                                 | Evidence                                        | Status                                                                                      |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Synthetic desktop overview, history, anomaly, abstention, partial evidence, research | Ignored Playwright artifacts; capture IDs above | PASS                                                                                        |
-| Synthetic 768 px tablet and 390 px mobile                                            | Ignored Playwright artifacts; capture IDs above | PASS; zero horizontal overflow                                                              |
-| Persisted operator, receipt, evidence and science                                    | Disposable DB + protected BFF + Chromium        | Latest completed parity PASS on `801caee`; current result is linked from the PR checks page |
-| Persisted axe, secret disclosure and internal API-host requests                      | Exact-head Phase 9H workflow                    | Current exact-head evidence is linked from the PR checks page                               |
+| View                                                                                 | Evidence                                        | Status                                                                        |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| Synthetic desktop overview, history, anomaly, abstention, partial evidence, research | Ignored Playwright artifacts; capture IDs above | PASS                                                                          |
+| Synthetic 768 px tablet and 390 px mobile                                            | Ignored Playwright artifacts; capture IDs above | PASS; zero horizontal overflow                                                |
+| Persisted operator, receipt, evidence and science                                    | Disposable DB + protected BFF + Chromium        | **PASS on ddee2ee**; 11 source receipts across 3 tasks and 4 anomaly families |
+| Persisted axe, secret disclosure and internal API-host requests                      | Exact-head Phase 9H workflow                    | **PASS on ddee2ee**; 0 axe issues, 0 leaks, 0 internal API-host requests      |
 
 Persisted browser parity is proven against the disposable-database oracle on implementation SHA
-`801caee`; all captured fixture source roles are synthetic. The screenshot review of that revision
-found the two visual issues recorded above; the corrected artifact and exact-head result are linked
-from the PR checks page. Exact stored-value display does not establish predictive validity or
-mechanical diagnosis.
+`ddee2eefe75ec2b91e1ee112fd35b4cd4f51cb04`; all captured fixture source roles are synthetic. Manual
+review of the desktop overview, scored receipt, tablet and mobile captures found no remaining clipping
+or usability issue. Exact stored-value display does not establish predictive validity or mechanical
+diagnosis. The PR checks page is authoritative for the final documentation commit.

@@ -1,10 +1,11 @@
 # Phase 9H security and accessibility validation
 
 **Protected browser security and accessibility: use the current exact-head [PR #57 checks](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/57/checks).**
-The completed independent run [42236159195](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159195)
-passed the disposable-database, live API and protected Next.js BFF matrix on `801caee`. Its screenshot
-review found chart-axis label clipping, fixed in the current branch. The current run must pass the
-added chart-bounds assertion and is the delivery authority.
+The disposable-database, live API and protected Next.js BFF matrix passed on
+`ddee2eefe75ec2b91e1ee112fd35b4cd4f51cb04` in [Phase 9H run 42252152633](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42252152633).
+It records the chart-bounds assertion, zero axe violations, zero browser API-host requests, zero secret
+disclosures, and the complete adversarial access matrix. The final documentation commit must pass its
+own exact-head run.
 
 ## Protected boundary
 
