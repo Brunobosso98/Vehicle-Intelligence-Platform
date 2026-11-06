@@ -228,14 +228,15 @@ async function responseError(response: Response): Promise<Error> {
     /* use the route status below */
   }
   const message = detail.error ?? `A solicitação falhou (${response.status}).`;
+  const requestError = Object.assign(new Error(message), {
+    code: detail.code,
+  });
   const retryAfter = Number(response.headers.get("retry-after"));
   if (response.status === 429 && Number.isFinite(retryAfter)) {
     const seconds = Math.max(1, Math.min(300, Math.ceil(retryAfter)));
-    return new Error(
-      `${message} Aguarde ${seconds} s antes de tentar novamente.`,
-    );
+    requestError.message = `${message} Aguarde ${seconds} s antes de tentar novamente.`;
   }
-  return new Error(message);
+  return requestError;
 }
 
 export function ScoreChart({
@@ -607,7 +608,7 @@ export function PredictiveWorkspace({
   const [detail, setDetail] = useState<Prediction | null>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [evidenceState, setEvidenceState] = useState<
-    "idle" | "loading" | "missing" | "ready" | "failed"
+    "idle" | "loading" | "missing" | "ready" | "failed" | "unsupported"
   >("idle");
   const [agentLinks, setAgentLinks] = useState<AgentLink[]>([]);
   const [detailState, setDetailState] = useState<
@@ -917,7 +918,13 @@ export function PredictiveWorkspace({
           }
         } else {
           setEvidence(null);
-          setEvidenceState("failed");
+          const evidenceError = await responseError(evidenceResponse);
+          setEvidenceState(
+            "code" in evidenceError &&
+              evidenceError.code === "UNSUPPORTED_EVIDENCE_SCHEMA"
+              ? "unsupported"
+              : "failed",
+          );
         }
         if (agentResponse.ok) {
           const context = (await agentResponse.json()) as {
@@ -1875,6 +1882,15 @@ export function PredictiveWorkspace({
                     <div className="source-mismatch" role="alert">
                       Projeção não confere com o escopo da receipt. Detalhes
                       foram ocultados.
+                    </div>
+                  )}
+                  {evidenceState === "unsupported" && (
+                    <div className="source-mismatch" role="alert">
+                      <strong>Formato de evidência não suportado.</strong>
+                      <p>
+                        Metadados, fatos e interpretações ficam ocultos até que
+                        a projeção possa ser validada.
+                      </p>
                     </div>
                   )}
                   {evidenceState === "missing" && (

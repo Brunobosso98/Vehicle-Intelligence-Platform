@@ -183,6 +183,7 @@ type PrivateApiOptions = {
     | "threshold"
     | "decision";
   evidenceStatus?: number;
+  evidenceCode?: string;
   evidenceMismatch?: boolean;
   evidenceMismatchField?:
     "receipt_id" | "source_role" | "horizon" | "cutoff" | "score" | "threshold";
@@ -292,7 +293,10 @@ function installPrivateApi(options: PrivateApiOptions = {}) {
     ) {
       if (options.evidenceStatus)
         return jsonResponse(
-          { error: "Evidence upstream failed." },
+          {
+            error: "Evidence upstream failed.",
+            ...(options.evidenceCode ? { code: options.evidenceCode } : {}),
+          },
           options.evidenceStatus,
         );
       const mismatches: Record<string, unknown> = {
@@ -1031,6 +1035,14 @@ describe("Predictive Intelligence workspace", () => {
       /Projeção não confere com o escopo da receipt/,
     ],
     [
+      "unsupported evidence schema",
+      {
+        evidenceStatus: 422,
+        evidenceCode: "UNSUPPORTED_EVIDENCE_SCHEMA",
+      },
+      /Formato de evidência não suportado/,
+    ],
+    [
       "evidence receipt mismatch",
       { evidenceMismatch: true },
       /Projeção não confere com o escopo da receipt/,
@@ -1041,6 +1053,10 @@ describe("Predictive Intelligence workspace", () => {
     render(<PredictiveWorkspace initialVehicleId={vehicleId} />);
     await logIn(user);
     expect(await screen.findByText(expected)).toBeInTheDocument();
+    if ("evidenceCode" in options)
+      expect(
+        screen.queryByText("Fatos de origem e qualidade"),
+      ).not.toBeInTheDocument();
     if ("detailMismatch" in options && options.detailMismatch)
       expect(document.querySelector(".prediction-detail")).toBeNull();
   });

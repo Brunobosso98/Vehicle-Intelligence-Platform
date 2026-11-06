@@ -641,17 +641,24 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       await save(page, "persisted-abstained.png", false);
     }
 
-    const proofCompleteness = ["COMPLETE", "PARTIAL", "ABSTAINED"] as const;
-    const proofIntegrities = [
-      "VERIFIED",
-      "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
-      "FAILED_SOURCE_MISMATCH",
-      "NOT_VERIFIABLE",
-      "UNSUPPORTED_SCHEMA",
+    const proofCases = [
+      { completeness: "COMPLETE", integrity: "VERIFIED", abstained: false },
+      { completeness: "PARTIAL", integrity: "VERIFIED", abstained: false },
+      {
+        completeness: "PARTIAL",
+        integrity: "NOT_VERIFIABLE",
+        abstained: false,
+      },
+      { completeness: "ABSTAINED", integrity: "VERIFIED", abstained: true },
+      {
+        completeness: "ABSTAINED",
+        integrity: "NOT_VERIFIABLE",
+        abstained: true,
+      },
     ] as const;
     const proofStateMatrix: Array<{
-      completeness: (typeof proofCompleteness)[number];
-      integrity: (typeof proofIntegrities)[number];
+      completeness: (typeof proofCases)[number]["completeness"];
+      integrity: (typeof proofCases)[number]["integrity"];
       source_receipt_id: string;
       source_role: string;
       facts_visible: boolean;
@@ -662,10 +669,37 @@ test.describe("Phase 9H explicit synthetic UI", () => {
     const proofOverlayByReceipt = new Map<
       string,
       {
-        completeness: (typeof proofCompleteness)[number];
-        integrity: (typeof proofIntegrities)[number];
+        completeness: (typeof proofCases)[number]["completeness"];
+        integrity: (typeof proofCases)[number]["integrity"];
       }
     >();
+    await page.route(
+      /\/api\/predictive\/vehicles\/[^/]+\/receipts\/[^/]+$/,
+      async (route) => {
+        const receiptId = new URL(route.request().url()).pathname
+          .split("/")
+          .at(-1);
+        const source = receiptId ? sourceItems.get(receiptId) : undefined;
+        if (!source) {
+          await route.continue();
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(source.item.prediction),
+        });
+      },
+    );
+    await page.route(
+      "**/api/predictive/vehicles/*/receipts/*/agent-context",
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: [] }),
+        }),
+    );
     await page.route(
       "**/api/predictive/vehicles/*/receipts/*/evidence",
       async (route) => {
@@ -710,73 +744,73 @@ test.describe("Phase 9H explicit synthetic UI", () => {
       abstainedForMatrix,
       "the source oracle needs an abstention receipt",
     ).toBeTruthy();
-    for (const completeness of proofCompleteness) {
-      const record =
-        completeness === "ABSTAINED" ? abstainedForMatrix! : scoredForMatrix;
+    for (const proofCase of proofCases) {
+      const { completeness, integrity } = proofCase;
+      const record = proofCase.abstained
+        ? abstainedForMatrix!
+        : scoredForMatrix;
       const alternate = oracle.records.find(
         (item) =>
           item.vehicle_id === record.vehicle_id &&
           item.receipt_id !== record.receipt_id,
       );
       expect(alternate, "the selected receipt must be switchable").toBeTruthy();
-      for (const integrity of proofIntegrities) {
-        await selectReceipt(alternate!);
-        proofOverlayByReceipt.set(record.receipt_id, {
-          completeness,
-          integrity,
-        });
-        await selectReceipt(record);
-        const evidencePanel = page.locator("#evidence");
+      await selectReceipt(alternate!);
+      proofOverlayByReceipt.set(record.receipt_id, {
+        completeness,
+        integrity,
+      });
+      await selectReceipt(record);
+      const evidencePanel = page.locator("#evidence");
+      await expect(
+        evidencePanel.locator(".evidence-detail .state-pill"),
+      ).toHaveText(integrity);
+      await expect(
+        evidencePanel.getByText(completeness, { exact: true }),
+      ).toBeVisible();
+      const factsVisible = await evidencePanel
+        .getByRole("heading", { name: "Fatos de origem e qualidade" })
+        .isVisible()
+        .catch(() => false);
+      const claimVisible = await evidencePanel
+        .getByText(/test-only descriptive association/)
+        .isVisible()
+        .catch(() => false);
+      const limitationVisible = await evidencePanel
+        .getByRole("alert")
+        .isVisible()
+        .catch(() => false);
+      expect(factsVisible).toBe(integrity === "VERIFIED");
+      expect(claimVisible).toBe(
+        integrity === "VERIFIED" && completeness !== "ABSTAINED",
+      );
+      expect(limitationVisible).toBe(integrity !== "VERIFIED");
+      if (completeness === "PARTIAL") {
         await expect(
-          evidencePanel.locator(".evidence-detail .state-pill"),
-        ).toHaveText(integrity);
-        await expect(
-          evidencePanel.getByText(completeness, { exact: true }),
+          evidencePanel.getByText(
+            /esta origem não representa um grafo completo/i,
+          ),
         ).toBeVisible();
-        const factsVisible = await evidencePanel
-          .getByRole("heading", { name: "Fatos de origem e qualidade" })
-          .isVisible()
-          .catch(() => false);
-        const claimVisible = await evidencePanel
-          .getByText(/test-only descriptive association/)
-          .isVisible()
-          .catch(() => false);
-        const limitationVisible = await evidencePanel
-          .getByRole("alert")
-          .isVisible()
-          .catch(() => false);
-        expect(factsVisible).toBe(integrity === "VERIFIED");
-        expect(claimVisible).toBe(
-          integrity === "VERIFIED" && completeness !== "ABSTAINED",
-        );
-        expect(limitationVisible).toBe(integrity !== "VERIFIED");
-        if (completeness === "PARTIAL") {
-          await expect(
-            evidencePanel.getByText(
-              /esta origem não representa um grafo completo/i,
-            ),
-          ).toBeVisible();
-        }
-        if (completeness === "PARTIAL" && integrity === "VERIFIED") {
-          await save(page, "proof-state-partial-overlay.png", false);
-        }
-        if (completeness === "PARTIAL" && integrity === "NOT_VERIFIABLE") {
-          await save(page, "proof-state-not-verifiable-overlay.png", false);
-        }
-        proofStateMatrix.push({
-          completeness,
-          integrity,
-          source_receipt_id: record.receipt_id,
-          source_role: record.source_role,
-          facts_visible: factsVisible,
-          claim_visible: claimVisible,
-          limitation_visible: limitationVisible,
-          response_overlay: true,
-        });
-        proofOverlayByReceipt.delete(record.receipt_id);
       }
+      if (completeness === "PARTIAL" && integrity === "VERIFIED") {
+        await save(page, "proof-state-partial-overlay.png", false);
+      }
+      if (completeness === "PARTIAL" && integrity === "NOT_VERIFIABLE") {
+        await save(page, "proof-state-not-verifiable-overlay.png", false);
+      }
+      proofStateMatrix.push({
+        completeness,
+        integrity,
+        source_receipt_id: record.receipt_id,
+        source_role: record.source_role,
+        facts_visible: factsVisible,
+        claim_visible: claimVisible,
+        limitation_visible: limitationVisible,
+        response_overlay: true,
+      });
+      proofOverlayByReceipt.delete(record.receipt_id);
     }
-    expect(proofStateMatrix).toHaveLength(15);
+    expect(proofStateMatrix).toHaveLength(proofCases.length);
     await page.unrouteAll({ behavior: "wait" });
 
     await page

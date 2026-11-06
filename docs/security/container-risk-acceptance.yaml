@@ -192,6 +192,65 @@ exceptions:
       by another gz* write. Repository code contains no direct zlib or gzip API calls; inbound
       Content-Encoding: gzip is explicitly unsupported. Runtime-library reachability is not ruled
       out, so this remains a short-lived High exception rather than a claim of remediation.
+  - id: api-cve-2026-119374
+    images:
+      - vehicle-platform-api:local
+    vulnerability_id: CVE-2026-119374
+    packages:
+      - libsqlite3-0
+    owner: repository-maintainer
+    reviewed_on: "2026-11-06"
+    expires: "2026-11-20"
+    remediation_condition: >-
+      Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
+      operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
+      and review again by 2026-11-20.
+    rationale: >-
+      The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
+      version only in unstable. The application ledger creates only ordinary requests/cache/counters
+      tables, does not issue FTS5 MATCH queries or enable secure_delete, and does not accept uploaded
+      SQLite databases. The reported FTS5 secure-delete path is not reached by current application code;
+      the system package remains present and is not claimed as remediated.
+  - id: api-cve-2026-119379
+    images:
+      - vehicle-platform-api:local
+    vulnerability_id: CVE-2026-119379
+    packages:
+      - libsqlite3-0
+    owner: repository-maintainer
+    reviewed_on: "2026-11-06"
+    expires: "2026-11-20"
+    remediation_condition: >-
+      Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
+      operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
+      and review again by 2026-11-20.
+    rationale: >-
+      The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
+      version only in unstable. Application code uses ordinary ledger queries and does not call the
+      SQLite session/change-set APIs or accept attacker-supplied change sets or database files. The
+      described sqlite3changeset_apply path is not reached by current application code; the system
+      package remains present and is not claimed as remediated.
+  - id: api-web-cve-2026-85091
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
+    vulnerability_id: CVE-2026-85091
+    packages:
+      - zlib1g
+    owner: repository-maintainer
+    reviewed_on: "2026-11-06"
+    expires: "2026-11-20"
+    remediation_condition: >-
+      Rebuild and rescan when Debian publishes a fixed zlib package for Trixie; recheck compression
+      dependencies and HTTP content-encoding behavior after any API/Web or base-image change, and
+      review again by 2026-11-20.
+    rationale: >-
+      The API/Web images contain zlib1g 1:1.3.dfsg+really1.3.1-1+b1. Debian marks Trixie vulnerable
+      and lists a fixed package only in unstable. Repository application code has no direct gzwrite,
+      gzprintf, or gzvprintf call; the ingestion boundary explicitly rejects non-identity
+      Content-Encoding. The 9B artifact writer uses Python joblib compression, not the vulnerable gz*
+      interface. Runtime-library reachability is not fully ruled out, so this is a short-lived risk
+      acceptance, not a remediation claim.
   - id: tempo-cve-2026-116587
     images:
       - grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949

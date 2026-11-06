@@ -14,8 +14,10 @@ ENV API_BASE_URL=http://api:8000
 RUN pnpm --filter @vehicle-platform/web build
 FROM ${NODE_IMAGE} AS runtime
 USER root
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* \
-    /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get purge -y --auto-remove libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/* /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+    && node --version
 ARG APP_VERSION=0.1.0
 ARG GIT_SHA
 ARG BUILD_TIMESTAMP

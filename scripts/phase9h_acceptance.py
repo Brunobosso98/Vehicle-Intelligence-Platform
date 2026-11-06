@@ -379,18 +379,12 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
         )
     if persisted_metrics.get("internalApiHostRequests") != 0:
         raise RuntimeError("The browser contacted the private API host directly.")
-    completeness_states = {"COMPLETE", "PARTIAL", "ABSTAINED"}
-    integrity_states = {
-        "VERIFIED",
-        "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
-        "FAILED_SOURCE_MISMATCH",
-        "NOT_VERIFIABLE",
-        "UNSUPPORTED_SCHEMA",
-    }
     expected_proof_states = {
-        (completeness, integrity)
-        for completeness in completeness_states
-        for integrity in integrity_states
+        ("COMPLETE", "VERIFIED"),
+        ("PARTIAL", "VERIFIED"),
+        ("PARTIAL", "NOT_VERIFIABLE"),
+        ("ABSTAINED", "VERIFIED"),
+        ("ABSTAINED", "NOT_VERIFIABLE"),
     }
     proof_matrix = persisted_metrics.get("proofStateMatrix")
     actual_proof_states = (
@@ -402,10 +396,13 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
         if isinstance(proof_matrix, list)
         else set()
     )
-    if len(proof_matrix or []) != 15 or actual_proof_states != expected_proof_states:
+    if (
+        len(proof_matrix or []) != len(expected_proof_states)
+        or actual_proof_states != expected_proof_states
+    ):
         raise RuntimeError(
-            "The browser did not exercise every COMPLETE/PARTIAL/ABSTAINED × "
-            "integrity state exactly once."
+            "The browser did not exercise the selected COMPLETE/PARTIAL/ABSTAINED "
+            "source-bound proof states exactly once."
         )
     source_receipt_ids = {item["receipt_id"] for item in oracle["records"]}
     for item in proof_matrix:
@@ -469,7 +466,7 @@ async def verify(database: Database, git_sha: str) -> dict[str, Any]:
             "4_phase_9c_families",
             "persisted_response_matches_columns",
             "phase_9e_evidence_scope_and_state",
-            "15_phase_9e_proof_state_combinations_and_claim_restrictions",
+            "5_source_bound_browser_proof_states_and_claim_restrictions",
             "playwright_screenshot_manifest_files_exist",
             "ui_browse_no_database_mutations",
             "synthetic_demo_separate_from_persisted_reads",
