@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { SystemStatusPanel } from "../components/system-status";
 import { VehicleWorkspace } from "../components/vehicle-workspace";
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ vehicleId?: string; agentRunId?: string }>;
+}) {
+  const params = await searchParams;
   return (
     <>
       <a className="skip-link" href="#main">
@@ -29,7 +34,10 @@ export default function Home() {
           de veículos. A jornada começa com o BMW N55.
         </p>
         <SystemStatusPanel />
-        <VehicleWorkspace />
+        <VehicleWorkspace
+          initialVehicleId={params.vehicleId}
+          initialAgentRunId={params.agentRunId}
+        />
         <section className="scope" aria-labelledby="scope-heading">
           <h2 id="scope-heading">O ponto de partida</h2>
           <p>

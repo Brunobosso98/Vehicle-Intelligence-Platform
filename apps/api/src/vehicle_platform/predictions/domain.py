@@ -116,6 +116,94 @@ class PredictionResponse(BaseModel):
     lineage: PredictionLineage
 
 
+class PredictionReceiptHistoryItem(BaseModel):
+    """A vehicle-scoped, read-only projection over one persisted 9D receipt."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    prediction: PredictionResponse
+    recorded_at: AwareDatetime
+    vehicle_id: UUID
+    session_id: UUID
+    pull_id: UUID
+    configuration_id: UUID | None
+    source_type: str | None = Field(default=None, max_length=24)
+    evidence_available: bool
+    evidence_completeness: Literal["COMPLETE", "PARTIAL", "ABSTAINED"] | None = None
+    evidence_integrity: (
+        Literal[
+            "VERIFIED",
+            "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+            "FAILED_SOURCE_MISMATCH",
+            "NOT_VERIFIABLE",
+            "UNSUPPORTED_SCHEMA",
+        ]
+        | None
+    ) = None
+    captured_binding_state: ServingEventType
+    current_binding_state: ServingEventType
+
+
+class PredictionReceiptHistoryPage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["phase9h-receipt-history-v1"] = "phase9h-receipt-history-v1"
+    items: list[PredictionReceiptHistoryItem] = Field(max_length=20)
+    total: int = Field(ge=0, le=500)
+    limit: int = Field(ge=1, le=20)
+    offset: int = Field(ge=0, le=500)
+    has_more: bool
+
+
+class PredictionAgentRunLink(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: UUID
+    started_at: AwareDatetime
+    status: Literal["running", "completed", "failed", "cancelled"]
+    source_role: SourceRole
+    horizon: Literal["NEXT_PULL", "AFTER_PULL_OFFLINE"]
+    completeness: Literal["COMPLETE", "PARTIAL", "ABSTAINED"]
+    integrity: Literal["VERIFIED", "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"]
+
+
+class PredictionAgentRunContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["phase9h-agent-context-v1"] = "phase9h-agent-context-v1"
+    receipt_id: UUID
+    items: list[PredictionAgentRunLink] = Field(max_length=20)
+
+
+@dataclass(frozen=True)
+class PredictionReceiptHistoryFilters:
+    limit: int
+    offset: int
+    receipt_id: UUID | None = None
+    result_kind: PredictionKind | None = None
+    task: MLTask | None = None
+    family: AnomalyFamily | None = None
+    horizon: Literal["NEXT_PULL", "AFTER_PULL_OFFLINE"] | None = None
+    source_role: SourceRole | None = None
+    status: PredictionStatus | None = None
+    session_id: UUID | None = None
+    pull_id: UUID | None = None
+    configuration_id: UUID | None = None
+    recorded_from: datetime | None = None
+    recorded_to: datetime | None = None
+    evidence_completeness: Literal["COMPLETE", "PARTIAL", "ABSTAINED"] | None = None
+    evidence_integrity: (
+        Literal[
+            "VERIFIED",
+            "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+            "FAILED_SOURCE_MISMATCH",
+            "NOT_VERIFIABLE",
+            "UNSUPPORTED_SCHEMA",
+        ]
+        | None
+    ) = None
+
+
 @dataclass(frozen=True)
 class FeatureSnapshot:
     feature_set_id: UUID

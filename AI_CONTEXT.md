@@ -23,6 +23,9 @@
 - `apps/api/src/vehicle_platform/evaluation`: Phase 9G immutable offline evaluation contracts,
   chronological calibration splits, reliability/anomaly/drift metrics, source applicability,
   bounded research artifacts, and source-integrity verification. No serving wiring exists.
+- `apps/api/src/vehicle_platform/predictions/{domain,repository,service,routes}.py`: Phase 9H
+  bounded, vehicle-scoped read-only history/detail/evidence and existing-AgentRun context queries.
+  These routes do not invoke inference or mutate receipt/evidence records.
 - `apps/api/src/vehicle_platform/acquisition`: read-only hardware collection and streaming.
   `capabilities.py` reads authenticated collector capability snapshots or operator-attested
   local preflight reports for the same vehicle/configuration/source; a recorded session alone
@@ -57,6 +60,13 @@
   metric/candidate/applicability registry with database-enforced immutability.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
+- `apps/web/src/app/predictive` and `apps/web/src/components/predictive-workspace.tsx`: Phase 9H
+  historical predictive workspace, explicitly isolated synthetic demo, evidence details and
+  research-only summary; restored pages revalidate the operator session before exposing private
+  content.
+- `apps/web/src/lib/predictive/server.ts`, `apps/web/src/app/api/predictive`: server-only,
+  development/test operator BFF with bounded session/vehicle scope, CSRF and fixed-origin reads.
+  It is disabled by default and unavailable in production.
 - `apps/web/src/components/agent-workspace.tsx`: minimal vehicle agent question workspace,
   progress/SSE, grounded results, context/evidence and tool timeline, extended with the
   investigation entry point and follow-up answer navigation.
@@ -79,6 +89,13 @@
 - `scripts/evaluate_predictive_reliability.py`, `scripts/check_predictive_reliability.py`,
   `scripts/phase9g-validation.sh`: Phase 9G canonical offline evaluation, independent arithmetic/
   provenance/leakage checker, and disposable migration/database acceptance.
+- `scripts/phase9h_acceptance.py`, `scripts/phase9h-validation.sh`: direct persisted-record oracle,
+  no-write table digests, and actual API + protected Next.js + Playwright disposable database gate.
+- `scripts/check_phase9h_research_summary.py`: checksum and source-SHA gate for the static 9G
+  synthetic research summary.
+- `apps/web/tests/e2e/predictive.spec.ts`: synthetic UX and persisted-record browser acceptance,
+  including security boundary, numerical parity, screenshots, axe, responsiveness and browser
+  network measurements.
 - `scripts/report_agent_prediction.py`: renders benchmark and observability views from the
   exact-head Phase 9F receipt without deriving measurements.
 - `apps/api/tests/unit/test_anomalies.py`: focused Phase 9C detector, cutoff, abstention,
@@ -164,6 +181,10 @@ Phase 9G adds `make test-evaluation-calibration`, `make phase9g-acceptance`,
 disposable acceptance round-trips migration 0019 and verifies all three 9B tasks, four 9C families,
 immutable lineage, source-table digests, artifact checks, and an independent numerical checker.
 Docker-dependent results remain `CI REQUIRED` until the canonical exact-head workflow passes.
+Phase 9H adds `make phase9h-acceptance`. It compares browser reads with original persisted 9D/9E
+records, covers every 9B task and 9C family, captures source-table digests before/after UI browsing,
+and records browser/accessibility/performance evidence. Local Docker-dependent acceptance remains
+`CI REQUIRED` unless the exact-head GitHub Actions receipt passes.
 
 ## Current implementation map
 
@@ -193,4 +214,10 @@ Docker-dependent results remain `CI REQUIRED` until the canonical exact-head wor
 - Phase 9G adds evaluation contracts, metrics, calibration, anomaly accounting, drift, and source
   applicability; migration 0019 stores immutable research evidence only. Its runner and independent
   checker live in `scripts/`; its report and 175-section ledger live under `docs/validation/`.
-- Phase 9H remains planned.
+  PR #55 is merged in the Phase 9H baseline. Synthetic calibration does not establish real-world
+  predictive validity.
+- Phase 9H adds the protected historical UI, read-only API projections, static 9G research summary,
+  threat model, runbook and 185-section ledger. PR #57 remains open and unmerged; its exact-head
+  check page is the live authority for independent acceptance, security, canonical full-stack and
+  GitHub Actions delivery status. The BFF remains disabled in production and is not customer or
+  vehicle-owner authorization.

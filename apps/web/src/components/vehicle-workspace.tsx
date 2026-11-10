@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { components } from "../../../../packages/contracts/generated/api";
 import { AnalyticsWorkspace } from "./analytics-workspace";
 import { AgentWorkspace } from "./agent-workspace";
@@ -10,9 +11,15 @@ import { TelemetryDashboard } from "./telemetry-dashboard";
 
 type Vehicle = components["schemas"]["Vehicle"];
 
-export function VehicleWorkspace() {
+export function VehicleWorkspace({
+  initialVehicleId,
+  initialAgentRunId,
+}: {
+  initialVehicleId?: string;
+  initialAgentRunId?: string;
+}) {
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
-  const [vehicleId, setVehicleId] = useState("");
+  const [vehicleId, setVehicleId] = useState(initialVehicleId ?? "");
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -29,13 +36,15 @@ export function VehicleWorkspace() {
         setVehicleId((selected) =>
           items.some((item) => item.id === selected)
             ? selected
-            : (items[0]?.id ?? ""),
+            : items.some((item) => item.id === initialVehicleId)
+              ? (initialVehicleId ?? "")
+              : (items[0]?.id ?? ""),
         );
         setError(false);
       })
       .catch(() => !controller.signal.aborted && setError(true));
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, initialVehicleId]);
   return (
     <>
       <section className="telemetry-card" aria-label="Vehicle selection">
@@ -62,6 +71,15 @@ export function VehicleWorkspace() {
             Finalize the current acquisition before changing vehicle.
           </p>
         )}
+        {vehicleId && (
+          <Link
+            className="predictive-entry-link"
+            href={`/predictive?vehicleId=${encodeURIComponent(vehicleId)}`}
+          >
+            Open predictive intelligence for this vehicle{" "}
+            <span aria-hidden="true">↗</span>
+          </Link>
+        )}
         {error && (
           <div role="alert">
             Vehicles are temporarily unavailable.
@@ -82,7 +100,10 @@ export function VehicleWorkspace() {
           />
           <TelemetryDashboard vehicleId={vehicleId || undefined} />
           <AnalyticsWorkspace vehicleId={vehicleId || undefined} />
-          <AgentWorkspace vehicleId={vehicleId} />
+          <AgentWorkspace
+            vehicleId={vehicleId}
+            initialRunId={initialAgentRunId}
+          />
           <KnowledgeWorkspace vehicleId={vehicleId} />
         </div>
       ) : null}

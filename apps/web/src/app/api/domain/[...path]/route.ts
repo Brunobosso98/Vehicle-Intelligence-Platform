@@ -5,6 +5,12 @@ async function proxy(
   context: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await context.params;
+  if (targetsPrivatePredictionService(path)) {
+    return NextResponse.json(
+      { error: "domain resource not found" },
+      { status: 404, headers: { "cache-control": "no-store" } },
+    );
+  }
   const base = process.env.API_BASE_URL ?? "http://api:8000";
   const target = new URL(`/api/v1/${path.join("/")}`, base);
   target.search = request.nextUrl.search;
@@ -53,3 +59,25 @@ async function proxy(
 
 export const GET = proxy;
 export const POST = proxy;
+
+function targetsPrivatePredictionService(path: string[]): boolean {
+  const decoded = path.map((segment) => {
+    let value = segment;
+    for (let index = 0; index < 3; index += 1) {
+      try {
+        const next = decodeURIComponent(value);
+        if (next === value) break;
+        value = next;
+      } catch {
+        return "!invalid-encoding!";
+      }
+    }
+    return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  });
+  const normalized = decoded.join("/");
+  return (
+    ["predictionservice", "predictionreceipts", "predictionevidence"].some(
+      (alias) => normalized.includes(alias),
+    ) || normalized.includes("predictions")
+  );
+}

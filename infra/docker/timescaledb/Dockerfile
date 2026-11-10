@@ -32,7 +32,7 @@ COPY --from=helper-builder /out/timescaledb-tune /usr/local/bin/timescaledb-tune
 
 RUN set -eux; \
     apk upgrade --no-cache; \
-    apk add --no-cache 'libexpat=2.9.0-r0'; \
+    apk add --no-cache 'libexpat=2.10.0-r0'; \
     rm -f /usr/local/bin/timescaledb-parallel-copy; \
     test ! -e /usr/local/bin/timescaledb-parallel-copy; \
     gosu --version; \

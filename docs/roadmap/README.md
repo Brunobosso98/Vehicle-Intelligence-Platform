@@ -21,7 +21,7 @@
 - Phase 9G — Evaluation / Calibration (implemented on the dedicated branch; local independent
   acceptance passed; exact-head PR checks and canonical Docker/full-stack validation determine
   verified delivery)
-- Phase 9H — Predictive Intelligence UI (planned)
+- Phase 9H — Predictive Intelligence UI (implemented on PR #57; exact-head delivery state is shown by its checks)
 - Phase 10 — MLOps Platform (planned)
 - Phase 11 — Agent Evals / Red Team (planned)
 - Phase 12 — Production Cloud Infrastructure (planned)
@@ -42,7 +42,8 @@ immutable 9D receipts and is merged at baseline
 agent through a controlled MCP scope; it does not start inference and is included in merged
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G adds an offline, immutable evaluation
 and research-only calibration foundation; its real-world scientific validity remains not
-established without verified outcomes. Phase 9H remains planned.
+established without verified outcomes. Phase 9H provides the protected, read-only historical UI;
+its delivery state follows the exact-head checks on the open Phase 9H PR.
 
 # Current phase
 
