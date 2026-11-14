@@ -1518,15 +1518,15 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1794673779.3271902,
-    "seen": 1794674058.4451237,
-    "ast_hash": "e3823db61851c74f9040da2d762fe5e0",
+    "mtime": 1794674558.8097174,
+    "seen": 1794674793.9106338,
+    "ast_hash": "c7f11d3921f93102d6f00ad4bb12e6b5",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
-    "mtime": 1794673779.3271902,
-    "seen": 1794674058.4451249,
-    "ast_hash": "68454188465d8ecdbfdd5eff91a09cd2",
+    "mtime": 1794674558.8097174,
+    "seen": 1794674793.9106357,
+    "ast_hash": "794b10674cb91144c6b721225effbb9d",
     "semantic_hash": ""
   },
   "docs/security/threat-model.md": {

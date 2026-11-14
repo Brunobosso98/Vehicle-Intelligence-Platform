@@ -1,5 +1,16 @@
 # Container scan findings and risk review
 
+## Local application-image refresh — 2026-11-14
+
+Fresh, uncached API and Web builds installed Debian Trixie `zlib1g`
+`1:1.3.dfsg+really1.3.1-1+deb13u1`. Both Dockerfiles now reject older versions.
+Trivy 0.75.0 with a refreshed vulnerability database found neither `CVE-2026-76844`
+nor `CVE-2026-85091` in either rebuilt image. Their exception records were removed;
+the expired record was not extended. The remaining local image scans contained 47 High occurrences in API
+and 46 in Web, zero Critical, and zero unaccepted findings under the remaining,
+unchanged risk records. These findings remain subject to their stated expiry dates.
+This is local image evidence; the complete image set and final commit still require CI.
+
 ## Latest exact-head Security scan — 2026-11-06
 
 Security run [`42236159288`](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/42236159288)

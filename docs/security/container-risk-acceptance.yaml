@@ -172,26 +172,6 @@ exceptions:
       application creates no FTS5 tables or MATCH queries. Its SQLite ledger uses ordinary
       tables and parameterized queries, while vehicle data uses PostgreSQL. Keep this exact
       image/CVE/package exception visible until a stable fix is available.
-  - id: api-web-cve-2026-76844
-    images:
-      - vehicle-platform-api:local
-      - vehicle-platform-web:local
-    vulnerability_id: CVE-2026-76844
-    packages:
-      - zlib1g
-    owner: repository-maintainer
-    reviewed_on: "2026-11-05"
-    expires: "2026-11-12"
-    remediation_condition: >-
-      Rebuild and rescan as soon as Debian publishes a fixed zlib package for stable Trixie; otherwise
-      review this exact finding and current exploitability evidence no later than 2026-11-12.
-    rationale: >-
-      The refreshed Trivy database found zlib1g 1:1.3.dfsg+really1.3.1-1+b1 in the pinned API and
-      Web bases. Debian bug #1153063 reports Trixie as vulnerable and provides a backport patch, but
-      no fixed stable package is published. The issue requires a failed underlying write followed
-      by another gz* write. Repository code contains no direct zlib or gzip API calls; inbound
-      Content-Encoding: gzip is explicitly unsupported. Runtime-library reachability is not ruled
-      out, so this remains a short-lived High exception rather than a claim of remediation.
   - id: api-cve-2026-119374
     images:
       - vehicle-platform-api:local
@@ -234,27 +214,6 @@ exceptions:
       SQLite session/change-set APIs or accept attacker-supplied change sets or database files. The
       described sqlite3changeset_apply path is not reached by current application code; the system
       package remains present in both runtime images and is not claimed as remediated.
-  - id: api-web-cve-2026-85091
-    images:
-      - vehicle-platform-api:local
-      - vehicle-platform-web:local
-    vulnerability_id: CVE-2026-85091
-    packages:
-      - zlib1g
-    owner: repository-maintainer
-    reviewed_on: "2026-11-06"
-    expires: "2026-11-20"
-    remediation_condition: >-
-      Rebuild and rescan when Debian publishes a fixed zlib package for Trixie; recheck compression
-      dependencies and HTTP content-encoding behavior after any API/Web or base-image change, and
-      review again by 2026-11-20.
-    rationale: >-
-      The API/Web images contain zlib1g 1:1.3.dfsg+really1.3.1-1+b1. Debian marks Trixie vulnerable
-      and lists a fixed package only in unstable. Repository application code has no direct gzwrite,
-      gzprintf, or gzvprintf call; the ingestion boundary explicitly rejects non-identity
-      Content-Encoding. The 9B artifact writer uses Python joblib compression, not the vulnerable gz*
-      interface. Runtime-library reachability is not fully ruled out, so this is a short-lived risk
-      acceptance, not a remediation claim.
   - id: tempo-cve-2026-116587
     images:
       - grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949
