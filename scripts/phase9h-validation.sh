@@ -85,8 +85,9 @@ for _ in $(seq 1 90); do
 done
 curl --silent --fail "http://127.0.0.1:${api_port}/health/ready" >/dev/null
 
-export NODE_ENV=development
-(pnpm --filter @vehicle-platform/web exec next dev --webpack --hostname 127.0.0.1 --port "$web_port") \
+export NODE_ENV=production
+pnpm --filter @vehicle-platform/web build > "$evidence/build.log" 2>&1
+(pnpm --filter @vehicle-platform/web exec next start --hostname 127.0.0.1 --port "$web_port") \
   > "$evidence/web.log" 2>&1 &
 web_pid=$!
 for _ in $(seq 1 120); do
