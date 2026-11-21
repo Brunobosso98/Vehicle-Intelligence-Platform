@@ -10,10 +10,11 @@ dependencies = [
  "python-multipart==0.0.31",
  "asyncpg==0.31.0",
  "alembic==1.20.0",
- "opentelemetry-sdk==1.45.1",
+ "opentelemetry-sdk==1.45.2",
+ "opentelemetry-api==1.45.2",
  "opentelemetry-exporter-otlp-proto-http==1.45.0",
  "opentelemetry-exporter-prometheus==0.66b1",
- "opentelemetry-instrumentation-sqlalchemy==0.66b1",
+ "opentelemetry-instrumentation-sqlalchemy==0.66b2",
  "aiokafka==0.13.0",
  "typer==0.21.0",
  "httpx==0.28.1",
@@ -33,6 +34,7 @@ vehicle-mcp = "vehicle_platform.mcp.cli:main"
 vehicle-anomaly = "vehicle_platform.anomalies.cli:main"
 vehicle-prediction = "vehicle_platform.predictions.cli:main"
 vehicle-prediction-evidence = "vehicle_platform.prediction_evidence.cli:main"
+vehicle-mlops = "vehicle_platform.mlops.cli:main"
 [dependency-groups]
 dev = ["ruff==0.16.10", "mypy==2.3.1", "pytest==9.1.1", "pytest-asyncio==1.4.0", "pytest-cov==7.1.0", "httpx==0.28.1", "pip-audit==2.10.1", "pyyaml==6.0.3"]
 [build-system]
@@ -118,6 +120,16 @@ omit = [
  "*/vehicle_platform/evaluation/observability.py", # real span export and bounded metric labels run in 9G acceptance
  "*/vehicle_platform/evaluation/repository.py", # append-only persistence and replay require disposable PostgreSQL transactions
  "*/vehicle_platform/evaluation/supervised.py", # registered artifacts and chronological source queries run in 9G acceptance
+ "*/vehicle_platform/mlops/repository.py", # fenced leases, immutable events and proposal SQL require disposable PostgreSQL
+ "*/vehicle_platform/mlops/planner.py", # strict feature/dataset lineage and repeatable-read plans require 9A database fixtures
+ "*/vehicle_platform/mlops/executor.py", # actual 9B/9C registration and 9G execution run through disposable registries
+ "*/vehicle_platform/mlops/runner.py", # durable state transitions, concurrency and recovery require PostgreSQL transactions
+ "*/vehicle_platform/mlops/evaluation.py", # immutable 9G report persistence is exercised by Phase 10 database acceptance
+ "*/vehicle_platform/mlops/comparison.py", # registered model artifacts and frozen-source checks require database acceptance
+ "*/vehicle_platform/mlops/anomaly_comparison.py", # registered detector artifacts and frozen-source checks require database acceptance
+ "*/vehicle_platform/mlops/rollback.py", # readiness is derived from live 9D binding/event state in disposable PostgreSQL
+ "*/vehicle_platform/mlops/holdout.py", # prior-holdout overlap uses canonical database lineage queries
+ "*/vehicle_platform/mlops/source_integrity.py", # immutable source digests require repeatable-read database snapshots
 ]
 [tool.coverage.report]
 fail_under = 90

@@ -1,5 +1,38 @@
 # Container scan findings and risk review
 
+## Phase 10 review status — 2026-11-21
+
+The risk policy currently contains 15 expired exception records: 13 expired on
+2026-11-18 and two on 2026-11-20. The policy rejects expired records; none has
+been renewed by this review. The 2026-11-14 application-image scans below are
+historical evidence, not a current Security pass. A fresh scan of the actual
+final images and finding-specific remediation or review are required before
+Phase 10 can pass its security gate. The local Docker daemon is currently
+unavailable, so current image findings have not been measured in this review.
+
+## Web framework security update — 2026-11-21
+
+The local build's security guard rejected Next.js 16.4.1. The 2026-11-03 Next.js
+security release identifies a High cross-tenant cache disclosure in affected
+16.4.x releases and lists 16.4.5 as patched. The repository now pins `next` and
+`eslint-config-next` to 16.4.6; the production build completed with that version.
+The lockfile refresh reused the package cache and downloaded 12 packages. This
+does not replace the required exact-image scan or current `pnpm audit` receipt.
+
+The 2026-11-21 locked Python dependency audit initially found
+[`CVE-2026-126360` / `GHSA-mf5v-w3w3-f6cg`](https://github.com/advisories/GHSA-mf5v-w3w3-f6cg)
+in `opentelemetry-api` 1.45.1. The API and SDK are now pinned to 1.45.2, and
+SQLAlchemy instrumentation plus semantic conventions were aligned to 0.66b2 to
+keep the lock compatible. The repeated locked `pip-audit` check reports no known
+Python vulnerabilities. The full security workflow and exact-image scan remain
+required for the final SHA.
+
+The earlier zlib exception for `CVE-2026-76844` expired on 2026-11-12 and was
+removed after the 2026-11-14 rebuilt application images contained a newer
+`zlib1g` package with neither reported zlib CVE. No expiry was extended. The
+remaining 15 exception records are expired as described above; they remain
+unreviewed and must not be treated as accepted for the current final images.
+
 ## Local application-image refresh — 2026-11-14
 
 Fresh, uncached API and Web builds installed Debian Trixie `zlib1g`

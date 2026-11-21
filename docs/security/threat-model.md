@@ -319,3 +319,22 @@ journey require the disposable database; canonical full-stack CI must pass on th
 [Phase 9H architecture](../architecture/phase-9h-predictive-intelligence-ui.md),
 [validation review](../validation/phase-9h-security-accessibility.md) and
 [security review](phase-9h-security-review.md).
+
+## Phase 10 MLOps control plane
+
+There is no public training or MLOps endpoint. The bounded CLI requires an explicit development or
+test environment and exact immutable manifest confirmation; manifests, reports and artifacts are
+size-limited, schema-validated, checksum-bound and read through trusted no-follow paths. Fixed task,
+family and serializer allowlists prevent arbitrary estimator/code loading. Database leases and
+fencing tokens prevent concurrent stale writers; append-only triggers protect definitions, run
+history, proposals, review decisions and rollback plans.
+
+Reviewer credentials use a separate owner-only configuration and token hash. Review requires the
+exact proposal checksum, fixed reviewer role and reason; CI has no reviewer or serving credential.
+Phase 10 never invokes Phase 9D approve, activate or rollback. Monitoring reads existing receipts
+only and cannot infer performance without independently verified labels. Metrics and spans exclude
+vehicle, receipt, user, VIN and credential identifiers.
+
+The remaining local single-operator boundary is not multi-tenant authorization. Disposable database
+and exact-image adversarial acceptance must pass on the final SHA. Container scan exceptions are
+time-bound; expired records block the security gate until remediated or specifically reviewed.

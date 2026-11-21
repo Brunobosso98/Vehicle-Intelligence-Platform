@@ -102,9 +102,16 @@ class AnomalyDataRepository:
         feature_set_version_checksum: str,
         definition: AnomalyDetectorDefinition,
         source_role: SourceRole,
+        *,
+        max_rows: int = MAX_REFERENCE_ROWS,
     ) -> AnomalyReferenceDataset:
+        if not 1 <= max_rows <= MAX_REFERENCE_ROWS:
+            raise ValueError("reference row limit is outside the supported range")
         reference_cutoff = anchor.pull_started_at
         async with self.database.session() as db:
+            # The size preflight and selection must see the same snapshot; otherwise
+            # concurrent inserts could bypass the bound after the preflight query.
+            await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
             preflight = (
                 (
                     await db.execute(
@@ -135,10 +142,10 @@ class AnomalyDataRepository:
                 .mappings()
                 .one()
             )
-            if int(preflight["row_count"]) > MAX_REFERENCE_ROWS:
+            if int(preflight["row_count"]) > max_rows:
                 raise AnomalyRepositoryError(
                     AnomalyReason.RESOURCE_LIMIT,
-                    "reference candidate set exceeds the 10000-row bound",
+                    "reference candidate set exceeds the declared row bound",
                 )
             if int(preflight["payload_bytes"]) > MAX_REFERENCE_PAYLOAD_BYTES:
                 raise AnomalyRepositoryError(
@@ -237,7 +244,8 @@ class AnomalyDataRepository:
                 AnomalyReason.FEATURE_SCHEMA_MISMATCH,
                 "score selection contains duplicate pull IDs",
             )
-        async with self.database.session() as db:
+        async with self.database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
             rows = (
                 (
                     await db.execute(

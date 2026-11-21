@@ -5,7 +5,7 @@ import hmac
 import importlib.metadata
 import json
 import os
-import tempfile
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,11 @@ from vehicle_platform.evaluation.calibration import (
     FittedCalibrator,
 )
 from vehicle_platform.evaluation.contracts import CalibrationMethod
+from vehicle_platform.infrastructure.trusted_files import (
+    TrustedFileError,
+    read_bounded_bytes,
+    write_exclusive_bytes,
+)
 
 
 class EvaluationArtifactError(ValueError):
@@ -43,8 +48,13 @@ def write_calibrator(
         raise EvaluationArtifactError("calibrator byte limit is outside the fixed bound")
     if scope.get("source_role") != "synthetic":
         raise EvaluationArtifactError("calibrator source scope must remain synthetic-only")
-    if not isinstance(scope.get("task"), str) or not scope["task"]:
+    task_scope = scope.get("task")
+    if not isinstance(task_scope, str):
         raise EvaluationArtifactError("calibrator task scope is missing")
+    if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", task_scope):
+        if "/" in task_scope or "\\" in task_scope or ".." in Path(task_scope).parts:
+            raise EvaluationArtifactError("calibrator task path escapes the controlled root")
+        raise EvaluationArtifactError("calibrator task scope is malformed")
     supported_dependencies = {"numpy", "scipy", "scikit-learn"}
     if set(dependency_versions) != supported_dependencies:
         raise EvaluationArtifactError("calibrator dependency manifest is incomplete")
@@ -81,27 +91,21 @@ def write_calibrator(
     if len(payload) > maximum_bytes:
         raise EvaluationArtifactError("calibrator artifact exceeds its byte limit")
     relative = Path(str(scope["task"])) / f"{digest}.json"
-    path = _safe_path(root, relative)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.is_symlink():
-        raise EvaluationArtifactError("calibrator output cannot be a symlink")
-    if path.exists():
+    trusted_root = Path(os.path.abspath(root))
+    path = trusted_root / relative
+    try:
+        write_exclusive_bytes(trusted_root, relative, payload)
+    except FileExistsError:
         verified = read_calibrator(
             path, root=root, expected_checksum=digest, maximum_bytes=maximum_bytes
         )
         if verified != envelope:
-            raise EvaluationArtifactError("existing calibrator artifact differs from its checksum")
+            raise EvaluationArtifactError(
+                "existing calibrator artifact differs from its checksum"
+            ) from None
         return path, digest, len(payload)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=".phase9g-", dir=path.parent)
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
+    except TrustedFileError as error:
+        raise EvaluationArtifactError(str(error)) from error
     return path, digest, len(payload)
 
 
@@ -116,22 +120,23 @@ def read_calibrator(
         raise EvaluationArtifactError("calibrator read limit is outside the fixed bound")
     if not _sha256(expected_checksum):
         raise EvaluationArtifactError("expected calibrator checksum is malformed")
+    trusted_root = Path(os.path.abspath(root))
     if path.is_absolute():
         try:
-            relative = path.relative_to(root.resolve())
+            relative = path.relative_to(trusted_root)
         except ValueError as error:
             raise EvaluationArtifactError("artifact path escapes the controlled root") from error
     else:
         relative = path
-    checked = _safe_path(root, relative)
-    if checked.is_symlink() or not checked.is_file():
-        raise EvaluationArtifactError("calibrator artifact is missing or unsafe")
-    if checked.stat().st_size > maximum_bytes:
-        raise EvaluationArtifactError("calibrator artifact exceeds its byte limit")
     try:
-        document = json.loads(checked.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise EvaluationArtifactError("calibrator artifact is not valid JSON") from error
+        payload = read_bounded_bytes(
+            trusted_root, trusted_root / relative, maximum_bytes=maximum_bytes
+        )
+        document = json.loads(payload)
+    except (TrustedFileError, OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise EvaluationArtifactError(
+            f"calibrator artifact is missing, unsafe, or invalid JSON: {error}"
+        ) from error
     if not isinstance(document, dict):
         raise EvaluationArtifactError("calibrator artifact root must be an object")
     supplied = document.pop("artifact_checksum", None)
@@ -239,6 +244,8 @@ def read_calibrator(
             "cutoff",
         }
         or scope["task"] != document["task"]
+        or not isinstance(scope["task"], str)
+        or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", scope["task"])
         or scope["label_definition_checksum"] != document["label_definition_checksum"]
         or scope["source_role"] != "synthetic"
         or not isinstance(scope["feature_set_version"], str)
@@ -262,23 +269,7 @@ def read_calibrator(
 def _safe_path(root: Path, relative: Path) -> Path:
     if relative.is_absolute() or any(part in {"..", ""} for part in relative.parts):
         raise EvaluationArtifactError("artifact path escapes the controlled namespace")
-    if root.exists() and root.is_symlink():
-        raise EvaluationArtifactError("artifact root cannot be a symlink")
-    resolved_root = root.resolve()
-    candidate = root / relative
-    if candidate.is_symlink():
-        raise EvaluationArtifactError("calibrator artifact cannot be a symlink")
-    parent = candidate.parent
-    while parent != root and root in parent.parents:
-        if parent.is_symlink():
-            raise EvaluationArtifactError("artifact path contains a symlinked directory")
-        parent = parent.parent
-    resolved = candidate.resolve()
-    try:
-        resolved.relative_to(resolved_root)
-    except ValueError as error:
-        raise EvaluationArtifactError("artifact path escapes the controlled root") from error
-    return resolved
+    return Path(os.path.abspath(root)) / relative
 
 
 def _sha256(value: Any) -> bool:

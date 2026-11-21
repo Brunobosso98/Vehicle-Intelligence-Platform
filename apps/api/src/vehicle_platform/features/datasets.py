@@ -112,12 +112,16 @@ class DatasetBuilder:
         definition: DatasetDefinition,
         *,
         candidate_pull_ids: Sequence[UUID] | None = None,
+        persist: bool = True,
+        max_rows: int = MAX_DATASET_ROWS,
     ) -> DatasetBuild:
         started = perf_counter()
         outcome = "failed"
         try:
+            if not 1 <= max_rows <= MAX_DATASET_ROWS:
+                raise ValueError("dataset row limit is outside the supported range")
             if candidate_pull_ids is not None:
-                if len(candidate_pull_ids) > MAX_DATASET_ROWS:
+                if len(candidate_pull_ids) > max_rows:
                     raise FeatureGenerationLimitError(
                         "dataset candidate pull selection exceeds 100000 pulls"
                     )
@@ -127,11 +131,11 @@ class DatasetBuilder:
                     )
             if self.telemetry:
                 with self.telemetry.tracer.start_as_current_span("features.dataset.build") as span:
-                    result = await self._build(definition, candidate_pull_ids)
+                    result = await self._build(definition, candidate_pull_ids, persist, max_rows)
                     span.set_attribute("dataset.row_count", len(result.rows))
                     span.set_attribute("dataset.excluded_count", len(result.exclusions))
             else:
-                result = await self._build(definition, candidate_pull_ids)
+                result = await self._build(definition, candidate_pull_ids, persist, max_rows)
             outcome = "completed"
             if self.telemetry:
                 self.telemetry.dataset_builds.add(1, {"outcome": outcome})
@@ -152,6 +156,8 @@ class DatasetBuilder:
         self,
         definition: DatasetDefinition,
         candidate_pull_ids: Sequence[UUID] | None,
+        persist: bool,
+        max_rows: int,
     ) -> DatasetBuild:
         selected = tuple(self.registry.resolve(key) for key in definition.selected_features)
         if definition.label_definition and set(definition.selected_features).intersection(
@@ -159,6 +165,8 @@ class DatasetBuilder:
         ):
             raise DatasetValidationError("selected features overlap label source features")
         async with self.database.session() as db:
+            if not persist:
+                await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
             feature_version = (
                 await db.execute(
                     text("SELECT id FROM feature_set_versions WHERE version=:version"),
@@ -169,7 +177,7 @@ class DatasetBuilder:
                 raise DatasetValidationError("feature set version is not registered")
             pull_params: dict[str, Any] = {
                 "cutoff": definition.observation_cutoff,
-                "limit": MAX_DATASET_ROWS + 1,
+                "limit": max_rows + 1,
                 "has_candidate_pull_ids": candidate_pull_ids is not None,
                 "candidate_pull_ids": (
                     list(candidate_pull_ids) if candidate_pull_ids is not None else None
@@ -194,8 +202,8 @@ class DatasetBuilder:
                 .mappings()
                 .all()
             )
-            if len(pull_rows) > MAX_DATASET_ROWS:
-                raise FeatureGenerationLimitError("dataset candidate query exceeds 100000 pulls")
+            if len(pull_rows) > max_rows:
+                raise FeatureGenerationLimitError("dataset candidate query exceeds the row limit")
             pull_ids = [row["id"] for row in pull_rows]
             if not pull_ids:
                 feature_sets: Sequence[Any] = []
@@ -226,8 +234,8 @@ class DatasetBuilder:
                         selection_params,
                     )
                 ).one()
-                if preflight.row_count > MAX_DATASET_ROWS:
-                    raise FeatureGenerationLimitError("dataset has more than 100000 feature rows")
+                if preflight.row_count > max_rows:
+                    raise FeatureGenerationLimitError("dataset feature rows exceed the row limit")
                 if preflight.source_bytes > MAX_DATASET_SOURCE_BYTES:
                     raise FeatureGenerationLimitError("dataset source payload exceeds 32 MiB")
                 feature_sets = (
@@ -272,6 +280,8 @@ class DatasetBuilder:
                     annotated.append(copy)
                 feature_sets = annotated
             dataset = self._materialize(definition, selected, pull_rows, feature_sets, source_refs)
+            if not persist:
+                return dataset
             definition_id = await self._ensure_definition(db, definition)
             await db.execute(
                 text(

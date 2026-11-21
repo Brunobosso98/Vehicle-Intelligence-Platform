@@ -554,6 +554,44 @@ def test_calibrator_artifact_round_trip_rejects_tamper_and_symlinks(tmp_path: Pa
         )
 
 
+def test_calibrator_writer_rejects_symlinked_parent(tmp_path: Path) -> None:
+    fitted = fit_calibrator(
+        CalibrationMethod.SIGMOID,
+        tuple(index / 100 for index in range(1, 100)),
+        tuple(int(index >= 50) for index in range(1, 100)),
+        row_ids=tuple(f"row-{index}" for index in range(1, 100)),
+        clusters=tuple(f"session-{index // 5}" for index in range(1, 100)),
+        dataset_checksum=_sha("symlink-parent-data"),
+    )
+    assert fitted is not None
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "linked-root"
+    root.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(EvaluationArtifactError, match="unsafe directory"):
+        write_calibrator(
+            fitted,
+            root=root,
+            scope={
+                "task": "NEXT_PULL_THERMAL_DEGRADATION",
+                "source_role": "synthetic",
+                "feature_set_version": "phase9a-v2",
+                "label_definition_checksum": _sha("label"),
+                "vehicle_context_fingerprint": _sha("vehicles"),
+                "configuration_context_fingerprint": _sha("configurations"),
+                "cutoff": "2026-08-01T00:00:00+00:00",
+            },
+            model_version_id="model-v1",
+            model_artifact_checksum=_sha("model"),
+            label_definition_checksum=_sha("label"),
+            dependency_versions={
+                name: importlib.metadata.version(name)
+                for name in ("numpy", "scipy", "scikit-learn")
+            },
+        )
+    assert not list(outside.iterdir())
+
+
 def test_real_unlabeled_sources_and_missing_signals_do_not_gain_calibration() -> None:
     result = assess_source_applicability(
         subject_kind="9B_TASK",

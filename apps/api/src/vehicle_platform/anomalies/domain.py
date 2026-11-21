@@ -447,6 +447,20 @@ class AnomalyReferenceDataset:
         return stable_hash(self.manifest(definition))
 
     @property
+    def source_fingerprint(self) -> str:
+        """Bind the exact FeatureSets and their source/provenance to the cohort."""
+        return stable_hash(
+            {
+                "schema_version": "phase10-anomaly-source-v1",
+                "cohort_checksum": self.cohort.checksum,
+                "rows": sorted(
+                    (str(row.feature_set_id), row.source_hash, row.provenance_hash)
+                    for row in self.rows
+                ),
+            }
+        )
+
+    @property
     def temporal_span(self) -> timedelta:
         if len(self.rows) < 2:
             return timedelta(0)

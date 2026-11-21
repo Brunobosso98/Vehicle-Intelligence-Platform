@@ -28,6 +28,12 @@ database, integration, E2E, image-security and full-observability checks are `CI
 The GitHub Actions `full-validation` workflow is the canonical Phase 0 executor and must pass before
 Phase 0 can be declared complete.
 
+Phase 10's vehicle-mlops command is local-only and disabled unless ENVIRONMENT is explicitly
+development or test. Its run command is dry-run by default and requires an exact manifest fingerprint
+for execution. Use only a disposable vehicle_test database for acceptance. It cannot activate or
+rollback a Phase 9D binding. See docs/runbooks/mlops-control-plane.md. Docker-backed Phase 10 and
+packaged Phase 9H acceptance remain CI REQUIRED where Docker is unavailable.
+
 Codex Cloud: caches live in .cache; frozen installs need only public registries. A restricted network
 can block browser/scanner/image downloads; record exact failures. Pass proxy CA as BuildKit secret via
 scripts/cloud-build.sh; never commit a session certificate or proxy credentials. See completion report
