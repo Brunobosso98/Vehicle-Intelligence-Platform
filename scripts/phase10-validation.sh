@@ -49,6 +49,10 @@ apps/api/.venv/bin/pytest apps/api/tests/unit/test_mlops.py -q \
 apps/api/.venv/bin/pytest apps/api/tests/integration/test_mlops_control_plane.py -q \
   | tee "$evidence/database-tests.log"
 
+# The database test owns its migration lifecycle and returns the disposable DB to
+# base; restore the head schema before generating the Phase 9A/9B source fixtures.
+(cd apps/api && .venv/bin/alembic upgrade head)
+
 # Rebuild the Phase 9A/9B fixtures in this disposable database. The Phase 9G
 # evaluator runs the canonical 9C evaluator once on this database, then Phase 10
 # consumes those registered source artifacts.

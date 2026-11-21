@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from vehicle_platform.core.config import Settings
 from vehicle_platform.evaluation.contracts import SourceRole
@@ -54,6 +55,12 @@ async def migrated_database_url() -> AsyncIterator[str]:
         )
         stdout, stderr = await downgrade.communicate()
         assert downgrade.returncode == 0, (stdout.decode(), stderr.decode())
+        engine = create_async_engine(url)
+        try:
+            async with engine.begin() as connection:
+                await connection.execute(text("DROP TABLE IF EXISTS alembic_version"))
+        finally:
+            await engine.dispose()
 
 
 @pytest.mark.asyncio
