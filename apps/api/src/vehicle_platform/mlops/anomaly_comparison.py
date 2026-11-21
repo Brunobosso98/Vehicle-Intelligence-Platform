@@ -134,8 +134,20 @@ async def compare_anomaly(
             training_cutoff=definition.cutoff,
             cutoff=definition.evaluation_cutoff,
         )
-    except ValueError:
-        return _not_comparable("EVALUATION_INELIGIBLE")
+    except ValueError as error:
+        allowed_reasons = {
+            "EVALUATION_COHORT_MISMATCH",
+            "REFERENCE_LINEAGE_MISSING",
+            "EVALUATION_SESSION_LEAKAGE",
+            "EVALUATION_COHORT_INCOMPATIBLE",
+            "EVALUATION_TIME_LEAKAGE",
+            "DERIVED_FAMILY_NOT_EVALUABLE",
+            "ORACLE_SCENARIO_UNSUPPORTED",
+            "SOURCE_ROLE_MISMATCH",
+            "QUALITY_CASE_NOT_ABSTAINED",
+        }
+        reason = str(error)
+        return _not_comparable(reason if reason in allowed_reasons else "EVALUATION_INELIGIBLE")
     if await prior_source_digest(database) != source_before:
         return _not_comparable("PRIOR_SOURCE_MUTATION_DURING_COMPARISON")
     latest = await repository.binding(champion_binding_id)
