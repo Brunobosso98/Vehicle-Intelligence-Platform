@@ -1109,10 +1109,10 @@ async def _main() -> dict[str, Any]:
             database,
             start_at=datetime(2026, 1, 1, tzinfo=UTC),
             vehicle_model_prefix="PHASE10-TRAINING",
-            engine_codes=("N55", "B58", "S55"),
-            scenario_seed=9142,
+            engine_codes=("N55",),
+            scenario_seed=0,
             generator_version="phase10-controlled-training-v1",
-            vehicle_count=6,
+            vehicle_count=8,
         )
         await generate_fixture_features(database, training)
         # `Settings` is immutable. Use a per-fixture service configuration with a narrow
