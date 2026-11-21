@@ -263,7 +263,7 @@ async def _register_champions(
             binding_id, _ = await service.approve_candidate(
                 "next_pull",
                 model_id,
-                source_role=SourceRole.SYNTHETIC,
+                source_role=AnomalySourceRole.SYNTHETIC,
                 reason="Explicit Phase 9D test setup for synthetic MLOps comparison.",
                 operator_id="phase10-acceptance-operator",
                 review_reference=f"phase10-test-setup-{task.value.lower()}",
@@ -311,7 +311,7 @@ async def _register_champions(
             binding_id, _ = await service.approve_candidate(
                 "anomaly",
                 detector_id,
-                source_role=SourceRole.SYNTHETIC,
+                source_role=AnomalySourceRole.SYNTHETIC,
                 reason="Explicit Phase 9D test setup for synthetic MLOps comparison.",
                 operator_id="phase10-acceptance-operator",
                 review_reference=f"phase10-test-setup-{family}",
