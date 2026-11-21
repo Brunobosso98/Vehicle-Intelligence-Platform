@@ -585,6 +585,9 @@ async def _run_definition(
                     "step": event["step_name"],
                     "state": event["state"],
                     "reason": (event.get("output_body") or {}).get("reason"),
+                    "failed_criteria": (event.get("output_body") or {}).get(
+                        "failed_criteria"
+                    ),
                 }
                 for event in failed_run["steps"]
             ],

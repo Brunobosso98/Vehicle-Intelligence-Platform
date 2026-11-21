@@ -324,7 +324,15 @@ async def execute_supervised_job(
             name="fit",
             state="FAILED",
             input_checksum=dataset_checksum,
-            output={"reason": "CANDIDATE_REJECTED", "state": task_run.training.state.value},
+            output={
+                "reason": "CANDIDATE_REJECTED",
+                "state": task_run.training.state.value,
+                "failed_criteria": sorted(
+                    key
+                    for key, passed in task_run.training.acceptance["criteria"].items()
+                    if not passed
+                ),
+            },
         )
         raise ValueError("CANDIDATE_REJECTED")
     await repo.record_step(

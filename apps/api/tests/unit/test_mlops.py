@@ -1285,7 +1285,12 @@ async def test_supervised_worker_records_rejection_and_fit_failure(monkeypatch):
     )
     record = AsyncMock()
     train = AsyncMock(
-        return_value=SimpleNamespace(training=SimpleNamespace(state=ModelState.REJECTED))
+        return_value=SimpleNamespace(
+            training=SimpleNamespace(
+                state=ModelState.REJECTED,
+                acceptance={"criteria": {"support": False, "integrity": True}},
+            )
+        )
     )
     monkeypatch.setattr(executor, "checkout_is_dirty", AsyncMock(return_value=False))
     monkeypatch.setattr(executor, "train_task", train)
@@ -1297,6 +1302,7 @@ async def test_supervised_worker_records_rejection_and_fit_failure(monkeypatch):
         await executor.execute_supervised_job(None, definition, **options)
     assert [call.kwargs["state"] for call in record.await_args_list] == ["RUNNING", "FAILED"]
     assert record.await_args_list[-1].kwargs["output"]["reason"] == "CANDIDATE_REJECTED"
+    assert record.await_args_list[-1].kwargs["output"]["failed_criteria"] == ["support"]
     assert train.await_args.kwargs["max_artifact_bytes"] == definition.budget.max_artifact_bytes
     assert train.await_args.kwargs["candidate_pull_ids"] == definition.training_pull_ids
     record.reset_mock()
