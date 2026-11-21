@@ -633,7 +633,10 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
                 expected_dataset_checksum="0" * 64,
                 expected_feature_checksum=service.version.checksum,
                 evaluation_cutoff=fixture["start"] + timedelta(seconds=60),
-                evaluation_pull_ids=tuple(sorted(pulls.values(), key=str)),
+                training_pull_ids=(pulls["p1"],),
+                evaluation_pull_ids=tuple(
+                    sorted((item for item in pulls.values() if item != pulls["p1"]), key=str)
+                ),
                 expected_evaluation_checksum="0" * 64,
                 expected_evaluation_source_fingerprint="0" * 64,
             ),

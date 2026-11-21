@@ -80,6 +80,7 @@ async def test_control_plane_idempotence_claim_and_immutable_history(
         expected_dataset_checksum="d" * 64,
         expected_feature_checksum="c" * 64,
         evaluation_cutoff=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(days=1),
+        training_pull_ids=(uuid4(),),
         evaluation_pull_ids=(uuid4(),),
         expected_evaluation_checksum="e" * 64,
         expected_evaluation_source_fingerprint="f" * 64,

@@ -33,11 +33,13 @@ database.
 
 ## Pipeline contract and state
 
-Definitions use the versioned phase10-definition-v1 contract and canonical
+Definitions use the versioned phase10-definition-v2 contract and canonical
 SHA-256 fingerprint. Their identity binds the repository SHA, task/family,
 source role, training and evaluation cutoffs, source/dataset/feature/label
-fingerprints, preselected evaluation pull IDs, oracle checksum, seed, protocol
-and resource budget. Definitions are immutable.
+fingerprints, a bounded sorted training pull cohort, a disjoint preselected
+evaluation pull cohort, oracle checksum, seed, protocol and resource budget.
+The planner and executor pass those exact IDs to Phase 9A dataset materialization
+and reject a cohort that no longer matches. Definitions are immutable.
 
 Each accepted run executes this fixed DAG:
 

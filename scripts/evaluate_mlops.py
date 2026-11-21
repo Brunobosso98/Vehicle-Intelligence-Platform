@@ -342,13 +342,56 @@ async def _supervised_definition(
     spec = get_model_spec(task)
     input_def, outcome_def = dataset_definitions(task, cutoff, "synthetic")
     builder = DatasetBuilder(database, DEFAULT_REGISTRY)
-    input_data = await builder.build(input_def, persist=False, max_rows=20_000)
-    outcome_data = await builder.build(outcome_def, persist=False, max_rows=20_000)
+    async with database.session() as db:
+        training_pull_ids = tuple(
+            sorted(
+                (
+                    UUID(str(item))
+                    for item in (
+                        await db.execute(
+                            text(
+                                "SELECT p.id FROM pulls p "
+                                "JOIN driving_sessions s ON s.id=p.session_id "
+                                "JOIN vehicles v ON v.id=p.vehicle_id "
+                                "WHERE v.model LIKE 'N55-9B-%' "
+                                "AND s.source_type='synthetic' "
+                                "AND s.metadata->>'generator'='phase9b-v1' "
+                                "AND p.started_at<=:cutoff AND p.created_at<=:cutoff "
+                                "AND s.created_at<=:cutoff AND v.created_at<=:cutoff "
+                                "ORDER BY p.id"
+                            ),
+                            {"cutoff": cutoff},
+                        )
+                    )
+                    .scalars()
+                    .all()
+                ),
+                key=str,
+            )
+        )
+    if not training_pull_ids or len(training_pull_ids) > 20_000:
+        raise AssertionError(
+            "bounded Phase 9B training cohort is missing or exceeds its limit"
+        )
+    input_data = await builder.build(
+        input_def, candidate_pull_ids=training_pull_ids, persist=False, max_rows=20_000
+    )
+    outcome_data = await builder.build(
+        outcome_def,
+        candidate_pull_ids=training_pull_ids,
+        persist=False,
+        max_rows=20_000,
+    )
+    selected_inputs = {str(item.pull_id) for item in input_data.candidates}
+    selected_outcomes = {str(item.pull_id) for item in outcome_data.candidates}
+    expected_training = {str(item) for item in training_pull_ids}
+    if selected_inputs != expected_training or selected_outcomes != expected_training:
+        raise AssertionError("Phase 9B training cohort changed during materialization")
     training = build_supervised_dataset(
         input_data, outcome_data, spec, repository_sha=git_sha
     )
     probe = PipelineDefinition(
-        definition_version=f"p10-{task.value.lower()}-v1",
+        definition_version=f"p10-{task.value.lower()}-v2",
         kind=PipelineKind.SUPERVISED,
         task=task,
         source_role=SourceRole.SYNTHETIC,
@@ -358,6 +401,7 @@ async def _supervised_definition(
         expected_dataset_checksum=training.checksum,
         expected_feature_checksum=default_feature_version().checksum,
         evaluation_cutoff=evaluation_cutoff,
+        training_pull_ids=training_pull_ids,
         evaluation_pull_ids=future_pull_ids,
         expected_evaluation_checksum="0" * 64,
         expected_evaluation_source_fingerprint="0" * 64,

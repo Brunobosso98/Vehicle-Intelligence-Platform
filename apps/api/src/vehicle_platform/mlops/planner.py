@@ -270,17 +270,19 @@ async def materialize_supervised_readonly(
     spec = get_model_spec(definition.task)
     inputs, outcomes = dataset_definitions(definition.task, cutoff, definition.source_role.value)
     builder = DatasetBuilder(database, DEFAULT_REGISTRY)
-    candidates = definition.evaluation_pull_ids if evaluation else None
+    candidates = definition.evaluation_pull_ids if evaluation else definition.training_pull_ids
     input_data = await builder.build(
         inputs, candidate_pull_ids=candidates, persist=False, max_rows=definition.budget.max_rows
     )
     outcome_data = await builder.build(
         outcomes, candidate_pull_ids=candidates, persist=False, max_rows=definition.budget.max_rows
     )
-    if evaluation and {str(item.pull_id) for item in input_data.candidates} != {
-        str(item) for item in definition.evaluation_pull_ids
-    }:
-        raise ValueError("EVALUATION_COHORT_MISMATCH")
+    expected_ids = definition.evaluation_pull_ids if evaluation else definition.training_pull_ids
+    expected = {str(item) for item in expected_ids}
+    if {str(item.pull_id) for item in input_data.candidates} != expected or {
+        str(item.pull_id) for item in outcome_data.candidates
+    } != expected:
+        raise ValueError("EVALUATION_COHORT_MISMATCH" if evaluation else "TRAINING_COHORT_MISMATCH")
     return build_supervised_dataset(
         input_data, outcome_data, spec, repository_sha=definition.git_sha
     )
@@ -368,8 +370,18 @@ async def plan_supervised(database: Database, definition: PipelineDefinition) ->
         definition.task, definition.cutoff, definition.source_role.value
     )
     builder = DatasetBuilder(database, DEFAULT_REGISTRY)
-    input_data = await builder.build(inputs, persist=False, max_rows=definition.budget.max_rows)
-    outcome_data = await builder.build(outcomes, persist=False, max_rows=definition.budget.max_rows)
+    input_data = await builder.build(
+        inputs,
+        candidate_pull_ids=definition.training_pull_ids,
+        persist=False,
+        max_rows=definition.budget.max_rows,
+    )
+    outcome_data = await builder.build(
+        outcomes,
+        candidate_pull_ids=definition.training_pull_ids,
+        persist=False,
+        max_rows=definition.budget.max_rows,
+    )
     dataset = build_supervised_dataset(
         input_data, outcome_data, spec, repository_sha=definition.git_sha
     )
@@ -396,9 +408,16 @@ async def plan_supervised(database: Database, definition: PipelineDefinition) ->
     prior_holdout_reason = await prior_holdout_conflict(
         database, (*dataset.rows, *evaluation_data.rows)
     )
+    training_ids = {str(item) for item in definition.training_pull_ids}
+    selected_training_ids = {str(item.pull_id) for item in input_data.candidates}
+    selected_training_outcome_ids = {str(item.pull_id) for item in outcome_data.candidates}
+    training_cohort_complete = (
+        selected_training_ids == training_ids and selected_training_outcome_ids == training_ids
+    )
     requested_ids = {str(item) for item in definition.evaluation_pull_ids}
     selected_ids = {str(item.pull_id) for item in eval_input_data.candidates}
-    cohort_complete = selected_ids == requested_ids
+    selected_outcome_ids = {str(item.pull_id) for item in eval_outcome_data.candidates}
+    cohort_complete = selected_ids == requested_ids and selected_outcome_ids == requested_ids
     if len({row.session_id for row in evaluation_data.rows}) > definition.budget.max_sessions:
         raise ValueError("evaluation sessions exceed the declared budget")
     split_error = None
@@ -423,6 +442,8 @@ async def plan_supervised(database: Database, definition: PipelineDefinition) ->
         status, reason = "BLOCKED", "SOURCE_FINGERPRINT_MISMATCH"
     elif dataset.checksum != definition.expected_dataset_checksum:
         status, reason = "BLOCKED", "DATASET_CHECKSUM_MISMATCH"
+    elif not training_cohort_complete:
+        status, reason = "BLOCKED", "TRAINING_COHORT_MISMATCH"
     elif evaluation_data.source_fingerprint != definition.expected_evaluation_source_fingerprint:
         status, reason = "BLOCKED", "EVALUATION_SOURCE_FINGERPRINT_MISMATCH"
     elif evaluation_data.checksum != definition.expected_evaluation_checksum:
@@ -455,6 +476,7 @@ async def plan_supervised(database: Database, definition: PipelineDefinition) ->
         "input_dataset_checksum": input_data.checksum,
         "outcome_dataset_checksum": outcome_data.checksum,
         "candidate_pulls": len(input_data.candidates),
+        "training_cohort_complete": training_cohort_complete,
         "labeled_rows": len(dataset.rows),
         "positive_count": counts[True],
         "negative_count": counts[False],

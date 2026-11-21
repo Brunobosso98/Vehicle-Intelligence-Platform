@@ -210,14 +210,27 @@ def test_phase10_pipeline_contracts_enforce_task_oracle_and_gate_invariants():
         "expected_dataset_checksum": "c" * 64,
         "expected_feature_checksum": "d" * 64,
         "evaluation_cutoff": datetime(2026, 1, 2, tzinfo=UTC),
+        "training_pull_ids": (uuid4(),),
         "evaluation_pull_ids": (uuid4(),),
         "expected_evaluation_checksum": "e" * 64,
         "expected_evaluation_source_fingerprint": "f" * 64,
     }
     assert PipelineDefinition(**base).fingerprint
+    with pytest.raises(ValidationError, match="bounded, disjoint training"):
+        PipelineDefinition(**{**base, "training_pull_ids": ()})
+    with pytest.raises(ValidationError, match="bounded, disjoint training"):
+        PipelineDefinition(**{**base, "training_pull_ids": base["evaluation_pull_ids"]})
+    with pytest.raises(ValidationError, match="bounded, disjoint training"):
+        PipelineDefinition(
+            **{
+                **base,
+                "training_pull_ids": tuple(sorted((uuid4(), uuid4()), key=str)),
+                "budget": {"max_rows": 1},
+            }
+        )
     with pytest.raises(ValidationError, match="task only"):
         PipelineDefinition(**{**base, "family": AnomalyFamily.THERMAL})
-    with pytest.raises(ValidationError, match="later evaluation cohort"):
+    with pytest.raises(ValidationError, match="bounded, disjoint training"):
         PipelineDefinition(**{**base, "evaluation_cutoff": None})
     with pytest.raises(ValidationError, match="UTC"):
         PipelineDefinition(
@@ -231,6 +244,7 @@ def test_phase10_pipeline_contracts_enforce_task_oracle_and_gate_invariants():
         "family": AnomalyFamily.THERMAL,
         "method": DetectorMethod.ROBUST_MAD,
         "anchor_pull_id": uuid4(),
+        "training_pull_ids": (),
         "evaluation_cutoff": None,
         "evaluation_pull_ids": (),
         "expected_evaluation_checksum": None,
@@ -1156,6 +1170,7 @@ async def test_comparison_denies_missing_or_wrong_scope_champion(monkeypatch):
         expected_dataset_checksum="c" * 64,
         expected_feature_checksum="d" * 64,
         evaluation_cutoff=datetime(2026, 1, 2, tzinfo=UTC),
+        training_pull_ids=(uuid4(),),
         evaluation_pull_ids=(uuid4(),),
         expected_evaluation_checksum="e" * 64,
         expected_evaluation_source_fingerprint="f" * 64,
@@ -1263,6 +1278,7 @@ async def test_supervised_worker_records_rejection_and_fit_failure(monkeypatch):
         expected_dataset_checksum="c" * 64,
         expected_feature_checksum="d" * 64,
         evaluation_cutoff=datetime(2026, 1, 2, tzinfo=UTC),
+        training_pull_ids=(uuid4(),),
         evaluation_pull_ids=(uuid4(),),
         expected_evaluation_checksum="e" * 64,
         expected_evaluation_source_fingerprint="f" * 64,
@@ -1282,6 +1298,7 @@ async def test_supervised_worker_records_rejection_and_fit_failure(monkeypatch):
     assert [call.kwargs["state"] for call in record.await_args_list] == ["RUNNING", "FAILED"]
     assert record.await_args_list[-1].kwargs["output"]["reason"] == "CANDIDATE_REJECTED"
     assert train.await_args.kwargs["max_artifact_bytes"] == definition.budget.max_artifact_bytes
+    assert train.await_args.kwargs["candidate_pull_ids"] == definition.training_pull_ids
     record.reset_mock()
     train.side_effect = RuntimeError("private source details")
     with pytest.raises(RuntimeError, match="private source details"):
@@ -1304,10 +1321,57 @@ def _supervised_definition(version: str = "runner-test-v1"):
         expected_dataset_checksum="c" * 64,
         expected_feature_checksum="d" * 64,
         evaluation_cutoff=datetime(2026, 1, 2, tzinfo=UTC),
+        training_pull_ids=(uuid4(),),
         evaluation_pull_ids=(uuid4(),),
         expected_evaluation_checksum="e" * 64,
         expected_evaluation_source_fingerprint="f" * 64,
     )
+
+
+@pytest.mark.asyncio
+async def test_supervised_materialization_uses_only_versioned_training_or_evaluation_ids(
+    monkeypatch,
+):
+    from vehicle_platform.mlops import planner
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    calls = []
+
+    class Builder:
+        async def build(self, definition, *, candidate_pull_ids, persist, max_rows):
+            calls.append((tuple(candidate_pull_ids), persist, max_rows))
+            return SimpleNamespace(
+                candidates=tuple(SimpleNamespace(pull_id=pull_id) for pull_id in candidate_pull_ids)
+            )
+
+    monkeypatch.setattr(planner, "DatasetBuilder", lambda *_: Builder())
+    monkeypatch.setattr(planner, "build_supervised_dataset", lambda *_args, **_kwargs: "dataset")
+    definition = _supervised_definition()
+
+    assert (
+        await planner.materialize_supervised_readonly(object(), definition, evaluation=False)
+        == "dataset"
+    )
+    assert len(calls) == 2
+    assert all(call[0] == definition.training_pull_ids for call in calls)
+    assert all(call[1] is False for call in calls)
+
+    calls.clear()
+    assert (
+        await planner.materialize_supervised_readonly(object(), definition, evaluation=True)
+        == "dataset"
+    )
+    assert len(calls) == 2
+    assert all(call[0] == definition.evaluation_pull_ids for call in calls)
+
+    class IncompleteBuilder(Builder):
+        async def build(self, dataset_definition, *, candidate_pull_ids, persist, max_rows):
+            calls.append((tuple(candidate_pull_ids), persist, max_rows))
+            return SimpleNamespace(candidates=())
+
+    monkeypatch.setattr(planner, "DatasetBuilder", lambda *_: IncompleteBuilder())
+    with pytest.raises(ValueError, match="TRAINING_COHORT_MISMATCH"):
+        await planner.materialize_supervised_readonly(object(), definition, evaluation=False)
 
 
 @pytest.mark.asyncio

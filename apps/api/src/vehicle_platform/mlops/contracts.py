@@ -324,7 +324,7 @@ class AnomalyOracleLabel(Contract):
 
 
 class PipelineDefinition(Contract):
-    schema_version: Literal["phase10-definition-v1"] = "phase10-definition-v1"
+    schema_version: Literal["phase10-definition-v2"] = "phase10-definition-v2"
     definition_version: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$")
     kind: PipelineKind
     task: MLTask | None = None
@@ -340,6 +340,7 @@ class PipelineDefinition(Contract):
     expected_dataset_checksum: str = Field(pattern=_HASH_PATTERN)
     expected_feature_checksum: str = Field(pattern=_HASH_PATTERN)
     evaluation_cutoff: datetime | None = None
+    training_pull_ids: tuple[UUID, ...] = Field(default=(), max_length=20000)
     evaluation_pull_ids: tuple[UUID, ...] = Field(default=(), max_length=1000)
     expected_evaluation_checksum: str | None = Field(default=None, pattern=_HASH_PATTERN)
     expected_evaluation_source_fingerprint: str | None = Field(default=None, pattern=_HASH_PATTERN)
@@ -364,18 +365,26 @@ class PipelineDefinition(Contract):
                 self.evaluation_cutoff is None
                 or self.evaluation_cutoff.utcoffset() != timedelta(0)
                 or self.evaluation_cutoff <= self.cutoff
+                or not self.training_pull_ids
+                or len(set(self.training_pull_ids)) != len(self.training_pull_ids)
+                or tuple(sorted(self.training_pull_ids, key=str)) != self.training_pull_ids
                 or not self.evaluation_pull_ids
                 or len(set(self.evaluation_pull_ids)) != len(self.evaluation_pull_ids)
                 or tuple(sorted(self.evaluation_pull_ids, key=str)) != self.evaluation_pull_ids
+                or set(self.training_pull_ids).intersection(self.evaluation_pull_ids)
+                or len(self.training_pull_ids) > self.budget.max_rows
                 or self.expected_evaluation_checksum is None
                 or self.expected_evaluation_source_fingerprint is None
             ):
                 raise ValueError(
-                    "supervised definitions require an explicit later evaluation cohort"
+                    "supervised definitions require bounded, disjoint training and later "
+                    "evaluation cohorts"
                 )
         else:
-            if self.task is not None or any(
-                x is None for x in (self.family, self.method, self.anchor_pull_id)
+            if (
+                self.training_pull_ids
+                or self.task is not None
+                or any(x is None for x in (self.family, self.method, self.anchor_pull_id))
             ):
                 raise ValueError("anomaly definitions require family, method and anchor")
             evaluation_fields = (

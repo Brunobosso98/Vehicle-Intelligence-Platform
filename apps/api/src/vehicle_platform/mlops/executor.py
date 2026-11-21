@@ -299,6 +299,7 @@ async def execute_supervised_job(
             git_sha=definition.git_sha,
             expected_dataset_checksum=dataset_checksum,
             expected_source_fingerprint=definition.expected_source_fingerprint,
+            candidate_pull_ids=definition.training_pull_ids,
             max_rows=definition.budget.max_rows,
             max_sessions=definition.budget.max_sessions,
             max_features=definition.budget.max_features,
