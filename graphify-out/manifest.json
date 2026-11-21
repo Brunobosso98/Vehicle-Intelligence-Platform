@@ -3000,9 +3000,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/anomalies/registry.py": {
-    "mtime": 1794673779.3082876,
-    "seen": 1794674058.4444828,
-    "ast_hash": "dd51bf3591f7daee4f007243c5d75131",
+    "mtime": 1795301787.6313035,
+    "seen": 1795301808.4942927,
+    "ast_hash": "88b4cf688656fccc70a28497a58d439b",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/anomalies/repository.py": {
