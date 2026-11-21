@@ -623,7 +623,8 @@ async def _run_definition(
     )
     _require(
         result.get("comparison", {}).get("status") == "COMPARABLE_OFFLINE",
-        "matched champion comparison did not run",
+        f"matched champion comparison did not run: {definition.definition_version} "
+        f"{result.get('comparison')}",
     )
     run_id = UUID(str(result["run_id"]))
     inspection = await ControlPlaneRepository(database).inspect_run(run_id)
