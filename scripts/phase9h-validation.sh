@@ -140,7 +140,7 @@ expect_standalone_denied() {
   local scenario="$1"
   local env_path="$2"
   local response_file="$evidence/${scenario}-session.json"
-  docker rm -f "$web_container" >/dev/null 2>&1 || true
+  [[ -z "$web_container" ]] || docker rm -f "$web_container" >/dev/null 2>&1 || true
   web_container="vip-phase9h-${scenario}-$RANDOM-$$"
   docker run --detach --name "$web_container" --network host --read-only \
     --tmpfs /tmp:rw,noexec,nosuid,size=64m --cap-drop ALL \
@@ -222,7 +222,7 @@ apps/api/.venv/bin/python -c \
 
 # Production is fail-closed even when the standalone image has every explicit
 # operator credential and flag. The protected BFF must disclose no capability.
-docker rm -f "$web_container" >/dev/null
+[[ -z "$web_container" ]] || docker rm -f "$web_container" >/dev/null
 web_container="vip-phase9h-production-$RANDOM-$$"
 sed 's/^ENVIRONMENT=test$/ENVIRONMENT=production/' "$web_env_file" \
   | sed 's/^PREDICTIVE_UI_DEMO_ENABLED=true$/PREDICTIVE_UI_DEMO_ENABLED=false/' \

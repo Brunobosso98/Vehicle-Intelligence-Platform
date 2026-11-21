@@ -33,6 +33,7 @@ from vehicle_platform.anomalies.artifacts import (
 )
 from vehicle_platform.anomalies.definitions import detector_definition
 from vehicle_platform.anomalies.domain import (
+    MAX_REFERENCE_ROWS,
     DetectorMethod,
 )
 from vehicle_platform.anomalies.domain import (
@@ -478,7 +479,7 @@ async def _anomaly_definition(
         feature_checksum,
         detector,
         anomaly_role,
-        max_rows=20_000,
+        max_rows=MAX_REFERENCE_ROWS,
     )
     target_pulls = tuple(
         sorted(
