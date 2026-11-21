@@ -49,14 +49,13 @@ apps/api/.venv/bin/pytest apps/api/tests/unit/test_mlops.py -q \
 apps/api/.venv/bin/pytest apps/api/tests/integration/test_mlops_control_plane.py -q \
   | tee "$evidence/database-tests.log"
 
-# Rebuild the canonical prior-phase artifacts and rows in this same disposable
-# database. Phase 10 then runs the real 9B/9C/9G code paths against those sources.
+# Rebuild the Phase 9A/9B fixtures in this disposable database. The Phase 9G
+# evaluator runs the canonical 9C evaluator once on this database, then Phase 10
+# consumes those registered source artifacts.
 apps/api/.venv/bin/python scripts/evaluate_features.py \
   | tee "$evidence/phase9a-prerequisite.log"
 apps/api/.venv/bin/python scripts/evaluate_predictive_models.py \
   | tee "$evidence/phase9b-prerequisite.log"
-apps/api/.venv/bin/python scripts/evaluate_anomaly_detection.py \
-  | tee "$evidence/phase9c-prerequisite.log"
 
 apps/api/.venv/bin/python scripts/evaluate_mlops.py \
   | tee "$evidence/evaluator.log"
