@@ -333,6 +333,7 @@ async def _register_champions(
 async def _supervised_definition(
     database: Database,
     task: MLTask,
+    training_pull_ids: tuple[UUID, ...],
     future_pull_ids: tuple[UUID, ...],
     *,
     git_sha: str,
@@ -342,33 +343,7 @@ async def _supervised_definition(
     spec = get_model_spec(task)
     input_def, outcome_def = dataset_definitions(task, cutoff, "synthetic")
     builder = DatasetBuilder(database, DEFAULT_REGISTRY)
-    async with database.session() as db:
-        training_pull_ids = tuple(
-            sorted(
-                (
-                    UUID(str(item))
-                    for item in (
-                        await db.execute(
-                            text(
-                                "SELECT p.id FROM pulls p "
-                                "JOIN driving_sessions s ON s.id=p.session_id "
-                                "JOIN vehicles v ON v.id=p.vehicle_id "
-                                "WHERE v.model LIKE 'N55-9B-%' "
-                                "AND s.source_type='synthetic' "
-                                "AND s.metadata->>'generator'='phase9b-v1' "
-                                "AND p.started_at<=:cutoff AND p.created_at<=:cutoff "
-                                "AND s.created_at<=:cutoff AND v.created_at<=:cutoff "
-                                "ORDER BY p.id"
-                            ),
-                            {"cutoff": cutoff},
-                        )
-                    )
-                    .scalars()
-                    .all()
-                ),
-                key=str,
-            )
-        )
+    training_pull_ids = tuple(sorted(training_pull_ids, key=str))
     if not training_pull_ids or len(training_pull_ids) > 20_000:
         raise AssertionError(
             "bounded Phase 9B training cohort is missing or exceeds its limit"
@@ -1101,6 +1076,16 @@ async def _main() -> dict[str, Any]:
             == "NOT_ESTABLISHED",
             "Phase 9G scientific status changed",
         )
+        training = await seed_predictive_fixture(
+            database,
+            start_at=datetime(2026, 1, 1, tzinfo=UTC),
+            vehicle_model_prefix="PHASE10-TRAINING",
+            engine_codes=("N55", "B58", "S55"),
+            scenario_seed=9142,
+            generator_version="phase10-controlled-training-v1",
+            vehicle_count=6,
+        )
+        await generate_fixture_features(database, training)
         # `Settings` is immutable. Use a per-fixture service configuration with a narrow
         # allowlist after the 9A fixture has established its vehicle UUIDs.
         future = await seed_predictive_fixture(
@@ -1161,7 +1146,11 @@ async def _main() -> dict[str, Any]:
             definitions.append(
                 (
                     await _supervised_definition(
-                        database, task, future_ids, git_sha=git_sha
+                        database,
+                        task,
+                        tuple(sorted(training.pull_ids, key=str)),
+                        future_ids,
+                        git_sha=git_sha,
                     ),
                     model_bindings[task.value],
                 )

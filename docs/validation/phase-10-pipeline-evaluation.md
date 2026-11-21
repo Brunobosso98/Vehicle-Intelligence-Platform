@@ -9,6 +9,11 @@ families (thermal, boost/air, performance and fuel). It runs the registered
 evaluates newly predeclared held-out synthetic cohorts through existing 9G
 protocols.
 
+For the bounded Phase 10 training input, the evaluator seeds a separate
+deterministic six-vehicle Phase 9B fixture (150 pulls) and places its exact
+sorted pull IDs in each immutable definition. The wider Phase 9G regression
+corpus is not implicitly swept into these training datasets.
+
 Each run binds the committed repository SHA, definition version/fingerprint,
 source role, exact 9A feature and dataset fingerprints, label/oracle checksum,
 training/evaluation cutoffs, seed, candidate artifact checksum and evaluation

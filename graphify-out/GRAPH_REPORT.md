@@ -1,17 +1,17 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-21)
 
 ## Corpus Check
-- 663 files · ~760,716 words
+- 663 files · ~760,718 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
 ## Summary
-- 8778 nodes · 25045 edges · 348 communities (283 shown, 65 thin omitted)
-- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 4711 edges (avg confidence: 0.93)
+- 8778 nodes · 25044 edges · 348 communities (283 shown, 65 thin omitted)
+- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 4710 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b80276b3`
+- Built from commit: `8d5d2ac7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
