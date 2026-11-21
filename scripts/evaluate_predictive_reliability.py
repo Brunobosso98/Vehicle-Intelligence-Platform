@@ -331,6 +331,7 @@ async def _train_and_evaluate_supervised(
                 telemetry=telemetry,
                 artifact_store=model_store,
                 scenario_family_by_session=scenario_map,
+                candidate_pull_ids=base.pull_ids,
             )
             future_dataset, _input_dataset, _outcome_dataset = await build_task_dataset(
                 database,

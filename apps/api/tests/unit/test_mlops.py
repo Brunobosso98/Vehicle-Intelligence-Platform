@@ -1206,6 +1206,7 @@ async def test_supervised_training_enforces_budget_before_registry_writes(monkey
     options = {
         "source": "synthetic",
         "git_sha": "c" * 40,
+        "candidate_pull_ids": (uuid4(),),
         "expected_dataset_checksum": dataset.checksum,
         "expected_source_fingerprint": dataset.source_fingerprint,
     }
@@ -1226,6 +1227,8 @@ async def test_supervised_training_enforces_budget_before_registry_writes(monkey
             **options,
             max_sessions=1,
         )
+    assert materialize.await_args is not None
+    assert materialize.await_args.kwargs["candidate_pull_ids"] == options["candidate_pull_ids"]
     registry.ensure_definitions.assert_not_awaited()
 
 

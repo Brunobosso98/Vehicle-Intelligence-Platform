@@ -136,6 +136,7 @@ async def train_task(
     telemetry: Any | None = None,
     artifact_store: ArtifactStore | None = None,
     scenario_family_by_session: Mapping[str, str] | None = None,
+    candidate_pull_ids: Sequence[UUID] | None = None,
     expected_dataset_checksum: str | None = None,
     expected_source_fingerprint: str | None = None,
     max_rows: int = 100_000,
@@ -164,6 +165,7 @@ async def train_task(
         git_sha=commit,
         telemetry=telemetry,
         scenario_family_by_session=scenario_family_by_session,
+        candidate_pull_ids=candidate_pull_ids,
         max_rows=max_rows,
     )
     if expected_dataset_checksum is not None and dataset.checksum != expected_dataset_checksum:
