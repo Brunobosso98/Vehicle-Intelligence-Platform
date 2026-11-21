@@ -726,6 +726,7 @@ class Session:
     def __init__(self, binding, baseline, comparison):
         self.results = [Result(None), Result(binding), Result(baseline), Result(comparison)]
         self.parameters = []
+        self.statements = []
 
     async def __aenter__(self):
         return self
@@ -736,7 +737,8 @@ class Session:
     def begin(self):
         return self
 
-    async def execute(self, _statement, parameters=None):
+    async def execute(self, statement, parameters=None):
+        self.statements.append(str(statement))
         self.parameters.append(parameters)
         return self.results.pop(0)
 
@@ -824,6 +826,8 @@ async def test_monitor_counts_actual_receipts_and_preserves_missing_label_uncert
     assert result["real_world_predictive_validity"] == "NOT_ESTABLISHED"
     assert session.parameters[2]["vehicle"] == policy.vehicle_id
     assert session.parameters[2]["configuration"] == policy.configuration_id
+    assert "s.source_type" in session.statements[2]
+    assert "p.source_type" not in session.statements[2]
 
 
 @pytest.mark.asyncio

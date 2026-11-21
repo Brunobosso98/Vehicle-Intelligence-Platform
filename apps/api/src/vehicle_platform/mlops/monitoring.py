@@ -117,7 +117,7 @@ async def _read_monitoring_window(
                             "r.anomaly_score,r.effective_cutoff,r.created_at,"
                             "r.source_role,r.feature_set_version,"
                             "r.feature_set_checksum AS receipt_feature_source_checksum,"
-                            "r.quality_summary,p.source_type,p.session_id,"
+                            "r.quality_summary,s.source_type,p.session_id,"
                             "p.ended_at AS observed_end,"
                             "fs.source_hash AS feature_source_checksum,"
                             "fs.quality_metadata AS feature_quality_metadata,"
