@@ -1399,6 +1399,44 @@ async def test_runner_is_dry_by_default_and_checks_exact_confirmation(monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_exact_completed_run_replays_before_replanning(monkeypatch):
+    from vehicle_platform.mlops import runner
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    definition = _supervised_definition("runner-replay-v1")
+    run_id = uuid4()
+    repository = AsyncMock()
+    repository.find_exact_run.return_value = {
+        "run_id": run_id,
+        "state": "COMPLETED",
+        "has_steps": True,
+    }
+    planner = AsyncMock(side_effect=AssertionError("completed replay must not replan"))
+    monkeypatch.setattr(runner, "ControlPlaneRepository", lambda _: repository)
+    monkeypatch.setattr(runner, "plan_supervised", planner)
+
+    result = await runner.run_pipeline(
+        object(),
+        definition,
+        execute=True,
+        confirmed_environment="test",
+        confirmed_fingerprint=definition.fingerprint,
+    )
+
+    assert result == {
+        "schema_version": "phase10-run-v1",
+        "status": "EXISTING_RUN",
+        "run_id": str(run_id),
+        "state": "COMPLETED",
+        "idempotent_replay": True,
+        "serving_action": "NONE",
+        "real_world_predictive_validity": "NOT_ESTABLISHED",
+    }
+    repository.find_exact_run.assert_awaited_once_with(definition)
+    planner.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_runner_completes_only_with_artifact_evaluation_and_review_receipts(
     monkeypatch, tmp_path
 ):
@@ -1426,6 +1464,9 @@ async def test_runner_completes_only_with_artifact_evaluation_and_review_receipt
         def __init__(self, _database):
             self.steps = []
             self.proposal_body = None
+
+        async def find_exact_run(self, _definition):
+            return None
 
         async def create_run(self, _definition):
             return run_id, True
@@ -1540,6 +1581,9 @@ async def test_anomaly_runner_fits_evaluates_and_reports_without_serving(monkeyp
             self.steps = []
             self.final_state = None
             self.proposal_body = None
+
+        async def find_exact_run(self, _definition):
+            return None
 
         async def create_run(self, _definition):
             return run_id, True

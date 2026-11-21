@@ -135,13 +135,13 @@ async def _execute_pipeline(
 ) -> dict[str, Any]:
     """Plan by default; an exact explicit confirmation permits one controlled execution."""
     environment = require_controlled_environment()
-    if definition.kind is PipelineKind.SUPERVISED:
-        if definition.task is None:
-            raise ValueError("the supervised runner requires a task")
-        plan = await plan_supervised(database, definition)
-    else:
-        plan = await plan_anomaly(database, definition)
     if not execute:
+        if definition.kind is PipelineKind.SUPERVISED:
+            if definition.task is None:
+                raise ValueError("the supervised runner requires a task")
+            plan = await plan_supervised(database, definition)
+        else:
+            plan = await plan_anomaly(database, definition)
         return {
             "schema_version": "phase10-dry-run-v1",
             "execution": "NOT_STARTED",
@@ -153,6 +153,27 @@ async def _execute_pipeline(
         raise ValueError("EXECUTION_CONFIRMATION_MISMATCH")
     if definition.source_role is not SourceRole.SYNTHETIC:
         raise ValueError("SOURCE_ROLE_UNSUPPORTED")
+    repository = ControlPlaneRepository(database)
+    if checkpoint_retry_id is None:
+        existing = await repository.find_exact_run(definition)
+        if existing is not None and (
+            existing["state"] != RunState.PLANNED.value or existing["has_steps"]
+        ):
+            return {
+                "schema_version": "phase10-run-v1",
+                "status": "EXISTING_RUN",
+                "run_id": str(existing["run_id"]),
+                "state": existing["state"],
+                "idempotent_replay": True,
+                "serving_action": "NONE",
+                "real_world_predictive_validity": "NOT_ESTABLISHED",
+            }
+    if definition.kind is PipelineKind.SUPERVISED:
+        if definition.task is None:
+            raise ValueError("the supervised runner requires a task")
+        plan = await plan_supervised(database, definition)
+    else:
+        plan = await plan_anomaly(database, definition)
     if plan.get("status") != "READY_TO_REVIEW":
         return {
             "schema_version": "phase10-run-v1",
@@ -163,7 +184,6 @@ async def _execute_pipeline(
             "real_world_predictive_validity": "NOT_ESTABLISHED",
         }
 
-    repository = ControlPlaneRepository(database)
     checkpoint_events: dict[str, dict[str, Any]] = {}
     parent_run_id: UUID | None = None
     if checkpoint_retry_id is None:

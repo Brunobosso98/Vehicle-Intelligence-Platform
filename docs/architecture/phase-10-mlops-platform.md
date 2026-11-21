@@ -61,7 +61,9 @@ transitions, changed identity, event mutation, and deletion. A dry run is the
 default. Execution requires an explicit development/test environment and exact
 definition fingerprint. A lease expiry fences the old worker; uncertain
 registration is reconciled before any retry. An exact completed replay returns
-its existing receipt.
+its existing receipt. The runner resolves that immutable receipt by exact
+definition fingerprint before source planning; the replay therefore cannot
+re-fit or re-evaluate a 9G holdout that the completed run has reserved.
 
 The fixed supervised catalog covers all three 9B next-pull tasks. The anomaly
 catalog covers thermal, boost/air, performance and fuel. Planning verifies the

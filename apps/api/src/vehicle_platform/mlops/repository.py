@@ -246,6 +246,65 @@ class ControlPlaneRepository:
             )
             return run_id, True
 
+    async def find_exact_run(self, definition: PipelineDefinition) -> dict[str, Any] | None:
+        """Read an exact prior execution before planning an idempotent replay."""
+        require_controlled_environment()
+        digest = definition.fingerprint
+        payload = json.dumps(
+            definition.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        async with self.database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
+            stored = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT fingerprint,body FROM mlops_definitions "
+                            "WHERE definition_version=:version"
+                        ),
+                        {"version": definition.definition_version},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if stored is not None and (
+                stored["fingerprint"] != digest or stored["body"] != json.loads(payload)
+            ):
+                raise ControlPlaneConflict("definition version conflicts with immutable content")
+            run = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT r.id,r.definition_fingerprint,r.logical_fingerprint,"
+                            "r.source_role,r.state,EXISTS(SELECT 1 FROM mlops_step_events s "
+                            "WHERE s.run_id=r.id) AS has_steps FROM mlops_runs r "
+                            "WHERE r.logical_fingerprint=:fingerprint AND r.attempt=1"
+                        ),
+                        {"fingerprint": digest},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if run is None:
+            return None
+        if (
+            stored is None
+            or run["definition_fingerprint"] != digest
+            or run["logical_fingerprint"] != digest
+            or run["source_role"] != definition.source_role.value
+        ):
+            raise ControlPlaneConflict("existing run has mismatched immutable identity")
+        return {
+            "run_id": UUID(str(run["id"])),
+            "state": str(run["state"]),
+            "has_steps": bool(run["has_steps"]),
+        }
+
     async def create_checkpoint_retry(self, failed_run_id: UUID) -> tuple[UUID, bool]:
         """Create one linked attempt from verified read-only checkpoints before model fitting."""
         require_controlled_environment()

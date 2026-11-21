@@ -92,6 +92,11 @@ async def test_control_plane_idempotence_claim_and_immutable_history(
         )
         assert first[0] == second[0]
         assert {first[1], second[1]} == {True, False}
+        assert await repo.find_exact_run(definition) == {
+            "run_id": first[0],
+            "state": "PLANNED",
+            "has_steps": False,
+        }
         claims = await asyncio.gather(
             repo.claim(first[0]), repo.claim(first[0]), return_exceptions=True
         )
