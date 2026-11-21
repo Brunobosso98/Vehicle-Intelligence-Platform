@@ -824,6 +824,7 @@ async def test_monitor_counts_actual_receipts_and_preserves_missing_label_uncert
         == "WARNING"
     )
     assert result["real_world_predictive_validity"] == "NOT_ESTABLISHED"
+    assert result["serving_action"] == "NONE"
     assert session.parameters[2]["vehicle"] == policy.vehicle_id
     assert session.parameters[2]["configuration"] == policy.configuration_id
     assert "s.source_type" in session.statements[2]

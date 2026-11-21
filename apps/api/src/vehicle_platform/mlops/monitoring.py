@@ -450,6 +450,7 @@ async def _read_monitoring_window(
         "feature_set_version": binding["feature_set_version"],
         "binding_id": str(protocol.binding_id),
         "window_time_axis": "receipt_created_at_utc_half_open",
+        "serving_action": "NONE",
         "windows": summaries,
         "source_type_composition": source_composition,
         "feature_source_drift": {
