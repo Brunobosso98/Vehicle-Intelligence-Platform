@@ -550,7 +550,14 @@ async def _run_definition(
         first_plan == second_plan, "repeated read-only planning changed its receipt"
     )
     _require(
-        first_plan.get("status") == "READY_TO_REVIEW", "pipeline plan was not eligible"
+        first_plan.get("status") == "READY_TO_REVIEW",
+        "pipeline plan was not eligible: "
+        f"{definition.definition_version} "
+        f"{first_plan.get('status')}/{first_plan.get('reason')}; "
+        f"training_rows={first_plan.get('labeled_rows', first_plan.get('reference_rows'))}; "
+        f"evaluation_rows={first_plan.get('evaluation_rows')}; "
+        f"sessions={first_plan.get('sessions')}; "
+        f"evaluation_sessions={first_plan.get('evaluation_sessions')}",
     )
     planning_seconds = time.perf_counter() - plan_started
     started = time.perf_counter()
@@ -1089,16 +1096,38 @@ async def _main() -> dict[str, Any]:
         await generate_fixture_features(database, training)
         # `Settings` is immutable. Use a per-fixture service configuration with a narrow
         # allowlist after the 9A fixture has established its vehicle UUIDs.
-        future = await seed_predictive_fixture(
-            database,
-            start_at=datetime(2026, 10, 1, tzinfo=UTC),
-            vehicle_model_prefix="PHASE10-CHALLENGER",
-            engine_codes=("N55", "B58", "S55"),
-            scenario_seed=9142,
-            generator_version="phase10-controlled-fixture-v1",
-            vehicle_count=4,
+        # Keep the held-out evaluation partitions disjoint by vehicle and
+        # configuration while preserving strictly increasing time. The 9G
+        # calibration protocol rejects the same vehicle or configuration in
+        # calibration, validation, and test, so each temporal block receives a
+        # separate deterministic fixture.
+        evaluation_fixtures = []
+        for phase, start_at in (
+            ("CALIBRATION", datetime(2026, 4, 1, tzinfo=UTC)),
+            ("VALIDATION", datetime(2026, 6, 1, tzinfo=UTC)),
+            ("TEST", datetime(2026, 9, 1, tzinfo=UTC)),
+        ):
+            fixture = await seed_predictive_fixture(
+                database,
+                start_at=start_at,
+                vehicle_model_prefix=f"P10-{phase}",
+                engine_codes=("N55", "B58", "S55"),
+                scenario_seed=9142,
+                generator_version=f"phase10-controlled-{phase.lower()}-v1",
+                vehicle_count=4,
+            )
+            await generate_fixture_features(database, fixture)
+            evaluation_fixtures.append(fixture)
+        future_pull_ids = tuple(
+            sorted(
+                (
+                    pull_id
+                    for fixture in evaluation_fixtures
+                    for pull_id in fixture.pull_ids
+                ),
+                key=str,
+            )
         )
-        await generate_fixture_features(database, future)
         async with database.session() as db:
             vehicle_ids = (
                 (
@@ -1107,7 +1136,7 @@ async def _main() -> dict[str, Any]:
                             "SELECT DISTINCT vehicle_id FROM pulls "
                             "WHERE id=ANY(:ids) ORDER BY vehicle_id"
                         ),
-                        {"ids": future.pull_ids},
+                        {"ids": future_pull_ids},
                     )
                 )
                 .scalars()
@@ -1142,7 +1171,6 @@ async def _main() -> dict[str, Any]:
             database, settings, detector_bindings["thermal"], phase9c_cohort, telemetry
         )
         definitions: list[tuple[PipelineDefinition, UUID]] = []
-        future_ids = tuple(sorted(future.pull_ids, key=str))
         for task in MLTask:
             definitions.append(
                 (
@@ -1150,7 +1178,7 @@ async def _main() -> dict[str, Any]:
                         database,
                         task,
                         tuple(sorted(training.pull_ids, key=str)),
-                        future_ids,
+                        future_pull_ids,
                         git_sha=git_sha,
                     ),
                     model_bindings[task.value],

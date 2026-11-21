@@ -14,6 +14,14 @@ deterministic six-vehicle Phase 9B fixture (150 pulls) and places its exact
 sorted pull IDs in each immutable definition. The wider Phase 9G regression
 corpus is not implicitly swept into these training datasets.
 
+Supervised evaluation uses three deterministic, temporally ordered 4-vehicle
+fixture blocks beginning April 1, June 1 and September 1, 2026. Their 20-session
+blocks have disjoint vehicle and configuration identities, matching the fixed
+9G calibration/validation/test protocol's holdout rules. Every evaluation pull
+is after the March 1 training cutoff and before the October 2 evaluation
+cutoff; this preserves chronological and entity-level separation without
+relaxing the existing protocol.
+
 Each run binds the committed repository SHA, definition version/fingerprint,
 source role, exact 9A feature and dataset fingerprints, label/oracle checksum,
 training/evaluation cutoffs, seed, candidate artifact checksum and evaluation
