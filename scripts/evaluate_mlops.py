@@ -573,6 +573,22 @@ async def _run_definition(
         telemetry=telemetry,
     )
     elapsed = time.perf_counter() - started
+    if result.get("status") != "COMPLETED" and result.get("run_id"):
+        failed_run = await ControlPlaneRepository(database).inspect_run(
+            UUID(str(result["run_id"]))
+        )
+        result = {
+            **result,
+            "definition_version": definition.definition_version,
+            "step_states": [
+                {
+                    "step": event["step_name"],
+                    "state": event["state"],
+                    "reason": (event.get("output_body") or {}).get("reason"),
+                }
+                for event in failed_run["steps"]
+            ],
+        }
     _require(
         result.get("status") == "COMPLETED", f"pipeline execution failed: {result}"
     )
