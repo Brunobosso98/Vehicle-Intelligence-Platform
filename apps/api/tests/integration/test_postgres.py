@@ -153,6 +153,13 @@ async def test_clean_upgrade_downgrade_reupgrade_and_readiness(url: str) -> None
             "evaluation_metric_reports",
             "evaluation_calibration_candidates",
             "evaluation_applicability_assessments",
+            "mlops_definitions",
+            "mlops_runs",
+            "mlops_proposals",
+            "mlops_proposal_events",
+            "mlops_rollback_plans",
+            "mlops_run_events",
+            "mlops_step_events",
         }
         assert await connection.scalar(
             text(

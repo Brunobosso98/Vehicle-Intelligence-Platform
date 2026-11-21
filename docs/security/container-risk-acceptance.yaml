@@ -11,10 +11,10 @@ exceptions:
       - ncurses-base
       - ncurses-bin
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes a fixed package for the stable Trixie suite; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes a fixed package for the stable Trixie suite; review on any base-image refresh and again by 2026-12-05.
     rationale:
       The affected infocmp CLI is not invoked by either service; containers are non-root, read-only,
       and expose no shell-driven input.
@@ -27,10 +27,10 @@ exceptions:
       - libsystemd0
       - libudev1
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes a fixed systemd package for the stable Trixie suite; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes a fixed systemd package for the stable Trixie suite; review on any base-image refresh and again by 2026-12-05.
     rationale:
       The exploit path requires systemd-homed/local logged-in users; these service containers run
       neither systemd nor homed.
@@ -42,10 +42,10 @@ exceptions:
     packages:
       - libacl1
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes the fixed ACL ABI in a stable Trixie point release; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes the fixed ACL ABI in a stable Trixie point release; review on any base-image refresh and again by 2026-12-05.
     rationale:
       The affected privileged ACL pathname path is not used; services are non-root with read-only
       roots.
@@ -65,10 +65,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-12-05.
     rationale:
       The exploit requires privileged mount helpers/hooks; services drop all capabilities and do
       not invoke mount.
@@ -88,10 +88,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-12-05.
     rationale: The exploit requires privileged nsenter cgroup operations; services are non-root and capability-free.
   - id: api-web-cve-2026-78409
     images:
@@ -109,10 +109,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-12-05.
     rationale: The exploit requires fstab-authorized mount operations not exposed by either service container.
   - id: api-web-cve-2026-78410
     images:
@@ -130,10 +130,10 @@ exceptions:
       - mount
       - util-linux
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-11-18.
+      Rebuild when Debian publishes fixed util-linux in stable Trixie; review on any base-image refresh and again by 2026-12-05.
     rationale:
       The exploit requires SUID mount/fstab bind mount control; no such path or capability exists
       in the services.
@@ -145,10 +145,10 @@ exceptions:
     packages:
       - perl-base
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Rebuild when Debian resolves the Archive::Tar regression and publishes fixed Perl for stable Trixie; review again by 2026-11-18.
+      Rebuild when Debian resolves the Archive::Tar regression and publishes fixed Perl for stable Trixie; review again by 2026-12-05.
     rationale:
       The exploit requires attacker-controlled archives processed through Perl Archive::Tar; neither
       service executes Perl or accepts archive uploads.
@@ -160,11 +160,11 @@ exceptions:
     packages:
       - libsqlite3-0
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
       Rebuild when Debian publishes fixed SQLite for stable Trixie; keep FTS5 unused and review
-      runtime dependencies again by 2026-11-18.
+      runtime dependencies again by 2026-12-05.
     rationale: >-
       The canonical scan found libsqlite3-0 3.46.1-7+deb13u2 in API and Web. Debian lists
       Trixie as vulnerable and the fixed package only in unstable. This defect requires a
@@ -180,12 +180,12 @@ exceptions:
     packages:
       - libsqlite3-0
     owner: repository-maintainer
-    reviewed_on: "2026-11-06"
-    expires: "2026-11-20"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
       Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
       operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
-      and review again by 2026-11-20. Web also carries the package because Debian's
+      and review again by 2026-12-05. Web also carries the package because Debian's
       util-linux/liblastlog2 dependency chain prevents removal without removing base utilities.
     rationale: >-
       The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
@@ -201,12 +201,12 @@ exceptions:
     packages:
       - libsqlite3-0
     owner: repository-maintainer
-    reviewed_on: "2026-11-06"
-    expires: "2026-11-20"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
       Rebuild and rescan when Debian publishes a fixed SQLite package for Trixie; recheck the
       operator knowledge-ledger schema and trust boundary after any SQLite or knowledge-ingestion change,
-      and review again by 2026-11-20. Web also carries the package because Debian's
+      and review again by 2026-12-05. Web also carries the package because Debian's
       util-linux/liblastlog2 dependency chain prevents removal without removing base utilities.
     rationale: >-
       The API image has libsqlite3-0 3.46.1-7+deb13u2. Debian marks Trixie vulnerable and lists a fixed
@@ -221,10 +221,10 @@ exceptions:
     packages:
       - github.com/go-jose/go-jose/v4
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Replace with a compatible official Tempo image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-11-18.
+      Replace with a compatible official Tempo image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-12-05.
     rationale:
       The binary contains go-jose 4.1.4, which is affected when attacker-controlled RSA JWK values
       are parsed. The checked-in Tempo configuration uses local block storage and configures no OIDC/JWT/JWK
@@ -237,10 +237,10 @@ exceptions:
     packages:
       - github.com/go-jose/go-jose/v4
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Replace with a compatible official Grafana image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-11-18.
+      Replace with a compatible official Grafana image containing go-jose/v4 4.1.6 or later, rescan, and review again by 2026-12-05.
     rationale:
       The binary contains go-jose 4.1.4, which is affected when attacker-controlled RSA JWK values
       are parsed. The checked-in Grafana configuration enables anonymous Viewer access and configures no
@@ -253,10 +253,10 @@ exceptions:
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Replace with a compatible official Grafana image embedding Tempo 2.10.2 or later, rescan, and review again by 2026-11-18.
+      Replace with a compatible official Grafana image embedding Tempo 2.10.2 or later, rescan, and review again by 2026-12-05.
     rationale:
       Trivy reports an older embedded Tempo module in Grafana. The separately deployed Tempo service
       is the patched 3.0.5 image, and Grafana is reachable only on 127.0.0.1 with anonymous Viewer access.
@@ -269,12 +269,100 @@ exceptions:
     packages:
       - github.com/grafana/tempo
     owner: repository-maintainer
-    reviewed_on: "2026-11-04"
-    expires: "2026-11-18"
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
     remediation_condition: >-
-      Replace with a compatible official Grafana image embedding Tempo 2.10.3 or later, rescan, and review again by 2026-11-18.
+      Replace with a compatible official Grafana image embedding Tempo 2.10.3 or later, rescan, and review again by 2026-12-05.
     rationale:
       Trivy reports an older embedded Tempo module in Grafana. The separately deployed Tempo service
       uses local storage and has no S3 SSE-C key configured; the Tempo status endpoint is not hosted by
       Grafana. Grafana is reachable only on 127.0.0.1 with anonymous Viewer access. The bundled module finding
       remains accepted pending the next compatible Grafana patch.
+  - id: api-web-cve-2026-124709
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
+    vulnerability_id: CVE-2026-124709
+    packages:
+      - libssl3t64
+      - openssl
+      - openssl-provider-legacy
+    owner: repository-maintainer
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Rebuild and rescan when Debian publishes a fixed OpenSSL package for Trixie; recheck the
+      service protocol listeners and package versions no later than 2026-12-05.
+    rationale: >-
+      The exact 2026-11-21 CI scan reports OpenSSL 3.5.9-1~deb13u1 in both runtime images.
+      CVE-2026-124709 affects a QUIC server retaining rejected stream state. The API and Next.js
+      services configure ordinary HTTP listeners and expose no QUIC listener or QUIC endpoint.
+      This narrows the affected path but does not remove the finding or prove the package fixed.
+  - id: otel-cve-2026-78661
+    images:
+      - ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750
+    vulnerability_id: CVE-2026-78661
+    packages:
+      - golang.org/x/net
+    owner: repository-maintainer
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Replace with a compatible official Collector image containing golang.org/x/net 0.62.0 or
+      later, rescan, and review again by 2026-12-05.
+    rationale: >-
+      The exact scan reports golang.org/x/net v0.61.0; CVE-2026-78661 is quadratic allocation
+      while parsing hostile HTML. Collector host ports bind to loopback and the configured
+      application path uses OTLP, not attacker-supplied HTML. The finding remains visible and is
+      accepted only for this loopback development stack pending a compatible upstream image.
+  - id: prometheus-cve-2026-78661
+    images:
+      - quay.io/prometheus/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    vulnerability_id: CVE-2026-78661
+    packages:
+      - golang.org/x/net
+    owner: repository-maintainer
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Replace with a compatible official Prometheus image containing golang.org/x/net 0.62.0 or
+      later, rescan, and review again by 2026-12-05.
+    rationale: >-
+      The exact scan reports golang.org/x/net v0.60.0; CVE-2026-78661 is quadratic allocation
+      while parsing hostile HTML. Prometheus is bound to 127.0.0.1 in this local development
+      stack. The finding remains visible and is accepted only for that loopback service pending
+      a compatible upstream image.
+  - id: tempo-cve-2026-78661
+    images:
+      - grafana/tempo:3.0.5@sha256:54bfbf8713813b5eb56e0ddf580553f48f9d55d7d8b15159159c91ecfdb5b949
+    vulnerability_id: CVE-2026-78661
+    packages:
+      - golang.org/x/net
+    owner: repository-maintainer
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Replace with a compatible official Tempo image containing golang.org/x/net 0.62.0 or later,
+      rescan, and review again by 2026-12-05.
+    rationale: >-
+      The exact scan reports golang.org/x/net v0.60.0; CVE-2026-78661 is quadratic allocation
+      while parsing hostile HTML. Tempo is bound to 127.0.0.1 in this local development stack.
+      The finding remains visible and is accepted only for that loopback service pending a
+      compatible upstream image.
+  - id: grafana-cve-2026-78661
+    images:
+      - grafana/grafana:12.4.14@sha256:ae509d9ae8c1021ca32ec370a9ca975d40165eda9fccd1e1102d317ff8787cd7
+    vulnerability_id: CVE-2026-78661
+    packages:
+      - golang.org/x/net
+    owner: repository-maintainer
+    reviewed_on: "2026-11-21"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Replace with a compatible official Grafana image containing golang.org/x/net 0.62.0 or
+      later, rescan, and review again by 2026-12-05.
+    rationale: >-
+      The exact scan reports golang.org/x/net v0.60.0; CVE-2026-78661 is quadratic allocation
+      while parsing hostile HTML. Grafana is bound to 127.0.0.1 and provides only anonymous
+      Viewer access in this local development stack. The finding remains visible and is accepted
+      only for that loopback service pending a compatible upstream image.
