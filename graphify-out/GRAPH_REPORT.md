@@ -1,17 +1,17 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-21)
 
 ## Corpus Check
-- 663 files · ~761,410 words
+- 663 files · ~761,433 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
 ## Summary
-- 8783 nodes · 25058 edges · 338 communities (273 shown, 65 thin omitted)
+- 8783 nodes · 25059 edges · 338 communities (273 shown, 65 thin omitted)
 - Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 4713 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0f0fbf8d`
+- Built from commit: `6886981d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -236,7 +236,7 @@
 - Phase 9C — Anomaly Detection
 - anomalies/artifacts.py
 - 5. Initial supervised tasks
-- seed_predictive_fixture
+- .session
 - 70. Leakage test fixtures
 - PredictionRequestBudgetMiddleware
 - .vehicle_id
@@ -430,8 +430,8 @@ Cohesion: 0.09
 Nodes (39): _canonical(), EvaluationArtifactError, read_calibrator(), _safe_path(), _sha256(), write_calibrator(), apply_calibrator(), _binary_label() (+31 more)
 
 ### Community 17 - "Database"
-Cohesion: 0.04
-Nodes (63): stable_hash(), default_feature_version(), Database, compare_anomaly(), _not_comparable(), _read_manifest(), _run(), compare_supervised() (+55 more)
+Cohesion: 0.05
+Nodes (50): stable_hash(), default_feature_version(), Database, compare_anomaly(), _not_comparable(), _read_manifest(), _run(), compare_supervised() (+42 more)
 
 ### Community 18 - "normalize_value"
 Cohesion: 0.13
@@ -1117,9 +1117,9 @@ Nodes (12): AnomalyArtifactError, ArtifactReceipt, ArtifactStore, _file_sha256()
 Cohesion: 0.50
 Nodes (4): 5. Initial supervised tasks, TASK A — NEXT_PULL_THERMAL_DEGRADATION, TASK B — NEXT_PULL_PERFORMANCE_DEGRADATION, TASK C — NEXT_PULL_FUEL_DEVIATION
 
-### Community 237 - "seed_predictive_fixture"
-Cohesion: 0.15
-Nodes (7): _event_flag(), generate_fixture_features(), _noise_flag(), seed_predictive_fixture(), SyntheticFixture, test_predictive_fixture_rejects_unbounded_vehicle_cohorts(), _train_models()
+### Community 237 - ".session"
+Cohesion: 0.11
+Nodes (20): _event_flag(), generate_fixture_features(), _noise_flag(), seed_predictive_fixture(), SyntheticFixture, test_predictive_fixture_rejects_unbounded_vehicle_cohorts(), _audit_count(), _active_binding_id() (+12 more)
 
 ### Community 238 - "70. Leakage test fixtures"
 Cohesion: 0.33
@@ -1462,15 +1462,15 @@ Nodes (5): Evidence, Phase 9H independent acceptance, Required final checks, Sci
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `predictiveEnabled()` connect `Phase 9H predictive intelligence UI` to `login/route.ts`, `PredictiveError`, `server.ts`, `failure`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
+  _High betweenness centrality (0.122) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `react-dom`, `@types/node` to the rest of the system?**
   _88 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.07763157894736843 - nodes in this community are weakly interconnected._
-- **Why does `Settings` connect `Settings` to `phase7d_eval.py`, `api/routes.py`, `evaluate_anomaly_detection.py`, `re`, `test_predictions.py`, `check_mlops.py`, `KnowledgeRepository`, `Database`, `argparse`, `PredictionEvidenceBundle`, `evaluate_predictive_reliability.py`, `datasets.py`, `anomalies/cli.py`, `MLTask`, `datetime`, `benchmark_features.py`, `evaluate_mcp.py`, `evaluate_prediction_service.py`, `json`, `test_prediction_admission_rejects_invalid_body_envelopes`, `test_acquisition.py`, `StreamConsumer`, `sqlalchemy`, `features/service.py`, `evaluate_agent_prediction.py`, `router`, `Telemetry`, `evaluate_prediction_evidence.py`, `collect`, `PredictionService`, `acquisition/service.py`, `uuid`, `PredictionRequestBudgetMiddleware`, `phase9h_acceptance.py`, `Phase 9H predictive intelligence UI`, `Envelope`, `KnowledgeRepository`, `Adapter`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
+- **Why does `Settings` connect `Settings` to `phase7d_eval.py`, `api/routes.py`, `evaluate_anomaly_detection.py`, `re`, `test_predictions.py`, `check_mlops.py`, `KnowledgeRepository`, `Database`, `argparse`, `PredictionEvidenceBundle`, `evaluate_predictive_reliability.py`, `datasets.py`, `anomalies/cli.py`, `MLTask`, `datetime`, `benchmark_features.py`, `evaluate_mcp.py`, `evaluate_prediction_service.py`, `json`, `test_prediction_admission_rejects_invalid_body_envelopes`, `test_acquisition.py`, `StreamConsumer`, `sqlalchemy`, `features/service.py`, `evaluate_agent_prediction.py`, `router`, `Telemetry`, `evaluate_prediction_evidence.py`, `collect`, `PredictionService`, `acquisition/service.py`, `uuid`, `.session`, `PredictionRequestBudgetMiddleware`, `phase9h_acceptance.py`, `Phase 9H predictive intelligence UI`, `Envelope`, `KnowledgeRepository`, `Adapter`?**
+  _High betweenness centrality (0.108) - this node is a cross-community bridge._
 - **Are the 146 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 146 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Detailed engineering contract — mandatory implementation addendum` be split into smaller, more focused modules?**

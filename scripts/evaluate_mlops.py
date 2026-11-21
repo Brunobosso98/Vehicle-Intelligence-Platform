@@ -223,7 +223,7 @@ def _copy_registered_artifact(
 
 
 async def _register_champions(
-    database: Database, settings: Settings
+    database: Database, settings: Settings, cohort: Any
 ) -> tuple[dict[str, UUID], dict[str, UUID]]:
     model_roots = tuple(
         (ROOT / ".validation" / "phase9g" / "model-artifacts").glob("run-*")
@@ -317,12 +317,20 @@ async def _register_champions(
                                 "v.artifact_size_bytes "
                                 "FROM anomaly_detector_versions v "
                                 "JOIN anomaly_detector_definitions d "
-                                "ON d.id=v.detector_definition_id WHERE d.family=:family "
+                                "ON d.id=v.detector_definition_id "
+                                "JOIN anomaly_reference_datasets r ON r.id=v.reference_dataset_id "
+                                "WHERE d.family=:family AND r.vehicle_id=:vehicle "
+                                "AND r.observation_cutoff<=:cutoff "
                                 "AND v.state='ACCEPTED' AND "
                                 "v.training_metrics->>'selection_state'='ACCEPTED' "
                                 "ORDER BY v.created_at DESC,v.id DESC LIMIT 1"
                             ),
-                            {"family": family},
+                            {
+                                "family": family,
+                                "vehicle": cohort.vehicle_id,
+                                "cutoff": cohort.pulls_by_session[8][0].ended_at
+                                + timedelta(seconds=1),
+                            },
                         )
                     )
                     .mappings()
@@ -1197,7 +1205,7 @@ async def _main() -> dict[str, Any]:
         # Seed read-only 9D source receipts separately, then prove the monitor itself
         # preserves their immutable source rows before taking the MLOps baseline.
         model_bindings, detector_bindings = await _register_champions(
-            database, settings
+            database, settings, phase9c_cohort
         )
         thermal_monitor = await _create_and_monitor_receipts(
             database, settings, detector_bindings["thermal"], phase9c_cohort, telemetry

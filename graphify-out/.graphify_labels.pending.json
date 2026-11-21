@@ -77,7 +77,7 @@
   "226": "evaluate_prediction_evidence.py",
   "231": "evaluation/repository.py",
   "233": "uuid",
-  "237": "seed_predictive_fixture",
+  "237": ".session",
   "239": "PredictionRequestBudgetMiddleware",
   "240": ".vehicle_id",
   "242": "Phase 9H predictive intelligence UI",
