@@ -1103,51 +1103,35 @@ async def _main() -> dict[str, Any]:
         # calibration protocol rejects the same vehicle or configuration in
         # calibration, validation, and test, so each temporal block receives a
         # separate deterministic fixture.
-        evaluation_fixtures = []
-        for phase, start_at in (
-            ("CALIBRATION", datetime(2026, 4, 1, tzinfo=UTC)),
-            ("VALIDATION", datetime(2026, 6, 1, tzinfo=UTC)),
-            ("TEST", datetime(2026, 9, 1, tzinfo=UTC)),
-        ):
-            fixture = await seed_predictive_fixture(
-                database,
-                start_at=start_at,
-                vehicle_model_prefix=f"P10-{phase}",
-                engine_codes=("N55", "B58", "S55"),
-                scenario_seed=9142,
-                generator_version=f"phase10-controlled-{phase.lower()}-v1",
-                vehicle_count=4,
-            )
-            await generate_fixture_features(database, fixture)
-            evaluation_fixtures.append(fixture)
-        future_pull_ids = tuple(
-            sorted(
-                (
-                    pull_id
-                    for fixture in evaluation_fixtures
-                    for pull_id in fixture.pull_ids
-                ),
-                key=str,
-            )
-        )
-        async with database.session() as db:
-            vehicle_ids = (
-                (
-                    await db.execute(
-                        text(
-                            "SELECT DISTINCT vehicle_id FROM pulls "
-                            "WHERE id=ANY(:ids) ORDER BY vehicle_id"
-                        ),
-                        {"ids": future_pull_ids},
-                    )
+        evaluation_fixtures: dict[MLTask, list[Any]] = {}
+        for task in MLTask:
+            evaluation_fixtures[task] = []
+            for phase, start_at in (
+                ("CALIBRATION", datetime(2026, 4, 1, tzinfo=UTC)),
+                ("VALIDATION", datetime(2026, 6, 1, tzinfo=UTC)),
+                ("TEST", datetime(2026, 9, 1, tzinfo=UTC)),
+            ):
+                fixture = await seed_predictive_fixture(
+                    database,
+                    start_at=start_at,
+                    vehicle_model_prefix=f"P10-{task.value[:12]}-{phase}",
+                    engine_codes=("N55", "B58", "S55"),
+                    scenario_seed=9142,
+                    generator_version=f"phase10-{task.value.lower()}-{phase.lower()}-v1",
+                    vehicle_count=4,
                 )
-                .scalars()
-                .all()
+                await generate_fixture_features(database, fixture)
+                evaluation_fixtures[task].append(fixture)
+        task_pull_ids = {
+            task: tuple(
+                sorted(
+                    (pull for fixture in fixtures for pull in fixture.pull_ids), key=str
+                )
             )
+            for task, fixtures in evaluation_fixtures.items()
+        }
         phase9c_cohort = await _phase9c_primary(database)
-        scope = ",".join(
-            str(item) for item in (*vehicle_ids, phase9c_cohort.vehicle_id)
-        )
+        scope = str(phase9c_cohort.vehicle_id)
         settings = Settings(
             database_url=SecretStr(database_url),
             environment="test",
@@ -1180,7 +1164,7 @@ async def _main() -> dict[str, Any]:
                         database,
                         task,
                         tuple(sorted(training.pull_ids, key=str)),
-                        future_pull_ids,
+                        task_pull_ids[task],
                         git_sha=git_sha,
                     ),
                     model_bindings[task.value],
