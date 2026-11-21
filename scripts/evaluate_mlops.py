@@ -233,6 +233,32 @@ async def _register_champions(
         bool(model_roots) and bool(detector_roots),
         "Phase 9G source artifacts are missing",
     )
+    # A fit may resolve idempotently to any previously registered 9C version,
+    # including a non-champion. Make each available source artifact accessible
+    # under the normal trusted root after verifying its immutable receipt.
+    async with database.session() as db:
+        registered_detectors = (
+            (
+                await db.execute(
+                    text(
+                        "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
+                        "FROM anomaly_detector_versions WHERE artifact_path IS NOT NULL"
+                    )
+                )
+            )
+            .mappings()
+            .all()
+        )
+    for registered in registered_detectors:
+        relative = str(registered["artifact_path"])
+        if any((root / relative).is_file() for root in detector_roots):
+            _copy_registered_artifact(
+                roots=detector_roots,
+                relative_path=relative,
+                expected_checksum=str(registered["artifact_checksum"]),
+                expected_size=int(registered["artifact_size_bytes"]),
+                target_root=PHASE9C_ARTIFACT_ROOT,
+            )
     model_bindings: dict[str, UUID] = {}
     detector_bindings: dict[str, UUID] = {}
     service = PredictionService(settings, database)
