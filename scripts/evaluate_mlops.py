@@ -91,6 +91,8 @@ from vehicle_platform.predictions.service import PredictionService
 import scripts.evaluate_predictive_reliability as phase9g
 
 EVIDENCE = ROOT / ".validation" / "phase10"
+PHASE9B_ARTIFACT_ROOT = ROOT / "apps/api/.artifacts/phase9b"
+PHASE9C_ARTIFACT_ROOT = ROOT / "apps/api/.artifacts/phase9c"
 MAX_ARTIFACT_BYTES = 50 * 1024 * 1024
 SERVING_TABLES = (
     "prediction_serving_bindings",
@@ -259,7 +261,7 @@ async def _register_champions(
                 relative_path=str(row["artifact_path"]),
                 expected_checksum=str(row["artifact_checksum"]),
                 expected_size=None,
-                target_root=Path("apps/api/.artifacts/phase9b"),
+                target_root=PHASE9B_ARTIFACT_ROOT,
             )
             binding_id, _ = await service.approve_candidate(
                 "next_pull",
@@ -307,7 +309,7 @@ async def _register_champions(
                 relative_path=str(row["artifact_path"]),
                 expected_checksum=str(row["artifact_checksum"]),
                 expected_size=int(row["artifact_size_bytes"]),
-                target_root=Path("apps/api/.artifacts/phase9c"),
+                target_root=PHASE9C_ARTIFACT_ROOT,
             )
             binding_id, _ = await service.approve_candidate(
                 "anomaly",
@@ -624,13 +626,13 @@ async def _run_definition(
         artifact_query = (
             "SELECT artifact_path,artifact_checksum FROM ml_model_versions WHERE id=:id"
         )
-        artifact_root = Path("apps/api/.artifacts/phase9b")
+        artifact_root = PHASE9B_ARTIFACT_ROOT
     else:
         artifact_query = (
             "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
             "FROM anomaly_detector_versions WHERE id=:id"
         )
-        artifact_root = Path("apps/api/.artifacts/phase9c")
+        artifact_root = PHASE9C_ARTIFACT_ROOT
     async with database.session() as db:
         artifact_row = (
             (await db.execute(text(artifact_query), {"id": artifact_version}))
@@ -1026,10 +1028,10 @@ async def _tamper_candidate(database: Database, run: dict[str, Any]) -> bool:
         root = Path(directory)
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        source_root = Path(
-            "apps/api/.artifacts/phase9b"
+        source_root = (
+            PHASE9B_ARTIFACT_ROOT
             if run["kind"] == "supervised"
-            else "apps/api/.artifacts/phase9c"
+            else PHASE9C_ARTIFACT_ROOT
         )
         payload = read_verified_bytes(
             source_root,
