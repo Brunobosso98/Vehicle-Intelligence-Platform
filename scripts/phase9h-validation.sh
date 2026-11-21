@@ -218,7 +218,7 @@ peer_status="$(curl --silent --show-error --output "$evidence/untrusted-peer.jso
   "http://127.0.0.1:${api_port}/api/v1/prediction-service/versions")"
 [[ "$peer_status" == "403" ]]
 apps/api/.venv/bin/python -c \
-  'import json; assert json.load(open(".validation/phase9h/untrusted-peer.json"))["code"] == "PREDICTION_NETWORK_DENIED"'
+  'import json; assert json.load(open(".validation/phase9h/untrusted-peer.json"))["error"]["code"] == "PREDICTION_NETWORK_DENIED"'
 
 # Production is fail-closed even when the standalone image has every explicit
 # operator credential and flag. The protected BFF must disclose no capability.

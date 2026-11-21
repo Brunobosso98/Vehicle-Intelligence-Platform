@@ -168,8 +168,16 @@ def read_verified_bytes(
     *,
     maximum_bytes: int,
     expected_size: int | None = None,
+    expected_owner: int | None = None,
+    require_private: bool = False,
 ) -> bytes:
-    payload = read_bounded_bytes(root, path, maximum_bytes=maximum_bytes)
+    payload = read_bounded_bytes(
+        root,
+        path,
+        maximum_bytes=maximum_bytes,
+        expected_owner=expected_owner,
+        require_private=require_private,
+    )
     if expected_size is not None and len(payload) != expected_size:
         raise TrustedFileError("artifact size or checksum changed")
     if len(payload) > maximum_bytes or not hmac.compare_digest(

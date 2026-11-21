@@ -1518,9 +1518,9 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1795293314.739305,
-    "seen": 1795293385.7487874,
-    "ast_hash": "b8011a80ed594fd6a804ebb8a74dde1e",
+    "mtime": 1795293441.6832693,
+    "seen": 1795293969.902537,
+    "ast_hash": "9b32a4a3bcb0dfc2b588b95e908fba56",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
@@ -3780,9 +3780,9 @@
     "semantic_hash": ""
   },
   "scripts/phase9h-validation.sh": {
-    "mtime": 1795274392.4113035,
-    "seen": 1795293385.7485678,
-    "ast_hash": "5623a022046a5dafb3735539dbfabe17",
+    "mtime": 1795293683.6153038,
+    "seen": 1795293969.902317,
+    "ast_hash": "e4fec9df189a1e424af5cc97f0cc1457",
     "semantic_hash": ""
   },
   "scripts/phase9h_acceptance.py": {
@@ -3888,9 +3888,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/infrastructure/trusted_files.py": {
-    "mtime": 1795270027.3553123,
-    "seen": 1795293385.7481475,
-    "ast_hash": "a7d6fad6bbbf0718dd5bf9a1aeab037a",
+    "mtime": 1795293691.4153035,
+    "seen": 1795293969.9018998,
+    "ast_hash": "a299dfed02f966586f3fd313f28cb5b5",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/mlops/__init__.py": {
@@ -4002,15 +4002,15 @@
     "semantic_hash": ""
   },
   "apps/api/tests/integration/test_mlops_control_plane.py": {
-    "mtime": 1795290499.2073064,
-    "seen": 1795293385.7482445,
-    "ast_hash": "30f1a9798254fd1c6a6fc62cad72d07c",
+    "mtime": 1795293978.2953064,
+    "seen": 1795294025.2974825,
+    "ast_hash": "aea1addbac3a4dc9f696f493edafc64e",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_mlops.py": {
-    "mtime": 1795292035.0113041,
-    "seen": 1795293385.7483013,
-    "ast_hash": "0c1b2d57e056aeba9afae3b3d3e14c71",
+    "mtime": 1795293691.4153035,
+    "seen": 1795293969.9020555,
+    "ast_hash": "ce6906e1ef628c94c5264d7756593cf7",
     "semantic_hash": ""
   },
   "scripts/benchmark_mlops.py": {
@@ -4026,9 +4026,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_mlops.py": {
-    "mtime": 1795286657.435333,
-    "seen": 1795293385.7485075,
-    "ast_hash": "9069d7d6570668414a7de3e84925d9ff",
+    "mtime": 1795293813.907307,
+    "seen": 1795293969.902259,
+    "ast_hash": "b57f7abd4c8f9de37ec6245b702c806c",
     "semantic_hash": ""
   },
   "scripts/observability_mlops.py": {

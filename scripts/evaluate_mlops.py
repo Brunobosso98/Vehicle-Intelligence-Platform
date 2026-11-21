@@ -175,7 +175,7 @@ def _copy_registered_artifact(
     roots: tuple[Path, ...],
     relative_path: str,
     expected_checksum: str,
-    expected_size: int,
+    expected_size: int | None,
     target_root: Path,
 ) -> None:
     relative = Path(relative_path)
@@ -183,13 +183,15 @@ def _copy_registered_artifact(
         part in {"", ".", ".."} for part in relative.parts
     ):
         raise ValueError("registered artifact path is outside its fixed namespace")
-    if not 1 <= expected_size <= MAX_ARTIFACT_BYTES:
+    if expected_size is not None and not 1 <= expected_size <= MAX_ARTIFACT_BYTES:
         raise ValueError("registered artifact exceeds the Phase 10 byte budget")
     matches = [root for root in roots if (root / relative).is_file()]
     if len(matches) != 1:
         raise ValueError("registered artifact source is missing or ambiguous")
     source_root = matches[0]
     source_path = source_root / relative
+    # The Phase 9B registry stores a content checksum but no artifact-size column.
+    # Derive the bounded size from the bytes verified against that immutable checksum.
     payload = read_verified_bytes(
         source_root,
         source_path,
@@ -200,13 +202,14 @@ def _copy_registered_artifact(
         require_private=True,
     )
     target = target_root / relative
+    verified_size = len(payload)
     if target.exists():
         existing = read_verified_bytes(
             target_root,
             target,
             maximum_bytes=MAX_ARTIFACT_BYTES,
             expected_checksum=expected_checksum,
-            expected_size=expected_size,
+            expected_size=verified_size,
             expected_owner=os.getuid(),
             require_private=True,
         )
@@ -237,8 +240,8 @@ async def _register_champions(
                     (
                         await db.execute(
                             text(
-                                "SELECT mv.id,mv.artifact_path,mv.artifact_checksum,"
-                                "mv.artifact_size_bytes FROM ml_model_versions mv "
+                                "SELECT mv.id,mv.artifact_path,mv.artifact_checksum "
+                                "FROM ml_model_versions mv "
                                 "JOIN ml_models m ON m.id=mv.ml_model_id WHERE m.task=:task "
                                 "ORDER BY mv.created_at DESC,mv.id DESC LIMIT 1"
                             ),
@@ -254,7 +257,7 @@ async def _register_champions(
                 roots=model_roots,
                 relative_path=str(row["artifact_path"]),
                 expected_checksum=str(row["artifact_checksum"]),
-                expected_size=int(row["artifact_size_bytes"]),
+                expected_size=None,
                 target_root=Path("apps/api/.artifacts/phase9b"),
             )
             binding_id, _ = await service.approve_candidate(
@@ -589,14 +592,44 @@ async def _run_definition(
     artifact_version = result["execution_result"].get("model_version_id") or result[
         "execution_result"
     ].get("detector_version_id")
-    artifact_query = (
-        "SELECT artifact_size_bytes FROM ml_model_versions WHERE id=:id"
-        if definition.kind is PipelineKind.SUPERVISED
-        else "SELECT artifact_size_bytes FROM anomaly_detector_versions WHERE id=:id"
-    )
+    if definition.kind is PipelineKind.SUPERVISED:
+        # Keep the Phase 9B schema unchanged; the checksum is the source authority.
+        artifact_query = (
+            "SELECT artifact_path,artifact_checksum FROM ml_model_versions WHERE id=:id"
+        )
+        artifact_root = Path("apps/api/.artifacts/phase9b")
+    else:
+        artifact_query = (
+            "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
+            "FROM anomaly_detector_versions WHERE id=:id"
+        )
+        artifact_root = Path("apps/api/.artifacts/phase9c")
     async with database.session() as db:
-        artifact_size = await db.scalar(text(artifact_query), {"id": artifact_version})
-    _require(isinstance(artifact_size, int), "registered artifact size is missing")
+        artifact_row = (
+            (await db.execute(text(artifact_query), {"id": artifact_version}))
+            .mappings()
+            .one()
+        )
+    _require(
+        str(artifact_row["artifact_checksum"]) == artifact_checksum,
+        "registered artifact checksum differs from the pipeline receipt",
+    )
+    artifact_relative_path = Path(str(artifact_row["artifact_path"]))
+    artifact_expected_size = (
+        int(artifact_row["artifact_size_bytes"])
+        if definition.kind is PipelineKind.ANOMALY
+        else None
+    )
+    artifact_payload = read_verified_bytes(
+        artifact_root,
+        artifact_root / artifact_relative_path,
+        artifact_checksum,
+        maximum_bytes=MAX_ARTIFACT_BYTES,
+        expected_size=artifact_expected_size,
+        expected_owner=os.getuid(),
+        require_private=True,
+    )
+    artifact_size = len(artifact_payload)
     proposal_inspection = await ControlPlaneRepository(database).inspect_proposal(
         UUID(str(result["proposal_id"]))
     )

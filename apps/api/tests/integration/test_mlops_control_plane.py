@@ -2,7 +2,9 @@
 
 import asyncio
 import os
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -18,12 +20,47 @@ from vehicle_platform.mlops.contracts import PipelineDefinition, PipelineKind, R
 from vehicle_platform.mlops.repository import ControlPlaneConflict, ControlPlaneRepository
 
 pytestmark = pytest.mark.integration
+api = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture
+async def migrated_database_url() -> AsyncIterator[str]:
+    url = os.environ.get("TEST_DATABASE_URL", "")
+    assert url.rsplit("/", 1)[-1].startswith("vehicle_test")
+    env = os.environ | {"DATABASE_URL": url, "ENVIRONMENT": "test"}
+    alembic = str(api / ".venv/bin/alembic")
+    upgrade = await asyncio.create_subprocess_exec(
+        alembic,
+        "upgrade",
+        "head",
+        cwd=api,
+        env=env,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await upgrade.communicate()
+    assert upgrade.returncode == 0, (stdout.decode(), stderr.decode())
+    try:
+        yield url
+    finally:
+        downgrade = await asyncio.create_subprocess_exec(
+            alembic,
+            "downgrade",
+            "base",
+            cwd=api,
+            env=env,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await downgrade.communicate()
+        assert downgrade.returncode == 0, (stdout.decode(), stderr.decode())
 
 
 @pytest.mark.asyncio
-async def test_control_plane_idempotence_claim_and_immutable_history() -> None:
-    url = os.environ.get("TEST_DATABASE_URL", "")
-    assert url.rsplit("/", 1)[-1].startswith("vehicle_test")
+async def test_control_plane_idempotence_claim_and_immutable_history(
+    migrated_database_url: str,
+) -> None:
+    url = migrated_database_url
     database = Database(Settings(database_url=url, environment="test"))
     definition = PipelineDefinition(
         definition_version="integration-v1",

@@ -55,7 +55,15 @@ def test_trusted_artifact_files_are_bounded_private_and_checksum_bound(tmp_path)
         == payload
     )
     assert (
-        read_verified_bytes(root, path, checksum, maximum_bytes=64, expected_size=len(payload))
+        read_verified_bytes(
+            root,
+            path,
+            checksum,
+            maximum_bytes=64,
+            expected_size=len(payload),
+            expected_owner=path.stat().st_uid,
+            require_private=True,
+        )
         == payload
     )
 
