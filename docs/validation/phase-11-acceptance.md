@@ -235,6 +235,19 @@ have not yet run on this worktree, so no v11 case PASS is claimed.
 - Disposable database/API/MCP acceptance, receipt-backed Phase 11 benchmark/observability and
   exact-head GitHub CI have not run on this worktree. They remain `CI REQUIRED`.
 
+## First pushed exact-head acceptance attempt
+
+- SHA `04e461e33ecaf624d3c1704b451cb7a645f422f2` failed the independent Phase 11 workflow
+  before case grading. The runner requested `recordings["ambiguous"]`, but the controlled
+  supervisor fixture exposed the simultaneous thermal/fuel-pressure recording only as `mixed`;
+  the run ended `INFRA_FAILURE` with `KeyError: 'ambiguous'` and no case verdicts.
+- On the corrective worktree, `make test-agent-evals` passes 103 tests and strict Mypy/Ruff pass
+  for the affected fixture and runner scripts.
+- The canonical 180-minute full-validation run for that known-bad SHA was cancelled after this
+  independent failure, to avoid spending the full run on a snapshot already known not to pass.
+  The fixture now maps `ambiguous` to the recorded mixed-event source; correction checks pass
+  locally, but exact-head CI is still required on the corrected commit.
+
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA
 CI links before verification can be claimed.

@@ -114,4 +114,7 @@ async def seed_supervisor(url: str) -> dict[str, Any]:
                 response = await api.post(path, **kwargs)
                 assert response.status_code in {200, 201}, (path, response.text)
             recordings[name] = session
+    # The mixed canonical recording contains simultaneous thermal and fuel/boost
+    # events and is the Phase 11 source for the persisted specialist-conflict case.
+    recordings["ambiguous"] = recordings["mixed"]
     return fixture | {"recordings": recordings}
