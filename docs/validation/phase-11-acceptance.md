@@ -56,6 +56,10 @@ acceptance gates remain incomplete.
   container builds, Compose startup and full-stack validation are `CI REQUIRED`, not
   locally passed.
 - Draft PR #65 targets `main`; it is open and not merged.
+- GitHub run on `ee92cc58f56d0390e447468f23b24fd01a3b25fe` completed the runner:
+  6 PASS, 5 ASSERTION_FAIL, 1 INFRA_FAILURE and 9 NOT_RUN of 21 cases. The independent
+  receipt checker failed. The sanitized report is in the run artifact. Subsequent changes
+  require a fresh run and these results do not establish the current SHA's behavior.
 - Exact-head run at `26c4f1a00259de899183785920d931500b73eb69`: Phase 11 acceptance FAILED
   after the disposable database stack started, but the API/MCP child process failed before
   readiness and before any corpus case was graded. The new runner change emits selected
