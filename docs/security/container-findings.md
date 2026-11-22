@@ -1,23 +1,46 @@
 # Container scan findings and risk review
 
-## Phase 10 review status — 2026-11-21
+## Phase 10 exact-head scan — 2026-11-22
+
+Security run [44966623657](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657)
+scanned SHA `59d40e58823bab24114f508204a6732dc6c9f06a`; its machine-readable image and policy
+reports are in [artifact 14731604483](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657/artifacts/14731604483).
+All selected runtime images have zero Critical and zero blocked High findings. The report contains
+107 accepted High package occurrences: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2,
+Tempo 2, Grafana 4, Kafka 0, and custom TimescaleDB 0. Each accepted finding matches an exact
+image/CVE/package risk record; the policy checker verified that records were active on scan date.
+
+The 15 earlier exception records had expired on November 18 or 20. Commit `f8dfe32`, dated
+November 21, explicitly reviewed and replaced them, and added five exact reviews for newly
+surfaced findings. The resulting 20 records all state `reviewed_on: 2026-11-21` and expire
+December 5; none is an unrecorded or silent expiry extension. The old zlib exception for
+`CVE-2026-76844` remains removed. The final API/Web images contain patched Debian zlib, and Kafka
+contains Alpine zlib 1.4-r0. The exact scan reports neither zlib CVE in selected images.
+
+The upstream `timescale/timescaledb:2.30.2-pg17` scan separately reports 271 High and 3 Critical
+occurrences. This upstream image is not selected for runtime: the custom
+`vehicle-platform-timescaledb:local` image scans with zero High and zero Critical. These findings
+remain visible in the raw artifact and are not described as fixed in the upstream image.
+
+## Phase 10 previous scan — 2026-11-21
 
 Security run [44945659454](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44945659454)
 scanned commit `54cf982445e21b9d4eb2cb268525a1b8e3bf0e75`; its raw scan artifact is
 [14724120634](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44945659454/artifacts/14724120634).
-The scan completed, but the Security job failed closed because the policy contained 15 expired
-exception records (13 expired November 18 and two expired November 20). The report is fresh
-evidence for the image findings, not a passing Security receipt.
+The scan completed, but the Security job failed closed because the policy still contained 15
+expired exception records (13 expired November 18 and two expired November 20). Commit `f8dfe32`
+then explicitly reviewed those records and added five exact image/CVE/package reviews. The fresh
+November 22 exact-head result above supersedes this failed receipt.
 
 The exact selected-image inventory was API 50 High / 0 Critical, Web 48 / 0, custom TimescaleDB
 0 / 0, Kafka 3 / 0, OpenTelemetry Collector 1 / 0, Prometheus 2 / 0, Tempo 2 / 0, and Grafana
 4 / 0. The API/Web scans also found newly published OpenSSL `CVE-2026-124709`; the four
-observability images each reported `CVE-2026-78661` in `golang.org/x/net`. The policy now records
-an explicit November 21 review for the 15 expired High exception records still present in the
-raw scans and five additional exact image/CVE/package reviews for newly reported findings. Each is short-lived through
-December 5, retains the affected package and image, states the runtime boundary and remediation
-condition, and does not claim the binary is fixed. The exact-head Security rerun after these
-changes remains required.
+observability images each reported `CVE-2026-78661` in `golang.org/x/net`. The updated policy
+records an explicit November 21 review for the 15 previously expired High exception records
+present in the raw scans and five additional exact image/CVE/package reviews for newly reported
+findings. Each is short-lived through December 5, retains the affected package and image, states
+the runtime boundary and remediation condition, and does not claim the binary is fixed. The
+passing exact-head scan above verifies those records against the selected images.
 
 The same artifact separately reports 271 High and 3 Critical occurrences in the upstream
 `timescale/timescaledb:2.30.2-pg17` image. This is not the selected runtime image: the repository
@@ -29,8 +52,9 @@ The prior API/Web zlib exception for `CVE-2026-76844` expired November 12 and re
 The fresh artifact shows no zlib CVE in either final API/Web image; it does show
 `CVE-2026-85091` in the upstream Alpine Timescale image, while our rebuilt Timescale runtime has
 no High or Critical findings. The Kafka Dockerfile now pins the scanner-reported fixed Alpine
-versions for `musl`, `musl-utils`, and `libfontenc`; that rebuilt image still needs an exact-head
-scan. No scanner is disabled, and no finding is hidden or downgraded.
+versions for `musl`, `musl-utils`, and `libfontenc`; the exact-head scan above confirms zero High
+and Critical findings for the rebuilt Kafka image. No scanner is disabled, and no finding is hidden
+or downgraded.
 
 ## Web framework security update — 2026-11-21
 
@@ -51,9 +75,10 @@ required for the final SHA.
 
 The earlier zlib exception for `CVE-2026-76844` expired on 2026-11-12 and was
 removed after the 2026-11-14 rebuilt application images contained a newer
-`zlib1g` package with neither reported zlib CVE. No expiry was extended. The
-remaining 15 exception records are expired as described above; they remain
-unreviewed and must not be treated as accepted for the current final images.
+`zlib1g` package with neither reported zlib CVE. No zlib expiry was extended.
+The 15 other records were later explicitly re-reviewed on November 21, with
+five additional exact reviews for new findings; the current status and scan
+evidence appear at the top of this report.
 
 ## Local application-image refresh — 2026-11-14
 

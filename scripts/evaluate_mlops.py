@@ -1371,7 +1371,7 @@ async def _main() -> dict[str, Any]:
             "--source-role",
             "synthetic",
             "--reason",
-            "Isolated disposable Phase 10 rollback rehearsal candidate approval.",
+            "Synthetic-scope disposable Phase 10 rollback rehearsal candidate approval.",
             "--operator-id",
             "phase10-acceptance-operator",
             "--review-reference",

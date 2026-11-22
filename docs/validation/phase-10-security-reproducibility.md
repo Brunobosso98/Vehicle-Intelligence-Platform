@@ -2,19 +2,28 @@
 
 ## Current finding status
 
-The current checked-in container policy has 15 exception records that expired:
-13 on 2026-11-18 and two on 2026-11-20. They have not been silently extended.
-The old zlib exception expiring 2026-11-12 was removed after patched zlib was
-verified in the November 14 API/Web image builds; that historical Trivy scan
-found neither CVE-2026-76844 nor CVE-2026-85091. It does not prove the final
-Phase 10 image is clean or that the November 21 image has been rescanned.
+The policy on implementation SHA `59d40e58823bab24114f508204a6732dc6c9f06a`
+contains 20 exact High-risk records, all reviewed on 2026-11-21 and expiring
+2026-12-05. Fifteen older records had expired on November 18 or 20; commit
+`f8dfe32` explicitly re-reviewed them and added five exact reviews for new
+findings. No records are expired on the current scan date, and none was
+silently extended. The old zlib exception for `CVE-2026-76844` expired
+2026-11-12 and remains removed; the selected final API/Web images use patched
+zlib, and the fresh scan reports no zlib CVE in them.
 
-The final API, Web, database, broker and observability images require a fresh
-Trivy database and exact-image scan. Any remaining High findings must match
-specific unexpired reviewed policy records; expired, unmatched High or any
-Critical blocks acceptance. Scanner exclusions, severity downgrades and policy
-expiry extensions are prohibited. Docker CLI is unavailable in this WSL
-distribution, so fresh image findings are CI REQUIRED.
+Security run [44966623657](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657)
+and [artifact 14731604483](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657/artifacts/14731604483)
+report 107 accepted High package occurrences and zero Critical or blocked
+findings across the selected images: API 50, Web 48, Collector 1, Prometheus 2,
+Tempo 2, Grafana 4, Kafka 0 and custom TimescaleDB 0. The upstream
+`timescale/timescaledb:2.30.2-pg17` report separately contains 271 High and 3
+Critical findings; that image is not selected for runtime, and the rebuilt
+custom TimescaleDB image has zero High and Critical findings. No scanner is
+disabled, no severity is changed, and the report retains upstream results.
+
+The correction SHA's Security job passed; a refreshed scan is still required
+if the report changes create a new final SHA. Docker CLI is unavailable in
+this WSL distribution, so image scans run in GitHub Actions.
 
 ## Reproduction and trust checks
 
@@ -49,13 +58,19 @@ gate. The preceding exact-head SHA `1f667cd03aeff9a92c19b7d2eee8b2563a7cc310`
 passed Phase 9G, Phase 9H, Integration E2E, Security, Dependency Review and
 both CodeQL jobs. Its Quality check failed at 89.61% branch coverage, and its
 Phase 10 evaluator failed at the active-binding snapshot due to treating the
-`PredictionKind` typing alias as an enum. The coverage and evaluator fixes now
-pass local focused checks; all required jobs still need fresh receipts on the
-correction SHA. None of these local checks replace disposable database,
+`PredictionKind` typing alias as an enum. On correction SHA
+`59d40e58823bab24114f508204a6732dc6c9f06a`, Quality, Phase 9G, Phase 9H,
+Integration E2E, Security, Dependency Review and both CodeQL jobs pass. Its
+Phase 10 independent acceptance failed because the 9D approval rehearsal
+reason omitted the required explicit `synthetic` scope; the evaluator now
+states that scope and passes local Ruff, formatting, strict Mypy and compile
+checks. Canonical full validation was still running when this report was
+refreshed. The code/report follow-up SHA must rerun mandatory checks before
+final delivery. None of these local checks replace disposable database,
 artifact, container or exact-head CI evidence.
 
 The dedicated Phase 10 and canonical full-validation workflows upload
-checksum-bound receipts. The implementation has not yet been published and no
-fresh Security/Dependency Review/CodeQL receipt exists for its final SHA. Security
-status is therefore unresolved until the exact final SHA is scanned and the
-expired-policy records are correctly reviewed or remediated.
+checksum-bound receipts. The implementation is published on the existing
+Phase 10 branch and PR #64. The final report update will create a new SHA, so
+the mandatory checks and container scan must complete against that exact final
+SHA before declaring verified.
