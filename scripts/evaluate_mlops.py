@@ -150,6 +150,8 @@ def _json_safe_report_value(value: Any) -> Any:
         if value.utcoffset() is None:
             raise ValueError("acceptance report datetimes must include a timezone")
         return value.isoformat()
+    if isinstance(value, UUID):
+        return str(value)
     if isinstance(value, dict):
         normalized: dict[str, Any] = {}
         for key, item in value.items():

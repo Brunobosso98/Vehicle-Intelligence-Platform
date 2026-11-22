@@ -53,16 +53,27 @@ def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypat
     sys.modules[spec.name] = evaluator
     spec.loader.exec_module(evaluator)
 
+    vehicle_id = uuid4()
     normalized = evaluator._json_safe_report_value(
         {
             "recorded_at": datetime(2026, 11, 22, 1, 2, 3, tzinfo=UTC),
             "nested": [datetime(2026, 11, 22, 1, 2, tzinfo=UTC)],
+            "vehicle_id": vehicle_id,
+            "source": "synthetic",
+            "row_count": 4,
+            "accepted": True,
+            "optional": None,
         }
     )
 
     assert normalized == {
         "recorded_at": "2026-11-22T01:02:03+00:00",
         "nested": ["2026-11-22T01:02:00+00:00"],
+        "vehicle_id": str(vehicle_id),
+        "source": "synthetic",
+        "row_count": 4,
+        "accepted": True,
+        "optional": None,
     }
     with pytest.raises(ValueError, match="must include a timezone"):
         evaluator._json_safe_report_value({"recorded_at": datetime(2026, 11, 22)})

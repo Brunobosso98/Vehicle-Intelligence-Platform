@@ -2,7 +2,7 @@
 
 ## Current finding status
 
-The policy on implementation SHA `2a9a91b5174a95f8114662d12aed5197b3f96c04`
+The policy on implementation SHA `74797be570e301444671cc9b307306647c15efcf`
 contains 20 exact High-risk records, all reviewed on 2026-11-21 and expiring
 2026-12-05. Fifteen older records had expired on November 18 or 20; commit
 `f8dfe32` explicitly re-reviewed them and added five exact reviews for new
@@ -21,11 +21,11 @@ Critical findings; that image is not selected for runtime, and the rebuilt
 custom TimescaleDB image has zero High and Critical findings. No scanner is
 disabled, no severity is changed, and the report retains upstream results.
 
-Security run [44967839980](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980)
-and [artifact 14732242668](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980/artifacts/14732242668)
-are the successful exact-head scan for SHA `2a9a91b`. A fresh scan is required
-for the pending evaluator correction SHA. Docker CLI is unavailable in this
-WSL distribution, so image scans run in GitHub Actions.
+Security run [44970219136](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44970219136)
+and [artifact 14733790199](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44970219136/artifacts/14733790199)
+are the successful exact-head scan for SHA `74797be`. A fresh scan is required
+for the pending UUID serializer correction SHA. Docker CLI is unavailable in
+this WSL distribution, so image scans run in GitHub Actions.
 
 ## Reproduction and trust checks
 
@@ -53,8 +53,8 @@ database oracle; public or production APIs do not expose training or MLOps.
 
 ## Current execution status
 
-The prior code correction passes 50 Phase 10 unit tests and the added focused
-datetime serialization test; Ruff, formatting and strict Mypy pass on the
+The prior code correction passes 50 Phase 10 unit tests and the focused
+datetime/UUID serialization test; Ruff, formatting and strict Mypy pass on the
 modified files. `make check-api` on SHA `59d40e5` passed 1,507 API tests,
 95.83% line coverage and 90.02% branch coverage. The preceding exact-head SHA
 `1f667cd03aeff9a92c19b7d2eee8b2563a7cc310`
@@ -69,11 +69,12 @@ reason omitted the required explicit `synthetic` scope; the evaluator now
 states that scope. On SHA `2a9a91b`, Quality, Integration E2E, Phase 9G, Phase
 9H, Security, Dependency Review and both CodeQL jobs passed. Its Phase 10
 acceptance completed lifecycle scenarios but failed to serialize a database
-`datetime` in the final JSON receipt. The evaluator now normalizes timezone-
-aware datetimes as ISO 8601 and rejects naive datetime values. The focused
+`datetime` in the final JSON receipt. On SHA `74797be`, it then exposed a UUID
+in the same receipt. The pending correction converts aware datetimes and UUIDs
+to deterministic strings and rejects naive datetime values. The focused
 regression and 50-test Phase 10 unit suite pass locally. Phase 9H's exact-head
 artifact proves the standalone runtime gate and no source-table mutation; the
-Phase 10 correction SHA still needs disposable database and full exact-head CI
+UUID correction SHA still needs disposable database and full exact-head CI
 receipts. None of these local checks replace those gates.
 
 The dedicated Phase 10 and canonical full-validation workflows upload

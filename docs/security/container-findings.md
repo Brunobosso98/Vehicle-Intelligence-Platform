@@ -2,6 +2,21 @@
 
 ## Phase 10 exact-head scan — 2026-11-22
 
+Security run [44970219136](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44970219136)
+scanned SHA `74797be570e301444671cc9b307306647c15efcf`; machine-readable results are in
+[artifact 14733790199](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44970219136/artifacts/14733790199).
+All selected runtime images have zero Critical and zero blocked High findings. The artifact reports
+107 accepted High package occurrences: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2,
+Tempo 2, Grafana 4, Kafka 0, and custom TimescaleDB 0. Each accepted finding matches an exact
+image/CVE/package risk record active on the scan date. The 20 High-risk records are reviewed on
+2026-11-21 and expire 2026-12-05. The zlib exception expiring 2026-11-12 remains removed; selected
+application images show no zlib CVE. The upstream TimescaleDB image separately reports 271 High and
+3 Critical findings; the rebuilt selected image has zero High and Critical. No scanner is disabled
+and no exception was silently extended. The later UUID serializer correction needs a new exact-head
+scan.
+
+## Previous exact-head scan — SHA 2a9a91b
+
 Security run [44967839980](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980)
 scanned SHA `2a9a91b5174a95f8114662d12aed5197b3f96c04`; machine-readable results are in
 [artifact 14732242668](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980/artifacts/14732242668).
@@ -18,7 +33,7 @@ the selected custom TimescaleDB image reports zero High and zero Critical. No sc
 no finding is hidden or downgraded, and no expiry is silently extended. The correction SHA still
 requires its own scan.
 
-## Previous Phase 10 exact-head scan — 2026-11-22
+## Prior exact-head scan — SHA 59d40e5
 
 Security run [44966623657](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657)
 scanned SHA `59d40e58823bab24114f508204a6732dc6c9f06a`; its machine-readable image and policy

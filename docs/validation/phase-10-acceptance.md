@@ -15,9 +15,10 @@ Executed against the implementation worktree on 2026-11-22. The Phase 10
 acceptance run on `2a9a91b5174a95f8114662d12aed5197b3f96c04` completed the
 pipeline scenarios but failed while serializing a timezone-aware database
 `datetime` in the final JSON receipt. The evaluator now converts aware
-datetimes to ISO 8601 before calculating the receipt checksum and writing the
-report; naive datetimes and unsupported values are rejected. This regression
-passes its focused test. The source fix was published on SHA `246889c`.
+datetimes to ISO 8601 and UUID values to canonical strings before calculating
+the receipt checksum and writing the report; naive datetimes and unsupported
+values are rejected. These cases pass the focused test. The datetime fix was
+published on SHA `246889c`.
 That SHA's Quality job passed the API suite, web lint/typecheck/tests and
 coverage, then stopped only because this report needed Prettier formatting.
 The formatting correction passed the one-file Prettier check locally; this
@@ -26,7 +27,7 @@ final report update still needs exact-SHA CI:
 | Check                                      | Result                                                                          | Evidence                                                             |
 | ------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | Phase 10 focused unit suite                | PASS: 50 tests                                                                  | `apps/api/tests/unit/test_mlops.py`                                  |
-| Datetime receipt regression                | PASS: aware ISO 8601, nested values, naive and unsupported-value rejection      | `test_phase10_acceptance_report_normalizes_aware_database_datetimes` |
+| Receipt serialization regression           | PASS: aware ISO 8601, UUID, scalar/nested values and invalid-value rejection    | `test_phase10_acceptance_report_normalizes_aware_database_datetimes` |
 | Ruff, formatting and evaluator strict mypy | PASS on the modified evaluator and unit test                                    | Local focused checks                                                 |
 | Full API unit suite                        | PASS on SHA `59d40e5`: 1,507 tests, 95.83% line and 90.02% branch coverage      | `make check-api`                                                     |
 | Web, contracts, docs and production build  | PASS on SHA `59d40e5`; Next.js 16.4.6                                           | `make verify-cloud`                                                  |
@@ -50,13 +51,15 @@ and both CodeQL jobs) passed. Phase 9H artifact `14732941722` verifies the
 standalone `NODE_ENV=production` / `ENVIRONMENT=test` controlled flow, production
 denial, persisted 9D/9E receipt reads and unchanged hashes across 43 source
 tables. Security artifact `14732242668` reports 107 accepted High package
-occurrences, zero Critical and zero blocked findings. Phase 10 failed only at
-the final report JSON serialization described above. The old SHA's in-progress
-full-validation run was canceled after this failure; it is not counted as a
-pass. On SHA `246889c`, Quality failed only at Prettier for this report; the
-API suite passed 1,508 tests with 95.83% line and 90.02% branch coverage, and
-the one-file formatting correction now passes. The formatted report SHA must
-complete all exact-head checks.
+occurrences, zero Critical and zero blocked findings. Phase 10 failed at final
+report serialization on `2a9a91b` for `datetime`, then on `74797be` for a UUID
+value also returned by a database-backed report. The serializer now handles
+both supported types, and the focused Phase 10 unit suite passes. On SHA
+`246889c`, Quality failed only at Prettier for this report; the API suite passed
+1,508 tests with 95.83% line and 90.02% branch coverage. That formatting issue
+was corrected and Quality passed on `74797be`. The full-stack run on `74797be`
+was canceled after the Phase 10 failure and is not counted as a pass. The
+current serializer fix must complete every required check on its exact SHA.
 
 ## Required independent acceptance
 
@@ -76,12 +79,13 @@ image and browser regression, security scanning, all prior phase checks, and
 the Phase 10 evaluator on its final commit SHA.
 
 The disposable Phase 10 evaluator failed at the rollback-binding snapshot on
-`1f667cd`, at the synthetic approval rationale on `59d40e5`, and at final
-datetime serialization on `2a9a91b`. Each cause has a targeted correction and
-regression check. The Phase 10 and canonical full-stack receipts must rerun on
-the correction SHA. Exact task/family metrics, row counts, drift windows and
-performance will be recorded from the resulting checksum-bound artifacts,
-never inferred from fixture definitions.
+`1f667cd`, at the synthetic approval rationale on `59d40e5`, and during final
+receipt serialization on `2a9a91b` (`datetime`) and `74797be` (`UUID`). Each
+cause has a targeted correction and regression check. The Phase 10 and
+canonical full-stack receipts must rerun on the latest correction SHA. Exact
+task/family metrics, row counts, drift windows and performance will be recorded
+from the resulting checksum-bound artifacts, never inferred from fixture
+definitions.
 
 ## Scientific and serving status
 
@@ -96,13 +100,14 @@ approval, activation, revocation and rollback remain authoritative.
 
 ## Current blockers
 
-- Commit and push the serialization fix and report refresh to the existing
+- Commit and push the UUID serialization fix and report refresh to the existing
   Phase 10 branch; PR #64 is already open and must remain unmerged.
 - Run all required GitHub checks against the exact final SHA, including
   Quality, Integration E2E, Security, Dependency Review, CodeQL Python,
   CodeQL JavaScript/TypeScript, Phase 9G/9H regression, Phase 10 independent
   acceptance, and canonical Docker/full-stack Phase 0–10.
 - Rerun Security and verify the dated image-exception policy against the final
-  SHA. SHA `2a9a91b` passed its scan; the correction SHA needs its own receipt.
+  SHA. SHA `74797be` passed its scan; the UUID correction SHA needs its own
+  receipt.
 
 Until these gates pass on the exact PR head, Phase 10 remains NOT VERIFIED.
