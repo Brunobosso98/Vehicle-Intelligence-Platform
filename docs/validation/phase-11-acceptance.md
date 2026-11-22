@@ -196,3 +196,10 @@ path for the foreign-vehicle denial run.
 - This closes only one specific SSE replay evidence gap. Cancellation, concurrent run
   isolation, full pathway coverage, broad fault/resource matrices, and other requirements in
   the traceability ledger remain incomplete. Overall Phase 11 remains NOT VERIFIED.
+
+The operator corpus summary now reports case counts by attack family, source surface, intent,
+route, source role and allowed/required/forbidden tool scope in addition to family, severity,
+language and expected behavior. Receipt reports add case denominators and outcome counts across
+family, severity, language, source surface, attack family, route and source role. These summaries
+make unexecuted cases visible as `NOT_RUN`; they do not upgrade manifest coverage into evidence
+that an attack family has been effectively tested.

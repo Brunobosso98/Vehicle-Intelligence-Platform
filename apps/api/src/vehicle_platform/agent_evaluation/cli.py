@@ -8,11 +8,12 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from vehicle_platform.agent_evaluation.contracts import EvalReceipt
+from vehicle_platform.agent_evaluation.contracts import AgentEvalCase, EvalReceipt
 from vehicle_platform.agent_evaluation.corpus import CorpusError, load_corpus, summarize
 from vehicle_platform.agent_evaluation.receipts import verify_receipt
 from vehicle_platform.agent_evaluation.source_oracle import (
@@ -78,6 +79,43 @@ def _receipt_argument(
     except Exception as exc:
         parser.error(f"invalid receipt: {exc}")
     return raw, receipt
+
+
+def _coverage_outcomes(
+    cases: tuple[AgentEvalCase, ...], attempts: list[dict[str, Any]]
+) -> dict[str, Any]:
+    attempt_by_id = {
+        str(item.get("case_id")): item
+        for item in attempts
+        if isinstance(item, dict) and isinstance(item.get("case_id"), str)
+    }
+    dimensions: dict[str, Callable[[AgentEvalCase], str]] = {
+        "family": lambda case: case.family.value,
+        "severity": lambda case: case.severity.value,
+        "language": lambda case: case.language,
+        "source_surface": lambda case: case.source_surface,
+        "attack_family": lambda case: case.attack_family or "none",
+        "route": lambda case: case.expected_route or "none",
+        "source_role": lambda case: case.source_role,
+    }
+    output: dict[str, Any] = {}
+    for dimension, value_for in dimensions.items():
+        buckets: dict[str, dict[str, Any]] = {}
+        for case in cases:
+            category = value_for(case)
+            bucket = buckets.setdefault(category, {"cases": 0, "status_counts": Counter()})
+            bucket["cases"] += 1
+            attempt = attempt_by_id.get(case.case_id)
+            status = str(attempt.get("status", "NOT_RUN")) if attempt else "NOT_RUN"
+            bucket["status_counts"][status] += 1
+        output[dimension] = {
+            category: {
+                "cases": bucket["cases"],
+                "status_counts": dict(sorted(bucket["status_counts"].items())),
+            }
+            for category, bucket in sorted(buckets.items())
+        }
+    return output
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -214,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
                     "all_cases_passed": len(attempts) == len(cases)
                     and by_status == {"PASS": len(cases)},
                     "passed_by_expected_behavior": pass_counts,
+                    "coverage_outcomes": _coverage_outcomes(cases, attempts),
                     "latency_ms": {
                         "measured_cases": len(latency),
                         "p50": latency[(len(latency) - 1) // 2] if latency else None,

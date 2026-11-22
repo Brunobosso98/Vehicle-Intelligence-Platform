@@ -309,6 +309,14 @@ class SuiteSummary(EvalModel):
     severity_counts: dict[str, int]
     language_counts: dict[str, int]
     expected_behavior_counts: dict[str, int]
+    intent_counts: dict[str, int]
+    source_surface_counts: dict[str, int]
+    attack_family_counts: dict[str, int]
+    route_counts: dict[str, int]
+    source_role_counts: dict[str, int]
+    allowed_tool_counts: dict[str, int]
+    required_tool_counts: dict[str, int]
+    forbidden_tool_counts: dict[str, int]
 
 
 GraderResult.model_rebuild()

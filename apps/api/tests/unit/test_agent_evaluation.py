@@ -15,7 +15,12 @@ from vehicle_platform.agent_evaluation.contracts import (
     ExpectedBehavior,
     ToolTrace,
 )
-from vehicle_platform.agent_evaluation.corpus import canonical_json, load_corpus, sha256_bytes
+from vehicle_platform.agent_evaluation.corpus import (
+    canonical_json,
+    load_corpus,
+    sha256_bytes,
+    summarize,
+)
 from vehicle_platform.agent_evaluation.grader import grade
 from vehicle_platform.agent_evaluation.privacy import redact_runtime_secrets, sanitize_attempt
 from vehicle_platform.agent_evaluation.receipts import (
@@ -45,6 +50,18 @@ def test_phase11_corpus_is_frozen_versioned_and_broad():
     assert {case.language for case in cases} >= {"en", "pt-BR", "mixed"}
     revoked = next(case for case in cases if case.case_id == "P11-FAULT-003")
     assert not revoked.persistence_required
+
+    summary = summarize(document["suite_version"], cases, digest)
+    assert len(summary.attack_family_counts) >= 12
+    assert len(summary.source_surface_counts) >= 3
+    assert summary.route_counts["none"] >= 1
+    outcome_coverage = cli._coverage_outcomes(
+        cases, [{"case_id": cases[0].case_id, "status": "PASS"}]
+    )
+    assert outcome_coverage["family"]["benign"] == {
+        "cases": 2,
+        "status_counts": {"NOT_RUN": 1, "PASS": 1},
+    }
 
 
 def test_phase11_suite_v1_remains_loadable_for_historical_receipts():

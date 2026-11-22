@@ -4134,21 +4134,21 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/cli.py": {
-    "mtime": 1795362938.5616963,
-    "seen": 1795363098.7865868,
-    "ast_hash": "ea19ee8eda04643793882c1fdfb1d41c",
+    "mtime": 1795369387.721701,
+    "seen": 1795369409.77298,
+    "ast_hash": "666491458e55d7b851b291cb07052d04",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/contracts.py": {
-    "mtime": 1795368734.4336994,
-    "seen": 1795368751.148918,
-    "ast_hash": "96188e2b1c07e017c8874f91336e82ab",
+    "mtime": 1795369314.529692,
+    "seen": 1795369409.7729821,
+    "ast_hash": "ffcfc92747d1ad4ba32e26245d3133e9",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/corpus.py": {
-    "mtime": 1795363209.7976968,
-    "seen": 1795363405.9041605,
-    "ast_hash": "25a600af7df16fdf06c4eae623db9b0a",
+    "mtime": 1795369375.125672,
+    "seen": 1795369409.772983,
+    "ast_hash": "98abfd16be4012ab7d23749838ef0bd8",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/grader.py": {
@@ -4170,9 +4170,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
-    "mtime": 1795368613.297681,
-    "seen": 1795368729.6692393,
-    "ast_hash": "9662403b0483c0dee5781cd9b07440f1",
+    "mtime": 1795369349.461678,
+    "seen": 1795369409.77324,
+    "ast_hash": "c3c84732de77ac8f98e3d3d1ee32272d",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v1.json": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795368686.621707,
-    "seen": 1795368729.6698117,
-    "ast_hash": "28551bc89cbdf807639936dc670388ed",
+    "mtime": 1795369355.757676,
+    "seen": 1795369409.7738214,
+    "ast_hash": "f336b4335b45bd8896e1b4a65d7dc906",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
@@ -4248,9 +4248,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795368910.4177094,
-    "seen": 1795369224.5259347,
-    "ast_hash": "586a1766660f38abf8b4a1c90337a61f",
+    "mtime": 1795369375.857672,
+    "seen": 1795369409.7738268,
+    "ast_hash": "d296c157036073fa79a201e00a40f2e8",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {

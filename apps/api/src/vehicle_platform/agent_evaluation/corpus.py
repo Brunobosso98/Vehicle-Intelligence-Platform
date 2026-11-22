@@ -102,4 +102,20 @@ def summarize(suite_version: str, cases: tuple[AgentEvalCase, ...], digest: str)
         expected_behavior_counts=dict(
             sorted(Counter(case.expected_behavior.value for case in cases).items())
         ),
+        intent_counts=dict(sorted(Counter(case.intent for case in cases).items())),
+        source_surface_counts=dict(sorted(Counter(case.source_surface for case in cases).items())),
+        attack_family_counts=dict(
+            sorted(Counter(case.attack_family or "none" for case in cases).items())
+        ),
+        route_counts=dict(sorted(Counter(case.expected_route or "none" for case in cases).items())),
+        source_role_counts=dict(sorted(Counter(case.source_role for case in cases).items())),
+        allowed_tool_counts=dict(
+            sorted(Counter(tool for case in cases for tool in case.allowed_tools).items())
+        ),
+        required_tool_counts=dict(
+            sorted(Counter(tool for case in cases for tool in case.required_tools).items())
+        ),
+        forbidden_tool_counts=dict(
+            sorted(Counter(tool for case in cases for tool in case.forbidden_tools).items())
+        ),
     )
