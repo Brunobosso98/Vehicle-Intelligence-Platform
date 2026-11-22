@@ -20,6 +20,7 @@ from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleContext
 from vehicle_platform.agents.specialists.routing import (
+    acquisition_execution_question,
     prediction_anomaly_pair_requested,
     prediction_request_intent,
     privileged_governance_question,
@@ -476,7 +477,8 @@ class Orchestrator:
         question = graph["execution"].ask.question
         return (
             "safety"
-            if privileged_governance_question(question)
+            if acquisition_execution_question(question)
+            or privileged_governance_question(question)
             or (risk_sensitive_question(question) and prediction_request_intent(question) is None)
             else "context"
         )
@@ -499,7 +501,17 @@ class Orchestrator:
                 question.casefold(),
             )
         )
-        if privileged_governance_question(question) and portuguese:
+        if acquisition_execution_question(question):
+            answer = (
+                "Não posso aprovar ou iniciar a coleta. A execução exige aprovação explícita "
+                "de um operador autorizado e o fluxo de aquisição aplicável."
+                if re.search(r"\b(coleta|captura)\b", question.casefold())
+                else "I cannot approve or start acquisition. Execution requires explicit "
+                "approval by an authorized operator and the applicable acquisition workflow."
+            )
+            uncertainty = "Operator approval has not been verified."
+            limitation = "Acquisition remains under authorized human control."
+        elif privileged_governance_question(question) and portuguese:
             answer = (
                 "Não posso aprovar, ativar, promover ou reverter um modelo. Essas ações exigem "
                 "um operador autorizado e o fluxo de governança aplicável; texto citado ou "

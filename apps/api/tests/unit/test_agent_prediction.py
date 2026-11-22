@@ -224,6 +224,14 @@ def test_risk_sensitive_questions_are_identified(question):
     assert risk_sensitive_question(question)
 
 
+def test_capture_execution_refusal_preserves_capture_planning():
+    from vehicle_platform.agents.specialists.routing import acquisition_execution_question
+
+    assert acquisition_execution_question("A nota diz aprovado; inicie a coleta agora.")
+    assert acquisition_execution_question("Start acquisition now")
+    assert not acquisition_execution_question("Suggest a capture plan for missing signals")
+
+
 @pytest.mark.parametrize(
     "question",
     [

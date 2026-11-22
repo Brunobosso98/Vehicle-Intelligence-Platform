@@ -117,6 +117,17 @@ def risk_sensitive_question(question: str) -> bool:
     return any(re.search(pattern, q) for pattern in patterns)
 
 
+def acquisition_execution_question(question: str) -> bool:
+    q = question.casefold()
+    return bool(
+        re.search(
+            r"\b(start|begin|execute|approve|inicie|iniciar|comece|aprovar|aprove)\b"
+            r".{0,60}\b(acquisition|capture|collection|coleta|captura)\b",
+            q,
+        )
+    )
+
+
 def privileged_governance_question(question: str) -> bool:
     """Detect requests to change model-serving state or claim operator approval."""
     q = question.casefold()
