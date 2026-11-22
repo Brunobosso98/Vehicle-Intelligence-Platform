@@ -57,7 +57,6 @@ TABLES = (
     "prediction_evidence_edges",
     "prediction_evidence_facts",
     "prediction_evidence_gaps",
-    "prediction_evidence_verification_audits",
     "evaluation_protocols",
     "evaluation_runs",
     "evaluation_metric_reports",
