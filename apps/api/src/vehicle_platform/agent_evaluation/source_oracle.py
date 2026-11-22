@@ -107,6 +107,7 @@ async def source_digest(database_url: str) -> str:
     try:
         parts: list[tuple[str, list[dict[str, Any]]]] = []
         async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
             for table in TABLES:
                 exists = await connection.scalar(text("SELECT to_regclass(:name)"), {"name": table})
                 if exists is None:
