@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 687 files · ~789,719 words
+- 687 files · ~789,740 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ca81653d`
+- Built from commit: `c2a6c73b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1633,7 +1633,7 @@ Nodes (12): _json(), _latest_receipt(), main(), _receipt_argument(), summarize()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `predictiveEnabled()` connect `predictiveEnabled` to `login/route.ts`, `PredictiveError`, `failure`, `server.ts`?**
-  _High betweenness centrality (0.090) - this node is a cross-community bridge._
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `react-dom`, `@types/node` to the rest of the system?**
@@ -1641,7 +1641,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.07905935050391938 - nodes in this community are weakly interconnected._
 - **Why does `Settings` connect `httpx` to `router`, `PredictionEvidenceBundle`, `Database`, `RawTelemetryRecord`, `SourceRole`, `EmbeddingLedger`, `check_mlops.py`, `AgentRun`, `anomalies/cli.py`, `acquisition/service.py`, `Telemetry`, `predictiveEnabled`, `embeddings.py`, `json`, `datetime`, `phase7d_eval.py`, `evaluate_predictive_models.py`, `sqlalchemy`, `evaluate_predictive_reliability.py`, `Database`, `evaluate_anomaly_detection.py`, `test_predictions.py`, `evaluate_mcp.py`, `test_prediction_history_routes.py`, `main`, `DatasetDefinition`, `worker.py`, `predictions/cli.py`, `evaluate_prediction_evidence.py`, `collect`, `PredictionRequestBudgetMiddleware`, `pytest`, `evaluate_mlops.py`, `evaluate_agent_prediction.py`, `IngestionService`, `api/budgets.py`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+  _High betweenness centrality (0.081) - this node is a cross-community bridge._
 - **Are the 147 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 147 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Detailed engineering contract — mandatory implementation addendum` be split into smaller, more focused modules?**

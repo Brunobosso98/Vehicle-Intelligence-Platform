@@ -634,16 +634,21 @@ async def main() -> None:
     except Exception as exc:
         REPORT_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(REPORT_PATH.parent, stat.S_IRWXU)
+        startup_failure = "failed before readiness" in str(exc)
+        assertion_failure = isinstance(exc, AssertionError) and not startup_failure
+        status = "ASSERTION_FAIL" if assertion_failure else "INFRA_FAILURE"
         reason = (
             "runtime_process_startup_failure"
-            if "failed before readiness" in str(exc)
+            if startup_failure
+            else "evaluation_assertion_failed"
+            if assertion_failure
             else "evaluation_runner_failure"
         )
         REPORT_PATH.write_text(
             json.dumps(
                 {
                     "schema_version": "1.0",
-                    "status": "INFRA_FAILURE",
+                    "status": status,
                     "reason_code": reason,
                     "paid_provider_calls": 0,
                     "provider_cost_usd": 0,
@@ -654,7 +659,7 @@ async def main() -> None:
             encoding="utf-8",
         )
         os.chmod(REPORT_PATH, stat.S_IRUSR | stat.S_IWUSR)
-        print(json.dumps({"status": "INFRA_FAILURE", "reason_code": reason}))
+        print(json.dumps({"status": status, "reason_code": reason}))
         raise
     raise SystemExit(result)
 
