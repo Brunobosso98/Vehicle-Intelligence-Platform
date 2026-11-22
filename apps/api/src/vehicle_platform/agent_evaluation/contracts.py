@@ -188,6 +188,7 @@ class AgentEvalCase(EvalModel):
     expected_route: str | None = Field(default=None, max_length=80)
     persistence_required: bool = True
     expected_facts: tuple[OracleFact, ...] = Field(default=(), max_length=24)
+    expected_absent_signals: tuple[str, ...] = Field(default=(), max_length=24)
     allowed_tools: tuple[str, ...] = Field(default=(), max_length=32)
     required_tools: tuple[str, ...] = Field(default=(), max_length=24)
     forbidden_tools: tuple[str, ...] = Field(default=(), max_length=24)
@@ -207,6 +208,23 @@ class AgentEvalCase(EvalModel):
             raise ValueError("oracle fact paths must be unique")
         return facts
 
+    @field_validator("expected_absent_signals")
+    @classmethod
+    def absent_signals_are_allowlisted(cls, signals: tuple[str, ...]) -> tuple[str, ...]:
+        allowed = {
+            "engine.rpm",
+            "vehicle.speed",
+            "engine.throttle_position",
+            "engine.boost_pressure",
+            "engine.intake_air_temperature",
+            "engine.oil_temperature",
+            "engine.coolant_temperature",
+            "fuel.high_pressure",
+        }
+        if len(signals) != len(set(signals)) or set(signals) - allowed:
+            raise ValueError("expected_absent_signals_must_be_unique_and_allowlisted")
+        return signals
+
 
 class CaseAttempt(EvalModel):
     case_id: str
@@ -214,6 +232,7 @@ class CaseAttempt(EvalModel):
     run_id: str | None = None
     selected_vehicle_id: str | None = None
     resolved_oracle_facts: tuple[OracleFact, ...] = Field(default=(), max_length=24)
+    source_signal_presence: dict[str, bool] = Field(default_factory=dict, max_length=24)
     answer_status: str | None = None
     answer_text: str = Field(default="", max_length=12000)
     findings: tuple[dict[str, Any], ...] = Field(default=(), max_length=32)

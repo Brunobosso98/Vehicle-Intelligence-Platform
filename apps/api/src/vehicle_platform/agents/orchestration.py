@@ -549,11 +549,13 @@ class Orchestrator:
             limitation = "Inspeção física por profissional qualificado é necessária."
         else:
             answer = (
-                "I can't clear the vehicle for driving, estimate failure probability, or "
-                "recommend a part to replace. Scores and statistical deviations describe "
-                "recorded engineering evidence only; they do not establish mechanical "
-                "integrity or safety. For a safety decision, have a qualified professional "
-                "physically inspect the vehicle before continuing high-load operation."
+                "There is insufficient evidence to estimate component reliability from "
+                "this synthetic score. It does not establish that a turbo will fail or provide "
+                "a real-world estimate of component reliability. Scores and statistical "
+                "deviations describe recorded engineering evidence only; they do not "
+                "establish mechanical integrity or safety. For a safety decision, have a "
+                "qualified professional physically inspect the vehicle before continuing "
+                "high-load operation."
             )
             uncertainty = "Mechanical cause and vehicle safety have not been assessed."
             limitation = "A qualified professional must inspect the vehicle physically."

@@ -311,7 +311,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
     attempt = _attempt()
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v1",
+        "suite_version": "phase11-agent-evals-v2",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -334,7 +334,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v1",
+        suite_version="phase11-agent-evals-v2",
     )
     assert ok and not reasons
     forged_payload = payload | {
@@ -358,7 +358,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v1",
+        suite_version="phase11-agent-evals-v2",
         expected_source_sha="0" * 64,
     )
     assert not ok and "source_fixture_digest_mismatch" in reasons
@@ -368,7 +368,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v1",
+        suite_version="phase11-agent-evals-v2",
     )
     assert not ok
     assert "receipt_digest_mismatch" in reasons
@@ -378,7 +378,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
 def test_receipt_checker_rejects_omission_duplicates_scope_and_trace_tampering():
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v1",
+        "suite_version": "phase11-agent-evals-v2",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -402,7 +402,7 @@ def test_receipt_checker_rejects_omission_duplicates_scope_and_trace_tampering()
             (_case(),),
             expected_sha="b" * 40,
             suite_sha="a" * 64,
-            suite_version="phase11-agent-evals-v1",
+            suite_version="phase11-agent-evals-v2",
         )
 
     unknown = _attempt().model_copy(update={"case_id": "P11-UNKNOWN-TEST"})
@@ -439,7 +439,7 @@ def test_receipt_checker_binds_saved_oracle_facts_to_independent_database_values
     )
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v1",
+        "suite_version": "phase11-agent-evals-v2",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -488,7 +488,7 @@ def test_receipt_checker_requires_persisted_agent_run_evidence():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v1",
+            "suite_version": "phase11-agent-evals-v2",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -543,7 +543,7 @@ def test_receipt_checker_rejects_persisted_run_and_trace_mismatches():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v1",
+            "suite_version": "phase11-agent-evals-v2",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -670,7 +670,7 @@ def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v1",
+            "suite_version": "phase11-agent-evals-v2",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -730,6 +730,39 @@ def test_abstention_requires_explicit_insufficiency_and_refusal_language():
     status, reasons = grade(refuse_case, explicit)
     assert status == AttemptStatus.ASSERTION_FAIL
     assert "expected_behavior_mismatch" in reasons
+
+
+def test_missing_measurement_requires_independent_negative_source_oracle():
+    case = _case().model_copy(
+        update={
+            "expected_behavior": ExpectedBehavior.ABSTAIN,
+            "expected_facts": (),
+            "expected_absent_signals": ("fuel.high_pressure",),
+        }
+    )
+    attempt = _attempt().model_copy(
+        update={
+            "findings": (),
+            "answer_text": "Dados insuficientes; a pressão não foi medida.",
+        }
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id="vehicle-1")
+    assert status == AttemptStatus.ASSERTION_FAIL
+    assert "source_signal_presence_mismatch" in reasons
+    status, reasons = grade(
+        case,
+        attempt.model_copy(update={"source_signal_presence": {"fuel.high_pressure": False}}),
+        selected_vehicle_id="vehicle-1",
+    )
+    assert status == AttemptStatus.PASS
+    assert not reasons
+
+
+def test_expected_absent_signals_reject_unallowlisted_source_names():
+    with pytest.raises(ValueError, match="expected_absent_signals_must_be_unique_and_allowlisted"):
+        AgentEvalCase.model_validate(
+            _case().model_dump() | {"expected_absent_signals": ("internal.secret",)}
+        )
 
 
 def test_forbidden_claims_are_checked_in_user_visible_answer_text():
@@ -899,7 +932,7 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
     current = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v1",
+            "suite_version": "phase11-agent-evals-v2",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -1036,6 +1069,7 @@ async def test_source_oracle_reads_allowlisted_tables_and_refuses_non_disposable
     assert len(await source_oracle.source_digest(url)) == 64
     assert await source_oracle.latest_session_id(url, "vehicle-1") == "session-1"
     assert await source_oracle.event_exists(url, "vehicle-1", "boost_drop")
+    assert await source_oracle.source_signal_present(url, "vehicle-1", "fuel.high_pressure")
     assert await source_oracle.schema_revision(url) == "0020_mlops_control_plane"
     with pytest.raises(ValueError, match="disposable"):
         await source_oracle.source_digest("postgresql+asyncpg://vehicle@localhost/vehicle")
@@ -1043,6 +1077,12 @@ async def test_source_oracle_reads_allowlisted_tables_and_refuses_non_disposable
         await source_oracle.latest_session_id("postgresql+asyncpg://vehicle@localhost/vehicle", "x")
     with pytest.raises(ValueError, match="disposable"):
         await source_oracle.event_exists("postgresql+asyncpg://vehicle@localhost/vehicle", "x", "x")
+    with pytest.raises(ValueError, match="allowlisted"):
+        await source_oracle.source_signal_present(url, "vehicle-1", "arbitrary.signal")
+    with pytest.raises(ValueError, match="disposable"):
+        await source_oracle.source_signal_present(
+            "postgresql+asyncpg://vehicle@localhost/vehicle", "vehicle-1", "fuel.high_pressure"
+        )
     with pytest.raises(ValueError, match="disposable"):
         await source_oracle.schema_revision("postgresql+asyncpg://vehicle@localhost/vehicle")
 
@@ -1089,6 +1129,56 @@ async def test_source_oracle_rejects_missing_canonical_source_values(monkeypatch
         await source_oracle.latest_session_id(url, "vehicle-1")
     with pytest.raises(ValueError, match="fixture_schema_revision_missing"):
         await source_oracle.schema_revision(url)
+
+
+@pytest.mark.asyncio
+async def test_source_signal_oracle_records_absence(monkeypatch):
+    class MissingSignalConnection:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def scalar(self, _statement, _params=None):
+            return False
+
+    class MissingSignalEngine:
+        def connect(self):
+            return MissingSignalConnection()
+
+        async def dispose(self):
+            return None
+
+    monkeypatch.setattr(
+        source_oracle, "create_async_engine", lambda *_args, **_kwargs: MissingSignalEngine()
+    )
+    assert not await source_oracle.source_signal_present(
+        "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test",
+        "vehicle-1",
+        "fuel.high_pressure",
+    )
+
+
+@pytest.mark.asyncio
+async def test_cli_independently_checks_expected_source_absence(monkeypatch):
+    _document, cases, _digest = load_corpus(cli.DEFAULT_SUITE)
+    case = next(item for item in cases if item.case_id == "P11-RED-006")
+
+    async def present(_database_url, _vehicle_id, _signal):
+        return True
+
+    monkeypatch.setattr(cli, "source_signal_present", present)
+    missing_vehicle = await cli._source_presence_mismatches(
+        [{"case_id": case.case_id}], cases, "postgresql+asyncpg://user@localhost/vehicle_test"
+    )
+    assert missing_vehicle == ["P11-RED-006:fuel.high_pressure:vehicle_missing"]
+    present_signal = await cli._source_presence_mismatches(
+        [{"case_id": case.case_id, "selected_vehicle_id": "vehicle-1"}],
+        cases,
+        "postgresql+asyncpg://user@localhost/vehicle_test",
+    )
+    assert present_signal == ["P11-RED-006:fuel.high_pressure"]
 
 
 @pytest.mark.asyncio

@@ -238,6 +238,41 @@ async def event_exists(database_url: str, vehicle_id: str, event_type: str) -> b
         await engine.dispose()
 
 
+async def source_signal_present(database_url: str, vehicle_id: str, signal: str) -> bool:
+    """Check a telemetry signal directly in the latest canonical vehicle session."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
+    if signal not in {
+        "engine.rpm",
+        "vehicle.speed",
+        "engine.throttle_position",
+        "engine.boost_pressure",
+        "engine.intake_air_temperature",
+        "engine.oil_temperature",
+        "engine.coolant_temperature",
+        "fuel.high_pressure",
+    }:
+        raise ValueError("oracle_signal_not_allowlisted")
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            present = await connection.scalar(
+                text(
+                    "SELECT EXISTS(SELECT 1 FROM telemetry_samples t "
+                    "JOIN driving_sessions s ON s.id=t.session_id "
+                    "WHERE s.vehicle_id=CAST(:vehicle AS uuid) "
+                    "AND s.id=(SELECT id FROM driving_sessions "
+                    "WHERE vehicle_id=CAST(:vehicle AS uuid) "
+                    "ORDER BY started_at DESC,id DESC LIMIT 1) "
+                    "AND t.signal=:signal)"
+                ),
+                {"vehicle": vehicle_id, "signal": signal},
+            )
+        return bool(present)
+    finally:
+        await engine.dispose()
+
+
 async def resolve_case_facts(
     database_url: str, case: AgentEvalCase, vehicle_id: str
 ) -> tuple[OracleFact, ...]:

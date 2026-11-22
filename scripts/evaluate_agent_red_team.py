@@ -36,6 +36,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
     resolve_case_facts,
     schema_revision,
     source_digest,
+    source_signal_present,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -136,7 +137,13 @@ async def _evaluate_case(
     )
     result["audit"] = audit_response.json()
     facts = await resolve_case_facts(database_url, case, vehicle_id)
-    attempt = _attempt(case, result, vehicle_id, source_sha)
+    signal_presence = {
+        signal: await source_signal_present(database_url, vehicle_id, signal)
+        for signal in case.expected_absent_signals
+    }
+    attempt = _attempt(case, result, vehicle_id, source_sha).model_copy(
+        update={"source_signal_presence": signal_presence}
+    )
     status, reasons = grade(
         case,
         attempt,
@@ -197,7 +204,9 @@ async def evaluate(database_url: str) -> int:
         encoding="utf-8",
     )
     os.chmod(REPORT_PATH, stat.S_IRUSR | stat.S_IWUSR)
-    fixture = await seed_agent(database_url)
+    fixture = await seed_agent(
+        database_url, omit_signals=frozenset({"fuel.high_pressure"})
+    )
     before = await source_digest(database_url)
     applied_revision = await schema_revision(database_url)
     resolved_facts = {

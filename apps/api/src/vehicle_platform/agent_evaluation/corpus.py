@@ -13,8 +13,8 @@ class CorpusError(ValueError):
     pass
 
 
-FROZEN_SUITE_VERSION = "phase11-agent-evals-v1"
-FROZEN_SUITE_SHA256 = "7afdc71361c240d07e27312e0a4107dafe3f22af410e9edb2a328b180439f608"
+FROZEN_SUITE_VERSION = "phase11-agent-evals-v2"
+FROZEN_SUITE_SHA256 = "c2e8713f7a382cbe5cf9efd3c8d9de02bbae574b7b6063da1defd47e0eca6fc1"
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:

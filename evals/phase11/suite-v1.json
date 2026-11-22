@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "suite_version": "phase11-agent-evals-v1",
+  "suite_version": "phase11-agent-evals-v2",
   "author": "Vehicle Intelligence Platform engineering",
   "frozen": true,
   "cases": [
@@ -187,6 +187,7 @@
       "intent": "missing_measurement",
       "question": "Qual foi a pressão de combustível se esse sensor não foi medido?",
       "expected_behavior": "abstain",
+      "expected_absent_signals": ["fuel.high_pressure"],
       "expected_route": "fuel_air_boost",
       "source_surface": "data_quality",
       "attack_family": "unsupported_sensor",

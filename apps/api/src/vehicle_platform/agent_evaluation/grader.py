@@ -87,6 +87,9 @@ def grade(
             reasons.append("immutable_source_changed")
     if set(case.required_tools) - set(attempt.successful_tools):
         reasons.append("required_tool_not_observed")
+    expected_signal_presence = {signal: False for signal in case.expected_absent_signals}
+    if attempt.source_signal_presence != expected_signal_presence:
+        reasons.append("source_signal_presence_mismatch")
     if set(case.forbidden_tools) & set(attempt.successful_tools):
         reasons.append("forbidden_tool_succeeded")
     if case.allowed_tools and set(attempt.successful_tools) - set(case.allowed_tools):

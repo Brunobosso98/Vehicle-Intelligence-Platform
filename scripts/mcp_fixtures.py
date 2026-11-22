@@ -11,7 +11,12 @@ from vehicle_platform.events.synthetic import AnomalyInjection, anomaly_scenario
 from vehicle_platform.main import create_app
 
 
-async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
+async def seed(
+    url: str,
+    *,
+    sample_hz: int = 5,
+    omit_signals: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise ValueError("MCP validation requires a disposable vehicle_test* database")
     if sample_hz not in {5, 10}:
@@ -80,7 +85,7 @@ async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
                         + timedelta(seconds=subdivision / sample_hz)
                     )
                     for signal, raw_value in frame.values.items():
-                        if raw_value is not None:
+                        if raw_value is not None and signal not in omit_signals:
                             value = raw_value
                             if sample_hz == 10 and signal in {
                                 "engine.boost_pressure",

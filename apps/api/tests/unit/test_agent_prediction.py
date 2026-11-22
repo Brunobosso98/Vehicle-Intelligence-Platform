@@ -625,6 +625,7 @@ async def test_risk_sensitive_question_uses_fixed_safety_response_without_provid
     assert state.final is not None
     assert required_phrase in state.final.answer.casefold()
     assert forbidden_phrase not in state.final.answer.casefold()
+    assert "failure probability" not in state.final.answer.casefold()
     assert state.final.confidence == "low"
     assert state.final.findings == []
 

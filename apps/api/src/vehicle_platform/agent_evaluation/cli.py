@@ -21,6 +21,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
     resolve_case_facts,
     schema_revision,
     source_digest,
+    source_signal_present,
 )
 
 ROOT = Path(__file__).resolve().parents[5]
@@ -41,6 +42,28 @@ def _latest_receipt() -> Path | None:
     directory = ROOT / ".validation/phase11/receipts"
     receipts = sorted(directory.glob("*.json"), key=lambda path: path.stat().st_mtime_ns)
     return receipts[-1] if receipts else None
+
+
+async def _source_presence_mismatches(
+    attempts: list[dict[str, Any]], cases: tuple[Any, ...], database_url: str
+) -> list[str]:
+    case_by_id = {case.case_id: case for case in cases}
+    mismatches: list[str] = []
+    for attempt in attempts:
+        case = case_by_id.get(attempt.get("case_id"))
+        if case is None or not case.expected_absent_signals:
+            continue
+        vehicle_id = attempt.get("selected_vehicle_id")
+        if not vehicle_id:
+            mismatches.extend(
+                f"{case.case_id}:{signal}:vehicle_missing"
+                for signal in case.expected_absent_signals
+            )
+            continue
+        for signal in case.expected_absent_signals:
+            if await source_signal_present(database_url, vehicle_id, signal):
+                mismatches.append(f"{case.case_id}:{signal}")
+    return mismatches
 
 
 def _receipt_argument(
@@ -327,6 +350,9 @@ def main(argv: list[str] | None = None) -> int:
         if (persisted := asyncio.run(persisted_agent_run(database_url, attempt["run_id"])))
         is not None
     }
+    presence_mismatches = asyncio.run(
+        _source_presence_mismatches(raw.get("attempts", []), cases, database_url)
+    )
     current_source_sha = asyncio.run(source_digest(database_url))
     dependency_manifest_sha = hashlib.sha256((ROOT / "apps/api/uv.lock").read_bytes()).hexdigest()
     prompt_manifest_sha = hashlib.sha256(
@@ -359,6 +385,9 @@ def main(argv: list[str] | None = None) -> int:
         expected_provider="deterministic",
         expected_model="scripted-v1",
     )
+    if presence_mismatches:
+        reasons = tuple(reasons) + ("expected_absent_source_signal_present",)
+        ok = False
     print(json.dumps({"status": "PASS" if ok else "FAIL", "reasons": reasons}, indent=2))
     return 0 if ok else 1
 

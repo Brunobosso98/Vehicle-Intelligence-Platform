@@ -12,12 +12,18 @@
 
 ## Current evaluator artifact
 
-Suite `phase11-agent-evals-v1` contains 21 predeclared cases. Canonical JSON SHA-256:
-`7afdc71361c240d07e27312e0a4107dafe3f22af410e9edb2a328b180439f608` (recompute with
+Current suite `phase11-agent-evals-v2` contains 21 predeclared cases. Canonical JSON SHA-256:
+`c2e8713f7a382cbe5cf9efd3c8d9de02bbae574b7b6063da1defd47e0eca6fc1` (recompute with
 `vehicle-agent-evals list` after any corpus change). It covers six families, Portuguese,
 English and mixed language cases, and answer, abstain, refuse and deny behavior. The
 expected fact marker `fixture-latest-session` is resolved only from the disposable
 canonical `driving_sessions` table by the independent oracle.
+
+Suite v2 adds an independent negative source oracle for the missing fuel-pressure case;
+the fixture now omits `fuel.high_pressure`, and the grader and receipt verifier require
+the absence in the selected vehicle's latest canonical session. It also corrects the
+score-laundering safety wording so the refusal does not repeat a prohibited probability
+claim. Suite v2 has not yet been run through the Docker acceptance stack.
 
 The independent receipt checker also resolves required AgentRun IDs, vehicle ownership,
 persisted result/findings/evidence, tool-call audit and durable event sequence directly from
@@ -37,15 +43,13 @@ acceptance gates remain incomplete.
 
 ## Validation performed in this implementation step
 
-- `make verify-cloud`: PASS after the persisted-run checker, corpus checksum pin,
-  pre-tool governance refusal, benign-quoted-injection regression and sanitized startup
-  diagnostic changes. API checks passed 1,558 unit tests, Ruff, formatting, configured
-  Mypy gates, 95.74% line coverage and 90.02% branch coverage; web checks passed 140 tests,
-  lint, typecheck and production build. Context/contracts, project
-  benchmarks, Gitleaks, dependency audit and Trivy also passed.
+- `make verify-cloud`: PASS for the current working tree. API checks passed 1,568 unit
+  tests, Ruff, formatting, configured Mypy gates, 95.73% line coverage and 90.01% branch
+  coverage; web checks passed 140 tests, lint, typecheck and production build. Context/
+  contracts, project benchmarks, Gitleaks, dependency audit and Trivy also passed.
 - `make test-agent-evals`: PASS (38 focused deterministic evaluator tests); governance
   routing and refusal tests pass in the broader API suite.
-- `vehicle-agent-evals list` and `plan`: PASS; the frozen 21-case manifest and its checksum
+- `vehicle-agent-evals list`: PASS; the frozen 21-case v2 manifest and its checksum
   are reported, and plan output records zero paid calls. The plan command reports the
   current committed HEAD; uncommitted worktree changes are not part of that SHA.
 - `uv lock --project apps/api --check`: PASS; lockfile unchanged.
@@ -56,17 +60,20 @@ acceptance gates remain incomplete.
   container builds, Compose startup and full-stack validation are `CI REQUIRED`, not
   locally passed.
 - Draft PR #65 targets `main`; it is open and not merged.
-- GitHub run on `ee92cc58f56d0390e447468f23b24fd01a3b25fe` completed the runner:
+- Historical GitHub run on `ee92cc58f56d0390e447468f23b24fd01a3b25fe` completed the v1 runner:
   6 PASS, 5 ASSERTION_FAIL, 1 INFRA_FAILURE and 9 NOT_RUN of 21 cases. The independent
   receipt checker failed. The sanitized report is in the run artifact. Subsequent changes
   require a fresh run and these results do not establish the current SHA's behavior.
-- Exact-head run at `26c4f1a00259de899183785920d931500b73eb69`: Phase 11 acceptance FAILED
+- Historical exact-head run at `26c4f1a00259de899183785920d931500b73eb69`: Phase 11 acceptance FAILED
   after the disposable database stack started, but the API/MCP child process failed before
-  readiness and before any corpus case was graded. The new runner change emits selected
-  diagnostics after credential redaction so the next exact-head run can identify the
-  startup failure. CI, Security, Phase 9G, Phase 9H and Phase 10 passed; canonical full
-  validation remains in progress at the latest status read. Full Phase 11 integration
-  acceptance has not passed.
+  readiness and before any corpus case was graded. The later runner emits selected
+  diagnostics after credential redaction. CI, Security, Phase 9G, Phase 9H and Phase 10
+  passed; this was not Phase 11 acceptance evidence.
+- A canonical full-validation run for `115f5bd31a9259b0e5d67cce1e090b035e45e67e` is
+  currently live and has reached Phase 7B. It predates the current uncommitted v2 changes
+  and does not count as final-SHA evidence.
+- Current code changes are not committed or pushed yet. Docker Phase 11 acceptance, all
+  mandatory pathway coverage and exact-final-SHA CI remain `CI REQUIRED` or incomplete.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

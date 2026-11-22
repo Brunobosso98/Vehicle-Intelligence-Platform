@@ -936,9 +936,9 @@
     "semantic_hash": "0c19918baa115101b82970eb85829f2e"
   },
   "scripts/mcp_fixtures.py": {
-    "mtime": 1792258055.5096092,
-    "seen": 1794674058.4448373,
-    "ast_hash": "0a031caa1d914c9ff3af225e1a8a5cb3",
+    "mtime": 1795356236.501702,
+    "seen": 1795356508.227137,
+    "ast_hash": "c351ac30c953fd890676d62b2c125048",
     "semantic_hash": ""
   },
   "scripts/mcp_large_results.py": {
@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/orchestration.py": {
-    "mtime": 1795355547.6256871,
-    "seen": 1795355581.2482436,
-    "ast_hash": "9df8aa54d0c66f5561a7e0f2e3f7531a",
+    "mtime": 1795356390.9336805,
+    "seen": 1795356508.2266173,
+    "ast_hash": "013389a3f3bb257e78995588817b1e28",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/prompts.py": {
@@ -1080,9 +1080,9 @@
     "semantic_hash": ""
   },
   "scripts/agent_fixtures.py": {
-    "mtime": 1792258055.5096092,
-    "seen": 1794674058.4447663,
-    "ast_hash": "f61eca7e806ea4cd36d56e18e93878a5",
+    "mtime": 1795356236.505702,
+    "seen": 1795356508.2270553,
+    "ast_hash": "0b581159a1edd9a9913735f5b09fdbec",
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_grounding.py": {
@@ -3372,9 +3372,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_prediction.py": {
-    "mtime": 1795355555.497687,
-    "seen": 1795355581.2484646,
-    "ast_hash": "5557a2c48e6662aa2966e5405451a6ec",
+    "mtime": 1795356249.1897016,
+    "seen": 1795356508.2268326,
+    "ast_hash": "de33fe7117baa46f145adf7ae9646e7a",
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_prediction.py": {
@@ -4134,27 +4134,27 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/cli.py": {
-    "mtime": 1795355715.1137009,
-    "seen": 1795355752.7410123,
-    "ast_hash": "00d3d288a2b8772c6c0ddcc607eca989",
+    "mtime": 1795356704.709665,
+    "seen": 1795356732.5461504,
+    "ast_hash": "ae48d855eec961205bfdee338eae8010",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/contracts.py": {
-    "mtime": 1795350430.353653,
-    "seen": 1795350581.971751,
-    "ast_hash": "3b1d43ea928961c39f5a9257018bed59",
+    "mtime": 1795356479.5016866,
+    "seen": 1795356508.2265859,
+    "ast_hash": "4939eb37bc91366d69a7069cef6d8516",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/corpus.py": {
-    "mtime": 1795351215.9616985,
-    "seen": 1795351254.5638344,
-    "ast_hash": "0aae06d9d47140c95f19c45371448e1c",
+    "mtime": 1795356464.0376859,
+    "seen": 1795356508.2265868,
+    "ast_hash": "59b66437753a4adf33850307f8caff87",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/grader.py": {
-    "mtime": 1795355547.6256871,
-    "seen": 1795355581.2482133,
-    "ast_hash": "e4b819846b92e7365829bacd12486f0b",
+    "mtime": 1795356377.7056801,
+    "seen": 1795356508.2265885,
+    "ast_hash": "4356210e832a6eb54cda024d6f4e8a6a",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/receipts.py": {
@@ -4164,27 +4164,27 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/source_oracle.py": {
-    "mtime": 1795355909.869699,
-    "seen": 1795355931.7347846,
-    "ast_hash": "b8173d7b0dac94008a62a1c719046367",
+    "mtime": 1795356519.9936886,
+    "seen": 1795356732.5461602,
+    "ast_hash": "786d346f2d38abf11aa5cff15367ca67",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
-    "mtime": 1795356014.145699,
-    "seen": 1795356036.4479287,
-    "ast_hash": "362e01e902ba69bca257b966c402b083",
+    "mtime": 1795356832.6177082,
+    "seen": 1795356855.3403108,
+    "ast_hash": "3a602f00d1d642ed1c1df13a05f28ac0",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v1.json": {
-    "mtime": 1795350928.9497092,
-    "seen": 1795351254.5642388,
-    "ast_hash": "388f9f4c76d98f311862e42dee71fbda",
+    "mtime": 1795356457.7016854,
+    "seen": 1795356508.2270439,
+    "ast_hash": "4445b0333a656c3320d4c13a2500aeec",
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_red_team.py": {
-    "mtime": 1795356079.7657025,
-    "seen": 1795356096.586991,
-    "ast_hash": "3e6f8fd190175a84e0ef3c8b65972ac9",
+    "mtime": 1795356516.9896884,
+    "seen": 1795356732.5466359,
+    "ast_hash": "33e5c9bfa741f4ba46b1d1929eeb2e0d",
     "semantic_hash": ""
   },
   "scripts/vehicle_agent_evals.py": {
