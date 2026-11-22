@@ -227,7 +227,10 @@ async def event_exists(database_url: str, vehicle_id: str, event_type: str) -> b
             value = await connection.scalar(
                 text(
                     "SELECT EXISTS(SELECT 1 FROM detected_events "
-                    "WHERE vehicle_id=CAST(:vehicle AS uuid) AND event_type=:event_type)"
+                    "WHERE vehicle_id=CAST(:vehicle AS uuid) AND event_type=:event_type "
+                    "AND session_id=(SELECT id FROM driving_sessions "
+                    "WHERE vehicle_id=CAST(:vehicle AS uuid) "
+                    "ORDER BY started_at DESC, id DESC LIMIT 1))"
                 ),
                 {"vehicle": vehicle_id, "event_type": event_type},
             )
