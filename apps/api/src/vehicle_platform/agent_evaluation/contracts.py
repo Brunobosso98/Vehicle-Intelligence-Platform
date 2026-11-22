@@ -263,6 +263,12 @@ class CaseAttempt(EvalModel):
     direct_probe: DirectProbeEvidence | None = None
     tool_trace_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     sse_event_types: tuple[str, ...] = Field(default=(), max_length=128)
+    sse_replay_verified: bool = False
+    sse_replay_event_count: int = Field(default=0, ge=0, le=400)
+    sse_replay_stream_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    sse_replay_repeat_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    sse_replay_empty_after_terminal: bool = False
+    sse_replay_tool_count_unchanged: bool = False
     model_turn_count: int | None = Field(default=None, ge=0, le=16)
     mcp_call_count: int = Field(default=0, ge=0, le=32)
     forbidden_action_count: int = Field(default=0, ge=0, le=1000)

@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 from vehicle_platform.agent_evaluation.contracts import (
@@ -9,6 +10,7 @@ from vehicle_platform.agent_evaluation.contracts import (
 )
 from vehicle_platform.agent_evaluation.corpus import canonical_json, sha256_bytes
 from vehicle_platform.agent_evaluation.grader import grade
+from vehicle_platform.agents.schemas import StreamEvent
 
 
 def knowledge_probe_summary(result: dict[str, Any]) -> dict[str, str | int | float | bool | None]:
@@ -286,6 +288,25 @@ def verify_receipt(
                     )
                     if event_types != attempt.sse_event_types:
                         reasons.append("persisted_agent_event_stream_mismatch")
+                    try:
+                        persisted_stream = "".join(
+                            f"id: {event.sequence}\nevent: {event.type}\n"
+                            f"data: {event.model_dump_json()}\n\n"
+                            for event in (StreamEvent.model_validate(item) for item in events)
+                        ).encode()
+                    except (TypeError, ValueError):
+                        persisted_stream = b""
+                        reasons.append("persisted_agent_event_stream_invalid")
+                    persisted_stream_sha = hashlib.sha256(persisted_stream).hexdigest()
+                    if (
+                        not attempt.sse_replay_verified
+                        or attempt.sse_replay_event_count != len(events)
+                        or attempt.sse_replay_stream_sha256 != persisted_stream_sha
+                        or attempt.sse_replay_repeat_sha256 != persisted_stream_sha
+                        or not attempt.sse_replay_empty_after_terminal
+                        or not attempt.sse_replay_tool_count_unchanged
+                    ):
+                        reasons.append("persisted_sse_replay_not_verified")
     if set(attempts) != set(expected):
         reasons.append("case_coverage_incomplete")
     for attempt in receipt.attempts:

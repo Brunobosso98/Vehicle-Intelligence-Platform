@@ -174,3 +174,25 @@ acceptance gates remain incomplete.
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA
 CI links before verification can be claimed.
+
+## Continuation work — SSE replay oracle
+
+The integration helper now reconnects to every persisted run's actual API SSE endpoint,
+replays from sequence zero, then resumes after the terminal event. It requires the replay
+bytes to match, the terminal resume to be empty, and persisted run/audit snapshots to remain
+unchanged. The receipt records both stream digests and replay counts; the independent checker
+reconstructs the canonical SSE bytes from `agent_stream_events` in the disposable database
+and rejects missing, altered or count-mismatched replay evidence. The runner also checks this
+path for the foreign-vehicle denial run.
+
+- Focused evaluator tests: 61 passed; Ruff passed for changed evaluator files.
+- Strict Mypy for `evaluate_agent_red_team.py`, `mcp_fixtures.py`, `agent_fixtures.py` and
+  `agent_runtime.py`: passed.
+- `make verify-cloud`: passed for the replay receipt checker and primary replay runner before
+  the final enhancement that also snapshots the foreign-run read audit around its replay. After
+  that enhancement, the focused 61-test suite, Ruff formatting and strict Mypy passed again.
+- Exact disposable DB/API/MCP execution after this change: CI REQUIRED; Docker is absent
+  locally. No replay success is claimed until the updated exact-SHA workflow completes.
+- This closes only one specific SSE replay evidence gap. Cancellation, concurrent run
+  isolation, full pathway coverage, broad fault/resource matrices, and other requirements in
+  the traceability ledger remain incomplete. Overall Phase 11 remains NOT VERIFIED.

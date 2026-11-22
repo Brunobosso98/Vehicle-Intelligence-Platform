@@ -134,6 +134,14 @@ def _attempt(
         tool_trace=tool_trace,
         tool_trace_sha256=trace_digest,
         sse_event_types=event_types,
+        sse_replay_verified=bool(
+            (replay := result.get("sse_replay", {})).get("verified")
+        ),
+        sse_replay_event_count=int(replay.get("event_count", 0)),
+        sse_replay_stream_sha256=replay.get("stream_sha256"),
+        sse_replay_repeat_sha256=replay.get("repeat_sha256"),
+        sse_replay_empty_after_terminal=bool(replay.get("empty_after_terminal")),
+        sse_replay_tool_count_unchanged=bool(replay.get("tool_count_unchanged")),
         model_turn_count=None,
         mcp_call_count=len(calls),
         elapsed_ms=int(result.get("elapsed_ms", 0)),
@@ -474,6 +482,23 @@ async def evaluate(database_url: str) -> int:
         foreign_stream = await api.get(
             f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}/stream"
         )
+        foreign_replay = await api.get(
+            f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}/stream?after=0"
+        )
+        foreign_ids = [
+            int(line[4:])
+            for line in foreign_stream.text.splitlines()
+            if line.startswith("id: ") and line[4:].isdigit()
+        ]
+        foreign_tail = await api.get(
+            f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}/stream?after={max(foreign_ids, default=0)}"
+        )
+        foreign_before_replay = await api.get(
+            f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}"
+        )
+        foreign_audit_before_replay = await api.get(
+            f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}/audit"
+        )
         foreign_run_response = await api.get(
             f"/api/v1/vehicles/{fixture['other_vehicle']}/agent-runs/{foreign_id}"
         )
@@ -483,6 +508,29 @@ async def evaluate(database_url: str) -> int:
         )
         foreign_result = foreign_run | {
             "stream": foreign_stream.text,
+            "sse_replay": {
+                "verified": (
+                    foreign_stream.status_code == 200
+                    and foreign_replay.status_code == 200
+                    and foreign_stream.content == foreign_replay.content
+                    and bool(foreign_stream.content)
+                    and not foreign_tail.content
+                    and foreign_before_replay.status_code == 200
+                    and foreign_run_response.json() == foreign_before_replay.json()
+                    and foreign_audit_before_replay.status_code == 200
+                    and foreign_audit.json() == foreign_audit_before_replay.json()
+                ),
+                "event_count": len(foreign_ids),
+                "stream_sha256": sha256_bytes(foreign_stream.content),
+                "repeat_sha256": sha256_bytes(foreign_replay.content),
+                "empty_after_terminal": not foreign_tail.content,
+                "tool_count_unchanged": (
+                    foreign_audit_before_replay.status_code
+                    == foreign_audit.status_code
+                    == 200
+                    and foreign_audit_before_replay.json() == foreign_audit.json()
+                ),
+            },
             "audit": foreign_audit.json(),
         }
         foreign_attempt = _attempt(

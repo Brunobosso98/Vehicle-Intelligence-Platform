@@ -1,6 +1,7 @@
 """Bounded local HTTP processes for disposable Phase 7A acceptance only."""
 
 import asyncio
+import hashlib
 import json
 import os
 import secrets
@@ -249,12 +250,47 @@ async def ask(api: httpx.AsyncClient, vehicle: str, question: str) -> dict[str, 
     identifier = response.json()["id"]
     stream = await api.get(f"{path}/{identifier}/stream")
     assert stream.status_code == 200, stream.text
+    stream_text = stream.text
+    event_ids = [
+        int(line[4:])
+        for line in stream_text.splitlines()
+        if line.startswith("id: ") and line[4:].isdigit()
+    ]
+    if not event_ids:
+        raise AssertionError("agent_run_stream_has_no_persisted_event_ids")
+    replay = await api.get(f"{path}/{identifier}/stream?after=0")
+    terminal_tail = await api.get(f"{path}/{identifier}/stream?after={max(event_ids)}")
+    run_before_replay = await api.get(f"{path}/{identifier}")
+    run_after_replay = await api.get(f"{path}/{identifier}")
+    audit_before_replay = await api.get(f"{path}/{identifier}/audit")
+    audit_after_replay = await api.get(f"{path}/{identifier}/audit")
+    replay_state_unchanged = (
+        run_before_replay.status_code == run_after_replay.status_code == 200
+        and run_after_replay.json() == run_before_replay.json()
+        and audit_before_replay.status_code == audit_after_replay.status_code == 200
+        and audit_before_replay.json() == audit_after_replay.json()
+    )
+    replay_verified = (
+        replay.status_code == 200
+        and terminal_tail.status_code == 200
+        and replay.content == stream.content
+        and not terminal_tail.content
+        and replay_state_unchanged
+    )
     response = await api.get(f"{path}/{identifier}")
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, dict):
         raise TypeError("agent run response must be a JSON object")
     return payload | {
-        "stream": stream.text,
+        "stream": stream_text,
+        "sse_replay": {
+            "verified": replay_verified,
+            "event_count": len(event_ids),
+            "stream_sha256": hashlib.sha256(stream.content).hexdigest(),
+            "repeat_sha256": hashlib.sha256(replay.content).hexdigest(),
+            "empty_after_terminal": not terminal_tail.content,
+            "tool_count_unchanged": replay_state_unchanged,
+        },
         "elapsed_ms": int((perf_counter() - started) * 1000),
     }

@@ -237,6 +237,12 @@ def _attempt() -> CaseAttempt:
         source_digest_after="c" * 64,
         answer_status="completed",
         answer_text="Recorded value is 2.5 kPa.",
+        sse_replay_verified=True,
+        sse_replay_event_count=0,
+        sse_replay_stream_sha256=sha256_bytes(b""),
+        sse_replay_repeat_sha256=sha256_bytes(b""),
+        sse_replay_empty_after_terminal=True,
+        sse_replay_tool_count_unchanged=True,
         findings=(
             {
                 "statement": "Recorded value is 2.5 kPa.",
@@ -637,6 +643,68 @@ def test_receipt_checker_requires_persisted_agent_run_evidence():
         },
     )
     assert ok and not reasons
+
+
+def test_receipt_checker_requires_sse_replay_to_match_persisted_events():
+    case = _case()
+    attempt = _attempt()
+    receipt = create_receipt(
+        {
+            "schema_version": "1.0",
+            "suite_version": "phase11-agent-evals-v3",
+            "suite_sha256": "a" * 64,
+            "repository_sha": "b" * 40,
+            "source_fixture_sha256": "c" * 64,
+            "scenario_generator_version": "1.0",
+            "random_seed": 0,
+            "dependency_manifest_sha256": "d" * 64,
+            "prompt_manifest_sha256": "e" * 64,
+            "tool_catalog_sha256": "f" * 64,
+            "schema_revision": "0020",
+            "environment": "test",
+            "provider": "deterministic",
+            "model": "scripted-v1",
+            "attempts": [attempt.model_dump(mode="json")],
+        }
+    ).model_dump(mode="json")
+    persisted = {
+        attempt.case_id: {
+            "vehicle_id": attempt.selected_vehicle_id,
+            "status": "completed",
+            "snapshot": {
+                "id": attempt.run_id,
+                "status": "completed",
+                "result": {
+                    "answer": attempt.answer_text,
+                    "findings": list(attempt.findings),
+                    "evidence": list(attempt.evidence),
+                },
+            },
+            "tool_calls": [],
+            "events": [],
+        }
+    }
+    arguments = {
+        "expected_sha": "b" * 40,
+        "suite_sha": "a" * 64,
+        "persisted_runs": persisted,
+    }
+    ok, reasons = verify_receipt(receipt, (case,), **arguments)
+    assert ok and not reasons
+
+    raw_attempt = attempt.model_copy(update={"sse_replay_verified": False})
+    forged = create_receipt(
+        receipt | {"attempts": [raw_attempt.model_dump(mode="json")]}
+    ).model_dump(mode="json")
+    ok, reasons = verify_receipt(forged, (case,), **arguments)
+    assert not ok and "persisted_sse_replay_not_verified" in reasons
+
+    raw_attempt = attempt.model_copy(update={"sse_replay_event_count": 1})
+    forged = create_receipt(
+        receipt | {"attempts": [raw_attempt.model_dump(mode="json")]}
+    ).model_dump(mode="json")
+    ok, reasons = verify_receipt(forged, (case,), **arguments)
+    assert not ok and "persisted_sse_replay_not_verified" in reasons
 
 
 def test_receipt_checker_rejects_persisted_run_and_trace_mismatches():
