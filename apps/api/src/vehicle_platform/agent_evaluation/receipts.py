@@ -124,10 +124,7 @@ def verify_receipt(
                     reasons.append("persisted_agent_run_id_missing")
                 elif persisted is not None:
                     reasons.append("unexpected_persisted_agent_run")
-                elif (
-                    attempt.status != AttemptStatus.NOT_RUN
-                    and not has_independent_non_agent_evidence(expected[attempt.case_id], attempt)
-                ):
+                elif not has_independent_non_agent_evidence(expected[attempt.case_id], attempt):
                     reasons.append("independent_non_agent_evidence_missing")
             elif persisted is None:
                 reasons.append("persisted_agent_run_not_found")
