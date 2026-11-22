@@ -1,5 +1,7 @@
 # Phase 10 monitoring and comparison
 
+Evidence is from the independent acceptance on SHA `c5114e07972456a9922f7d06f8c1925129adc351`, receipt [44988810979](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988810979).
+
 ## Monitoring actual persisted prediction receipts
 
 The acceptance queried persisted Phase 9D prediction records from the disposable test database; it did not infer predictions or create Phase 9E evidence. Baseline and comparison windows were disjoint, scoped to the controlled binding, vehicle/configuration, source role, model version and feature schema. The report conserves each receipt once and reports counts, missingness, quality exclusion, abstention and independent session support.
@@ -17,7 +19,7 @@ This acceptance is synthetic and bounded. It demonstrates pipeline behavior and 
 
 The evaluator loaded the current compatible Phase 9D binding and registered 9B/9C candidate, froze the same eligible held-out rows and checked schema, task/family, source role, cutoff and cohort. All seven matched comparisons completed with zero metric deltas. A deliberately incompatible candidate was rejected as `NOT_COMPARABLE`; it was not ranked. Detector scores on different scales were not compared.
 
-Monitoring and comparisons are read-only over prior Phase 9D/9E/9F/9G records. Four before/after digest snapshots spanning 19 source tables matched. The separate operator review and rollback-readiness proposal also left source records and active binding unchanged. Phase 9D remains the only serving-transition authority.
+Monitoring and comparisons are read-only over prior Phase 9D/9E/9F/9G records. The before/after digest snapshots for comparison, monitoring and review were identical across all 19 protected source tables. The separate authorized Phase 9D activation/rollback rehearsal changed the expected serving binding; the preceding and following snapshots show that MLOps comparison, monitoring and rollback planning caused no source-table change. Phase 9D remains the only serving-transition authority.
 
 ## Review and rollback boundaries
 

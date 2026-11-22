@@ -4,7 +4,7 @@
 
 The disposable-database acceptance uses existing Phase 9A/9B/9C/9G paths. Runs bind the repository SHA, immutable versioned definition and fingerprint, controlled source role, exact feature/dataset fingerprints, label/oracle checksum, training/evaluation cutoff, seed, registered artifact checksum and 9G report checksum. Cohorts are temporally and entity disjoint. Candidate comparison requires the same eligible rows, task/family, horizon, schema, source role and protocol; otherwise it returns `NOT_COMPARABLE` with a reason.
 
-On SHA `439e099f7e7c1b832db8b7f3d39be004a15f30a7`, seven candidate artifacts were registered and verified (three supervised and four anomaly families). Each has 40 training sessions; supervised training row counts are 141/158/158 and anomaly training row counts are 40 each. All artifacts are private, checksummed and loaded through existing 9B/9C serializers. Synthetic fixture labels and held-out cohorts are explicit; no missing labels or measurements are invented.
+On accepted implementation SHA `c5114e07972456a9922f7d06f8c1925129adc351`, seven candidate artifacts were registered and independently verified (three supervised and four anomaly families). Each supervised training cohort has 40 sessions, with 141/158/158 rows; each anomaly cohort has 40 rows over 8 sessions. All artifacts are private, checksummed and loaded through existing 9B/9C serializers. Synthetic fixture labels and held-out cohorts are explicit; no missing labels or measurements are invented.
 
 ## Supervised Phase 9B results
 
@@ -22,13 +22,13 @@ The receipt also binds each immutable dataset and artifact by SHA-256. All seven
 
 | Candidate                  | Training dataset SHA-256                                           | Evaluation dataset SHA-256                                         | Artifact SHA-256                                                   |
 | -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| 9B fuel deviation          | `cc39b9941dbff8e7a597d4f7decaae2956f7e7c50c70ff69c185c9bac8e8b7a1` | `986a71ea9c025989f0a996ed5b2f9e445f6ceab18198530d49635a2f9b045a82` | `a74520c234129cc865c3d71150653377de675c76edd3ecc9e8f684abc9dc52f8` |
-| 9B performance degradation | `f15ab2afb17be764e5c1b16e7b68083fd0f0b59ec0700668d2f8fd52228376f0` | `95f1f550dc7acd57e92985c0b6bd79d2173f9a8f98da36d687e8cd9aec08d772` | `cdfa6f35f58db40fe66c1a2cb03e438bde30610681b69c7ec7a6b6bc2b0e011e` |
-| 9B thermal degradation     | `49feba7c863420d3fdd0be50eb5f6cf592c7e5e776e0485cbd531857af534da8` | `7c82191e0c1def0ba945c6c05d36a234ab987e6a4047775ccaec0994ac68ea78` | `87446e7fa22f7e02feb6a3d283dbc57e4c498177dee1c0770ff8d8b8b0319424` |
-| 9C boost/air               | `8b4e9dd6bf34786a3decf2f6caaf9e2a1799687e60e8ff65b48f6932bdb243ba` | `e23538185ed60249a9c51b081dd62b201a11e59bbc9005edc872c3d2cec72921` | `6f140d91659111e6f34c079e26f6289cb6623320f8cea34cff4556e6ab215281` |
-| 9C fuel                    | `e8d7d226ef30a1a042343a759939de8329ed6f8865190666a9b74d94ffadd357` | `88f1bd9a480f704d8cbaa1edc29ae2d4c7b6c3cdbb7716b634da2cee839510a1` | `1c39a8b8786f36caa92b71710478c97c49ecd4602f7884bc47147a08d7215c67` |
-| 9C performance             | `da8dbfe9cf3206758c72af30b1a16df97c1253ef2adf0f5a0bddc488adb137bb` | `6ee2fea864b53a20c5dd1c5973fc918b13dea29f98f60777a3fa78c8759d4fcf` | `70821b3d11925f6578e49f9aaf6e052b3a2c5894cc63052d2d4940b2460f0274` |
-| 9C thermal                 | `079b54f7a3747d528356f2db30045f7da64fbee123c75edfbb56efc0b7282f21` | `536c2594ce34c4e35d5a012b46925846d1eb55dbf714d961ed809b597fe2640b` | `28fe26b3656a9e72c7cdc312f9d42faa35c868a7957c96008426f569b7582f41` |
+| 9B fuel deviation          | `9c50cf0c97818daada93028195e2e35f675bb17fa7185dfc58984cbe8b25e895` | `1bf9baa08b8a1eeadd1e9486392cf09edaf9f3526b1b820627b9000954f667a4` | `a74520c234129cc865c3d71150653377de675c76edd3ecc9e8f684abc9dc52f8` |
+| 9B performance degradation | `31fbc26dedf5f01a86bd862b8f865b712c4ab8ef46578fa6e0d2a87d75014153` | `5fa85bf262f5648ab5033a9a6e9a472ad5c372922b7814ec44ede38c38ba69f5` | `cdfa6f35f58db40fe66c1a2cb03e438bde30610681b69c7ec7a6b6bc2b0e011e` |
+| 9B thermal degradation     | `68eafcce61b1955a28f2eb9fdd848f9482f91e1fdae1f8925926664e8d263434` | `ff07c3dbaa44f33a4f9e28a1c2247eb36dcd057ab3180ad502545298d80d3f6d` | `87446e7fa22f7e02feb6a3d283dbc57e4c498177dee1c0770ff8d8b8b0319424` |
+| 9C boost/air               | `9b90f5044361395fc64c284269f86fbf6503ecc83318d4fee4d1e56568a94b37` | `c56f2ae77af07110d497c0de42859327e4a883306f6ccc6666c916c435b2fac4` | `14953e8aa6c600b0801ee4c6190beda9b145ec8009fbc4f734ac472c398f36a9` |
+| 9C fuel                    | `dc130dc1c79364314ba43574aea2e82b1bdfd1962dd57a99b7da3462cf0aa924` | `807a372d210ba024c1ba1a31a0ffe83d828b53ab333ffba68f386eb5d0e22a86` | `e795d1b4a625c533141a334937cb4253139e1b8dfea603d7bd4620c3e0181188` |
+| 9C performance             | `52d44f8b396351b3c8006fa921a73a4b22951db3bcb1d42d36ad8f4646bafb95` | `c6a852036c69fe9171c305e6ed57b38c949403e118c711f66ba8f15872ba43d8` | `649b7769fa1fa2f2494b5f64d87f6fa0c86a14fe66671d0daa9fcb4aa25721ae` |
+| 9C thermal                 | `5dab3e3932888dc1766501f6c35d2a1fcc92e704413c77fb706531a0c32ca157` | `e77c289bbedaa60dbf9982127ed06c1e0be196bab15f241d0a505c4cbf3b641a` | `6048c21687638e6081bac59dd472adf601406b71343d0203fd82d69fab26af3f` |
 
 ## Phase 9C anomaly results
 
@@ -43,8 +43,12 @@ All families used 40 held-out rows and matched cohorts; all reported deltas were
 
 Training support for each family is 40 rows over 8 sessions with feature version `phase9a-pull-v2`. Threshold/reference and no-reference abstention behavior remain governed by Phase 9C's frozen policy.
 
+## Final bounded benchmark
+
+The exact-SHA acceptance receipt records seven pipeline runs in 436.24 seconds wall time, 235.11 CPU seconds and 986,628,096-byte peak RSS. Aggregate pipeline execution was 187.52 seconds and planning was 14.16 seconds. Eight measured artifacts, including temporary reproduction, totaled 92,256 bytes; the largest was 32,105 bytes against the configured 50 MiB limit. This is deterministic synthetic disposable-database evidence, not a production capacity claim.
+
 ## Reproduction, eligibility and limits
 
-The evaluator reconstructed a supervised candidate from its frozen training lineage in a private temporary artifact root. Artifact bytes, dataset/metrics checksums and evaluation cohort matched exactly; source rows were unchanged. The reproduced artifact was 26,689 bytes and took 6.457 seconds. Reproduction created no new run, registry row or evaluation record and did not tune against held-out labels.
+The evaluator reconstructed a supervised candidate from its frozen training lineage in a private temporary artifact root. Artifact bytes, dataset/metrics checksums and evaluation cohort matched exactly; source rows were unchanged. The reproduced artifact was 26,689 bytes and took 4.968 seconds. Reproduction created no new run, registry row or evaluation record and did not tune against held-out labels.
 
 Incompatible candidate/task/cohort rejection, source-role spoof rejection, temporal/source leakage checks, artifact tamper and unsafe serialization rejection, and stale artifact handling passed the independent acceptance. Every candidate retains Phase 9G readiness `SYNTHETIC_ONLY`, with production use `PROHIBITED`. Synthetic calibration is not evidence of real-world validity; supervised outputs are not mechanical failure probabilities and anomaly outputs are neither engine-health percentages nor diagnoses. Real-world mechanical failure predictive reliability remains **NOT_ESTABLISHED**.

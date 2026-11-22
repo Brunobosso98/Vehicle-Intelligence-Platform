@@ -2,7 +2,7 @@
 
 ## Exact-SHA security evidence
 
-Security run [44987560635](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44987560635) passed on implementation SHA `04c6c49b82f51b3e1dc900c60db232f4065e1a9a`. It includes the container policy, Dependency Review and CodeQL Python and JavaScript/TypeScript checks. The prior exact-SHA report on `439e099` recorded 107 accepted High package occurrences, zero Critical and zero blocked findings in selected runtime images: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2, Tempo 2, Grafana 4, Kafka 0 and custom TimescaleDB 0. The final report SHA requires a fresh scan.
+Security run [44988811008](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988811008) passed on implementation SHA `c5114e07972456a9922f7d06f8c1925129adc351`, including the container policy, Dependency Review and CodeQL Python and JavaScript/TypeScript checks. The exact artifact reports 107 accepted High package occurrences and zero Critical or blocked findings in selected runtime images: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2, Tempo 2, Grafana 4, Kafka 0 and custom TimescaleDB 0.
 
 The 20 exact High-risk exception records were reviewed on 2026-11-21 and expire 2026-12-05. The former zlib exception for `CVE-2026-76844`, which expired 2026-11-12, remains removed; selected application images report no zlib CVE. The upstream Timescale image scan separately reports 271 High and 3 Critical findings; it is not the selected runtime image. The rebuilt custom TimescaleDB runtime image has zero High and Critical findings. Scanner configuration remains enabled and upstream findings are retained.
 
@@ -16,7 +16,7 @@ Metrics use bounded OpenTelemetry attributes and omit vehicle, receipt and user 
 
 ## Failure recovery evidence
 
-Earlier exact-head independent runs exposed receipt and checker defects: unsupported datetime/UUID normalization, a `PredictionKind` alias treated as an enum, omitted synthetic scope, an absent 9B artifact-size column, `source_type` queried from `pulls` instead of its owning session, and a 9C cohort fingerprint built from pull IDs instead of matched feature-row IDs. Each defect received a targeted regression and was replayed against the failing point before the complete Phase 10 acceptance. The canonical run on `439e099` then exposed ambiguous artifact-root lookup. Resolution now verifies candidate bytes against immutable registry checksum and size; its targeted regression and isolated acceptance passed on `04c6c49`. The canonical Phase 0–10 workflow has not yet passed on the final report SHA; see the acceptance report.
+Earlier exact-head independent runs exposed receipt and checker defects: unsupported datetime/UUID normalization, a `PredictionKind` alias treated as an enum, omitted synthetic scope, an absent 9B artifact-size column, `source_type` queried from `pulls` instead of its owning session, and a 9C cohort fingerprint built from pull IDs instead of matched feature-row IDs. Each defect received a targeted regression and was replayed before the full acceptance. The canonical run on `439e099` then exposed ambiguous artifact-root lookup. Resolution verifies candidate bytes against immutable registry checksum and size; its targeted regression and isolated acceptance passed on `04c6c49`. The canonical Phase 0–10 workflow and all independent gates passed on `c5114e0`; see the acceptance report.
 
 ## Scientific applicability and serving boundary
 
