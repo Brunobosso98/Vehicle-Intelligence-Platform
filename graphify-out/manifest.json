@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/orchestration.py": {
-    "mtime": 1795354812.2457073,
-    "seen": 1795354847.3249211,
-    "ast_hash": "ce8f5b66f185f3c55e8c19f25159a430",
+    "mtime": 1795355547.6256871,
+    "seen": 1795355581.2482436,
+    "ast_hash": "9df8aa54d0c66f5561a7e0f2e3f7531a",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/prompts.py": {
@@ -1962,9 +1962,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/routing.py": {
-    "mtime": 1795354812.2457073,
-    "seen": 1795354847.3249412,
-    "ast_hash": "94a09c9358b99838152a0a1f140993d1",
+    "mtime": 1795355547.6256871,
+    "seen": 1795355581.2482598,
+    "ast_hash": "f5d378c540a1cd69103df167829dd0bf",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/runtime.py": {
@@ -3372,9 +3372,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_prediction.py": {
-    "mtime": 1795354879.977707,
-    "seen": 1795354908.0384195,
-    "ast_hash": "57fc1b01f268984e908706070646f5ef",
+    "mtime": 1795355555.497687,
+    "seen": 1795355581.2484646,
+    "ast_hash": "5557a2c48e6662aa2966e5405451a6ec",
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_prediction.py": {
@@ -4152,9 +4152,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/grader.py": {
-    "mtime": 1795354818.185707,
-    "seen": 1795354847.3248498,
-    "ast_hash": "82ed2f1b215898a5975250338750343f",
+    "mtime": 1795355547.6256871,
+    "seen": 1795355581.2482133,
+    "ast_hash": "e4b819846b92e7365829bacd12486f0b",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/receipts.py": {
@@ -4212,15 +4212,15 @@
     "semantic_hash": ""
   },
   "docs/runbooks/agent-evaluation-red-team.md": {
-    "mtime": 1795345295.9376864,
-    "seen": 1795345683.8041923,
-    "ast_hash": "a21db489e60694d16de4998a213fe517",
+    "mtime": 1795355375.5057082,
+    "seen": 1795355581.2489715,
+    "ast_hash": "97f549c5807f323aa39ddf5dc0503f44",
     "semantic_hash": ""
   },
   "docs/security/phase-11-agent-red-team.md": {
-    "mtime": 1795352126.1496763,
-    "seen": 1795352145.208582,
-    "ast_hash": "bf5a5b57021e94a577a6987a6f8d8fd5",
+    "mtime": 1795355375.5057082,
+    "seen": 1795355581.2490041,
+    "ast_hash": "528cfe9bffe04d8855b9d410553febb0",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {

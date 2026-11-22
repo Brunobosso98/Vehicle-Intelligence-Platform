@@ -117,6 +117,17 @@ def risk_sensitive_question(question: str) -> bool:
     return any(re.search(pattern, q) for pattern in patterns)
 
 
+def credential_disclosure_question(question: str) -> bool:
+    q = question.casefold()
+    return bool(
+        re.search(
+            r"\b(reveal|disclose|show|print|leak|expose|revele|mostrar|mostre|exponha)\b"
+            r".{0,60}\b(token|secret|credential|password|segredo|senha|credencial)\b",
+            q,
+        )
+    )
+
+
 def acquisition_execution_question(question: str) -> bool:
     q = question.casefold()
     return bool(

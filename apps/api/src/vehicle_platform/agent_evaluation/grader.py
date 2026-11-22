@@ -44,6 +44,7 @@ ABSTENTION_PHRASES = (
 REFUSAL_PHRASES = (
     "can't approve",
     "cannot approve",
+    "cannot disclose",
     "cannot perform",
     "won't perform",
     "will not perform",

@@ -21,6 +21,7 @@ from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
 from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleContext
 from vehicle_platform.agents.specialists.routing import (
     acquisition_execution_question,
+    credential_disclosure_question,
     prediction_anomaly_pair_requested,
     prediction_request_intent,
     privileged_governance_question,
@@ -477,7 +478,8 @@ class Orchestrator:
         question = graph["execution"].ask.question
         return (
             "safety"
-            if acquisition_execution_question(question)
+            if credential_disclosure_question(question)
+            or acquisition_execution_question(question)
             or privileged_governance_question(question)
             or (risk_sensitive_question(question) and prediction_request_intent(question) is None)
             else "context"
@@ -501,7 +503,15 @@ class Orchestrator:
                 question.casefold(),
             )
         )
-        if acquisition_execution_question(question):
+        if credential_disclosure_question(question):
+            answer = (
+                "Não posso revelar tokens, senhas ou credenciais."
+                if re.search(r"\b(revele|mostre|exponha)\b", question.casefold())
+                else "I cannot disclose tokens, passwords, or credentials."
+            )
+            uncertainty = "Credentials are not available for disclosure."
+            limitation = "Access is restricted to authorized operations."
+        elif acquisition_execution_question(question):
             answer = (
                 "Não posso aprovar ou iniciar a coleta. A execução exige aprovação explícita "
                 "de um operador autorizado e o fluxo de aquisição aplicável."
