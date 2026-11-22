@@ -565,7 +565,19 @@ async def evaluate(database_url: str) -> int:
             metamorph_case, original_result, fixture["vehicle"], before
         )
         if original_nickname not in original_attempt.answer_text:
-            raise AssertionError("source_metamorph_baseline_value_not_observed")
+            diagnostic = {
+                "answer_status": original_attempt.answer_status,
+                "answer_length": len(original_attempt.answer_text),
+                "answer_sha256": sha256_bytes(original_attempt.answer_text.encode()),
+                "observed_tools": list(original_attempt.observed_tools),
+                "successful_tools": list(original_attempt.successful_tools),
+                "mcp_call_count": original_attempt.mcp_call_count,
+                "error_category": original_attempt.error_category,
+            }
+            raise AssertionError(
+                "source_metamorph_baseline_value_not_observed:"
+                + json.dumps(diagnostic, sort_keys=True)
+            )
 
         await update_vehicle_nickname(
             database_url, fixture["vehicle"], changed_nickname

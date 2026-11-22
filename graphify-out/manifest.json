@@ -984,9 +984,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/evidence.py": {
-    "mtime": 1794673779.3011527,
-    "seen": 1794674058.4444215,
-    "ast_hash": "f46f44adfb5c261f687735fc5e7e7a1c",
+    "mtime": 1795386335.0576925,
+    "seen": 1795386397.0491223,
+    "ast_hash": "3c27ec71d3e14b9992838bbccf610005",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/grounding.py": {
@@ -1056,9 +1056,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/service.py": {
-    "mtime": 1794673779.3011527,
-    "seen": 1794674058.4444501,
-    "ast_hash": "f4ca966122e1fef56b627cd0a3130dbd",
+    "mtime": 1795386352.6457045,
+    "seen": 1795386397.0491543,
+    "ast_hash": "7ae9b952018e23d92548f5b3510d10c9",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/state.py": {
@@ -1068,9 +1068,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agents.py": {
-    "mtime": 1795380171.4977064,
-    "seen": 1795380254.141699,
-    "ast_hash": "224758eb445edc8123273b5c88a3bff2",
+    "mtime": 1795386357.4777045,
+    "seen": 1795386397.0493858,
+    "ast_hash": "52b1ab513656f1cad8ac365c53bb381e",
     "semantic_hash": ""
   },
   "apps/web/src/components/agent-workspace.tsx": {
@@ -4182,9 +4182,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_red_team.py": {
-    "mtime": 1795383814.0217068,
-    "seen": 1795383893.0581205,
-    "ast_hash": "fc173dc32c5312297dfa558bd8d8f717",
+    "mtime": 1795385963.385704,
+    "seen": 1795386010.096936,
+    "ast_hash": "3d89416e92b53f331565be8ff7110946",
     "semantic_hash": ""
   },
   "scripts/vehicle_agent_evals.py": {
@@ -4218,15 +4218,15 @@
     "semantic_hash": ""
   },
   "docs/security/phase-11-agent-red-team.md": {
-    "mtime": 1795375483.709687,
-    "seen": 1795376176.404774,
-    "ast_hash": "04a0f2bee6c4f08d2665db14c8d3c25c",
+    "mtime": 1795386208.9456973,
+    "seen": 1795386263.2574315,
+    "ast_hash": "9852d7550170575cbef98a0353e324c4",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795385413.6777053,
-    "seen": 1795385758.8480709,
-    "ast_hash": "27e708da16be53a4d969a626ce27cfa9",
+    "mtime": 1795386365.6217053,
+    "seen": 1795386397.0500014,
+    "ast_hash": "39544ad84657e9f711916dd898da5cbe",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {

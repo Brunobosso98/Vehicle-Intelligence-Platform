@@ -247,13 +247,19 @@ have not yet run on this worktree, so no v11 case PASS is claimed.
   independent failure, to avoid spending the full run on a snapshot already known not to pass.
   The fixture now maps `ambiguous` to the recorded mixed-event source; correction checks pass
   locally, but exact-head CI is still required on the corrected commit.
-- The next exact-head attempt on `0aa9006e2c181010c3cb094f32bbed522d7f8fb8` reached the source
-  metamorph and failed because the baseline answer did not contain the vehicle nickname. Review
-  found that the deterministic provider placed `get_vehicle` routing behind the non-empty-session
-  condition. Profile lookup is now independent of session availability, and its focused test uses
-  an empty session list. `make test-agent-evals` passes 103 tests and strict Mypy/Ruff pass after
-  the correction. The 180-minute full-validation run for the failing SHA was cancelled; the
-  corrected commit still needs the exact-head independent and full-stack workflows.
+- Exact-head attempt on `0aa9006e2c181010c3cb094f32bbed522d7f8fb8` reached the source metamorph
+  and failed because the baseline answer did not contain the vehicle nickname. Review led to a
+  fix that moved `get_vehicle` routing outside the non-empty-session branch; its empty-session
+  unit case passes. However, the next exact-head run on `1b99ca5154b1b123c19124119f1bb63faeec3668`
+  failed the same assertion, so that hypothesis was insufficient. The runner now records only
+  sanitized status/tool counts and an answer digest on this assertion to identify whether the MCP
+  call ran. The 180-minute full-validation run for `1b99ca5` was cancelled after the independent
+  failure. Root cause review then found that `EvidenceRegistry` intentionally removed `/nickname`
+  from every tool result, even for an explicit nickname question. Nickname projection is now
+  opt-in for explicit vehicle-profile lookup questions and only on `get_vehicle`; default fact
+  extraction still omits it, and notes/metadata remain excluded. Focused agent, evaluation,
+  formatting and typing checks pass locally. Docker exact-head integration is still required; the
+  full-validation workflow should proceed only after independent Phase 11 acceptance passes.
 
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA

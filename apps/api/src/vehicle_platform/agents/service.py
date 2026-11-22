@@ -259,6 +259,17 @@ class AgentService:
                 selected_session_id=ask.session_id,
                 selected_pull_id=ask.pull_id,
                 selected_prediction_ids=tuple(ask.prediction_evidence_ids),
+                include_nickname=any(
+                    phrase in ask.question.casefold()
+                    for phrase in (
+                        "vehicle nickname",
+                        "nickname recorded",
+                        "nickname is recorded",
+                        "nickname está registrado",
+                        "apelido está registrado",
+                        "qual apelido está registrado",
+                    )
+                ),
             ),
             emit=emit,
             audit=audit,

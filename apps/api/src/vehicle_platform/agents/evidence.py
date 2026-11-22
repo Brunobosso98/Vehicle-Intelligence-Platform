@@ -45,7 +45,12 @@ def canonical_hash(value: Any) -> str:
 
 
 def facts(
-    value: Any, path: str = "", depth: int = 0, omitted: list[str] | None = None
+    value: Any,
+    path: str = "",
+    depth: int = 0,
+    omitted: list[str] | None = None,
+    *,
+    include_nickname: bool = False,
 ) -> list[Fact]:
     result: list[Fact] = []
     omissions = omitted if omitted is not None else []
@@ -55,9 +60,17 @@ def facts(
     if isinstance(value, dict):
         unit = value.get("unit") if isinstance(value.get("unit"), str) else None
         for key, child in value.items():
-            if key in {"notes", "metadata", "vin", "nickname", "source_reference"}:
+            if key in {"notes", "metadata", "vin", "nickname", "source_reference"} and not (
+                key == "nickname" and include_nickname
+            ):
                 continue
-            children = facts(child, f"{path}/{key}", depth + 1, omissions)
+            children = facts(
+                child,
+                f"{path}/{key}",
+                depth + 1,
+                omissions,
+                include_nickname=include_nickname,
+            )
             if unit and key in {
                 "value",
                 "mean",
@@ -109,10 +122,12 @@ class EvidenceRegistry:
         selected_session_id: UUID | None = None,
         selected_pull_id: UUID | None = None,
         selected_prediction_ids: tuple[UUID, ...] = (),
+        include_nickname: bool = False,
     ) -> None:
         self.run_id, self.vehicle_id, self.maximum = run_id, vehicle_id, maximum
         self.selected_session_id, self.selected_pull_id = selected_session_id, selected_pull_id
         self.selected_prediction_ids = frozenset(selected_prediction_ids)
+        self.include_nickname = include_nickname
         self.items: dict[UUID, Evidence] = {}
         self.prediction_links: list[PredictionEvidenceLink] = []
 
@@ -201,7 +216,11 @@ class EvidenceRegistry:
                 )
                 projected = record | {"result": summary}
             omissions: list[str] = []
-            extracted = facts(projected, omitted=omissions)
+            extracted = facts(
+                projected,
+                omitted=omissions,
+                include_nickname=self.include_nickname and tool == "get_vehicle",
+            )
             source_warnings = [w.code for w in envelope.warnings]
             raw_quality = record.get("result")
             quality = raw_quality if isinstance(raw_quality, dict) else record

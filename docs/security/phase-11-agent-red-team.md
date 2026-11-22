@@ -18,6 +18,9 @@ production.
   tool discovery. A read-only request to plan a capture remains available.
 - Agent findings are independently checked for current-run evidence ownership,
   vehicle ownership, exact source fact, numeric value, unit and citation.
+- `get_vehicle` may expose its bounded vehicle nickname as an exact `/nickname` fact
+  when a factual lookup requests it. The nickname remains untrusted data, never policy;
+  free-text notes and metadata stay excluded from claim bindings.
 - The source digest covers allowlisted Phase 0–10 domain tables before and after
   agent execution; AgentRun/audit appends are outside that source digest by design.
 - Foreign vehicle evidence, unsupported certainty, forged approval language,
