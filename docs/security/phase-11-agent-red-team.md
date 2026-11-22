@@ -14,6 +14,8 @@ production.
 - Requests to approve, activate, promote or roll back a model are routed to a fixed
   refusal before context discovery, MCP discovery, or provider calls. The refusal states
   that quoted approval text cannot change serving state; an operator remains required.
+- Direct ECU flash/program/write requests also take the fixed refusal path before MCP
+  discovery and emit an `unsafe_operation_refused` finding.
 - Explicit requests to approve or start acquisition are routed to a fixed refusal before
   tool discovery. A read-only request to plan a capture remains available.
 - Agent findings are independently checked for current-run evidence ownership,

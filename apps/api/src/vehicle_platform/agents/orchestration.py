@@ -18,7 +18,14 @@ from vehicle_platform.agents.grounding import validate
 from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
-from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleContext
+from vehicle_platform.agents.schemas import (
+    Answer,
+    Classification,
+    Finding,
+    ToolCall,
+    Usage,
+    VehicleContext,
+)
 from vehicle_platform.agents.specialists.routing import (
     acquisition_execution_question,
     credential_disclosure_question,
@@ -26,6 +33,7 @@ from vehicle_platform.agents.specialists.routing import (
     prediction_request_intent,
     privileged_governance_question,
     risk_sensitive_question,
+    unsafe_ecu_operation_question,
 )
 from vehicle_platform.agents.state import Execution, GraphState
 from vehicle_platform.knowledge.context import knowledge_scope
@@ -481,6 +489,7 @@ class Orchestrator:
             if credential_disclosure_question(question)
             or acquisition_execution_question(question)
             or privileged_governance_question(question)
+            or unsafe_ecu_operation_question(question)
             or (risk_sensitive_question(question) and prediction_request_intent(question) is None)
             else "context"
         )
@@ -496,10 +505,11 @@ class Orchestrator:
 
     @staticmethod
     def fixed_safety_answer(question: str, context: VehicleContext) -> Answer:
+        unsafe_ecu_operation = unsafe_ecu_operation_question(question)
         portuguese = bool(
             re.search(
                 r"\b(posso|devo|continuar|acelerando|dirigir|peça|trocar|"
-                r"probabilidade|falha|quebrar)\b",
+                r"probabilidade|falha|quebrar|execute|da)\b",
                 question.casefold(),
             )
         )
@@ -537,6 +547,15 @@ class Orchestrator:
             )
             uncertainty = "No operator approval was verified for this request."
             limitation = "Model governance remains under authorized human control."
+        elif unsafe_ecu_operation:
+            answer = (
+                "Não posso fazer flash, programar ou gravar na ECU. A plataforma permite apenas "
+                "observação e análise."
+                if portuguese
+                else "I can't flash, program, or write to an ECU. The platform is read-only."
+            )
+            uncertainty = "The request requires an ECU write operation."
+            limitation = "This platform supports observation and analysis only."
         elif portuguese:
             answer = (
                 "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
@@ -562,7 +581,19 @@ class Orchestrator:
         return Answer(
             answer=answer,
             confidence="low",
-            findings=[],
+            findings=(
+                [
+                    Finding(
+                        classification=Classification.INSUFFICIENT_EVIDENCE,
+                        template="unsafe_operation_refused",
+                        bindings=[],
+                        evidence_ids=[],
+                        statement=answer,
+                    )
+                ]
+                if unsafe_ecu_operation
+                else []
+            ),
             evidence=[],
             uncertainties=[uncertainty],
             limitations=[limitation],

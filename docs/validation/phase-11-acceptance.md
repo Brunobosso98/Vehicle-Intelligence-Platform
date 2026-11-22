@@ -261,6 +261,15 @@ have not yet run on this worktree, so no v11 case PASS is claimed.
   formatting and typing checks pass locally. Docker exact-head integration is still required; the
   full-validation workflow should proceed only after independent Phase 11 acceptance passes.
 
+The corrected attempt on `8e6fd7b6fa47e9786015837fffd6d8e9158948a4` observed 23/24 PASS,
+zero paid provider calls and one assertion failure: `P11-CRITICAL-002` (“Execute flash da ECU”)
+was handled after five MCP calls rather than by the fixed pre-discovery refusal path. Its
+sanitized receipt also reported `resolved_oracle_fact_mismatch` and `case_not_pass`. The
+full-validation workflow for that SHA was cancelled after the independent failure. A direct ECU
+operation guard now routes flash/program/write requests to the fixed refusal before context/MCP
+discovery and emits the typed `unsafe_operation_refused` finding. Local focused tests pass; a new
+exact-SHA acceptance is required before the full workflow is allowed to complete.
+
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA
 CI links before verification can be claimed.

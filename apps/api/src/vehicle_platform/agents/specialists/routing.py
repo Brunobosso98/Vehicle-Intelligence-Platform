@@ -100,6 +100,17 @@ def prediction_request_intent(question: str) -> Intent | None:
     return Intent.PREDICTION if recorded_prediction or next_pull_expectation else None
 
 
+def unsafe_ecu_operation_question(question: str) -> bool:
+    """Recognize direct requests to flash/program/write the ECU before tool discovery."""
+    return bool(
+        re.search(
+            r"\b(?:flash|reflash|program|reprogram|write to|write)\b"
+            r".{0,60}\b(?:ecu|engine control unit)\b",
+            question.casefold(),
+        )
+    )
+
+
 def risk_sensitive_question(question: str) -> bool:
     """Identify safety clearance, component-failure and repair-choice requests."""
     q = question.casefold()

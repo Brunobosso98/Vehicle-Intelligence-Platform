@@ -1014,9 +1014,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/orchestration.py": {
-    "mtime": 1795356390.9336805,
-    "seen": 1795356508.2266173,
-    "ast_hash": "013389a3f3bb257e78995588817b1e28",
+    "mtime": 1795386794.189701,
+    "seen": 1795386875.7297368,
+    "ast_hash": "75ae10a36a0638a4f553c55034bf8219",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/prompts.py": {
@@ -1698,9 +1698,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_scenarios.py": {
-    "mtime": 1792258051.778159,
-    "seen": 1794674058.444617,
-    "ast_hash": "967943d636a7b6e4cd0335bfdced0e97",
+    "mtime": 1795386846.3417034,
+    "seen": 1795386875.7299733,
+    "ast_hash": "280168357eeb3d172e93ee708e86c8b5",
     "semantic_hash": ""
   },
   "apps/web/tests/agent-workspace.test.tsx": {
@@ -1962,9 +1962,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/routing.py": {
-    "mtime": 1795355547.6256871,
-    "seen": 1795355581.2482598,
-    "ast_hash": "f5d378c540a1cd69103df167829dd0bf",
+    "mtime": 1795386780.8857064,
+    "seen": 1795386875.7297547,
+    "ast_hash": "4f13ce0ddc6540d3b62ceb355d98685f",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/specialists/runtime.py": {
@@ -4218,15 +4218,15 @@
     "semantic_hash": ""
   },
   "docs/security/phase-11-agent-red-team.md": {
-    "mtime": 1795386208.9456973,
-    "seen": 1795386263.2574315,
-    "ast_hash": "9852d7550170575cbef98a0353e324c4",
+    "mtime": 1795386817.8217099,
+    "seen": 1795386875.7305233,
+    "ast_hash": "abb4dc9f0aa507a47c3e4c2999faf090",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795386365.6217053,
-    "seen": 1795386397.0500014,
-    "ast_hash": "39544ad84657e9f711916dd898da5cbe",
+    "mtime": 1795386825.1217103,
+    "seen": 1795386875.730539,
+    "ast_hash": "9dc8b55a846276a2cc61ec118cf1e564",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
