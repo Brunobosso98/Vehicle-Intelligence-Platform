@@ -17,7 +17,7 @@ import time
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 from uuid import UUID
 
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -86,7 +86,7 @@ from vehicle_platform.mlops.rollback import (
 )
 from vehicle_platform.mlops.runner import run_pipeline
 from vehicle_platform.observability.telemetry import Telemetry
-from vehicle_platform.predictions.domain import AnomalyRequest, PredictionKind
+from vehicle_platform.predictions.domain import AnomalyRequest
 from vehicle_platform.predictions.service import PredictionService
 
 import scripts.evaluate_predictive_reliability as phase9g
@@ -566,7 +566,7 @@ async def _anomaly_definition(
     provisional = PipelineDefinition(
         definition_version=f"p10-anomaly-{family}-v1",
         kind=PipelineKind.ANOMALY,
-        family=family,  # type: ignore[arg-type]
+        family=cast(Literal["thermal", "boost_air", "performance", "fuel"], family),
         method=DetectorMethod.ROBUST_MAD.value,
         anchor_pull_id=anchor.pull_id,
         source_role=SourceRole.SYNTHETIC,
@@ -1061,7 +1061,7 @@ async def _active_binding_id(
     service = PredictionService(settings, database)
     try:
         bindings = await service.repository.bindings_for_slot(
-            PredictionKind.NEXT_PULL,
+            "next_pull",
             task.value,
             SourceRole.SYNTHETIC,
             "test",
@@ -1070,7 +1070,7 @@ async def _active_binding_id(
         _require(
             len(active) == 1, "9D rollback rehearsal lost its unique active binding"
         )
-        return active[0].id
+        return cast(UUID, active[0].id)
     finally:
         await service.close()
 

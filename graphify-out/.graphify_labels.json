@@ -1,7 +1,6 @@
 {
   "1": "Detailed engineering contract — mandatory implementation addendum",
   "2": "Phase 9A — Feature Engineering Foundation",
-  "3": "phase7d_eval.py",
   "4": "api/routes.py",
   "5": "runtime.py",
   "6": "Phase 9B — Predictive Models",
@@ -68,10 +67,8 @@
   "94": "45. Required synthetic scenarios",
   "96": "73. Definition of Done",
   "98": "Phase 7D — Real Model Validation & Agent Reliability Baseline",
-  "102": "stable_hash",
   "103": "pull_request_template.md",
   "104": "DetectorProfile",
-  "105": "acquisition/service.py",
   "106": "Phase 5 automotive analytics",
   "107": "14. Specialist tool allowlists",
   "108": "N55 Intelligence Lab",
@@ -193,7 +190,6 @@
   "338": "Elm327Adapter",
   "339": "ADR 0046: Controlled server-side predictive UI boundary",
   "341": "Phase 9F agent evaluation",
-  "342": "test_elm_tcp_transport_connects_reads_reuses_and_closes",
   "353": "server-only.ts",
   "354": "phase-9f-traceability-ledger.md",
   "384": "Phase 9H independent acceptance"

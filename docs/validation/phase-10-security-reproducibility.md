@@ -42,14 +42,17 @@ database oracle; public or production APIs do not expose training or MLOps.
 
 ## Current execution status
 
-The current reproduction correction passed 45 focused Phase 10 unit tests,
-changed-module Ruff and formatting checks, API typing for the MLOps modules,
-strict typing for the independent checker and benchmark, and Python compilation
-on 2026-11-21. Earlier `make verify-cloud` evidence on the implementation
-before this correction reported 1,500 API tests, 95.98% line and 90.16% branch
-coverage, web checks and filesystem scans; it must be rerun for final-source
-acceptance. None of these local checks replace disposable database, artifact,
-container, CodeQL or exact-head CI evidence.
+The correction passes 49 Phase 10 unit tests and `make check-api` with 1,507
+API tests, 95.83% line coverage and 90.02% branch coverage, plus Ruff,
+formatting, API typing and strict typing for the five scripts in the repository
+gate. The preceding exact-head SHA `1f667cd03aeff9a92c19b7d2eee8b2563a7cc310`
+passed Phase 9G, Phase 9H, Integration E2E, Security, Dependency Review and
+both CodeQL jobs. Its Quality check failed at 89.61% branch coverage, and its
+Phase 10 evaluator failed at the active-binding snapshot due to treating the
+`PredictionKind` typing alias as an enum. The coverage and evaluator fixes now
+pass local focused checks; all required jobs still need fresh receipts on the
+correction SHA. None of these local checks replace disposable database,
+artifact, container or exact-head CI evidence.
 
 The dedicated Phase 10 and canonical full-validation workflows upload
 checksum-bound receipts. The implementation has not yet been published and no

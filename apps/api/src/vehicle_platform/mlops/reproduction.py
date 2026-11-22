@@ -111,13 +111,10 @@ async def reproduce_supervised_run(
     ):
         raise ReproductionError("REPRODUCTION_DEFINITION_INELIGIBLE")
     task = definition.task
-    if task is None:
-        raise ReproductionError("REPRODUCTION_DEFINITION_INELIGIBLE")
     model_spec = get_model_spec(task)
     if (
         len(model_spec.feature_keys) > definition.budget.max_features
         or len(model_spec.candidates) > definition.budget.max_candidates
-        or len(definition.training_pull_ids) > definition.budget.max_rows
         or default_feature_version().checksum != definition.expected_feature_checksum
     ):
         raise ReproductionError("REPRODUCTION_RESOURCE_LIMIT")

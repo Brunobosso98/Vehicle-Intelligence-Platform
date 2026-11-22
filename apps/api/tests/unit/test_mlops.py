@@ -221,6 +221,344 @@ def test_phase10_reproduction_contract_is_read_only_and_serving_separated():
         ReproductionReceipt(**{**receipt, "serving_action": "ACTIVATE"})
 
 
+@pytest.mark.asyncio
+async def test_mlops_reproduction_budget_deadline_is_bounded():
+    import asyncio
+    from time import perf_counter
+
+    from vehicle_platform.mlops.reproduction import ReproductionError, _within_budget
+
+    async def quick_operation():
+        return "reproduced"
+
+    async def slow_operation():
+        await asyncio.sleep(0.05)
+
+    assert await _within_budget(quick_operation, perf_counter() + 1) == "reproduced"
+    with pytest.raises(ReproductionError, match="REPRODUCTION_TIMEOUT"):
+        await _within_budget(quick_operation, 0)
+    with pytest.raises(ReproductionError, match="REPRODUCTION_TIMEOUT"):
+        await _within_budget(slow_operation, perf_counter() + 0.001)
+
+
+@pytest.mark.asyncio
+async def test_mlops_reproduction_rejects_ineligible_run_before_training(monkeypatch):
+    from vehicle_platform.features.service import default_feature_version
+    from vehicle_platform.mlops import reproduction
+    from vehicle_platform.mlops.contracts import ResourceBudget
+
+    monkeypatch.setattr(reproduction, "require_controlled_environment", lambda: "test")
+    monkeypatch.setattr(reproduction, "checkout_is_dirty", AsyncMock(return_value=False))
+
+    class FakeResult:
+        def __init__(self, row):
+            self.row = row
+
+        def mappings(self):
+            return self
+
+        def one_or_none(self):
+            return self.row
+
+    class FakeSession:
+        def __init__(self, rows):
+            self.rows = iter(rows)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return False
+
+        def begin(self):
+            return self
+
+        async def execute(self, *_args, **_kwargs):
+            return FakeResult(next(self.rows))
+
+    class FakeDatabase:
+        def __init__(self, rows):
+            self.rows = iter(rows)
+
+        def session(self):
+            return FakeSession(self.rows)
+
+    def make_definition(**updates):
+        updates["expected_feature_checksum"] = default_feature_version().checksum
+        return _supervised_definition("reproduction-unit-v1").model_copy(update=updates)
+
+    def make_record(definition, **updates):
+        candidate_id = uuid4()
+        comparison = {
+            "status": "COMPARABLE_OFFLINE",
+            "serving_action": "NONE",
+            "task": definition.task.value,
+            "source_role": definition.source_role.value,
+            "evaluation_dataset_checksum": definition.expected_evaluation_checksum,
+            "challenger_version_id": str(candidate_id),
+            "challenger": {},
+        }
+        record = {
+            "state": "COMPLETED",
+            "definition_fingerprint": definition.fingerprint,
+            "body": definition.model_dump(mode="json"),
+            "comparison": comparison,
+            "model_version_id": str(candidate_id),
+        }
+        record.update(updates)
+        return record
+
+    async def run(record):
+        database = FakeDatabase([None, record])
+        return await reproduction.reproduce_supervised_run(database, uuid4())
+
+    with pytest.raises(reproduction.ReproductionError, match="REQUIRES_COMPLETED"):
+        await run(None)
+    with pytest.raises(reproduction.ReproductionError, match="REQUIRES_COMPLETED"):
+        await run({"state": "FAILED"})
+    with pytest.raises(reproduction.ReproductionError, match="LINEAGE_MISSING"):
+        await run(make_record(make_definition(), body=None))
+    with pytest.raises(reproduction.ReproductionError, match="LINEAGE_MISSING"):
+        await run(make_record(make_definition(), comparison=[]))
+
+    imported = make_definition(source_role=SourceRole.IMPORTED_FIXTURE)
+    with pytest.raises(reproduction.ReproductionError, match="DEFINITION_INELIGIBLE"):
+        await run(make_record(imported))
+
+    resource_limited = make_definition(budget=ResourceBudget(max_features=1))
+    with pytest.raises(reproduction.ReproductionError, match="RESOURCE_LIMIT"):
+        await run(make_record(resource_limited))
+
+    incompatible = make_record(make_definition())
+    incompatible["comparison"]["status"] = "NOT_COMPARABLE"
+    with pytest.raises(reproduction.ReproductionError, match="COMPARISON_INELIGIBLE"):
+        await run(incompatible)
+
+    monkeypatch.setattr(reproduction, "checkout_is_dirty", AsyncMock(return_value=True))
+    with pytest.raises(reproduction.ReproductionError, match="SOURCE_COMMIT_MISMATCH"):
+        await run(make_record(make_definition()))
+
+
+@pytest.mark.asyncio
+async def test_mlops_reproduction_checks_training_lineage_before_split(monkeypatch):
+    from vehicle_platform.features.service import default_feature_version
+    from vehicle_platform.mlops import reproduction
+    from vehicle_platform.mlops.contracts import ResourceBudget
+
+    monkeypatch.setattr(reproduction, "require_controlled_environment", lambda: "test")
+    monkeypatch.setattr(reproduction, "checkout_is_dirty", AsyncMock(return_value=False))
+
+    class FakeResult:
+        def __init__(self, row):
+            self.row = row
+
+        def mappings(self):
+            return self
+
+        def one_or_none(self):
+            return self.row
+
+    class FakeSession:
+        def __init__(self, rows):
+            self.rows = iter(rows)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return False
+
+        def begin(self):
+            return self
+
+        async def execute(self, *_args, **_kwargs):
+            return FakeResult(next(self.rows))
+
+    class FakeDatabase:
+        def __init__(self, rows):
+            self.rows = iter(rows)
+
+        def session(self):
+            return FakeSession(self.rows)
+
+    definition = _supervised_definition("reproduction-lineage-v1").model_copy(
+        update={"expected_feature_checksum": default_feature_version().checksum}
+    )
+    candidate_id = uuid4()
+    record = {
+        "state": "COMPLETED",
+        "definition_fingerprint": definition.fingerprint,
+        "body": definition.model_dump(mode="json"),
+        "model_version_id": str(candidate_id),
+        "comparison": {
+            "status": "COMPARABLE_OFFLINE",
+            "serving_action": "NONE",
+            "task": definition.task.value,
+            "source_role": "synthetic",
+            "evaluation_dataset_checksum": definition.expected_evaluation_checksum,
+            "challenger_version_id": str(candidate_id),
+            "challenger": {},
+        },
+    }
+
+    async def build_bad_dataset(*_args, **_kwargs):
+        return SimpleNamespace(checksum="0" * 64, source_fingerprint="1" * 64, rows=()), None, None
+
+    monkeypatch.setattr(reproduction, "build_task_dataset", build_bad_dataset)
+    with pytest.raises(reproduction.ReproductionError, match="TRAINING_LINEAGE_MISMATCH"):
+        await reproduction.reproduce_supervised_run(FakeDatabase([None, record]), uuid4())
+
+    async def build_matching_dataset(*_args, **_kwargs):
+        return (
+            SimpleNamespace(
+                checksum=definition.expected_dataset_checksum,
+                source_fingerprint=definition.expected_source_fingerprint,
+                rows=(),
+            ),
+            None,
+            None,
+        )
+
+    def stop_after_lineage(_dataset):
+        raise RuntimeError("training split reached after verified lineage")
+
+    monkeypatch.setattr(reproduction, "build_task_dataset", build_matching_dataset)
+    monkeypatch.setattr(reproduction, "chronological_group_split", stop_after_lineage)
+    with pytest.raises(RuntimeError, match="verified lineage"):
+        await reproduction.reproduce_supervised_run(FakeDatabase([None, record]), uuid4())
+
+    class FakeArtifactStore:
+        async def load_registered(self, _database, _candidate_id):
+            return SimpleNamespace(
+                model_version=SimpleNamespace(
+                    supervised_dataset_id=uuid4(),
+                    label_definition_id=uuid4(),
+                    feature_set_version_id=uuid4(),
+                )
+            )
+
+    def train_stub(*_args, **_kwargs):
+        return SimpleNamespace(input_schema={})
+
+    monkeypatch.setattr(reproduction, "build_task_dataset", build_matching_dataset)
+    monkeypatch.setattr(
+        reproduction,
+        "chronological_group_split",
+        lambda _dataset: SimpleNamespace(test=()),
+    )
+    monkeypatch.setattr(reproduction, "train_and_evaluate", train_stub)
+    monkeypatch.setattr(reproduction, "ArtifactStore", FakeArtifactStore)
+    with pytest.raises(reproduction.ReproductionError, match="REGISTERED_CANDIDATE_MISMATCH"):
+        await reproduction.reproduce_supervised_run(
+            FakeDatabase([None, record, None, None]), uuid4()
+        )
+
+    from vehicle_platform.ml.domain import ModelState
+
+    candidate_checksum = "a" * 64
+    record["comparison"]["challenger_artifact_checksum"] = candidate_checksum
+    model_spec = reproduction.get_model_spec(definition.task)
+    candidate = SimpleNamespace(
+        model_version=SimpleNamespace(
+            supervised_dataset_id=uuid4(),
+            label_definition_id=uuid4(),
+            feature_set_version_id=uuid4(),
+            task=definition.task,
+            state=ModelState.CANDIDATE,
+            dataset_checksum=definition.expected_dataset_checksum,
+            repository_sha=definition.git_sha,
+            artifact_checksum=candidate_checksum,
+        ),
+        input_schema={},
+        model_spec_checksum=model_spec.checksum,
+    )
+    registered_dataset = {
+        "source_role": "synthetic",
+        "source_fingerprint": definition.expected_source_fingerprint,
+        "checksum": definition.expected_dataset_checksum,
+        "label_checksum": model_spec.label_definition.checksum,
+        "feature_checksum": definition.expected_feature_checksum,
+    }
+
+    class OversizedArtifactStore:
+        def __init__(self, *_args):
+            pass
+
+        async def load_registered(self, _database, _candidate_id):
+            return candidate
+
+        def write(self, *_args, **_kwargs):
+            return SimpleNamespace(size_bytes=2)
+
+    training = SimpleNamespace(
+        input_schema={},
+        selected_model=object(),
+        selected_threshold=0.5,
+        selected_family=SimpleNamespace(value="logistic_regression"),
+    )
+    monkeypatch.setattr(reproduction, "train_and_evaluate", lambda *_args, **_kwargs: training)
+    monkeypatch.setattr(reproduction, "ArtifactStore", OversizedArtifactStore)
+    monkeypatch.setattr(
+        reproduction,
+        "chronological_group_split",
+        lambda _dataset: SimpleNamespace(test=()),
+    )
+    bounded_definition = definition.model_copy(
+        update={"budget": ResourceBudget(max_artifact_bytes=1)}
+    )
+    bounded_record = {
+        **record,
+        "definition_fingerprint": bounded_definition.fingerprint,
+        "body": bounded_definition.model_dump(mode="json"),
+        "comparison": {**record["comparison"]},
+    }
+    with pytest.raises(reproduction.ReproductionError, match="ARTIFACT_EXCEEDS_BUDGET"):
+        await reproduction.reproduce_supervised_run(
+            FakeDatabase([None, bounded_record, None, registered_dataset]), uuid4()
+        )
+
+
+@pytest.mark.asyncio
+async def test_phase10_acceptance_reads_next_pull_binding_with_literal_kind(monkeypatch):
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    from vehicle_platform.ml.domain import MLTask
+
+    def load_evaluator():
+        evaluator_path = Path(__file__).resolve().parents[4] / "scripts" / "evaluate_mlops.py"
+        monkeypatch.syspath_prepend(str(evaluator_path.parent))
+        spec = spec_from_file_location("phase10_acceptance_runtime", evaluator_path)
+        assert spec is not None and spec.loader is not None
+        evaluator = module_from_spec(spec)
+        sys.modules[spec.name] = evaluator
+        spec.loader.exec_module(evaluator)
+        return evaluator
+
+    evaluator = load_evaluator()
+
+    calls = []
+    expected_binding = uuid4()
+
+    class FakeRepository:
+        async def bindings_for_slot(self, *args):
+            calls.append(args)
+            return [SimpleNamespace(is_active=True, id=expected_binding)]
+
+    class FakeService:
+        def __init__(self, *_args):
+            self.repository = FakeRepository()
+
+        async def close(self):
+            return None
+
+    monkeypatch.setattr(evaluator, "PredictionService", FakeService)
+    binding = await evaluator._active_binding_id(object(), object(), MLTask.THERMAL_DEGRADATION)
+
+    assert binding == expected_binding
+    assert calls == [("next_pull", MLTask.THERMAL_DEGRADATION.value, SourceRole.SYNTHETIC, "test")]
+
+
 def test_phase10_pipeline_contracts_enforce_task_oracle_and_gate_invariants():
     from datetime import timedelta, timezone
 
