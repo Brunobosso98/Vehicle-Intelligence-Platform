@@ -22,6 +22,8 @@ from pydantic import SecretStr
 from sqlalchemy import text
 from vehicle_platform.core.config import Settings
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.mlops.contracts import ReproductionReceipt
+from vehicle_platform.mlops.reproduction import reproduce_supervised_run
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / ".validation" / "phase10" / "acceptance.json"
@@ -1197,7 +1199,7 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
 
 def _verify_receipt(report: dict[str, Any], expected_sha: str) -> list[dict[str, Any]]:
     _require(
-        report.get("schema_version") == "phase10-acceptance-v1",
+        report.get("schema_version") == "phase10-acceptance-v2",
         "unsupported receipt schema",
     )
     _require(report.get("status") == "PASS", "Phase 10 evaluator did not pass")
@@ -1238,39 +1240,72 @@ def _verify_receipt(report: dict[str, Any], expected_sha: str) -> list[dict[str,
             )
             items.append(item)
     reproduction = report.get("deterministic_reproduction", {})
+    receipt_payload = reproduction.get("receipt")
+    if not isinstance(receipt_payload, dict):
+        raise TypeError("deterministic reproduction contract is missing")
+    receipt = ReproductionReceipt.model_validate_json(json.dumps(receipt_payload))
     _require(
-        reproduction.get("status") == "REPRODUCED",
-        "same-seed experiment was not reproduced",
+        receipt.status == "REPRODUCED" and reproduction.get("status") == "REPRODUCED",
+        "read-only deterministic experiment reproduction did not pass",
     )
     _require(
-        reproduction.get("artifact_checksum_equal") is True,
-        "reproduced artifact differs",
+        reproduction.get("artifact_checksum_equal") is True
+        and receipt.reproduced_artifact_checksum == receipt.expected_artifact_checksum,
+        "reconstructed artifact differs",
     )
     _require(
-        reproduction.get("evaluation_dataset_checksum_equal") is True,
-        "reproduced experiment changed its holdout",
+        reproduction.get("evaluation_dataset_checksum_equal") is True
+        and receipt.reproduced_evaluation_checksum
+        == receipt.expected_evaluation_checksum,
+        "reproduction changed the frozen evaluation dataset",
     )
     _require(
-        reproduction.get("candidate_metrics_equal") is True, "reproduced metrics differ"
+        reproduction.get("candidate_metrics_equal") is True
+        and receipt.reproduced_metrics_checksum == receipt.expected_metrics_checksum,
+        "reproduced candidate metrics differ",
     )
-    reproduced = reproduction.get("reproduction")
-    _require(isinstance(reproduced, dict), "reproduction run receipt is missing")
+    _require(
+        reproduction.get("write_boundary_unchanged") is True
+        and reproduction.get("pipeline_run_created") is False
+        and reproduction.get("registry_rows_written") is False
+        and receipt.holdout_usage
+        == "READ_ONLY_REPRODUCTION_AUDIT_NO_SELECTION_OR_TUNING"
+        and receipt.serving_action == "NONE"
+        and receipt.real_world_predictive_validity == "NOT_ESTABLISHED"
+        and receipt.real_world_mechanical_failure_predictive_reliability
+        == "NOT_ESTABLISHED",
+        "reproduction crossed its read-only or serving boundary",
+    )
     original = next(
         (
             item
             for item in items
-            if item.get("definition_fingerprint")
-            == reproduction.get("original_definition_fingerprint")
+            if item.get("definition_fingerprint") == receipt.definition_fingerprint
         ),
         None,
     )
     _require(
-        reproduced.get("kind") == "supervised"
-        and original is not None
-        and reproduced.get("subject") == original.get("subject"),
-        "reproduction does not reference the original supervised task",
+        original is not None
+        and original.get("kind") == "supervised"
+        and receipt.original_run_id == UUID(original["run_id"])
+        and receipt.candidate_version_id == UUID(original["candidate_version_id"])
+        and receipt.expected_artifact_checksum == original["artifact_checksum"]
+        and receipt.expected_training_dataset_checksum
+        == original["candidate_dossier"]["dataset_lineage"]["dataset_checksum"]
+        and receipt.expected_source_fingerprint
+        == original["candidate_dossier"]["dataset_lineage"]["source_fingerprint"]
+        and receipt.expected_evaluation_checksum
+        == original["comparison"]["evaluation_dataset_checksum"]
+        and receipt.evaluation_rows_fingerprint
+        == original["comparison"]["matched_row_fingerprint"]
+        and receipt.expected_metrics_checksum
+        == _canonical_hash(original["comparison"]["challenger"])
+        and reproduction.get("reproduced_metrics")
+        == original["comparison"]["challenger"]
+        and len(receipt.scientific_limitations) >= 4
+        and reproduction.get("artifact_size_bytes", 0) > 0,
+        "reproduction receipt does not match its immutable original run and candidate",
     )
-    items.append(reproduced)
     reviewed_proposal_id = (
         report.get("proposal_review", {}).get("decision", {}).get("proposal_id")
     )
@@ -1378,7 +1413,7 @@ def _verify_receipt(report: dict[str, Any], expected_sha: str) -> list[dict[str,
     )
     _require(
         report.get("adversaries", {}).get("registered_artifact_tamper_rejected_count")
-        == 8,
+        == len(items),
         "tampered artifacts were not all rejected",
     )
     _require(
@@ -1431,7 +1466,10 @@ def _verify_receipt(report: dict[str, Any], expected_sha: str) -> list[dict[str,
 
 
 async def _verify_database(
-    items: list[dict[str, Any]], database_url: str, monitor: dict[str, Any]
+    items: list[dict[str, Any]],
+    database_url: str,
+    monitor: dict[str, Any],
+    reproduction: dict[str, Any],
 ) -> dict[str, Any]:
     _require(
         database_url.rsplit("/", 1)[-1].startswith("vehicle_test"),
@@ -1443,8 +1481,86 @@ async def _verify_database(
         comparison_deltas = 0
         for item in items:
             comparison_deltas += await _verify_run(database, item)
+        reproduction_tables = (
+            "prediction_serving_bindings",
+            "prediction_serving_events",
+            "prediction_receipts",
+            "prediction_evidence_bundles",
+            "prediction_evidence_sources",
+            "prediction_evidence_nodes",
+            "prediction_evidence_edges",
+            "prediction_evidence_facts",
+            "prediction_evidence_gaps",
+            "prediction_evidence_verification_audits",
+            "agent_prediction_evidence_links",
+            "agent_runs",
+            "agent_tool_calls",
+            "agent_stream_events",
+            "evaluation_protocols",
+            "evaluation_runs",
+            "evaluation_metric_reports",
+            "evaluation_calibration_candidates",
+            "evaluation_applicability_assessments",
+            "feature_generation_runs",
+            "feature_set_versions",
+            "feature_sets",
+            "dataset_definitions",
+            "dataset_build_runs",
+            "label_definitions",
+            "ml_models",
+            "mlops_definitions",
+            "mlops_runs",
+            "mlops_run_events",
+            "mlops_step_events",
+            "mlops_proposals",
+            "mlops_proposal_events",
+            "ml_model_versions",
+            "anomaly_detector_versions",
+            "training_runs",
+            "supervised_datasets",
+            "supervised_dataset_rows",
+        )
+
+        async def boundary_digest() -> dict[str, str]:
+            result: dict[str, str] = {}
+            async with database.session() as session, session.begin():
+                await session.execute(
+                    text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+                )
+                for table in reproduction_tables:
+                    rows = (
+                        (
+                            await session.execute(
+                                text(
+                                    f"SELECT row_to_json(item)::text FROM {table} item ORDER BY 1"
+                                )
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
+                    result[table] = _canonical_hash([str(row) for row in rows])
+            return result
+
+        before_reproduction = await boundary_digest()
+        reproduced = await reproduce_supervised_run(
+            database,
+            UUID(reproduction["receipt"]["original_run_id"]),
+        )
+        after_reproduction = await boundary_digest()
+        _require(
+            before_reproduction == after_reproduction,
+            "independent reproduction changed a Phase 9D/9E/9F/9G or control-plane source row",
+        )
+        _require(
+            reproduced["receipt"] == reproduction["receipt"]
+            and reproduced["reproduced_metrics"] == reproduction["reproduced_metrics"],
+            "independent deterministic reconstruction differs from the acceptance receipt",
+        )
         monitoring = await _verify_monitoring_arithmetic(database, monitor)
         monitoring["comparison_delta_fields_checked"] = comparison_deltas
+        monitoring["independent_reproduction"] = "PASS"
+        monitoring["reproduction_source_rows_unchanged"] = True
         return monitoring
     finally:
         await database.close()
@@ -1461,7 +1577,12 @@ def main() -> None:
     bounded_fixture = _verify_bounded_oracle_fixture()
     database_url = os.environ.get("TEST_DATABASE_URL", "")
     database_oracle = asyncio.run(
-        _verify_database(items, database_url, report.get("monitoring", {}))
+        _verify_database(
+            items,
+            database_url,
+            report.get("monitoring", {}),
+            report.get("deterministic_reproduction", {}),
+        )
     )
     print(
         json.dumps(

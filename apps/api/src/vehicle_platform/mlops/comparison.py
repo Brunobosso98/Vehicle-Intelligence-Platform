@@ -68,6 +68,52 @@ def _scores(
     return tuple(output)
 
 
+def matched_binary_metrics(
+    champion: TrustedModelArtifact,
+    challenger: TrustedModelArtifact,
+    rows: tuple[SupervisedRow, ...],
+    definition: PipelineDefinition,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Apply the canonical 9G binary protocol to one matched offline cohort."""
+    first = _scores(champion, rows)
+    second = _scores(challenger, rows)
+    paired_first = tuple(
+        left if left is not None and right is not None else None
+        for left, right in zip(first, second, strict=True)
+    )
+    paired_second = tuple(
+        right if left is not None and right is not None else None
+        for left, right in zip(first, second, strict=True)
+    )
+    labels = [row.target for row in rows]
+    row_ids = [row.row_id for row in rows]
+    clusters = [row.session_id for row in rows]
+    return (
+        binary_metrics(
+            paired_first,
+            labels,
+            threshold=champion.model_version.threshold,
+            source_role=SourceRole.SYNTHETIC,
+            fold_id="matched_holdout",
+            row_ids=row_ids,
+            clusters=clusters,
+            bootstrap_resamples=definition.budget.max_bootstrap_resamples,
+            seed=definition.seed,
+        ),
+        binary_metrics(
+            paired_second,
+            labels,
+            threshold=challenger.model_version.threshold,
+            source_role=SourceRole.SYNTHETIC,
+            fold_id="matched_holdout",
+            row_ids=row_ids,
+            clusters=clusters,
+            bootstrap_resamples=definition.budget.max_bootstrap_resamples,
+            seed=definition.seed,
+        ),
+    )
+
+
 async def compare_supervised(
     database: Database,
     definition: PipelineDefinition,
@@ -172,43 +218,12 @@ async def compare_supervised(
                 return _not_comparable("HOLDOUT_LEAKAGE")
     try:
         with threadpool_limits(limits=1):
-            first = await asyncio.to_thread(_scores, champion, rows)
-            second = await asyncio.to_thread(_scores, challenger, rows)
+            champion_metrics, challenger_metrics = await asyncio.to_thread(
+                matched_binary_metrics, champion, challenger, rows, definition
+            )
     except (ArtifactValidationError, ValueError):
         return _not_comparable("SCHEMA_INCOMPATIBLE")
-    paired_first = tuple(
-        a if a is not None and b is not None else None for a, b in zip(first, second, strict=True)
-    )
-    paired_second = tuple(
-        b if a is not None and b is not None else None for a, b in zip(first, second, strict=True)
-    )
-    labels = [row.target for row in rows]
     row_ids = [row.row_id for row in rows]
-    clusters = [row.session_id for row in rows]
-    champion_metrics = await asyncio.to_thread(
-        binary_metrics,
-        paired_first,
-        labels,
-        threshold=champion.model_version.threshold,
-        source_role=SourceRole.SYNTHETIC,
-        fold_id="matched_holdout",
-        row_ids=row_ids,
-        clusters=clusters,
-        bootstrap_resamples=definition.budget.max_bootstrap_resamples,
-        seed=definition.seed,
-    )
-    challenger_metrics = await asyncio.to_thread(
-        binary_metrics,
-        paired_second,
-        labels,
-        threshold=challenger.model_version.threshold,
-        source_role=SourceRole.SYNTHETIC,
-        fold_id="matched_holdout",
-        row_ids=row_ids,
-        clusters=clusters,
-        bootstrap_resamples=definition.budget.max_bootstrap_resamples,
-        seed=definition.seed,
-    )
     latest = await bindings.binding(champion_binding_id)
     if latest is None or not latest.is_active or latest.latest_event_id != binding.latest_event_id:
         return _not_comparable("STALE_CHAMPION_BINDING")

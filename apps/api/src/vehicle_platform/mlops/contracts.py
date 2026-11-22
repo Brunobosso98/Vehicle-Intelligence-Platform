@@ -270,13 +270,28 @@ class RollbackPlan(Contract):
 
 
 class ReproductionReceipt(Contract):
-    schema_version: Literal["phase10-reproduction-v1"] = "phase10-reproduction-v1"
+    schema_version: Literal["phase10-reproduction-v2"] = "phase10-reproduction-v2"
+    original_run_id: UUID
+    candidate_version_id: UUID
     definition_fingerprint: str = Field(pattern=_HASH_PATTERN)
-    source_fingerprint: str = Field(pattern=_HASH_PATTERN)
+    expected_source_fingerprint: str = Field(pattern=_HASH_PATTERN)
+    reproduced_source_fingerprint: str = Field(pattern=_HASH_PATTERN)
+    expected_training_dataset_checksum: str = Field(pattern=_HASH_PATTERN)
+    reproduced_training_dataset_checksum: str = Field(pattern=_HASH_PATTERN)
+    expected_artifact_checksum: str = Field(pattern=_HASH_PATTERN)
+    reproduced_artifact_checksum: str = Field(pattern=_HASH_PATTERN)
     expected_evaluation_checksum: str = Field(pattern=_HASH_PATTERN)
     reproduced_evaluation_checksum: str = Field(pattern=_HASH_PATTERN)
+    evaluation_rows_fingerprint: str = Field(pattern=_HASH_PATTERN)
     expected_metrics_checksum: str = Field(pattern=_HASH_PATTERN)
     reproduced_metrics_checksum: str = Field(pattern=_HASH_PATTERN)
+    holdout_usage: Literal["READ_ONLY_REPRODUCTION_AUDIT_NO_SELECTION_OR_TUNING"]
+    serving_action: Literal["NONE"] = "NONE"
+    real_world_predictive_validity: Literal["NOT_ESTABLISHED"] = "NOT_ESTABLISHED"
+    real_world_mechanical_failure_predictive_reliability: Literal["NOT_ESTABLISHED"] = (
+        "NOT_ESTABLISHED"
+    )
+    scientific_limitations: tuple[str, ...] = Field(min_length=4, max_length=8)
     status: Literal["REPRODUCED", "MISMATCH", "BLOCKED"]
 
 

@@ -9,10 +9,10 @@ families (thermal, boost/air, performance and fuel). It runs the registered
 evaluates newly predeclared held-out synthetic cohorts through existing 9G
 protocols.
 
-For the bounded Phase 10 training input, the evaluator seeds a separate
-deterministic six-vehicle Phase 9B fixture (150 pulls) and places its exact
-sorted pull IDs in each immutable definition. The wider Phase 9G regression
-corpus is not implicitly swept into these training datasets.
+For the bounded Phase 10 training input, the evaluator seeds a deterministic
+eight-vehicle N55 Phase 9B fixture and places its exact sorted pull IDs in each
+immutable definition. The wider Phase 9G regression corpus is not implicitly
+swept into these training datasets.
 
 Supervised evaluation uses three deterministic, temporally ordered 4-vehicle
 fixture blocks beginning April 1, June 1 and September 1, 2026. Their 20-session
@@ -47,10 +47,13 @@ updated from those exact-SHA artifacts before a VERIFIED declaration.
 | 9C performance             | Not measured     | Not measured     | Not measured        | Not registered in this local acceptance | NOT_ESTABLISHED   |
 | 9C fuel                    | Not measured     | Not measured     | Not measured        | Not registered in this local acceptance | NOT_ESTABLISHED   |
 
-The evaluator also re-runs one full 9B task using the same seed and asserts
-byte-identical registered model artifact, dataset checksum and candidate
-metrics. The independently verified reproduction receipt will be recorded
-after exact-head CI execution.
+The evaluator reconstructs the original 9B candidate from the same frozen
+training cohort and seed in a private temporary artifact root. It re-scores
+the same frozen 9G test rows only as a read-only determinism check, then asserts
+byte-identical artifact, evaluation cohort and candidate metrics. This does
+not create a new pipeline or 9G evaluation record and does not tune the model.
+The independent checker repeats the reconstruction; its exact-head receipt
+will be recorded after CI execution.
 
 ## Dossier content
 

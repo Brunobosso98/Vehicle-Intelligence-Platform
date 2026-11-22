@@ -43,27 +43,37 @@ def main() -> None:
         "acceptance exceeded memory bound",
     )
     runs = [*report["supervised"].values(), *report["anomaly"].values()]
-    runs.append(report["deterministic_reproduction"]["reproduction"])
     _require(
-        len(runs) == 8,
-        "benchmark expected seven family/task jobs plus one reproduction",
+        len(runs) == 7 and performance.get("pipeline_count") == 7,
+        "benchmark expected exactly seven durable family/task pipeline runs",
+    )
+    reproduction = report["deterministic_reproduction"]
+    _require(
+        reproduction.get("status") == "REPRODUCED"
+        and reproduction.get("pipeline_run_created") is False
+        and reproduction.get("registry_rows_written") is False,
+        "reproduction audit must be read-only and must not create another pipeline run",
     )
     sizes = [int(item["artifact_size_bytes"]) for item in runs]
+    sizes.append(int(reproduction["artifact_size_bytes"]))
     _require(
         all(0 < size <= MAX_ARTIFACT_BYTES for size in sizes),
         "artifact exceeded the 50 MiB budget",
     )
     planning = [float(item["planning_seconds"]) for item in runs]
     execution = [float(item["execution_seconds"]) for item in runs]
+    execution.append(float(reproduction["execution_seconds"]))
     _require(
         all(value >= 0 for value in (*planning, *execution)), "negative timing value"
     )
     output = {
-        "schema_version": "phase10-benchmark-v1",
+        "schema_version": "phase10-benchmark-v2",
         "git_sha": report["git_sha"],
         "acceptance_checksum": report["acceptance_checksum"],
         "scope": "bounded synthetic disposable database acceptance; no production capacity claim",
-        "jobs": len(runs),
+        "pipeline_runs": len(runs),
+        "reproduction_audits": 1,
+        "measured_artifacts_including_temporary_reproduction": len(sizes),
         "artifact_bytes": {
             "maximum": max(sizes),
             "median": statistics.median(sizes),

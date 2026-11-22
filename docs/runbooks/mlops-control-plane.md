@@ -42,6 +42,7 @@ not overridden.
 
     ENVIRONMENT=test vehicle-mlops inspect --run-id <run-uuid>
     ENVIRONMENT=test vehicle-mlops resume --run-id <run-uuid> --manifest /private/path/manifest.json
+    ENVIRONMENT=test vehicle-mlops reproduce --run-id <completed-supervised-run-uuid>
 
 Resume is read-only by default. A completed logical run returns the original
 receipt. To recover, provide --execute, the same environment, exact
@@ -50,6 +51,15 @@ new definition and cannot resume the old run. Expired leases advance the
 fencing token and fail closed if artifact registration is uncertain. Inspect
 the registry and report checksums before starting a new run; never edit
 control-plane rows manually.
+
+`reproduce` accepts one completed synthetic supervised run. It rebuilds the
+9B model from the original training cohort in a private temporary directory,
+then checks the existing frozen 9G evaluation cohort in read-only mode. It
+does not create a pipeline run, model registry version, evaluation record,
+proposal or serving change. The held-out scores are only a determinism check;
+they do not select a candidate, calibrate a threshold, tune a model or change
+the experiment. The command returns a checksummed `ReproductionReceipt` and
+exits nonzero if any source, artifact or metric checksum differs.
 
 Each stage has an immutable event receipt. A timeout or process interruption
 does not mean a model was activated. Verify vehicle-mlops inspect, artifact

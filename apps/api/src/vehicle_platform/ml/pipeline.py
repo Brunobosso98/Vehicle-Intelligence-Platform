@@ -8,6 +8,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import text
+
 from vehicle_platform.features.datasets import DatasetBuild, DatasetBuilder
 from vehicle_platform.features.domain import CutoffPolicy, DatasetDefinition, EntityScope
 from vehicle_platform.features.registry import DEFAULT_REGISTRY
@@ -85,10 +87,23 @@ async def build_task_dataset(
     scenario_family_by_session: Mapping[str, str] | None = None,
     candidate_pull_ids: Sequence[UUID] | None = None,
     max_rows: int = 100_000,
+    persist: bool = True,
 ) -> tuple[SupervisedDataset, DatasetBuild, DatasetBuild]:
     spec = get_model_spec(task)
     generation = FeatureGenerationService(database, telemetry)
-    await generation.ensure_version()
+    if persist:
+        await generation.ensure_version()
+    else:
+        async with database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
+            registered = (
+                await db.execute(
+                    text("SELECT checksum FROM feature_set_versions WHERE version=:version"),
+                    {"version": generation.version.version},
+                )
+            ).scalar_one_or_none()
+        if registered != generation.version.checksum:
+            raise ValueError("registered feature version is missing or incompatible")
     input_definition, outcome_definition = dataset_definitions(task, cutoff, source)
     builder = DatasetBuilder(database, DEFAULT_REGISTRY, telemetry)
     context = (
@@ -100,10 +115,16 @@ async def build_task_dataset(
     )
     with context:
         input_dataset = await builder.build(
-            input_definition, candidate_pull_ids=candidate_pull_ids, max_rows=max_rows
+            input_definition,
+            candidate_pull_ids=candidate_pull_ids,
+            max_rows=max_rows,
+            persist=persist,
         )
         outcome_dataset = await builder.build(
-            outcome_definition, candidate_pull_ids=candidate_pull_ids, max_rows=max_rows
+            outcome_definition,
+            candidate_pull_ids=candidate_pull_ids,
+            max_rows=max_rows,
+            persist=persist,
         )
     label_context = (
         telemetry.tracer.start_as_current_span(

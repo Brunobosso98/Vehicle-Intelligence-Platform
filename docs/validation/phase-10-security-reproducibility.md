@@ -13,16 +13,21 @@ The final API, Web, database, broker and observability images require a fresh
 Trivy database and exact-image scan. Any remaining High findings must match
 specific unexpired reviewed policy records; expired, unmatched High or any
 Critical blocks acceptance. Scanner exclusions, severity downgrades and policy
-expiry extensions are prohibited. The local Docker daemon is unavailable, so
-fresh image findings are CI REQUIRED.
+expiry extensions are prohibited. Docker CLI is unavailable in this WSL
+distribution, so fresh image findings are CI REQUIRED.
 
 ## Reproduction and trust checks
 
 The acceptance binds a run to the exact clean Git SHA, locked dependencies,
 definition fingerprint, seed, protocol, time cutoffs, source role, 9A feature
 schema, dataset/label/oracle checksums, registered artifact checksum and 9G
-report checksum. Same-seed reproduction compares actual model artifact bytes,
-evaluation cohort and matched candidate metrics.
+report checksum. `vehicle-mlops reproduce --run-id` rebuilds the same 9B model
+from its original training cohort in a private temporary directory and checks
+the frozen 9G evaluation cohort using read-only scoring. This audit creates no
+new experiment, run, registry row or evaluation record, and held-out scores
+cannot select or tune a candidate. The independent checker repeats the
+reconstruction and compares source, artifact, cohort and metric hashes while
+verifying source and serving tables remain unchanged.
 
 Registered artifacts are loaded through existing allowlisted 9B/9C serializers
 and private trusted paths. The independent checker verifies path containment,
@@ -37,12 +42,14 @@ database oracle; public or production APIs do not expose training or MLOps.
 
 ## Current execution status
 
-Local worktree checks completed on 2026-11-21: 42 focused Phase 10 unit tests
-and all 1,500 API unit tests passed; API line/branch coverage was 95.98% /
-90.16%. The full `make verify-cloud` target passed, including API and web
-typing/lint/tests, the production web build, contracts/docs, Gitleaks,
-`pip-audit`, and the Trivy filesystem scan. These checks do not replace fresh
-database, artifact, container, CodeQL or exact-head CI evidence.
+The current reproduction correction passed 45 focused Phase 10 unit tests,
+changed-module Ruff and formatting checks, API typing for the MLOps modules,
+strict typing for the independent checker and benchmark, and Python compilation
+on 2026-11-21. Earlier `make verify-cloud` evidence on the implementation
+before this correction reported 1,500 API tests, 95.98% line and 90.16% branch
+coverage, web checks and filesystem scans; it must be rerun for final-source
+acceptance. None of these local checks replace disposable database, artifact,
+container, CodeQL or exact-head CI evidence.
 
 The dedicated Phase 10 and canonical full-validation workflows upload
 checksum-bound receipts. The implementation has not yet been published and no

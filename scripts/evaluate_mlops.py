@@ -79,6 +79,7 @@ from vehicle_platform.mlops.planner import (
     plan_supervised,
 )
 from vehicle_platform.mlops.repository import ControlPlaneRepository
+from vehicle_platform.mlops.reproduction import reproduce_supervised_run
 from vehicle_platform.mlops.rollback import (
     inspect_rollback_plan,
     plan_rollback,
@@ -115,6 +116,27 @@ SERVING_TABLES = (
     "evaluation_calibration_candidates",
     "evaluation_applicability_assessments",
 )
+REPRODUCTION_WRITE_BOUNDARY_TABLES = (
+    *SERVING_TABLES,
+    "feature_generation_runs",
+    "feature_set_versions",
+    "feature_sets",
+    "dataset_definitions",
+    "dataset_build_runs",
+    "label_definitions",
+    "ml_models",
+    "mlops_definitions",
+    "mlops_runs",
+    "mlops_run_events",
+    "mlops_step_events",
+    "mlops_proposals",
+    "mlops_proposal_events",
+    "ml_model_versions",
+    "anomaly_detector_versions",
+    "training_runs",
+    "supervised_datasets",
+    "supervised_dataset_rows",
+)
 
 
 def _require(condition: bool, message: str) -> None:
@@ -150,7 +172,7 @@ def _git_sha() -> str:
 
 async def _table_digest(database: Database, tables: Iterable[str]) -> dict[str, str]:
     result: dict[str, str] = {}
-    allowed_tables = frozenset(SERVING_TABLES)
+    allowed_tables = frozenset(REPRODUCTION_WRITE_BOUNDARY_TABLES)
     async with database.session() as db, db.begin():
         await db.execute(
             text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
@@ -1239,28 +1261,28 @@ async def _main() -> dict[str, Any]:
                 await _run_definition(database, telemetry, definition, binding_id)
             )
 
-        # Re-execute one complete Phase 9B training/evaluation pipeline with the
-        # same source snapshot and seed under a new immutable definition revision.
-        original_definition, original_binding = definitions[0]
-        reproduction_definition = original_definition.model_copy(
-            update={"definition_version": "p10-thermal-reproduction-v2"}
+        # Rebuild the exact completed candidate in a temporary artifact root. The
+        # frozen 9G test fold is scored read-only as a reproduction audit; it is not
+        # used for fitting, selection, calibration, tuning or threshold changes.
+        reproduction_tables_before = await _table_digest(
+            database, REPRODUCTION_WRITE_BOUNDARY_TABLES
         )
-        reproduction = await _run_definition(
-            database, telemetry, reproduction_definition, original_binding
+        reproduction = await reproduce_supervised_run(
+            database, UUID(outcomes[0]["run_id"]), telemetry=telemetry
+        )
+        reproduction_receipt = reproduction["receipt"]
+        _require(
+            reproduction_receipt["status"] == "REPRODUCED",
+            "read-only deterministic Phase 9B reproduction did not match: "
+            f"artifact={reproduction_receipt['reproduced_artifact_checksum'] == reproduction_receipt['expected_artifact_checksum']}; "
+            f"metrics={reproduction_receipt['reproduced_metrics_checksum'] == reproduction_receipt['expected_metrics_checksum']}",
+        )
+        reproduction_tables_after = await _table_digest(
+            database, REPRODUCTION_WRITE_BOUNDARY_TABLES
         )
         _require(
-            reproduction["artifact_checksum"] == outcomes[0]["artifact_checksum"],
-            "same-seed Phase 9B reproduction changed artifact bytes",
-        )
-        _require(
-            reproduction["comparison"]["evaluation_dataset_checksum"]
-            == outcomes[0]["comparison"]["evaluation_dataset_checksum"],
-            "same-seed Phase 9B reproduction changed the holdout dataset",
-        )
-        _require(
-            reproduction["comparison"]["challenger"]
-            == outcomes[0]["comparison"]["challenger"],
-            "same-seed Phase 9B reproduction changed matched candidate metrics",
+            reproduction_tables_before == reproduction_tables_after,
+            "deterministic reproduction wrote pipeline, registry, serving or source rows",
         )
 
         # Pipelines append candidate and 9G evaluation receipts by design. Take
@@ -1463,7 +1485,7 @@ async def _main() -> dict[str, Any]:
         }
 
         tamper_results = []
-        for run in (*outcomes, reproduction):
+        for run in outcomes:
             tamper_results.append(await _tamper_candidate(database, run))
         _require(all(tamper_results), "registered artifact tampering was not rejected")
         serving_final = await _table_digest(database, SERVING_TABLES)
@@ -1523,15 +1545,17 @@ async def _main() -> dict[str, Any]:
         )
         _require(
             not any(
-                str(value) in metrics
-                for value in [item["run_id"] for item in (*outcomes, reproduction)]
+                str(value) in metrics for value in [item["run_id"] for item in outcomes]
             ),
             "run UUID leaked into metrics",
         )
-        _require("mlops.pipeline.run" in spans, "Phase 10 trace span was not emitted")
+        _require(
+            "mlops.pipeline.run" in spans and "mlops.experiment.reproduction" in spans,
+            "Phase 10 pipeline or reproduction trace span was not emitted",
+        )
         elapsed = time.perf_counter() - started
         return {
-            "schema_version": "phase10-acceptance-v1",
+            "schema_version": "phase10-acceptance-v2",
             "git_sha": git_sha,
             "status": "PASS",
             "phase9g_source_receipt_checksum": phase9g_report["acceptance_checksum"],
@@ -1544,24 +1568,27 @@ async def _main() -> dict[str, Any]:
                 item["subject"]: item for item in outcomes if item["kind"] == "anomaly"
             },
             "deterministic_reproduction": {
-                "status": "REPRODUCED",
-                "original_run_id": outcomes[0]["run_id"],
-                "reproduction_run_id": reproduction["run_id"],
-                "original_definition_fingerprint": outcomes[0][
-                    "definition_fingerprint"
-                ],
-                "reproduction_definition_fingerprint": reproduction[
-                    "definition_fingerprint"
-                ],
-                "artifact_checksum_equal": reproduction["artifact_checksum"]
-                == outcomes[0]["artifact_checksum"],
-                "evaluation_dataset_checksum_equal": reproduction["comparison"][
-                    "evaluation_dataset_checksum"
+                "status": reproduction_receipt["status"],
+                "artifact_checksum_equal": reproduction_receipt[
+                    "reproduced_artifact_checksum"
                 ]
-                == outcomes[0]["comparison"]["evaluation_dataset_checksum"],
-                "candidate_metrics_equal": reproduction["comparison"]["challenger"]
-                == outcomes[0]["comparison"]["challenger"],
-                "reproduction": reproduction,
+                == reproduction_receipt["expected_artifact_checksum"],
+                "evaluation_dataset_checksum_equal": reproduction_receipt[
+                    "reproduced_evaluation_checksum"
+                ]
+                == reproduction_receipt["expected_evaluation_checksum"],
+                "candidate_metrics_equal": reproduction_receipt[
+                    "reproduced_metrics_checksum"
+                ]
+                == reproduction_receipt["expected_metrics_checksum"],
+                "write_boundary_unchanged": reproduction_tables_before
+                == reproduction_tables_after,
+                "receipt": reproduction_receipt,
+                "reproduced_metrics": reproduction["reproduced_metrics"],
+                "artifact_size_bytes": reproduction["artifact_size_bytes"],
+                "execution_seconds": reproduction["execution_seconds"],
+                "pipeline_run_created": reproduction["pipeline_run_created"],
+                "registry_rows_written": reproduction["registry_rows_written"],
             },
             "monitoring": thermal_monitor,
             "proposal_review": review,
@@ -1573,7 +1600,7 @@ async def _main() -> dict[str, Any]:
                 "source_role_spoof_rejected": spoof_plan["status"] != "READY_TO_REVIEW",
                 "registered_artifact_tamper_rejected_count": sum(tamper_results),
                 "registered_artifact_tamper_attempts": len(tamper_results),
-                "idempotent_replay_count": len(outcomes) + 1,
+                "idempotent_replay_count": len(outcomes),
                 "source_tables_immutable_during_mlops": serving_before
                 == serving_after_mlops,
                 "serving_changes_only_after_separate_9d_action": (
@@ -1606,13 +1633,11 @@ async def _main() -> dict[str, Any]:
                     resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
                 )
                 * 1024,
-                "pipeline_count": len(outcomes) + 1,
-                "planning_seconds": sum(
-                    item["planning_seconds"] for item in (*outcomes, reproduction)
-                ),
-                "execution_seconds": sum(
-                    item["execution_seconds"] for item in (*outcomes, reproduction)
-                ),
+                "pipeline_count": len(outcomes),
+                "reproduction_audits": 1,
+                "planning_seconds": sum(item["planning_seconds"] for item in outcomes),
+                "execution_seconds": sum(item["execution_seconds"] for item in outcomes)
+                + float(reproduction["execution_seconds"]),
                 "scope": (
                     "bounded disposable synthetic database acceptance; not production capacity"
                 ),

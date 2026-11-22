@@ -24,6 +24,7 @@ from vehicle_platform.mlops.operator_auth import authenticated_reviewer
 from vehicle_platform.mlops.planner import plan_anomaly, plan_supervised
 from vehicle_platform.mlops.policy import require_controlled_environment
 from vehicle_platform.mlops.repository import ControlPlaneRepository
+from vehicle_platform.mlops.reproduction import reproduce_supervised_run
 from vehicle_platform.mlops.rollback import inspect_rollback_plan, plan_rollback
 from vehicle_platform.mlops.runner import resume_pipeline, run_pipeline
 from vehicle_platform.observability.telemetry import Telemetry
@@ -107,6 +108,11 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("--confirm-environment", choices=("development", "test"))
     resume.add_argument("--fingerprint")
     resume.add_argument("--champion-binding-id", type=UUID)
+    reproduce = commands.add_parser(
+        "reproduce",
+        help="Read-only deterministic rebuild of one completed supervised candidate.",
+    )
+    reproduce.add_argument("--run-id", required=True, type=UUID)
     return result
 
 
@@ -163,6 +169,9 @@ async def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
                 return result, 0 if result.get("execution") == "NOT_STARTED" or result.get(
                     "status"
                 ) in {"COMPLETED", "IDEMPOTENT_REPLAY", "RUN_STILL_OWNED"} else 2
+            if args.command == "reproduce":
+                result = await reproduce_supervised_run(database, args.run_id, telemetry=telemetry)
+                return result, 0 if result["receipt"]["status"] == "REPRODUCED" else 2
             if protocol is not None:
                 return await monitor_receipts(database, protocol, telemetry=telemetry), 0
             if args.command == "inspect":

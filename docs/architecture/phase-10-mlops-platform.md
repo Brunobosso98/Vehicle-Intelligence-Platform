@@ -31,6 +31,14 @@ Candidate binaries remain in the existing trusted 9B/9C artifact stores. Foreign
 keys point to their immutable version rows; no binary is copied into the MLOps
 database.
 
+`mlops/reproduction.py` reconstructs one completed supervised candidate using
+the existing 9A dataset builder and 9B trainer with persistence disabled. It
+stages the rebuilt bytes in a private temporary directory, verifies them through
+the trusted 9B artifact loader, and re-scores only the original frozen 9G test
+cohort through the canonical matched comparison metric path. The operation
+creates no new run, registry row or evaluation record; repeated scoring cannot
+select or tune a candidate.
+
 ## Pipeline contract and state
 
 Definitions use the versioned phase10-definition-v2 contract and canonical

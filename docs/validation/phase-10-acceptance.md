@@ -16,7 +16,7 @@ not exact-SHA GitHub receipts:
 
 | Check                                   | Result                                                                               | Evidence                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------- |
-| Phase 10 focused unit suite             | PASS: 42 tests                                                                       | `apps/api/tests/unit/test_mlops.py`               |
+| Phase 10 focused unit suite             | PASS: 45 tests                                                                       | `apps/api/tests/unit/test_mlops.py`               |
 | API unit suite                          | PASS: 1,500 tests; 95.98% line and 90.16% branch coverage                            | `make verify-cloud`                               |
 | Web checks                              | PASS: lint, typecheck, 140 tests; 91.96% line coverage                               | `make verify-cloud`                               |
 | API typing and MLOps script strict mypy | PASS: 206 API source files and 5 strict script files                                 | `make verify-cloud`                               |
@@ -27,7 +27,7 @@ not exact-SHA GitHub receipts:
 | 158-requirement traceability ledger     | PASS: exactly 158 mapped rows                                                        | `docs/validation/phase-10-traceability-ledger.md` |
 
 These are local source checks, not disposable-database or exact-head CI proof.
-Docker CLI is present but its daemon is unavailable. Migration round-trip,
+Docker CLI is unavailable in this WSL distro. Migration round-trip,
 database integration, real 9A–9G pipeline execution, packaged standalone
 browser flow, final-image scans and canonical full-stack checks are CI REQUIRED.
 
@@ -36,10 +36,13 @@ browser flow, final-image scans and canonical full-stack checks are CI REQUIRED.
 The exact-head job runs scripts/phase10-validation.sh in a disposable
 vehicle_test database. It round-trips migration 0020, runs database-backed
 state/immutability tests, uses the existing 9A/9B/9C/9G paths for all three
-supervised tasks and four anomaly families, performs same-seed reproduction,
-matched comparisons and adversarial checks, then independently verifies
-artifact bytes, dossiers, source digests, run/stage transitions and receipt
-checksum. It also writes benchmark and OTel receipts.
+supervised tasks and four anomaly families, performs matched comparisons and
+adversarial checks, then reconstructs one completed supervised candidate in a
+temporary artifact root and independently verifies artifact bytes, matched
+metrics, frozen evaluation lineage, unchanged database tables, dossiers,
+source digests, run/stage transitions and receipt checksum. Reproduction does
+not create a second pipeline or evaluation record. The workflow also writes
+benchmark and OTel receipts.
 
 The canonical full-validation job runs the real packaged Phase 9H standalone
 image and browser regression, security scanning, all prior phase checks, and

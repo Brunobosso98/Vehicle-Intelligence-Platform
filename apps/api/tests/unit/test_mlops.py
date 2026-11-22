@@ -187,6 +187,40 @@ def test_phase10_contracts_reject_naive_non_utc_and_inconsistent_source_counts()
         DatasetBinding(**{**base, "row_count": 1})
 
 
+def test_phase10_reproduction_contract_is_read_only_and_serving_separated():
+    from vehicle_platform.mlops.contracts import ReproductionReceipt
+
+    receipt = {
+        "original_run_id": uuid4(),
+        "candidate_version_id": uuid4(),
+        "definition_fingerprint": "a" * 64,
+        "expected_source_fingerprint": "b" * 64,
+        "reproduced_source_fingerprint": "b" * 64,
+        "expected_training_dataset_checksum": "c" * 64,
+        "reproduced_training_dataset_checksum": "c" * 64,
+        "expected_artifact_checksum": "d" * 64,
+        "reproduced_artifact_checksum": "d" * 64,
+        "expected_evaluation_checksum": "e" * 64,
+        "reproduced_evaluation_checksum": "e" * 64,
+        "evaluation_rows_fingerprint": "f" * 64,
+        "expected_metrics_checksum": "1" * 64,
+        "reproduced_metrics_checksum": "1" * 64,
+        "holdout_usage": "READ_ONLY_REPRODUCTION_AUDIT_NO_SELECTION_OR_TUNING",
+        "scientific_limitations": (
+            "Synthetic validation is not real-world validity.",
+            "Scores are not mechanical failure probabilities.",
+            "Unlabeled real telemetry cannot establish accuracy.",
+            "No component diagnosis is established.",
+        ),
+        "status": "REPRODUCED",
+    }
+    assert ReproductionReceipt(**receipt).serving_action == "NONE"
+    with pytest.raises(ValidationError):
+        ReproductionReceipt(**{**receipt, "holdout_usage": "THRESHOLD_TUNING"})
+    with pytest.raises(ValidationError):
+        ReproductionReceipt(**{**receipt, "serving_action": "ACTIVATE"})
+
+
 def test_phase10_pipeline_contracts_enforce_task_oracle_and_gate_invariants():
     from datetime import timedelta, timezone
 
@@ -279,6 +313,7 @@ def test_mlops_cli_parser_and_manifest_reader_are_bounded(tmp_path):
     assert parser().parse_args(["plan", "--manifest", str(manifest)]).command == "plan"
     assert parser().parse_args(["monitor", "--manifest", str(manifest)]).command == "monitor"
     assert parser().parse_args(["inspect", "--run-id", str(uuid4())]).command == "inspect"
+    assert parser().parse_args(["reproduce", "--run-id", str(uuid4())]).command == "reproduce"
     assert parser().parse_args(["proposal", "--proposal-id", str(uuid4())]).command == "proposal"
     assert (
         parser()
