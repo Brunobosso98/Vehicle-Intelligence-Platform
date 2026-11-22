@@ -470,6 +470,7 @@ async def evaluate(database_url: str) -> int:
         )
         for case in cases
     )
+    by_attempt = {attempt.case_id: attempt for attempt in attempts}
     revision = os.environ.get("GIT_SHA")
     if revision is None:
         raise RuntimeError(

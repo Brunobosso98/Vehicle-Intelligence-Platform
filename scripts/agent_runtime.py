@@ -132,6 +132,7 @@ async def runtime(
     }
     if prediction_token is not None and prediction_vehicle_id is not None:
         env |= {
+            "PREDICTION_SERVICE_ENABLED": "true",
             "VIP_MCP_PREDICTION_EVIDENCE_ENABLED": "true",
             "VIP_MCP_PREDICTION_TOKEN": prediction_token,
             "VIP_MCP_PREDICTION_VEHICLE_IDS": json.dumps([prediction_vehicle_id]),
@@ -139,6 +140,8 @@ async def runtime(
     api_env = {
         key: value for key, value in env.items() if not key.startswith("VIP_MCP_")
     }
+    if enable_prediction_evidence:
+        api_env.pop("PREDICTION_SERVICE_ENABLED", None)
     processes = [
         Process(
             [sys.executable, "-m", "vehicle_platform.mcp.cli"], env, mcp_base + "/ready"
