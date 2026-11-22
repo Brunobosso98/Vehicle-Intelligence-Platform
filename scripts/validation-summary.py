@@ -25,6 +25,7 @@ labels = {
     "Phase 9F agent prediction integration": "PHASE9F",
     "Phase 9G evaluation and calibration": "PHASE9G",
     "Phase 9H predictive intelligence UI": "PHASE9H",
+    "Phase 10 offline MLOps control plane": "PHASE10",
 }
 outcome_status = {
     "success": "PASS",

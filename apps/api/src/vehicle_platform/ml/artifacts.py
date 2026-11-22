@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import io
 import os
 import re
 import sys
@@ -18,6 +19,7 @@ from sqlalchemy import text
 
 from vehicle_platform.features.domain import MissingReason
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.infrastructure.trusted_files import TrustedFileError, read_verified_bytes
 from vehicle_platform.ml.domain import MLModelVersion, MLTask, ModelState
 from vehicle_platform.ml.labels import get_model_spec
 from vehicle_platform.ml.training import matrix_for_feature_mapping
@@ -51,7 +53,7 @@ class ArtifactStore:
     """Read/write only internally generated registered artifacts under one fixed root."""
 
     def __init__(self, root: Path = ARTIFACT_ROOT) -> None:
-        self.root = root.resolve()
+        self.root = Path(os.path.abspath(root))
 
     def write(
         self,
@@ -117,13 +119,7 @@ class ArtifactStore:
     ) -> float:
         relative = Path(receipt.relative_path)
         path = self._checked_path(relative)
-        if path.is_symlink() or not path.is_file():
-            raise ArtifactValidationError("staged artifact is missing or unsafe")
-        if path.stat().st_size != receipt.size_bytes or not hmac.compare_digest(
-            _file_sha256(path), receipt.checksum
-        ):
-            raise ArtifactValidationError("staged artifact size or checksum changed")
-        bundle = self._trusted_load(path)
+        bundle = self._load_verified(path, receipt.checksum, expected_size=receipt.size_bytes)
         if (
             bundle.get("task") != task.value
             or bundle.get("family") != family
@@ -188,14 +184,8 @@ class ArtifactStore:
         if Path(str(row["artifact_path"])) != expected_relative:
             raise ArtifactValidationError("registered artifact path differs from the expected path")
         path = self._checked_path(expected_relative)
-        if path.is_symlink() or not path.is_file():
-            raise ArtifactValidationError("registered model artifact is missing or unsafe")
-        if path.stat().st_size > MAX_ARTIFACT_BYTES:
-            raise ArtifactValidationError("registered model artifact exceeds the size limit")
-        checksum = _file_sha256(path)
-        if not hmac.compare_digest(checksum, str(row["artifact_checksum"])):
-            raise ArtifactValidationError("registered model artifact checksum mismatch")
-        bundle = self._trusted_load(path)
+        checksum = str(row["artifact_checksum"])
+        bundle = self._load_verified(path, checksum)
         spec = get_model_spec(task)
         if bundle.get("task") != task.value or bundle.get("family") != family:
             raise ArtifactValidationError("registered model artifact identity mismatch")
@@ -273,9 +263,7 @@ class ArtifactStore:
         input_schema: dict[str, Any],
         threshold: float,
     ) -> None:
-        if not hmac.compare_digest(_file_sha256(path), checksum):
-            raise ArtifactValidationError("staged model artifact checksum mismatch")
-        bundle = self._trusted_load(path)
+        bundle = self._load_verified(path, checksum)
         if (
             bundle.get("task") != task.value
             or bundle.get("family") != family
@@ -284,10 +272,22 @@ class ArtifactStore:
         ):
             raise ArtifactValidationError("staged model artifact metadata mismatch")
 
-    @staticmethod
-    def _trusted_load(path: Path) -> dict[str, Any]:
-        # joblib is pickle-based; callers must establish internal provenance and checksum first.
-        loaded = joblib.load(path)
+    def _load_verified(
+        self, path: Path, expected_checksum: str, *, expected_size: int | None = None
+    ) -> dict[str, Any]:
+        """Open each component without following symlinks; deserialize only checked bytes."""
+        try:
+            payload = read_verified_bytes(
+                self.root,
+                path,
+                expected_checksum,
+                maximum_bytes=MAX_ARTIFACT_BYTES,
+                expected_size=expected_size,
+            )
+        except TrustedFileError as error:
+            raise ArtifactValidationError(str(error)) from error
+        # The registered digest is checked against the same bytes that joblib will deserialize.
+        loaded = joblib.load(io.BytesIO(payload))
         if not isinstance(loaded, dict):
             raise ArtifactValidationError("artifact root must be an internal model bundle")
         return cast(dict[str, Any], loaded)

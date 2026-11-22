@@ -188,8 +188,6 @@ function safeApiOrigin(): URL | null {
 export function predictiveEnabled(): boolean {
   const environment = process.env.ENVIRONMENT ?? process.env.APP_ENV;
   return (
-    process.env.NODE_ENV !== "production" &&
-    environment !== "production" &&
     (environment === "development" || environment === "test") &&
     process.env.PREDICTIVE_UI_ENABLED === "true" &&
     process.env.PREDICTION_SERVICE_ENABLED === "true" &&
@@ -205,8 +203,6 @@ export function predictiveEnabled(): boolean {
 export function demoEnabled(): boolean {
   const environment = process.env.ENVIRONMENT ?? process.env.APP_ENV;
   return (
-    process.env.NODE_ENV !== "production" &&
-    environment !== "production" &&
     (environment === "development" || environment === "test") &&
     process.env.PREDICTIVE_UI_DEMO_ENABLED === "true"
   );

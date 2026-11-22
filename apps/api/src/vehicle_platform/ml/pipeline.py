@@ -8,12 +8,14 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import text
+
 from vehicle_platform.features.datasets import DatasetBuild, DatasetBuilder
 from vehicle_platform.features.domain import CutoffPolicy, DatasetDefinition, EntityScope
 from vehicle_platform.features.registry import DEFAULT_REGISTRY
 from vehicle_platform.features.service import FeatureGenerationService
 from vehicle_platform.infrastructure.database import Database
-from vehicle_platform.ml.artifacts import ArtifactReceipt, ArtifactStore
+from vehicle_platform.ml.artifacts import MAX_ARTIFACT_BYTES, ArtifactReceipt, ArtifactStore
 from vehicle_platform.ml.domain import MLTask, ModelState, SupervisedDataset
 from vehicle_platform.ml.labels import build_supervised_dataset, get_model_spec
 from vehicle_platform.ml.registry import MLRegistry, repository_sha
@@ -84,10 +86,24 @@ async def build_task_dataset(
     telemetry: Any | None = None,
     scenario_family_by_session: Mapping[str, str] | None = None,
     candidate_pull_ids: Sequence[UUID] | None = None,
+    max_rows: int = 100_000,
+    persist: bool = True,
 ) -> tuple[SupervisedDataset, DatasetBuild, DatasetBuild]:
     spec = get_model_spec(task)
     generation = FeatureGenerationService(database, telemetry)
-    await generation.ensure_version()
+    if persist:
+        await generation.ensure_version()
+    else:
+        async with database.session() as db, db.begin():
+            await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
+            registered = (
+                await db.execute(
+                    text("SELECT checksum FROM feature_set_versions WHERE version=:version"),
+                    {"version": generation.version.version},
+                )
+            ).scalar_one_or_none()
+        if registered != generation.version.checksum:
+            raise ValueError("registered feature version is missing or incompatible")
     input_definition, outcome_definition = dataset_definitions(task, cutoff, source)
     builder = DatasetBuilder(database, DEFAULT_REGISTRY, telemetry)
     context = (
@@ -98,9 +114,17 @@ async def build_task_dataset(
         else nullcontext()
     )
     with context:
-        input_dataset = await builder.build(input_definition, candidate_pull_ids=candidate_pull_ids)
+        input_dataset = await builder.build(
+            input_definition,
+            candidate_pull_ids=candidate_pull_ids,
+            max_rows=max_rows,
+            persist=persist,
+        )
         outcome_dataset = await builder.build(
-            outcome_definition, candidate_pull_ids=candidate_pull_ids
+            outcome_definition,
+            candidate_pull_ids=candidate_pull_ids,
+            max_rows=max_rows,
+            persist=persist,
         )
     label_context = (
         telemetry.tracer.start_as_current_span(
@@ -133,8 +157,24 @@ async def train_task(
     telemetry: Any | None = None,
     artifact_store: ArtifactStore | None = None,
     scenario_family_by_session: Mapping[str, str] | None = None,
+    candidate_pull_ids: Sequence[UUID] | None = None,
+    expected_dataset_checksum: str | None = None,
+    expected_source_fingerprint: str | None = None,
+    max_rows: int = 100_000,
+    max_sessions: int = 100_000,
+    max_features: int = 100_000,
+    max_candidates: int = 100_000,
+    max_artifact_bytes: int = MAX_ARTIFACT_BYTES,
 ) -> TaskRunResult:
     spec = get_model_spec(task)
+    if not 1 <= max_sessions <= 100_000:
+        raise ValueError("session limit is outside the supported range")
+    if not 1 <= max_features <= 100_000 or not 1 <= max_candidates <= 100_000:
+        raise ValueError("feature or candidate limit is outside the supported range")
+    if not 1 <= max_artifact_bytes <= MAX_ARTIFACT_BYTES:
+        raise ValueError("artifact limit is outside the supported range")
+    if len(spec.feature_keys) > max_features or len(spec.candidates) > max_candidates:
+        raise ValueError("model specification exceeds the declared resource budget")
     commit = git_sha or repository_sha()
     store = artifact_store or ArtifactStore()
     registry = MLRegistry(database)
@@ -146,7 +186,18 @@ async def train_task(
         git_sha=commit,
         telemetry=telemetry,
         scenario_family_by_session=scenario_family_by_session,
+        candidate_pull_ids=candidate_pull_ids,
+        max_rows=max_rows,
     )
+    if expected_dataset_checksum is not None and dataset.checksum != expected_dataset_checksum:
+        raise ValueError("dataset checksum changed after planning")
+    if (
+        expected_source_fingerprint is not None
+        and dataset.source_fingerprint != expected_source_fingerprint
+    ):
+        raise ValueError("dataset source fingerprint changed after planning")
+    if len({row.session_id for row in dataset.rows}) > max_sessions:
+        raise ValueError("dataset sessions exceed the declared resource budget")
     (
         label_id,
         model_id,
@@ -223,6 +274,8 @@ async def train_task(
                 model_spec_checksum=spec.checksum,
                 family=result.selected_family.value,
             )
+            if artifact.size_bytes > max_artifact_bytes:
+                raise ValueError("model artifact exceeds the declared resource budget")
             smoke_row = split.test[0]
             smoke_matrix = matrix_for_feature_mapping(smoke_row.features, smoke_row.missing, spec)
             store.verify_staged(

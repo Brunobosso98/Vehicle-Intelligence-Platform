@@ -48,6 +48,11 @@ fails closed unless both the existing 9D service and the independent UI operator
 configured. Sessions are process-local by design and are only suitable for one controlled
 development/test runtime; restart invalidates all sessions.
 
+The platform environment is selected by `ENVIRONMENT` (or `APP_ENV` when unset), and must be
+explicitly `development` or `test`. Next.js uses `NODE_ENV=production` for its packaged runtime;
+that build/runtime setting does not identify the platform environment or grant access. A platform
+environment of `production`, an absent environment, or an unrecognized value denies access.
+
 ## Safe read contract
 
 The API read index is scoped by the authorized `vehicle_id`, sorted by immutable creation time and

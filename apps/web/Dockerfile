@@ -15,6 +15,7 @@ RUN pnpm --filter @vehicle-platform/web build
 FROM ${NODE_IMAGE} AS runtime
 USER root
 RUN apt-get update && apt-get upgrade -y \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' zlib1g)" ge '1:1.3.dfsg+really1.3.1-1+deb13u1' \
     && rm -rf /var/lib/apt/lists/* /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
     && node --version
 ARG APP_VERSION=0.1.0

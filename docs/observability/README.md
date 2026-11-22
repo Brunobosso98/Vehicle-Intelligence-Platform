@@ -252,3 +252,13 @@ checksums, row identities, and credentials never become metric labels. Spans rec
 counts and bounded phase/task names only. `make predictive-reliability-observability` verifies the
 actual metrics and spans in the exact-SHA disposable acceptance receipt; this is fixture evidence,
 not a production SLO or a claim of real-world predictive validity.
+
+## Phase 10 MLOps control plane
+
+Phase 10 emits bounded lifecycle counters and durations for run kind/state, stage, recovery, monitor
+finding, review decision and rollback-plan state. Spans cover mlops.pipeline.run,
+mlops.pipeline.resume and mlops.monitor. Labels are closed task/family/kind/state/reason categories;
+run IDs, vehicle/configuration/session/pull IDs, artifact paths, raw metrics, labels and credentials
+are excluded. The acceptance captures actual in-memory metrics and spans, checks identifier
+redaction, and writes a receipt under ignored .validation/phase10. make mlops-observability checks
+that exact-SHA receipt. It proves bounded fixture instrumentation, not a production SLO.

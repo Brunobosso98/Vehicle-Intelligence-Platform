@@ -328,6 +328,21 @@ class Telemetry:
         )
         self.anomaly_score = meter.create_histogram("anomaly.score")
         self.anomaly_threshold = meter.create_histogram("anomaly.threshold")
+        # Phase 10 labels are bounded pipeline kind, stage, state and finding type only.
+        # Never attach run, candidate, artifact, vehicle, session, feature or checksum IDs.
+        self.mlops_runs = meter.create_counter("mlops.pipeline.runs", unit="{run}")
+        self.mlops_stage_events = meter.create_counter(
+            "mlops.pipeline.stage_events", unit="{event}"
+        )
+        self.mlops_duration = meter.create_histogram("mlops.pipeline.duration", unit="s")
+        self.mlops_in_flight = meter.create_up_down_counter("mlops.pipeline.in_flight")
+        self.mlops_monitor_findings = meter.create_counter(
+            "mlops.monitor.findings", unit="{finding}"
+        )
+        self.mlops_monitor_duration = meter.create_histogram("mlops.monitor.duration", unit="s")
+        self.mlops_review_events = meter.create_counter("mlops.review.events", unit="{event}")
+        self.mlops_rollback_plans = meter.create_counter("mlops.rollback.plans", unit="{plan}")
+        self.mlops_recovery_events = meter.create_counter("mlops.recovery.events", unit="{event}")
         self.sql_instrumentor: SQLAlchemyInstrumentor | None = None
         if database is not None:
             self.sql_instrumentor = SQLAlchemyInstrumentor()

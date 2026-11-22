@@ -44,6 +44,42 @@ describe("predictive server boundary", () => {
     configureEnabled();
   });
 
+  it("supports a controlled test platform with the production Next runtime", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PREDICTIVE_UI_DEMO_ENABLED", "true");
+    const server = await serverModule();
+    expect(server.predictiveEnabled()).toBe(true);
+    expect(server.demoEnabled()).toBe(true);
+    vi.stubEnv("ENVIRONMENT", "production");
+    expect(server.predictiveEnabled()).toBe(false);
+    expect(server.demoEnabled()).toBe(false);
+  });
+
+  it("fails closed in the packaged runtime when operator controls are absent", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const server = await serverModule();
+    for (const variable of [
+      "PREDICTIVE_UI_ENABLED",
+      "PREDICTION_SERVICE_ENABLED",
+      "PREDICTION_OPERATOR_TOKEN",
+      "PREDICTIVE_UI_OPERATOR_SECRET",
+      "PREDICTIVE_UI_SESSION_SECRET",
+      "PREDICTIVE_UI_ORIGIN",
+      "PREDICTIVE_UI_ALLOWED_VEHICLE_IDS",
+      "API_BASE_URL",
+    ]) {
+      configureEnabled();
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv(variable, "");
+      expect(server.predictiveEnabled(), variable).toBe(false);
+    }
+    configureEnabled();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ENVIRONMENT", "");
+    expect(server.predictiveEnabled()).toBe(false);
+    expect(server.demoEnabled()).toBe(false);
+  });
+
   it("fails closed unless the full development operator configuration is present", async () => {
     const server = await serverModule();
     expect(server.predictiveEnabled()).toBe(true);

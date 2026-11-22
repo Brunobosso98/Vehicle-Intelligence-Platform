@@ -134,7 +134,7 @@ def evaluate_supervised_task(
         elif method is CalibrationMethod.IDENTITY:
             artifact_refs[method] = (None, 0)
         else:
-            _, digest, size = write_calibrator(
+            artifact_path, digest, size = write_calibrator(
                 candidate,
                 root=Path(output_root),
                 scope={
@@ -159,7 +159,7 @@ def evaluate_supervised_task(
                 },
             )
             stored = read_calibrator(
-                Path(output_root) / task_run.dataset.task.value / f"{digest}.json",
+                artifact_path,
                 root=Path(output_root),
                 expected_checksum=digest,
             )

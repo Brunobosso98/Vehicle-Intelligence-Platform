@@ -3,8 +3,8 @@
 **Repository:** `Brunobosso98/Vehicle-Intelligence-Platform`
 **Required existing branch:** `codex/phase-11-agent-evals-red-team`
 **Branch preparation baseline:** `3085c5227a46c3c327249d0f2e982631d919b5a4` (last MERGED main at preparation).
-**Phase 10 dependency:** PR [#64](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/64), final reviewed HEAD `94f554fdc5d2ed6e46877cbc7c24b79072e50f66`, 11/11 exact-head checks PASS on 2026-11-22, was still OPEN when this branch was created.
-**Required implementation baseline:** the NEW `origin/main` commit AFTER PR #64 is merged. Codex MUST fetch and integrate it into this existing Phase 11 branch BEFORE implementing any code. Do not assume merge SHA, do not open a Phase11 PR that includes Phase10 commits as unmerged changes.
+**Phase 10 dependency:** PR [#64](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/64), final reviewed HEAD `94f554fdc5d2ed6e46877cbc7c24b79072e50f66`, 11/11 exact-head checks PASS, MERGED as `bfa491f2818fea9914ae113077ce6704fdb6312f` on 2026-11-22. This Phase 11 branch incorporates the merged main via an additive merge commit.
+**Required implementation baseline:** `bfa491f2818fea9914ae113077ce6704fdb6312f` (Phase 10 merged). Codex MUST verify this ancestor is in the current Phase 11 branch and fetch any later origin/main changes BEFORE implementing any code. Phase 11 PR should contain only Phase 11 work relative to main.
 **Prior capabilities:** Phase6 read-only MCP, 7A grounding, 7B approved investigation, 7C LangGraph Supervisor/specialists, 7D historical model eval, 8 trust-aware Technical RAG, 9D/9E/9F protected predictive evidence and agents, 9G offline scientific evaluation, 9H protected UI, 10 controlled MLOps.
 
 This file is a COMPLETE authoritative implementation, red-team, validation, scientific reporting, security and delivery specification. Read all numbered requirements prior to implementation. Phase 11 validates existing agents; it does NOT create a public diagnostic copilot or give an LLM permissions to train, approve models, collect vehicle data or execute vehicle commands.
@@ -12,21 +12,19 @@ This file is a COMPLETE authoritative implementation, red-team, validation, scie
 ## Hard gate: Phase10 merge before Phase11 implementation
 
 ```text
-Current merged main: Phase 9H at 3085c52
-Phase 10: PR #64 OPEN, reviewed 94f554f, 11/11 exact-head CI PASS
+Original branch creation: Phase 9H at 3085c52
+Phase 10 PR #64: MERGED as bfa491f, 11/11 exact-head CI PASS
                     |
-                 USER MERGE
+new origin/main contains Phase10 migration 0020 and runtime fixes
                     |
-new origin/main containing Phase10 migration 0020, packages and runtime fixes
-                    |
-merge latest origin/main INTO EXISTING codex/phase-11-agent-evals-red-team
+Phase 11 branch includes this main through an additive merge
                     |
 Phase11 eval corpus + independent oracle + red-team harness + canonical CI
                     |
 new Phase11 PR, target main, user manually merges after review
 ```
 
-**Do not auto-merge Phase 10 or force-push/recreate this branch.** If PR #64 is unmerged, report the dependency and defer implementation (the present specification can remain committed).
+**Do not auto-merge Phase 10 or force-push/recreate this branch.** PR #64 is now merged. Verify the incorporated Phase 10 SHA, source and migrations before implementation.
 
 ## Evaluation model and trust
 
@@ -53,7 +51,7 @@ Build a complete, reproducible, defensively red-teamed Agent Evaluation & Reliab
 
 ## 2. Current main and Phase 10 dependency
 
-This EXISTING branch `codex/phase-11-agent-evals-red-team` is pre-created from merged main SHA `3085c5227a46c3c327249d0f2e982631d919b5a4` because Phase 10 PR #64 was OPEN during preparation. Approved Phase 10 final head: `94f554fdc5d2ed6e46877cbc7c24b79072e50f66`, 11/11 exact-head checks PASS. BEFORE writing any Phase 11 implementation: confirm PR #64 is MERGED, fetch updated origin/main, and integrate latest origin/main into THIS EXISTING branch without overwriting this specification. If PR #64 remains open, STOP CODE IMPLEMENTATION and report the dependency; do not auto-merge PR #64 or create an alternative Phase 11 branch.
+This EXISTING branch `codex/phase-11-agent-evals-red-team` was first created from main `3085c5227a46c3c327249d0f2e982631d919b5a4` while PR #64 was open. Phase 10 PR #64 was subsequently MERGED as `bfa491f2818fea9914ae113077ce6704fdb6312f` and its final implementation head `94f554fdc5d2ed6e46877cbc7c24b79072e50f66` had 11/11 exact-head checks PASS. The branch now includes the entire merged main through a no-rewrite two-parent merge. Verify `bfa491f` as an ancestor, fetch latest origin/main, and preserve the existing 155-section spec. Do not create another branch, merge Phase 10 again or auto-merge Phase 11.
 
 ## 3. Branch sync safety
 

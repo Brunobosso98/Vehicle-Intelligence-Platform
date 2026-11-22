@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import io
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
+import joblib
 import numpy as np
 import pytest
 
@@ -659,6 +662,42 @@ def test_artifact_staging_checks_checksum_schema_and_smoke_prediction(tmp_path: 
             model_spec_checksum=spec.checksum,
             smoke_matrix=matrix,
         )
+
+
+def test_artifact_deserializes_verified_snapshot_and_rejects_symlink_race(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    directory = root / "nested"
+    directory.mkdir()
+    path = directory / "model.joblib"
+    stream = io.BytesIO()
+    joblib.dump({"safe": True}, stream)
+    original = stream.getvalue()
+    path.write_bytes(original)
+    checksum = hashlib.sha256(original).hexdigest()
+    original_load = joblib.load
+
+    def replace_before_deserialization(source: object) -> object:
+        path.write_bytes(b"tampered after verification")
+        assert isinstance(source, io.BytesIO)
+        return original_load(source)
+
+    monkeypatch.setattr(joblib, "load", replace_before_deserialization)
+    store = ArtifactStore(root)
+    assert store._load_verified(path, checksum) == {"safe": True}
+    monkeypatch.setattr(joblib, "load", lambda *_: pytest.fail("unverified bytes were loaded"))
+    with pytest.raises(ArtifactValidationError, match="checksum"):
+        store._load_verified(path, checksum)
+    path.unlink()
+    directory.rmdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "model.joblib").write_bytes(original)
+    directory.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ArtifactValidationError, match="unsafe"):
+        store._load_verified(path, checksum)
 
 
 @pytest.mark.parametrize(
