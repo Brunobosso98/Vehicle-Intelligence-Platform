@@ -425,6 +425,13 @@ async def evaluate(database_url: str) -> int:
             observed_tools=(hidden_tool,),
             successful_tools=() if hidden_result.is_error else (hidden_tool,),
             tool_trace=(hidden_trace,),
+            direct_probe={
+                "probe_type": "mcp_capability",
+                "target": hidden_tool,
+                "visible_tools": tuple(tool.name for tool in visible_tools.tools),
+                "call_rejected": hidden_result.is_error,
+                "output_sha256": hidden_trace.result_sha256,
+            },
             tool_trace_sha256=sha256_bytes(
                 canonical_json([hidden_trace.model_dump(mode="json")])
             ),
@@ -456,21 +463,15 @@ async def evaluate(database_url: str) -> int:
             fault_attempt = _attempt(
                 fault_case, fault_result, fixture["vehicle"], before
             )
-            unavailable = fault_result.get("status") == "failed" and fault_result.get(
-                "error_category"
-            ) in {"dependency_unavailable", "mcp_unavailable", "run_timeout"}
+            fault_status, fault_reasons = grade(
+                fault_case,
+                fault_attempt,
+                selected_vehicle_id=fixture["vehicle"],
+            )
             fault_attempt = fault_attempt.model_copy(
                 update={
-                    "status": (
-                        AttemptStatus.INFRA_FAILURE
-                        if unavailable
-                        else AttemptStatus.ASSERTION_FAIL
-                    ),
-                    "reasons": (
-                        ("mcp_dependency_unavailable",)
-                        if unavailable
-                        else ("mcp_fault_not_observed",)
-                    ),
+                    "status": fault_status,
+                    "reasons": fault_reasons,
                     "elapsed_ms": int((perf_counter() - fault_started) * 1000),
                 }
             )

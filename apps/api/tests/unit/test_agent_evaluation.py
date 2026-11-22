@@ -313,7 +313,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
     attempt = _attempt()
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v2",
+        "suite_version": "phase11-agent-evals-v3",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -336,7 +336,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v2",
+        suite_version="phase11-agent-evals-v3",
     )
     assert ok and not reasons
     forged_payload = payload | {
@@ -360,7 +360,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v2",
+        suite_version="phase11-agent-evals-v3",
         expected_source_sha="0" * 64,
     )
     assert not ok and "source_fixture_digest_mismatch" in reasons
@@ -370,7 +370,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         (_case(),),
         expected_sha="b" * 40,
         suite_sha="a" * 64,
-        suite_version="phase11-agent-evals-v2",
+        suite_version="phase11-agent-evals-v3",
     )
     assert not ok
     assert "receipt_digest_mismatch" in reasons
@@ -380,7 +380,7 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
 def test_receipt_checker_rejects_omission_duplicates_scope_and_trace_tampering():
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v2",
+        "suite_version": "phase11-agent-evals-v3",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -404,7 +404,7 @@ def test_receipt_checker_rejects_omission_duplicates_scope_and_trace_tampering()
             (_case(),),
             expected_sha="b" * 40,
             suite_sha="a" * 64,
-            suite_version="phase11-agent-evals-v2",
+            suite_version="phase11-agent-evals-v3",
         )
 
     unknown = _attempt().model_copy(update={"case_id": "P11-UNKNOWN-TEST"})
@@ -441,7 +441,7 @@ def test_receipt_checker_binds_saved_oracle_facts_to_independent_database_values
     )
     payload = {
         "schema_version": "1.0",
-        "suite_version": "phase11-agent-evals-v2",
+        "suite_version": "phase11-agent-evals-v3",
         "suite_sha256": "a" * 64,
         "repository_sha": "b" * 40,
         "source_fixture_sha256": "c" * 64,
@@ -490,7 +490,7 @@ def test_receipt_checker_requires_persisted_agent_run_evidence():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v2",
+            "suite_version": "phase11-agent-evals-v3",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -545,7 +545,7 @@ def test_receipt_checker_rejects_persisted_run_and_trace_mismatches():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v2",
+            "suite_version": "phase11-agent-evals-v3",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -660,6 +660,8 @@ def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
             "persistence_required": False,
             "expected_behavior": ExpectedBehavior.DENY,
             "expected_facts": (),
+            "source_surface": "mcp_authorization",
+            "forbidden_tools": ("get_prediction_evidence",),
         }
     )
     attempt = CaseAttempt(
@@ -672,7 +674,7 @@ def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
     receipt = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v2",
+            "suite_version": "phase11-agent-evals-v3",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,
@@ -697,6 +699,74 @@ def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
     )
     assert not ok
     assert "independent_non_agent_evidence_missing" in reasons
+
+
+def test_receipt_checker_accepts_verified_direct_mcp_capability_denial():
+    from vehicle_platform.agent_evaluation.corpus import canonical_json, sha256_bytes
+
+    case = _case().model_copy(
+        update={
+            "persistence_required": False,
+            "expected_behavior": ExpectedBehavior.DENY,
+            "expected_facts": (),
+            "source_surface": "mcp_authorization",
+            "forbidden_tools": ("get_prediction_evidence",),
+        }
+    )
+    trace = ToolTrace(
+        tool_name="get_prediction_evidence",
+        status="failed",
+        argument_sha256="1" * 64,
+        result_sha256="2" * 64,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.PASS,
+        answer_status="failed",
+        source_digest_before="c" * 64,
+        source_digest_after="c" * 64,
+        observed_tools=("get_prediction_evidence",),
+        successful_tools=(),
+        tool_trace=(trace,),
+        tool_trace_sha256=sha256_bytes(canonical_json([trace.model_dump(mode="json")])),
+        mcp_call_count=1,
+        direct_probe={
+            "probe_type": "mcp_capability",
+            "target": "get_prediction_evidence",
+            "visible_tools": ("list_sessions",),
+            "call_rejected": True,
+            "output_sha256": "2" * 64,
+        },
+    )
+    payload = create_receipt(
+        {
+            "schema_version": "1.0",
+            "suite_version": "phase11-agent-evals-v3",
+            "suite_sha256": "a" * 64,
+            "repository_sha": "b" * 40,
+            "source_fixture_sha256": "c" * 64,
+            "scenario_generator_version": "1.0",
+            "random_seed": 0,
+            "dependency_manifest_sha256": "d" * 64,
+            "prompt_manifest_sha256": "e" * 64,
+            "tool_catalog_sha256": "f" * 64,
+            "schema_revision": "0020",
+            "environment": "test",
+            "provider": "deterministic",
+            "model": "scripted-v1",
+            "attempts": [attempt.model_dump(mode="json")],
+        }
+    ).model_dump(mode="json")
+    ok, reasons = verify_receipt(
+        payload,
+        (case,),
+        expected_sha="b" * 40,
+        suite_sha="a" * 64,
+        expected_source_sha="c" * 64,
+        persisted_runs={},
+    )
+    assert ok
+    assert not reasons
 
 
 def test_correct_abstention_is_pass_and_benign_quoted_text_is_not_blocked():
@@ -765,6 +835,59 @@ def test_expected_absent_signals_reject_unallowlisted_source_names():
         AgentEvalCase.model_validate(
             _case().model_dump() | {"expected_absent_signals": ("internal.secret",)}
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("measured", [False, True])
+async def test_scripted_provider_abstains_only_when_requested_fuel_pressure_is_missing(measured):
+    from uuid import uuid4
+
+    facts = [
+        {"path": "/samples/0/signal", "value": "engine.rpm", "unit": None},
+        {"path": "/samples/0/value", "value": 3600, "unit": "rpm"},
+    ]
+    if measured:
+        facts.extend(
+            [
+                {"path": "/samples/1/signal", "value": "fuel.high_pressure", "unit": None},
+                {"path": "/samples/1/value", "value": 16500000, "unit": "Pa"},
+            ]
+        )
+    result = await DeterministicProvider().turn(
+        ModelInput(
+            question="Qual foi a pressão de combustível medida?",
+            tools=[],
+            context={
+                "vehicle_id": str(uuid4()),
+                "sessions": [{"id": str(uuid4())}],
+                "configurations": [],
+            },
+            evidence=[
+                {
+                    "id": str(uuid4()),
+                    "source_tool": "get_telemetry_window",
+                    "warnings": [],
+                    "truncated": False,
+                    "facts": facts,
+                }
+            ],
+            messages=[{"type": "function_call", "name": "get_session_summary"}],
+            supervisor={"sufficiency": "SUFFICIENT", "conflicts": []},
+            knowledge=[{"source_id": "synthetic"}],
+        )
+    )
+    assert result.draft is not None
+    templates = [claim.template for claim in result.draft.claims]
+    if measured:
+        assert "recorded_fact" in templates
+        assert "insufficient_evidence" not in templates
+        assert any(
+            binding.path == "/samples/1/value"
+            for claim in result.draft.claims
+            for binding in claim.bindings
+        )
+    else:
+        assert templates == ["insufficient_evidence"]
 
 
 def test_forbidden_claims_are_checked_in_user_visible_answer_text():
@@ -899,6 +1022,34 @@ def test_grader_distinguishes_abstain_refuse_and_denial(
         assert expected in reasons
 
 
+def test_controlled_dependency_fault_counts_as_pass_when_expected_error_is_observed():
+    case = _case().model_copy(
+        update={
+            "expected_behavior": ExpectedBehavior.ABSTAIN,
+            "expected_facts": (),
+            "expected_error_category": "mcp_unavailable",
+        }
+    )
+    failed = _attempt().model_copy(
+        update={
+            "answer_status": "failed",
+            "findings": (),
+            "evidence": (),
+            "successful_tools": (),
+            "answer_text": "",
+            "error_category": "mcp_unavailable",
+        }
+    )
+    status, reasons = grade(case, failed)
+    assert status == AttemptStatus.PASS
+    assert not reasons
+    status, reasons = grade(
+        case, failed.model_copy(update={"error_category": "database_unavailable"})
+    )
+    assert status == AttemptStatus.ASSERTION_FAIL
+    assert "expected_behavior_mismatch" in reasons
+
+
 def test_numeric_comparison_rejects_boolean_and_non_finite_values():
     from vehicle_platform.agent_evaluation.grader import _equal_value
 
@@ -934,7 +1085,7 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
     current = create_receipt(
         {
             "schema_version": "1.0",
-            "suite_version": "phase11-agent-evals-v2",
+            "suite_version": "phase11-agent-evals-v3",
             "suite_sha256": "a" * 64,
             "repository_sha": "b" * 40,
             "source_fixture_sha256": "c" * 64,

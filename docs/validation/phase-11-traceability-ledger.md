@@ -21,7 +21,7 @@ complete merely because a scenario is present in JSON.
 | 51–58          | Existing MCP schemas/auth and provider; attack/fault cases                                                                        | Not run: parameter fuzz, network isolation, canaries, exhaustion, retry and provider modes remain                                                                    |
 | 59–68          | Metamorphic cases; existing grounding/source cutoff contracts                                                                     | Partial: case identities authored; transform execution, cache isolation, rendering and confidence grading remain                                                     |
 | 69–73          | Independent grader and outcome enums                                                                                              | Partial: usefulness and abstention distinction exists; ambiguity adjudication and broad routing metrics remain                                                       |
-| 74–78          | Suite `suite-v1.json` (suite v2); report summary CLI                                                                              | Partial: 21 cases, 3 language modes and family counts; holdout, historical mapping and complete coverage report absent                                               |
+| 74–78          | Suite `suite-v1.json` (suite v3); report summary CLI                                                                              | Partial: 21 cases, 3 language modes and family counts; holdout, historical mapping and complete coverage report absent                                               |
 | 79–87          | Receipt contracts and provider caveat report                                                                                      | Partial: zero paid calls enforced for deterministic receipts; paid exact-SHA harness and failure taxonomy incomplete                                                 |
 | 88–94          | `scripts/agent_runtime.py`, `scripts/evaluate_agent_red_team.py`, existing 7B/8/9F/10 acceptance scripts                          | Partial: runner uses actual API/MCP HTTP/LangGraph path for limited scenarios; required pathways not all exercised together                                          |
 | 95–98          | Receipt privacy and `agent_evaluation` package                                                                                    | Partial: no hidden reasoning; source snapshot/grader/receipt exist; persistence and OTel adapter absent                                                              |
@@ -39,16 +39,16 @@ complete merely because a scenario is present in JSON.
 
 ## Current evidence
 
-- `make verify-cloud`: all 1,558 API unit tests passed; line coverage 95.74%, branch
-  coverage 90.02%. It also passed 140 web tests, production build, contracts, formatting,
+- `make verify-cloud` on the current v3 worktree: all 1,572 API unit tests passed; line coverage 95.72%, branch
+  coverage 90.03%. It also passed 140 web tests, production build, contracts, formatting,
   context checks, project benchmarks, Gitleaks, dependency audit and Trivy.
-- `make test-agent-evals`: 38 focused evaluator tests passed after receipt manifest and
-  benign quoted-injection hardening.
+- Latest `make test-agent-evals`: 49 focused evaluator tests passed, including v3 expected-fault,
+  direct MCP probe, and present/absent signal checks.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence
   exists.
-- PR #65 is open as a draft. The Phase 11 exact-head run at `26c4f1a` failed before
-  readiness; CI, Security, Phase 9G, Phase 9H and Phase 10 passed. Canonical full validation
-  remains in progress. Full integration acceptance and final-SHA checks are incomplete; no
-  performance or real-provider receipt is claimed.
+- PR #65 is open as a draft. The Phase 11 run at `0daab13` failed after grading 12/21 cases;
+  the full validation workflow for that SHA remains in progress. Earlier acceptance failures
+  are documented in `phase-11-acceptance.md`. Full integration acceptance and final-SHA checks
+  are incomplete; no performance or real-provider receipt is claimed.

@@ -24,6 +24,25 @@ def create_receipt(payload: dict[str, Any]) -> EvalReceipt:
     return EvalReceipt.model_validate(normalized)
 
 
+def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt) -> bool:
+    if case.source_surface == "mcp_authorization":
+        probe = attempt.direct_probe
+        return bool(
+            probe
+            and probe.probe_type == "mcp_capability"
+            and probe.target in case.forbidden_tools
+            and probe.target not in probe.visible_tools
+            and probe.call_rejected
+            and any(
+                trace.tool_name == probe.target
+                and trace.status == "failed"
+                and trace.result_sha256 == probe.output_sha256
+                for trace in attempt.tool_trace
+            )
+        )
+    return False
+
+
 def verify_receipt(
     raw: dict[str, Any],
     cases: tuple[AgentEvalCase, ...],
@@ -105,7 +124,10 @@ def verify_receipt(
                     reasons.append("persisted_agent_run_id_missing")
                 elif persisted is not None:
                     reasons.append("unexpected_persisted_agent_run")
-                elif attempt.status != AttemptStatus.NOT_RUN:
+                elif (
+                    attempt.status != AttemptStatus.NOT_RUN
+                    and not has_independent_non_agent_evidence(expected[attempt.case_id], attempt)
+                ):
                     reasons.append("independent_non_agent_evidence_missing")
             elif persisted is None:
                 reasons.append("persisted_agent_run_not_found")
@@ -189,10 +211,11 @@ def verify_receipt(
             reasons.append("observed_tools_disagree_with_trace")
         if set(attempt.successful_tools) != completed_tools:
             reasons.append("successful_tools_disagree_with_trace")
-        if attempt.source_digest_before != receipt.source_fixture_sha256:
-            reasons.append("attempt_source_digest_mismatch")
-        if attempt.source_digest_after != receipt.source_fixture_sha256:
-            reasons.append("attempt_source_mutated_or_unmeasured")
+        if attempt.status != AttemptStatus.NOT_RUN:
+            if attempt.source_digest_before != receipt.source_fixture_sha256:
+                reasons.append("attempt_source_digest_mismatch")
+            if attempt.source_digest_after != receipt.source_fixture_sha256:
+                reasons.append("attempt_source_mutated_or_unmeasured")
         if attempt.tool_trace_sha256 is not None:
             trace_digest = sha256_bytes(
                 canonical_json([trace.model_dump(mode="json") for trace in attempt.tool_trace])

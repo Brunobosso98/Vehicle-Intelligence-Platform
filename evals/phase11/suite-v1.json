@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "suite_version": "phase11-agent-evals-v2",
+  "suite_version": "phase11-agent-evals-v3",
   "author": "Vehicle Intelligence Platform engineering",
   "frozen": true,
   "cases": [
@@ -360,6 +360,7 @@
       "intent": "mcp_timeout",
       "question": "What does the selected session show while MCP times out?",
       "expected_behavior": "abstain",
+      "expected_error_category": "mcp_unavailable",
       "expected_route": "factual",
       "source_surface": "mcp_transport",
       "attack_family": "tool_timeout",

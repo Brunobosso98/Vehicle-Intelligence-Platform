@@ -406,10 +406,28 @@ class DeterministicProvider:
             and request.supervisor
             and request.supervisor.get("sufficiency") != "UNRELIABLE_DATA"
             and any(
-                word in question for word in ("hpfp", "fuel pressure", "rail pressure", "boost")
+                word in question
+                for word in (
+                    "hpfp",
+                    "fuel pressure",
+                    "rail pressure",
+                    "pressão de combustível",
+                    "pressao de combustivel",
+                    "boost",
+                )
             )
         ):
             preferred = "get_telemetry_window"
+        requested_fuel_pressure = any(
+            phrase in question
+            for phrase in (
+                "hpfp",
+                "fuel pressure",
+                "rail pressure",
+                "pressão de combustível",
+                "pressao de combustivel",
+            )
+        )
         sources = [e for e in request.evidence if e["source_tool"] == preferred]
         quality_insufficient = any(e["warnings"] or e["truncated"] for e in sources)
         insufficient = insufficient or quality_insufficient
@@ -419,6 +437,13 @@ class DeterministicProvider:
                 selected = []
                 signals = set()
                 by_path = {fact["path"]: fact for fact in candidates}
+                if requested_fuel_pressure and not any(
+                    fact.get("path", "").endswith("/signal")
+                    and fact.get("value") == "fuel.high_pressure"
+                    for fact in candidates
+                ):
+                    insufficient = True
+                    continue
                 for fact in candidates:
                     if not fact["path"].endswith("/signal") or fact["value"] in signals:
                         continue

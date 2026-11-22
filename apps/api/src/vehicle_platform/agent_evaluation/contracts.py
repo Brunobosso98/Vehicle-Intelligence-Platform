@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -127,6 +127,14 @@ class ToolTrace(EvalModel):
     duration_ms: int | None = Field(default=None, ge=0)
 
 
+class DirectProbeEvidence(EvalModel):
+    probe_type: Literal["mcp_capability", "operator_cli"]
+    target: str = Field(min_length=1, max_length=100)
+    visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
+    call_rejected: bool
+    output_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class EvidenceBindingOracle(EvalModel):
     case_id: str
     source_table: str
@@ -185,6 +193,10 @@ class AgentEvalCase(EvalModel):
     intent: str = Field(min_length=1, max_length=100)
     question: str = Field(min_length=1, max_length=2000)
     expected_behavior: ExpectedBehavior
+    expected_error_category: str | None = Field(
+        default=None,
+        pattern=r"^(mcp_unavailable|dependency_unavailable|run_timeout|provider_invalid_output)$",
+    )
     expected_route: str | None = Field(default=None, max_length=80)
     persistence_required: bool = True
     expected_facts: tuple[OracleFact, ...] = Field(default=(), max_length=24)
@@ -240,6 +252,7 @@ class CaseAttempt(EvalModel):
     observed_tools: tuple[str, ...] = Field(default=(), max_length=64)
     successful_tools: tuple[str, ...] = Field(default=(), max_length=64)
     tool_trace: tuple[ToolTrace, ...] = Field(default=(), max_length=32)
+    direct_probe: DirectProbeEvidence | None = None
     tool_trace_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     sse_event_types: tuple[str, ...] = Field(default=(), max_length=128)
     model_turn_count: int | None = Field(default=None, ge=0, le=16)
