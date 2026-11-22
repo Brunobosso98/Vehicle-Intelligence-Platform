@@ -40,6 +40,18 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
                 for trace in attempt.tool_trace
             )
         )
+    if case.source_surface == "operator_cli":
+        probe = attempt.direct_probe
+        return bool(
+            probe
+            and probe.probe_type == "operator_cli"
+            and probe.target == "vehicle-agent-evals plan"
+            and not probe.call_rejected
+            and probe.output_summary.get("status") == "PLAN_ONLY"
+            and probe.output_summary.get("paid_provider_calls") == 0
+            and probe.output_summary.get("provider_cost_usd") == 0
+            and sha256_bytes(canonical_json(probe.output_summary)) == probe.output_sha256
+        )
     return False
 
 

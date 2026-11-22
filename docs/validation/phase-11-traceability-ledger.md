@@ -42,8 +42,13 @@ complete merely because a scenario is present in JSON.
 - Latest `make verify-cloud`: all 1,573 API unit tests passed; line coverage 95.73%, branch
   coverage 90.07%. It also passed 140 web tests, production build, contracts, formatting,
   context checks, project benchmarks, Gitleaks, dependency audit and Trivy.
-- Latest `make test-agent-evals`: 50 focused evaluator tests passed, including expected-fault,
+- Latest `make test-agent-evals`: 51 focused evaluator tests passed, including expected-fault,
   direct MCP probe, attempted/unattempted receipt, structured abstention, and present/absent signal checks.
+- Current local follow-up adds five real HTTP/LangGraph corpus attempts and an independently
+  checked zero-cost CLI plan probe. `make check-api` completed with 1,574 passing tests, 95.73%
+  line coverage and 90.08% branch coverage; the 51-test focused evaluator suite and Ruff pass.
+  Exact-SHA disposable-database evaluation is still pending; three corpus cases and the broader
+  pathway matrix remain incomplete.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence

@@ -21,6 +21,7 @@ from vehicle_platform.agent_evaluation.contracts import (
     AgentEvalCase,
     AttemptStatus,
     CaseAttempt,
+    DirectProbeEvidence,
     ToolTrace,
 )
 from vehicle_platform.agent_evaluation.corpus import (
@@ -478,6 +479,61 @@ async def evaluate(database_url: str) -> int:
             actual_attempts.append(fault_attempt)
         finally:
             await mcp_process.start()
+
+        for case_id in (
+            "P11-RED-003",
+            "P11-RED-004",
+            "P11-RED-005",
+            "P11-RED-008",
+            "P11-META-002",
+        ):
+            actual_attempts.append(
+                await _evaluate_case(
+                    api,
+                    by_id[case_id],
+                    fixture["vehicle"],
+                    before,
+                    database_url,
+                )
+            )
+
+        plan_case = by_id["P11-PROVIDER-001"]
+        plan_result = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(ROOT / "scripts/vehicle_agent_evals.py"),
+            "plan",
+            cwd=ROOT,
+            env=os.environ.copy(),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        async with asyncio.timeout(15):
+            plan_stdout, _plan_stderr = await plan_result.communicate()
+        if plan_result.returncode != 0:
+            raise AssertionError("provider_default_off_plan_command_failed")
+        plan_summary = json.loads(plan_stdout)
+        plan_attempt = CaseAttempt(
+            case_id=plan_case.case_id,
+            status=AttemptStatus.PASS,
+            selected_vehicle_id=fixture["vehicle"],
+            answer_status="completed",
+            answer_text=json.dumps(plan_summary, sort_keys=True),
+            direct_probe=DirectProbeEvidence(
+                probe_type="operator_cli",
+                target="vehicle-agent-evals plan",
+                call_rejected=False,
+                output_sha256=sha256_bytes(canonical_json(plan_summary)),
+                output_summary=plan_summary,
+            ),
+            source_digest_before=before,
+            source_digest_after=before,
+        )
+        plan_status, plan_reasons = grade(plan_case, plan_attempt)
+        actual_attempts.append(
+            plan_attempt.model_copy(
+                update={"status": plan_status, "reasons": plan_reasons}
+            )
+        )
         assert await source_digest(database_url) == before
 
     after = await source_digest(database_url)

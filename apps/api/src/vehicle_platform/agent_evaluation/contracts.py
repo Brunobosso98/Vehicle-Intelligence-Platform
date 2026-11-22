@@ -133,6 +133,9 @@ class DirectProbeEvidence(EvalModel):
     visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
     call_rejected: bool
     output_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    output_summary: dict[str, str | int | float | bool | None] = Field(
+        default_factory=dict, max_length=16
+    )
 
 
 class EvidenceBindingOracle(EvalModel):

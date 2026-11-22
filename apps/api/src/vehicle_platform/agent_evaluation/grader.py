@@ -8,6 +8,7 @@ from vehicle_platform.agent_evaluation.contracts import (
     ExpectedBehavior,
     OracleFact,
 )
+from vehicle_platform.agent_evaluation.corpus import canonical_json, sha256_bytes
 
 
 def _equal_value(left: Any, right: Any) -> bool:
@@ -128,6 +129,20 @@ def grade(
             )
         ):
             reasons.append("independent_mcp_probe_evidence_missing_or_invalid")
+    elif case.source_surface == "operator_cli":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "operator_cli"
+            or probe.target != "vehicle-agent-evals plan"
+            or probe.call_rejected
+            or summary.get("status") != "PLAN_ONLY"
+            or summary.get("paid_provider_calls") != 0
+            or summary.get("provider_cost_usd") != 0
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("independent_cli_plan_evidence_missing_or_invalid")
     if case.allowed_tools and set(attempt.successful_tools) - set(case.allowed_tools):
         reasons.append("tool_outside_case_allowlist_succeeded")
     if case.expected_behavior == ExpectedBehavior.ANSWER and findings_missing_run(attempt):

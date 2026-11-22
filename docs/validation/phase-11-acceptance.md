@@ -109,12 +109,22 @@ acceptance gates remain incomplete.
   [run 45036858295](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45036858295).
 - Latest `make verify-cloud`: PASS with 1,573 API tests, 95.73% line and
   90.07% branch coverage, 140 web tests, production build, contracts/context, formatting,
-  benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 50 PASS.
+  benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 51 PASS.
 - Current follow-up adds structured insufficiency grading based on the application-authored
   gap template, permits neutral recorded observations alongside explicit data gaps, aligns the
   fault oracle to `dependency_unavailable`, and includes sanitized categorical diagnostics.
-  The 50 focused tests pass. A formatting-only fix is uncommitted; full `make check-api` is
-  running. Full requirements remain incomplete: mandatory pathways are not all executed.
+  The 51 focused tests pass and the full `make check-api` result is recorded below. Full
+  requirements remain incomplete: mandatory pathways are not all executed.
+- The next runner iteration adds actual HTTP/LangGraph attempts for `P11-RED-003`, `RED-004`,
+  `RED-005`, `RED-008` and `META-002`, plus an independently hashed `vehicle-agent-evals plan`
+  subprocess probe for `P11-PROVIDER-001`. The operator CLI probe is accepted by both the
+  deterministic grader and independent receipt checker only when its captured summary hashes
+  correctly and proves `PLAN_ONLY`, zero calls and zero cost. On the local worktree, `make
+  check-api` completed with 1,574 passing tests and API coverage of 95.73% line / 90.08% branch;
+  the focused evaluation suite has 51 passing tests and Ruff passed. This runner iteration has
+  not yet run against a disposable database or exact SHA. Its expected 18/21 attempted count
+  is not an outcome: `P11-RED-007`, `P11-FAULT-002` and `P11-FAULT-003` remain unattempted,
+  and the independent completeness checker must continue to reject any such partial run.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

@@ -11,13 +11,18 @@ from vehicle_platform.agent_evaluation.contracts import (
     AgentEvalCase,
     AttemptStatus,
     CaseAttempt,
+    DirectProbeEvidence,
     ExpectedBehavior,
     ToolTrace,
 )
-from vehicle_platform.agent_evaluation.corpus import load_corpus
+from vehicle_platform.agent_evaluation.corpus import canonical_json, load_corpus, sha256_bytes
 from vehicle_platform.agent_evaluation.grader import grade
 from vehicle_platform.agent_evaluation.privacy import redact_runtime_secrets, sanitize_attempt
-from vehicle_platform.agent_evaluation.receipts import create_receipt, verify_receipt
+from vehicle_platform.agent_evaluation.receipts import (
+    create_receipt,
+    has_independent_non_agent_evidence,
+    verify_receipt,
+)
 from vehicle_platform.agents.provider import ModelInput
 from vehicle_platform.agents.scripted_provider import DeterministicProvider
 
@@ -737,8 +742,6 @@ def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
 
 
 def test_receipt_checker_accepts_verified_direct_mcp_capability_denial():
-    from vehicle_platform.agent_evaluation.corpus import canonical_json, sha256_bytes
-
     case = _case().model_copy(
         update={
             "persistence_required": False,
@@ -802,6 +805,45 @@ def test_receipt_checker_accepts_verified_direct_mcp_capability_denial():
     )
     assert ok
     assert not reasons
+
+
+def test_operator_cli_plan_is_independent_zero_cost_evidence():
+    case = _case().model_copy(
+        update={
+            "expected_behavior": ExpectedBehavior.ANSWER,
+            "expected_facts": (),
+            "source_surface": "operator_cli",
+            "persistence_required": False,
+        }
+    )
+    summary = {
+        "status": "PLAN_ONLY",
+        "paid_provider_calls": 0,
+        "provider_cost_usd": 0,
+    }
+    attempt = _attempt().model_copy(
+        update={
+            "run_id": None,
+            "findings": (),
+            "evidence": (),
+            "answer_text": "Plan only",
+            "direct_probe": DirectProbeEvidence(
+                probe_type="operator_cli",
+                target="vehicle-agent-evals plan",
+                call_rejected=False,
+                output_sha256=sha256_bytes(canonical_json(summary)),
+                output_summary=summary,
+            ),
+        }
+    )
+    status, reasons = grade(case, attempt)
+    assert status == AttemptStatus.PASS and not reasons
+    assert has_independent_non_agent_evidence(case, attempt)
+
+    tampered_probe = attempt.direct_probe.model_copy(update={"output_sha256": "0" * 64})
+    status, reasons = grade(case, attempt.model_copy(update={"direct_probe": tampered_probe}))
+    assert status == AttemptStatus.ASSERTION_FAIL
+    assert "independent_cli_plan_evidence_missing_or_invalid" in reasons
 
 
 def test_correct_abstention_is_pass_and_benign_quoted_text_is_not_blocked():
