@@ -1037,6 +1037,11 @@ async def test_source_oracle_resolves_case_facts_from_canonical_tables(monkeypat
     event_facts = await source_oracle.resolve_case_facts(url, cases["P11-BENIGN-002"], "vehicle-1")
     assert session_facts[0].value == "session-from-source"
     assert event_facts[0].value == "boost_drop"
+    unsupported = cases["P11-BENIGN-001"].model_copy(
+        update={"expected_facts": (session_facts[0].model_copy(update={"path": "/unknown"}),)}
+    )
+    with pytest.raises(ValueError, match="independent_fact_resolver_unavailable"):
+        await source_oracle.resolve_case_facts(url, unsupported, "vehicle-1")
 
     async def missing_event(_url, _vehicle, _event_type):
         return False

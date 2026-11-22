@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 687 files · ~789,349 words
+- 687 files · ~789,358 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `020c18d0`
+- Built from commit: `63d0a5d2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1631,7 +1631,7 @@ Nodes (4): Fixture matrix, Integrity adversaries, Phase 9E evidence evaluation, 
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `predictiveEnabled()` connect `predictiveEnabled` to `server.ts`, `failure`, `login/route.ts`, `PredictiveError`?**
-  _High betweenness centrality (0.087) - this node is a cross-community bridge._
+  _High betweenness centrality (0.097) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 149 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `react-dom`, `@types/node` to the rest of the system?**
@@ -1639,7 +1639,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.07741228070175439 - nodes in this community are weakly interconnected._
 - **Why does `Operator authorization` connect `predictiveEnabled` to `Phase 9H predictive intelligence UI`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+  _High betweenness centrality (0.094) - this node is a cross-community bridge._
 - **Are the 147 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 147 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Detailed engineering contract — mandatory implementation addendum` be split into smaller, more focused modules?**

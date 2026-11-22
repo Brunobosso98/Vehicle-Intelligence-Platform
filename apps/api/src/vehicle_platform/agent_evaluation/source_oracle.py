@@ -188,7 +188,7 @@ async def resolve_case_facts(
                 raise ValueError("fixture_expected_event_missing")
             value = fact.value
         else:
-            value = fact.value
+            raise ValueError("independent_fact_resolver_unavailable")
         resolved.append(fact.model_copy(update={"value": value}))
     return tuple(resolved)
 
