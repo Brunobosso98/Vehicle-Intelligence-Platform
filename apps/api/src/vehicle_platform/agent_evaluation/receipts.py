@@ -93,6 +93,7 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
                 or (
                     probe.output_summary.get("available_before_revoke") is True
                     and probe.output_summary.get("rejected_after_revoke") is True
+                    and probe.output_summary.get("http_status") == 401
                 )
             )
             and any(

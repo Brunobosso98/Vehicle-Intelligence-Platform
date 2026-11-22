@@ -158,6 +158,11 @@ acceptance gates remain incomplete.
   shorter than the MCP high-entropy minimum. Sanitized report has no case verdicts and records
   zero paid calls. The runner now rotates to `secrets.token_urlsafe(48)`; this fix awaits a new
   exact-SHA run. Phase 9G passed on the same prior SHA (`45042245777`).
+- Exact-SHA run `45042676186` for `1feff7e4da0e0fa0d48dcf94b1da36f716923a9a` also ended
+  `INFRA_FAILURE` before case grading: after rotation, the MCP SDK rejected the stale bearer
+  during session negotiation, before issuing `tools/call`. The current revision probes the
+  actual Streamable HTTP `tools/call` request directly and requires HTTP 401 in both grader and
+  receipt validation. Sanitized report records zero paid calls and no case verdicts.
 
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA

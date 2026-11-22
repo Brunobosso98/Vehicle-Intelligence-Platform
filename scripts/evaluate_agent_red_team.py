@@ -681,26 +681,30 @@ async def evaluate(database_url: str) -> int:
             "evidence_id": str(uuid4()),
         }
         revoked_started = perf_counter()
-        async with (
-            httpx2.AsyncClient(
-                headers={"Authorization": f"Bearer {prediction_token}"},
-                trust_env=False,
-            ) as stale_http,
-            Client(
-                streamable_http_client(stack["mcp_url"], http_client=stale_http)
-            ) as stale_client,
-        ):
-            revoked_result = await stale_client.call_tool(
-                revoked_tool, revoked_arguments
+        async with httpx2.AsyncClient(
+            headers={"Authorization": f"Bearer {prediction_token}"},
+            trust_env=False,
+        ) as stale_http:
+            revoked_response = await stale_http.post(
+                stack["mcp_url"],
+                headers={"Accept": "application/json, text/event-stream"},
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                        "name": revoked_tool,
+                        "arguments": revoked_arguments,
+                    },
+                },
             )
-        rejected_after = bool(revoked_result.is_error)
+        rejected_after = revoked_response.status_code == 401
+        revoked_http_status = revoked_response.status_code
         revoked_output_sha = sha256_bytes(
             canonical_json(
                 {
-                    "is_error": revoked_result.is_error,
-                    "content": [
-                        item.model_dump(mode="json") for item in revoked_result.content
-                    ],
+                    "http_status": revoked_http_status,
+                    "body_sha256": sha256_bytes(revoked_response.content),
                 }
             )
         )
@@ -735,6 +739,7 @@ async def evaluate(database_url: str) -> int:
                 output_summary={
                     "available_before_revoke": available_before,
                     "rejected_after_revoke": rejected_after,
+                    "http_status": revoked_http_status,
                 },
             ),
             mcp_call_count=1,

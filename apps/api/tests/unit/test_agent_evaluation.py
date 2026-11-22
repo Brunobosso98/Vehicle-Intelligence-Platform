@@ -902,6 +902,7 @@ def test_revoked_mcp_capability_requires_before_and_after_evidence():
             "output_summary": {
                 "available_before_revoke": True,
                 "rejected_after_revoke": True,
+                "http_status": 401,
             },
         },
     )
@@ -910,7 +911,13 @@ def test_revoked_mcp_capability_requires_before_and_after_evidence():
     assert has_independent_non_agent_evidence(case, attempt)
 
     tampered_probe = attempt.direct_probe.model_copy(
-        update={"output_summary": {"available_before_revoke": False, "rejected_after_revoke": True}}
+        update={
+            "output_summary": {
+                "available_before_revoke": False,
+                "rejected_after_revoke": True,
+                "http_status": 401,
+            }
+        }
     )
     status, reasons = grade(case, attempt.model_copy(update={"direct_probe": tampered_probe}))
     assert status == AttemptStatus.ASSERTION_FAIL

@@ -137,6 +137,7 @@ def grade(
                 and (
                     probe.output_summary.get("available_before_revoke") is not True
                     or probe.output_summary.get("rejected_after_revoke") is not True
+                    or probe.output_summary.get("http_status") != 401
                 )
             )
             or not any(

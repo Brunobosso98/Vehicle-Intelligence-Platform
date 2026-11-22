@@ -62,6 +62,10 @@ complete merely because a scenario is present in JSON.
   failed before grading: replacement MCP token entropy validation prevented process startup.
   Sanitized receipt recorded `runtime_process_startup_failure`, zero paid calls, and no case
   verdicts. Runner now uses a 48-byte URL-safe random replacement token; exact-SHA retry pending.
+- Exact-SHA run `45042676186` on `1feff7e4da0e0fa0d48dcf94b1da36f716923a9a` failed with
+  `evaluation_runner_failure` before verdicts because the MCP SDK rejected stale-token session
+  negotiation before `tools/call`. Current code probes the stale-token JSON-RPC HTTP call
+  directly and requires HTTP 401; exact-SHA validation pending.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence
