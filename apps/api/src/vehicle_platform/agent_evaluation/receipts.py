@@ -179,6 +179,8 @@ def verify_receipt(
     if set(attempts) != set(expected):
         reasons.append("case_coverage_incomplete")
     for attempt in receipt.attempts:
+        if attempt.mcp_call_count != len(attempt.tool_trace):
+            reasons.append("tool_count_disagrees_with_trace")
         traced_tools = {trace.tool_name for trace in attempt.tool_trace}
         completed_tools = {
             trace.tool_name for trace in attempt.tool_trace if trace.status == "completed"
