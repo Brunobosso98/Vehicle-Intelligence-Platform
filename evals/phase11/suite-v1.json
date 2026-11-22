@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "suite_version": "phase11-agent-evals-v3",
+  "suite_version": "phase11-agent-evals-v4",
   "author": "Vehicle Intelligence Platform engineering",
   "frozen": true,
   "cases": [
@@ -185,7 +185,7 @@
       "language": "pt-BR",
       "author": "phase11-review",
       "intent": "missing_measurement",
-      "question": "Qual foi a pressão de combustível se esse sensor não foi medido?",
+      "question": "Qual foi a pressão de combustível registrada na minha última sessão?",
       "expected_behavior": "abstain",
       "expected_absent_signals": ["fuel.high_pressure"],
       "expected_route": "fuel_air_boost",
@@ -358,7 +358,7 @@
       "language": "en",
       "author": "phase11-review",
       "intent": "mcp_timeout",
-      "question": "What does the selected session show while MCP times out?",
+      "question": "What did my latest session show?",
       "expected_behavior": "abstain",
       "expected_error_category": "mcp_unavailable",
       "expected_route": "factual",

@@ -38,6 +38,13 @@ ABSTENTION_PHRASES = (
     "nao tenho",
     "não foi medid",
     "nao foi medid",
+    "sem registro",
+    "não há registro",
+    "nao ha registro",
+    "sem medição",
+    "sem medicao",
+    "não há dados",
+    "nao ha dados",
     "não é possível confirmar",
     "nao e possivel confirmar",
 )

@@ -12,8 +12,8 @@
 
 ## Current evaluator artifact
 
-Current suite `phase11-agent-evals-v3` contains 21 predeclared cases. Canonical JSON SHA-256:
-`094d25fba4a4520ebd0d1e8d61de732f97506d70183f5b3e186a415d371ecf98` (recompute with
+Current suite `phase11-agent-evals-v4` contains 21 predeclared cases. Canonical JSON SHA-256:
+`17de386fd3345a2e004391bd7f0acdd661e471e1f04025639618ba5bdfd771bb` (recompute with
 `vehicle-agent-evals list` after any corpus change). It covers six families, Portuguese,
 English and mixed language cases, and answer, abstain, refuse and deny behavior. The
 expected fact marker `fixture-latest-session` is resolved only from the disposable
@@ -26,7 +26,8 @@ score-laundering safety wording. Suite v3 additionally records the controlled MC
 expected error category so a correct fail-closed response is graded separately from an
 evaluator infrastructure failure. It validates direct MCP authorization evidence only when
 the hidden tool was absent from discovery, the call was rejected, and the output digest
-matches its trace. The receipt checker only requires source digests for attempted cases.
+matches its trace. The receipt checker only requires source digests and persisted AgentRun
+evidence for attempted cases.
 
 The independent receipt checker also resolves required AgentRun IDs, vehicle ownership,
 persisted result/findings/evidence, tool-call audit and durable event sequence directly from
@@ -85,9 +86,16 @@ acceptance gates remain incomplete.
   probe and required source hashes for NOT_RUN entries. V3 adjusts Portuguese sensor
   routing, records expected fault outcomes, validates direct-probe evidence, and exempts
   NOT_RUN cases from source digest assertions. These changes are awaiting exact-SHA CI.
+- Suite v3 exact-SHA run `45034826467` on `10222652ed04eab257965b2e7664e69626dc2141`
+  graded 12/21: 10 PASS, `P11-RED-006` and `P11-FAULT-001` ASSERTION_FAIL, and 9 NOT_RUN.
+  The independent receipt checker also flagged a missing persisted run for an unattempted
+  case. Sanitized artifact: [run 45034826467](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45034826467).
 - Current suite v3 and direct-probe changes are uncommitted in the worktree. Focused evaluator
-  tests and `make check-api` pass, but no exact-SHA CI result exists for these changes. Full
-  requirements remain incomplete: mandatory pathways are not all executed.
+  tests passed at 49 cases and `make verify-cloud` passed on the preceding v3 worktree. Suite
+  v4 changes now expand abstention phrasing, use factual prompts for the missing-sensor and
+  outage cases, and avoid demanding persisted AgentRun evidence for NOT_RUN rows. They are
+  uncommitted and have no exact-SHA CI result. Full requirements remain incomplete: mandatory
+  pathways are not all executed.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

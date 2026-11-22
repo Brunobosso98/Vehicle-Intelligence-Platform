@@ -117,7 +117,7 @@ def verify_receipt(
             reasons.append("claimed_status_disagrees_with_independent_grade")
         if status != AttemptStatus.PASS:
             reasons.append("case_not_pass")
-        if persisted_runs is not None:
+        if persisted_runs is not None and attempt.status != AttemptStatus.NOT_RUN:
             persisted = persisted_runs.get(attempt.case_id)
             if attempt.run_id is None:
                 if expected[attempt.case_id].persistence_required:

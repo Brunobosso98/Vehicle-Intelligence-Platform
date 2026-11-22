@@ -377,6 +377,41 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
     assert "claimed_status_disagrees_with_independent_grade" in reasons
 
 
+def test_receipt_checker_does_not_demand_persisted_run_for_unattempted_case():
+    case = _case()
+    attempt = CaseAttempt(case_id=case.case_id, status=AttemptStatus.NOT_RUN)
+    payload = {
+        "schema_version": "1.0",
+        "suite_version": "phase11-agent-evals-v3",
+        "suite_sha256": "a" * 64,
+        "repository_sha": "b" * 40,
+        "source_fixture_sha256": "c" * 64,
+        "scenario_generator_version": "1.0",
+        "random_seed": 0,
+        "dependency_manifest_sha256": "d" * 64,
+        "prompt_manifest_sha256": "e" * 64,
+        "tool_catalog_sha256": "f" * 64,
+        "schema_revision": "0020",
+        "environment": "test",
+        "provider": "deterministic",
+        "model": "scripted-v1",
+        "paid_provider_calls": 0,
+        "provider_cost_usd": 0,
+        "attempts": [attempt.model_dump(mode="json")],
+    }
+    receipt = create_receipt(payload).model_dump(mode="json")
+    ok, reasons = verify_receipt(
+        receipt,
+        (case,),
+        expected_sha="b" * 40,
+        suite_sha="a" * 64,
+        persisted_runs={},
+    )
+    assert not ok
+    assert "case_not_pass" in reasons
+    assert "persisted_agent_run_id_missing" not in reasons
+
+
 def test_receipt_checker_rejects_omission_duplicates_scope_and_trace_tampering():
     payload = {
         "schema_version": "1.0",
@@ -796,6 +831,12 @@ def test_abstention_requires_explicit_insufficiency_and_refusal_language():
         update={"answer_text": "Dados insuficientes para confirmar a medição."}
     )
     status, reasons = grade(abstain_case, explicit)
+    assert status == AttemptStatus.PASS and not reasons
+
+    rendered_gap = silent.model_copy(
+        update={"answer_text": "Sem registro de pressão na sessão consultada."}
+    )
+    status, reasons = grade(abstain_case, rendered_gap)
     assert status == AttemptStatus.PASS and not reasons
 
     refuse_case = abstain_case.model_copy(update={"expected_behavior": ExpectedBehavior.REFUSE})

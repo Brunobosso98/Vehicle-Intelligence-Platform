@@ -4146,21 +4146,21 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/corpus.py": {
-    "mtime": 1795357961.3856878,
-    "seen": 1795357990.709447,
-    "ast_hash": "0aa98c592b6701b1bda39bb59b0652be",
+    "mtime": 1795359133.6856947,
+    "seen": 1795359176.627664,
+    "ast_hash": "426c638bec945c90effa251617a85b25",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/grader.py": {
-    "mtime": 1795358241.6416917,
-    "seen": 1795358297.74747,
-    "ast_hash": "3d94ffc521863d53c242ce08ff1742e8",
+    "mtime": 1795359099.1416926,
+    "seen": 1795359176.6276662,
+    "ast_hash": "86a81bbdf5996be7b4c5582715ecdae7",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/receipts.py": {
-    "mtime": 1795358272.577692,
-    "seen": 1795358297.747473,
-    "ast_hash": "f41eb9dbe0f5b814610b65084a442bc0",
+    "mtime": 1795359099.1416926,
+    "seen": 1795359176.6276693,
+    "ast_hash": "861f9fb0133b6017c65d7bafc6c1e70e",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/source_oracle.py": {
@@ -4170,15 +4170,15 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
-    "mtime": 1795358266.8536925,
-    "seen": 1795358297.7477205,
-    "ast_hash": "571bf5f17b6819521ea85a74270b5836",
+    "mtime": 1795359154.073695,
+    "seen": 1795359176.6279168,
+    "ast_hash": "d8e9f5c4ac68b2725b7ca734ceea1e88",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v1.json": {
-    "mtime": 1795357921.157683,
-    "seen": 1795357990.7098536,
-    "ast_hash": "f1a543d5c7fe6ae3eeeeed265137d727",
+    "mtime": 1795359099.1416926,
+    "seen": 1795359176.628078,
+    "ast_hash": "6f0a938cafc2b089e0b948fdea0dd39f",
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_red_team.py": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795357442.5096574,
-    "seen": 1795357452.7398057,
-    "ast_hash": "95c54df1ffb489243c9e7de7532da574",
+    "mtime": 1795359133.6856947,
+    "seen": 1795359176.628477,
+    "ast_hash": "79cc7c319dcd67f2cd320ff9ea5abb99",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
@@ -4248,9 +4248,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795357239.9616778,
-    "seen": 1795357452.7398107,
-    "ast_hash": "fe88c98cad3b327e65e45dc656771b6e",
+    "mtime": 1795358898.6417089,
+    "seen": 1795359176.6284823,
+    "ast_hash": "253578152fa605ad6663505f54917888",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {
