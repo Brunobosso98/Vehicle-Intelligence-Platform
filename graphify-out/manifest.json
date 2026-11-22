@@ -1518,9 +1518,9 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1795314953.9313178,
-    "seen": 1795314980.3921607,
-    "ast_hash": "d35da99a27880ce2f86f297b9fadc9a0",
+    "mtime": 1795319659.6433442,
+    "seen": 1795323633.4117832,
+    "ast_hash": "a362061e25bb92d1b9fe1909105068c7",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
@@ -4008,9 +4008,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_mlops.py": {
-    "mtime": 1795318041.5833156,
-    "seen": 1795318064.7905693,
-    "ast_hash": "07e699566fd168322765cd3acf3187da",
+    "mtime": 1795323611.5633185,
+    "seen": 1795323633.4113004,
+    "ast_hash": "73791ecf02366a001edc5f7f8ddd3197",
     "semantic_hash": ""
   },
   "scripts/benchmark_mlops.py": {
@@ -4026,9 +4026,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_mlops.py": {
-    "mtime": 1795316334.9073238,
-    "seen": 1795316383.2460375,
-    "ast_hash": "730b8d476cc0f800f6033040a311b31f",
+    "mtime": 1795323568.6073194,
+    "seen": 1795323633.4114795,
+    "ast_hash": "72ab59b486d6122ce9dc47c8a9528e6c",
     "semantic_hash": ""
   },
   "scripts/observability_mlops.py": {
@@ -4086,33 +4086,33 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-10-acceptance.md": {
-    "mtime": 1795314953.9313178,
-    "seen": 1795314980.3921697,
-    "ast_hash": "a689a65f0d3fd5e40b467699fc38a88f",
+    "mtime": 1795319835.7953393,
+    "seen": 1795323633.411792,
+    "ast_hash": "359e3d278694f786ff8831954a1192c4",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-monitoring-comparison.md": {
-    "mtime": 1795274998.3993084,
-    "seen": 1795293385.7487984,
-    "ast_hash": "1bd3e5c1a5d43f6e952d4644489a3a70",
+    "mtime": 1795319708.0273392,
+    "seen": 1795323633.4117944,
+    "ast_hash": "ffb4ae2b4da8ebd6c35bf694f9b11781",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-pipeline-evaluation.md": {
-    "mtime": 1795305320.8873127,
-    "seen": 1795307042.6342306,
-    "ast_hash": "687be229584713e332953741b603188f",
+    "mtime": 1795319828.5953393,
+    "seen": 1795323633.4117956,
+    "ast_hash": "44445d55156c8f51050ab53e2d0b1299",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-security-reproducibility.md": {
-    "mtime": 1795314953.9313178,
-    "seen": 1795314980.392175,
-    "ast_hash": "260fab79e33cee701648990eb84a8fe5",
+    "mtime": 1795319637.8313427,
+    "seen": 1795323633.4117968,
+    "ast_hash": "2b3eab4cafad9b1f2d7377fc5988c3e7",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-traceability-ledger.md": {
-    "mtime": 1795288437.455331,
-    "seen": 1795293385.748808,
-    "ast_hash": "863c22c1d7f21f409fa00ce9ee0484a3",
+    "mtime": 1795319708.243339,
+    "seen": 1795323633.411798,
+    "ast_hash": "2d5ac7a1d3f5a50b576142771aa852f6",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/mlops/reproduction.py": {

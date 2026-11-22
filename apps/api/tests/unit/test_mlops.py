@@ -214,6 +214,48 @@ def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypat
         evaluator._json_safe_report_value({"unsupported": object()})
 
 
+def test_phase10_champion_artifact_resolution_uses_registry_checksum(monkeypatch, tmp_path):
+    import hashlib
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    evaluator_path = Path(__file__).resolve().parents[4] / "scripts" / "evaluate_mlops.py"
+    monkeypatch.syspath_prepend(str(evaluator_path.parent))
+    spec = spec_from_file_location("phase10_champion_artifact_resolution", evaluator_path)
+    assert spec is not None and spec.loader is not None
+    evaluator = module_from_spec(spec)
+    sys.modules[spec.name] = evaluator
+    spec.loader.exec_module(evaluator)
+
+    relative_path = Path("models") / "champion.bin"
+    expected_payload = b"registered champion bytes"
+    expected_checksum = hashlib.sha256(expected_payload).hexdigest()
+    stale_root = tmp_path / "run-older"
+    registered_root = tmp_path / "run-current"
+    write_exclusive_bytes(stale_root, relative_path, b"different stale artifact")
+    write_exclusive_bytes(registered_root, relative_path, expected_payload)
+    target_root = tmp_path / "trusted"
+
+    evaluator._copy_registered_artifact(
+        roots=(registered_root, stale_root),
+        relative_path=relative_path.as_posix(),
+        expected_checksum=expected_checksum,
+        expected_size=len(expected_payload),
+        target_root=target_root,
+    )
+
+    assert (
+        read_verified_bytes(
+            target_root,
+            target_root / relative_path,
+            expected_checksum,
+            maximum_bytes=evaluator.MAX_ARTIFACT_BYTES,
+            expected_size=len(expected_payload),
+        )
+        == expected_payload
+    )
+
+
 def test_phase10_monitoring_acceptance_preserves_source_schema_provenance(monkeypatch):
     import sys
     from importlib.util import module_from_spec, spec_from_file_location

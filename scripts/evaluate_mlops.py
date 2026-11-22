@@ -234,22 +234,34 @@ def _copy_registered_artifact(
         raise ValueError("registered artifact path is outside its fixed namespace")
     if expected_size is not None and not 1 <= expected_size <= MAX_ARTIFACT_BYTES:
         raise ValueError("registered artifact exceeds the Phase 10 byte budget")
-    matches = [root for root in roots if (root / relative).is_file()]
-    if len(matches) != 1:
-        raise ValueError("registered artifact source is missing or ambiguous")
-    source_root = matches[0]
-    source_path = source_root / relative
-    # The Phase 9B registry stores a content checksum but no artifact-size column.
-    # Derive the bounded size from the bytes verified against that immutable checksum.
-    payload = read_verified_bytes(
-        source_root,
-        source_path,
-        maximum_bytes=MAX_ARTIFACT_BYTES,
-        expected_checksum=expected_checksum,
-        expected_size=expected_size,
-        expected_owner=os.getuid(),
-        require_private=True,
+    candidates = sorted(
+        (root for root in roots if (root / relative).is_file()),
+        key=lambda root: str(root),
     )
+    verified: list[tuple[Path, bytes]] = []
+    for source_root in candidates:
+        try:
+            # Repeated deterministic 9C evaluations can leave several run roots
+            # containing the same relative path. The immutable registry checksum
+            # identifies the source bytes; filesystem presence alone does not.
+            payload = read_verified_bytes(
+                source_root,
+                source_root / relative,
+                maximum_bytes=MAX_ARTIFACT_BYTES,
+                expected_checksum=expected_checksum,
+                expected_size=expected_size,
+                expected_owner=os.getuid(),
+                require_private=True,
+            )
+        except (OSError, ValueError):
+            continue
+        verified.append((source_root, payload))
+    if not verified:
+        raise ValueError("registered artifact source is missing or fails verification")
+    payloads = {payload for _, payload in verified}
+    if len(payloads) != 1:
+        raise ValueError("registered artifact sources conflict with immutable bytes")
+    source_root, payload = verified[0]
     target = target_root / relative
     verified_size = len(payload)
     if target.exists():
