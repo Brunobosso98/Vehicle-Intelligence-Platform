@@ -41,6 +41,48 @@ def test_independent_acceptance_oracle_uses_hand_computed_small_fixture():
     assert result["psi"] == pytest.approx(0.25 * math.log(3))
 
 
+def test_independent_checker_measures_bounded_9b_artifact_without_registry_size(
+    monkeypatch, tmp_path
+):
+    import hashlib
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    checker_path = Path(__file__).resolve().parents[4] / "scripts" / "check_mlops.py"
+    spec = spec_from_file_location("phase10_artifact_size_checker", checker_path)
+    assert spec is not None and spec.loader is not None
+    checker = module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+    monkeypatch.setattr(checker, "ROOT", tmp_path)
+
+    supervised_query = checker._candidate_artifact_query("supervised")
+    anomaly_query = checker._candidate_artifact_query("anomaly")
+    assert "FROM ml_model_versions" in supervised_query
+    assert "artifact_size_bytes" not in supervised_query
+    assert "artifact_size_bytes" in anomaly_query
+    with pytest.raises(ValueError, match="unknown acceptance artifact kind"):
+        checker._candidate_artifact_query("unknown")
+
+    payload = b"registered 9B model artifact"
+    relative = Path("models") / "candidate.bin"
+    artifact = tmp_path / "apps/api/.artifacts/phase9b" / relative
+    artifact.parent.mkdir(parents=True)
+    artifact.write_bytes(payload)
+    artifact.chmod(0o600)
+    checksum = hashlib.sha256(payload).hexdigest()
+
+    assert checker._read_private_artifact("supervised", relative.as_posix(), checksum, None) == len(
+        payload
+    )
+    with pytest.raises(ValueError, match="differs from registry receipt"):
+        checker._read_private_artifact(
+            "supervised", relative.as_posix(), checksum, len(payload) - 1
+        )
+    with pytest.raises(ValueError, match="registry checksum"):
+        checker._read_private_artifact("supervised", relative.as_posix(), "0" * 64, None)
+
+
 def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):
     import sys
     from importlib.util import module_from_spec, spec_from_file_location

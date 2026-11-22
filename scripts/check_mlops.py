@@ -51,6 +51,19 @@ def _require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
+def _candidate_artifact_query(kind: str) -> str:
+    if kind == "supervised":
+        return (
+            "SELECT artifact_path,artifact_checksum FROM ml_model_versions WHERE id=:id"
+        )
+    if kind == "anomaly":
+        return (
+            "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
+            "FROM anomaly_detector_versions WHERE id=:id"
+        )
+    raise ValueError("unknown acceptance artifact kind")
+
+
 def _as_mapping(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise TypeError(f"{label} is not an object")
@@ -764,9 +777,12 @@ def _current_sha() -> str:
 
 
 def _read_private_artifact(
-    kind: str, relative_path: str, checksum: str, size: int
-) -> None:
-    _require(0 < size <= MAX_ARTIFACT_BYTES, "artifact size exceeds acceptance bound")
+    kind: str, relative_path: str, checksum: str, size: int | None
+) -> int:
+    if size is not None:
+        _require(
+            0 < size <= MAX_ARTIFACT_BYTES, "artifact size exceeds acceptance bound"
+        )
     relative = Path(relative_path)
     _require(
         not relative.is_absolute()
@@ -804,9 +820,16 @@ def _read_private_artifact(
             _require(
                 metadata.st_mode & 0o077 == 0, "artifact permissions are not private"
             )
+            actual_size = metadata.st_size
             _require(
-                metadata.st_size == size, "artifact size differs from registry receipt"
+                0 < actual_size <= MAX_ARTIFACT_BYTES,
+                "artifact size exceeds acceptance bound",
             )
+            if size is not None:
+                _require(
+                    actual_size == size,
+                    "artifact size differs from registry receipt",
+                )
             chunks: list[bytes] = []
             remaining = MAX_ARTIFACT_BYTES + 1
             while remaining:
@@ -821,12 +844,13 @@ def _read_private_artifact(
     finally:
         os.close(descriptor)
     _require(
-        len(payload) == size, "artifact read was truncated or exceeded its size receipt"
+        len(payload) == actual_size, "artifact read was truncated or exceeded its size"
     )
     _require(
         hashlib.sha256(payload).hexdigest() == checksum,
         "artifact bytes fail registry checksum",
     )
+    return actual_size
 
 
 def _read_candidate_dossier(item: dict[str, Any]) -> None:
@@ -982,15 +1006,7 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
                 {"id": proposal["id"]},
             )
         ).all()
-        if item["kind"] not in {"supervised", "anomaly"}:
-            raise ValueError("unknown acceptance artifact kind")
-        candidate_query = (
-            "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
-            "FROM ml_model_versions WHERE id=:id"
-            if item["kind"] == "supervised"
-            else "SELECT artifact_path,artifact_checksum,artifact_size_bytes "
-            "FROM anomaly_detector_versions WHERE id=:id"
-        )
+        candidate_query = _candidate_artifact_query(item["kind"])
         candidate_id = item["candidate_version_id"]
         candidate_row = (
             (await session.execute(text(candidate_query), {"id": candidate_id}))
@@ -1188,11 +1204,18 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
         body_row["evaluation_checksum"] == item["evaluation_checksum"],
         "proposal evaluation checksum differs",
     )
-    _read_private_artifact(
+    registered_size = (
+        int(candidate_row["artifact_size_bytes"]) if item["kind"] == "anomaly" else None
+    )
+    artifact_size = _read_private_artifact(
         item["kind"],
         str(candidate_row["artifact_path"]),
         str(candidate_row["artifact_checksum"]),
-        int(candidate_row["artifact_size_bytes"]),
+        registered_size,
+    )
+    _require(
+        artifact_size == int(item["artifact_size_bytes"]),
+        "artifact size differs from Phase 10 acceptance receipt",
     )
     return metric_deltas_checked
 

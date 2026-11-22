@@ -6,6 +6,34 @@ branch SHA before verification.
 
 ## Current checkout evidence
 
+The latest exact-head run, on SHA `da31da985ebf2f13cf62cf3ae7762606742238e1`,
+completed the Phase 10 evaluator and wrote a PASS receipt, but the independent
+receipt checker correctly failed closed: its query requested
+`ml_model_versions.artifact_size_bytes`, a column absent from the existing 9B
+registry schema. The checker now reads the registered artifact through a
+private no-follow file descriptor, enforces the 50 MiB bound, measures the
+actual bytes and verifies the registry checksum and Phase 10 receipt size. It
+uses the stored size only for the 9C registry, which has that field. A focused
+regression checks both query shapes, bounded reads and mismatch rejection.
+The 51-test Phase 10 unit suite, Ruff, format check and strict checker mypy pass
+locally after this correction. These results do not replace the required
+disposable-database rerun.
+
+On `da31da9`, Quality/Integration E2E, Security (including Dependency Review
+and both CodeQL jobs), Phase 9G and Phase 9H passed. Phase 10 independent
+acceptance failed only at the checker schema query above; the canonical Phase
+0 full-validation run was canceled afterward and is not a pass. Every required
+workflow must run again on the correction's exact final SHA.
+
+After this targeted correction, local `make verify-cloud` passed: API 1,509
+tests (95.83% line and 90.02% branch coverage), web 140 tests (91.96% line
+coverage), production build, contracts, docs, Phase 0–5 deterministic checks,
+analytics benchmark and cloud security checks. The analytics benchmark processed
+600,600 observations in 46.30 seconds with 5,400,981 peak traced Python bytes.
+Docker is unavailable locally, so database/container integration and the
+canonical Phase 0–10 run remain `CI REQUIRED`; the local command is not exact-SHA
+evidence.
+
 The implementation worktree currently contains the additive 0020 migration,
 fixed MLOps lifecycle, independent evaluator/checker, benchmark and
 observability scripts, Phase 9H standalone regression changes, and dedicated
@@ -26,7 +54,7 @@ final report update still needs exact-SHA CI:
 
 | Check                                      | Result                                                                          | Evidence                                                             |
 | ------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Phase 10 focused unit suite                | PASS: 50 tests                                                                  | `apps/api/tests/unit/test_mlops.py`                                  |
+| Phase 10 focused unit suite                | PASS: 51 tests                                                                  | `apps/api/tests/unit/test_mlops.py`                                  |
 | Receipt serialization regression           | PASS: aware ISO 8601, UUID, scalar/nested values and invalid-value rejection    | `test_phase10_acceptance_report_normalizes_aware_database_datetimes` |
 | Ruff, formatting and evaluator strict mypy | PASS on the modified evaluator and unit test                                    | Local focused checks                                                 |
 | Full API unit suite                        | PASS on SHA `59d40e5`: 1,507 tests, 95.83% line and 90.02% branch coverage      | `make check-api`                                                     |
@@ -80,12 +108,13 @@ the Phase 10 evaluator on its final commit SHA.
 
 The disposable Phase 10 evaluator failed at the rollback-binding snapshot on
 `1f667cd`, at the synthetic approval rationale on `59d40e5`, and during final
-receipt serialization on `2a9a91b` (`datetime`) and `74797be` (`UUID`). Each
-cause has a targeted correction and regression check. The Phase 10 and
-canonical full-stack receipts must rerun on the latest correction SHA. Exact
-task/family metrics, row counts, drift windows and performance will be recorded
-from the resulting checksum-bound artifacts, never inferred from fixture
-definitions.
+receipt serialization on `2a9a91b` (`datetime`) and `74797be` (`UUID`). On
+`da31da9`, the evaluator scenarios and receipt completed, then the independent
+checker queried an unavailable 9B registry size column. Each cause has a
+targeted correction and regression check. The Phase 10 and canonical
+full-stack receipts must rerun on the latest correction SHA. Exact task/family
+metrics, row counts, drift windows and performance will be recorded from the
+resulting checksum-bound artifacts, never inferred from fixture definitions.
 
 ## Scientific and serving status
 
@@ -100,14 +129,14 @@ approval, activation, revocation and rollback remain authoritative.
 
 ## Current blockers
 
-- Commit and push the UUID serialization fix and report refresh to the existing
-  Phase 10 branch; PR #64 is already open and must remain unmerged.
+- Commit and push the 9B artifact-checker schema fix and updated reports to the
+  existing Phase 10 branch; PR #64 is already open and must remain unmerged.
 - Run all required GitHub checks against the exact final SHA, including
   Quality, Integration E2E, Security, Dependency Review, CodeQL Python,
   CodeQL JavaScript/TypeScript, Phase 9G/9H regression, Phase 10 independent
   acceptance, and canonical Docker/full-stack Phase 0–10.
 - Rerun Security and verify the dated image-exception policy against the final
-  SHA. SHA `74797be` passed its scan; the UUID correction SHA needs its own
+  SHA. SHA `da31da9` passed its scan; the checker correction SHA needs its own
   receipt.
 
 Until these gates pass on the exact PR head, Phase 10 remains NOT VERIFIED.

@@ -1,6 +1,20 @@
 # Container scan findings and risk review
 
-## Phase 10 exact-head scan — 2026-11-22
+## Latest Phase 10 exact-head scan — SHA da31da9
+
+Security run [44971412567](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44971412567)
+scanned SHA `da31da985ebf2f13cf62cf3ae7762606742238e1`; machine-readable results are in
+[artifact 14733941386](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44971412567/artifacts/14733941386).
+All selected runtime images have zero Critical and zero blocked High findings. The artifact reports
+107 accepted High package occurrences: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2,
+Tempo 2, Grafana 4, Kafka 0, and custom TimescaleDB 0. The 20 exact High-risk records were reviewed
+on 2026-11-21 and expire 2026-12-05. The zlib exception that expired 2026-11-12 remains removed;
+selected application images report no zlib CVE. The upstream TimescaleDB image separately reports
+271 High and 3 Critical findings; it is not selected for runtime, and the rebuilt custom image has
+zero High and Critical findings. No scanner is disabled, and no exception is silently extended.
+The current checker correction still requires its own exact-head scan.
+
+## Previous Phase 10 exact-head scan — SHA 74797be
 
 Security run [44970219136](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44970219136)
 scanned SHA `74797be570e301444671cc9b307306647c15efcf`; machine-readable results are in
