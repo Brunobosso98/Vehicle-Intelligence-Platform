@@ -23,6 +23,10 @@
 - `apps/api/src/vehicle_platform/evaluation`: Phase 9G immutable offline evaluation contracts,
   chronological calibration splits, reliability/anomaly/drift metrics, source applicability,
   bounded research artifacts, and source-integrity verification. No serving wiring exists.
+- `apps/api/src/vehicle_platform/mlops`: Phase 10 fixed offline lifecycle contracts, bounded
+  planner/runner, source-aware 9B/9C fitting, 9G evaluation, matched comparisons, retrospective
+  monitoring, immutable candidate dossiers, authenticated review and rollback readiness plans.
+  It has no HTTP route and cannot change 9D serving state.
 - `apps/api/src/vehicle_platform/predictions/{domain,repository,service,routes}.py`: Phase 9H
   bounded, vehicle-scoped read-only history/detail/evidence and existing-AgentRun context queries.
   These routes do not invoke inference or mutate receipt/evidence records.
@@ -58,6 +62,9 @@
   run-local Phase 9F evidence IDs to exact 9E source and receipt lineage.
 - `apps/api/migrations/versions/0019_predictive_reliability.py`: additive Phase 9G protocol/run/
   metric/candidate/applicability registry with database-enforced immutability.
+- `apps/api/migrations/versions/0020_mlops_control_plane.py`: additive Phase 10 immutable
+  definitions, runs, run/stage events, review proposals, human decisions, rollback plans and
+  reconciliation observations.
 - `apps/api/tests`: unit and disposable database integration checks.
 - `apps/web`: existing Next.js product interface.
 - `apps/web/src/app/predictive` and `apps/web/src/components/predictive-workspace.tsx`: Phase 9H
@@ -91,6 +98,9 @@
   provenance/leakage checker, and disposable migration/database acceptance.
 - `scripts/phase9h_acceptance.py`, `scripts/phase9h-validation.sh`: direct persisted-record oracle,
   no-write table digests, and actual API + protected Next.js + Playwright disposable database gate.
+- `scripts/evaluate_mlops.py`, `scripts/check_mlops.py`, `scripts/phase10-validation.sh`:
+  Phase 10 real 9A/9B/9C/9G lifecycle evaluator, independent persisted-receipt/artifact checker,
+  and migration/database acceptance runner.
 - `scripts/check_phase9h_research_summary.py`: checksum and source-SHA gate for the static 9G
   synthetic research summary.
 - `apps/web/tests/e2e/predictive.spec.ts`: synthetic UX and persisted-record browser acceptance,
@@ -185,6 +195,12 @@ Phase 9H adds `make phase9h-acceptance`. It compares browser reads with original
 records, covers every 9B task and 9C family, captures source-table digests before/after UI browsing,
 and records browser/accessibility/performance evidence. Local Docker-dependent acceptance remains
 `CI REQUIRED` unless the exact-head GitHub Actions receipt passes.
+Phase 10 adds `make test-mlops`, `make phase10-acceptance`,
+`make benchmark-mlops`, and `make mlops-observability`. The disposable acceptance round-trips
+migration 0020, executes all 3 9B tasks and 4 9C families through their existing paths, verifies
+proposals/artifacts and source immutability, and emits benchmark/OTel receipts. The canonical
+full-validation workflow runs it after packaged Phase 9H. Without Docker, database/image/browser/
+scanner/full-stack gates remain CI REQUIRED.
 
 ## Current implementation map
 
@@ -217,7 +233,10 @@ and records browser/accessibility/performance evidence. Local Docker-dependent a
   PR #55 is merged in the Phase 9H baseline. Synthetic calibration does not establish real-world
   predictive validity.
 - Phase 9H adds the protected historical UI, read-only API projections, static 9G research summary,
-  threat model, runbook and 185-section ledger. PR #57 remains open and unmerged; its exact-head
-  check page is the live authority for independent acceptance, security, canonical full-stack and
-  GitHub Actions delivery status. The BFF remains disabled in production and is not customer or
-  vehicle-owner authorization.
+  threat model, runbook and 185-section ledger. PR #57 is merged in baseline
+  3085c5227a46c3c327249d0f2e982631d919b5a4. Its standalone runtime keeps NODE_ENV=production;
+  only explicit development/test configuration can open the protected operator BFF. Production
+  remains disabled and the BFF is not customer or vehicle-owner authorization.
+- Phase 10 adds a controlled offline MLOps CLI and durable migration 0020. Candidates use existing
+  9B/9C registries and 9G protocols; proposals/dossiers are immutable review artifacts, not serving
+  permissions. Real-world mechanical failure predictive reliability remains NOT_ESTABLISHED.

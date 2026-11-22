@@ -11,11 +11,15 @@ import pytest
 from sqlalchemy import text
 
 from vehicle_platform.core.config import Settings
+from vehicle_platform.evaluation.contracts import SourceRole
 from vehicle_platform.features.datasets import DatasetBuilder
 from vehicle_platform.features.domain import CutoffPolicy, DatasetDefinition, EntityScope
 from vehicle_platform.features.registry import DEFAULT_REGISTRY
-from vehicle_platform.features.service import FeatureGenerationService
+from vehicle_platform.features.service import FeatureGenerationLimitError, FeatureGenerationService
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.ml.domain import MLTask
+from vehicle_platform.mlops.contracts import PipelineDefinition, PipelineKind
+from vehicle_platform.mlops.planner import plan_supervised
 
 pytestmark = pytest.mark.integration
 
@@ -598,8 +602,56 @@ async def test_persistence_cutoffs_history_dataset_and_concurrency() -> None:
             allow_configuration_mixing=True,
         )
         builder = DatasetBuilder(database, DEFAULT_REGISTRY)
+        async with database.session() as db:
+            definitions_before = await db.scalar(text("SELECT count(*) FROM dataset_definitions"))
+            builds_before = await db.scalar(text("SELECT count(*) FROM dataset_build_runs"))
+        dry_run = await builder.build(dataset_definition, persist=False, max_rows=10)
+        with pytest.raises(FeatureGenerationLimitError, match="row limit"):
+            await builder.build(dataset_definition, persist=False, max_rows=1)
+        async with database.session() as db:
+            assert (
+                await db.scalar(text("SELECT count(*) FROM dataset_definitions"))
+                == definitions_before
+            )
+            assert await db.scalar(text("SELECT count(*) FROM dataset_build_runs")) == builds_before
+        process = await asyncio.create_subprocess_exec(  # noqa: S607 -- fixed repository query
+            "git", "rev-parse", "HEAD", stdout=asyncio.subprocess.PIPE
+        )
+        output, _ = await asyncio.wait_for(process.communicate(), timeout=2)
+        assert process.returncode == 0
+        sha = output.decode().strip()
+        plan = await plan_supervised(
+            database,
+            PipelineDefinition(
+                definition_version="dry-run-integration-v1",
+                kind=PipelineKind.SUPERVISED,
+                task=MLTask.THERMAL_DEGRADATION,
+                source_role=SourceRole.SYNTHETIC,
+                cutoff=fixture["start"],
+                git_sha=sha,
+                expected_source_fingerprint="0" * 64,
+                expected_dataset_checksum="0" * 64,
+                expected_feature_checksum=service.version.checksum,
+                evaluation_cutoff=fixture["start"] + timedelta(seconds=60),
+                training_pull_ids=(pulls["p1"],),
+                evaluation_pull_ids=tuple(
+                    sorted((item for item in pulls.values() if item != pulls["p1"]), key=str)
+                ),
+                expected_evaluation_checksum="0" * 64,
+                expected_evaluation_source_fingerprint="0" * 64,
+            ),
+        )
+        assert plan["status"] == "BLOCKED"
+        assert plan["writes_on_plan"] == []
+        async with database.session() as db:
+            assert (
+                await db.scalar(text("SELECT count(*) FROM dataset_definitions"))
+                == definitions_before
+            )
+            assert await db.scalar(text("SELECT count(*) FROM dataset_build_runs")) == builds_before
         built_a = await builder.build(dataset_definition)
         built_b = await builder.build(dataset_definition)
+        assert dry_run.checksum == built_a.checksum
         assert built_a.checksum == built_b.checksum
         assert built_a.manifest["row_count"] == 5
         assert built_a.manifest["vehicle_count"] == 2

@@ -172,11 +172,11 @@ canonical full-validation, CI and Security checks. It adds offline anomaly scori
 same-vehicle/configuration/source references. Scores are statistical deviations, not fault
 diagnoses or failure probabilities. Phase 9D and 9E are merged, and Phase 9F is included in merged
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G's offline evaluation and
-research-only calibration foundation is implemented on its dedicated branch; its exact-head PR
-checks and canonical full-stack gate determine verified delivery. Real-world calibration remains
-`NOT_ESTABLISHED`. Phase 9H is implemented on its existing branch; its exact-head local, security,
-database-backed, browser, and GitHub Actions evidence is recorded separately and remains **NOT
-VERIFIED** until every required gate and the independent receipt-parity acceptance pass. See the
+research-only calibration foundation is merged through PR #55; real-world calibration remains
+`NOT_ESTABLISHED`. Phase 9H PR #57 is merged into baseline
+`3085c5227a46c3c327249d0f2e982631d919b5a4`. Phase 10 is under implementation on the existing
+branch; it is **NOT VERIFIED** until independent database acceptance and all required exact-head
+CI gates pass. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),
@@ -287,3 +287,29 @@ synthetic Phase 9G calibration does not establish real-world validity. See the
 [ADR 0046](docs/adr/0046-phase9h-protected-predictive-ui.md). Use `make phase9h-acceptance` for
 the independent actual-API, disposable-database, protected BFF and Playwright oracle. Docker-backed
 database and exact-image checks remain `CI REQUIRED` in environments without Docker.
+
+## Phase 10 controlled offline MLOps
+
+Phase 10 adds a local operator CLI and durable, versioned pipeline runs over the existing 9A feature
+builder, 9B model registry/trainer, 9C detector registry and 9G evaluation protocol. It supports
+source-bound dataset lineage, resumable execution, immutable experiment and candidate dossiers,
+same-cohort offline champion/challenger comparisons, and retrospective monitoring of already stored
+9D receipts. Human review proposals and rollback plans remain separate from the authoritative 9D
+approval/activation/rollback lifecycle. There is no public MLOps API or dashboard, automatic
+production retraining, live vehicle inference, or automatic serving transition.
+
+Synthetic calibration is not real-world predictive validation. Phase 9B scores are not mechanical
+failure probabilities; Phase 9C anomaly scores are not engine-health percentages or confirmed
+diagnoses. Unlabeled telemetry leaves predictive performance and calibration UNKNOWN. Real-world
+mechanical failure predictive reliability remains `NOT_ESTABLISHED`.
+
+See the [architecture](docs/architecture/phase-10-mlops-platform.md),
+[operator runbook](docs/runbooks/mlops-control-plane.md),
+[acceptance report](docs/validation/phase-10-acceptance.md),
+[pipeline evaluation](docs/validation/phase-10-pipeline-evaluation.md),
+[monitoring and comparison](docs/validation/phase-10-monitoring-comparison.md),
+[security and reproducibility](docs/validation/phase-10-security-reproducibility.md),
+[158-section traceability ledger](docs/validation/phase-10-traceability-ledger.md), and ADRs
+0047–0050. Commands are make test-mlops, make phase10-acceptance, make benchmark-mlops and
+make mlops-observability. Database, Docker, browser, image-security and canonical full-stack results
+remain CI REQUIRED without Docker.

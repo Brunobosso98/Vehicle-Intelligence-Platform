@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import text
 
 from vehicle_platform.anomalies.artifacts import (
+    MAX_ARTIFACT_BYTES,
     AnomalyArtifactError,
     ArtifactStore,
     TrustedAnomalyArtifact,
@@ -25,6 +26,7 @@ from vehicle_platform.anomalies.detectors import (
     score_observation,
 )
 from vehicle_platform.anomalies.domain import (
+    MAX_REFERENCE_ROWS,
     MAX_SCORE_ROWS,
     AnomalyDetectorDefinition,
     AnomalyFindingResult,
@@ -114,8 +116,21 @@ class AnomalyService:
         family: str,
         method: str,
         git_sha: str | None = None,
+        expected_reference_checksum: str | None = None,
+        expected_source_fingerprint: str | None = None,
+        expected_feature_checksum: str | None = None,
+        expected_source_type: str | None = None,
+        max_reference_rows: int = MAX_REFERENCE_ROWS,
+        max_reference_sessions: int = MAX_REFERENCE_ROWS,
+        max_artifact_bytes: int = MAX_ARTIFACT_BYTES,
     ) -> DetectorVersionResult:
         started = time.perf_counter()
+        if not 1 <= max_reference_rows <= MAX_REFERENCE_ROWS:
+            raise ValueError("reference row limit is outside the supported range")
+        if not 1 <= max_reference_sessions <= MAX_REFERENCE_ROWS:
+            raise ValueError("reference session limit is outside the supported range")
+        if not 1 <= max_artifact_bytes <= MAX_ARTIFACT_BYTES:
+            raise ValueError("artifact size limit is outside the supported range")
         definition = detector_definition(family, method)
         if source_role not in definition.supported_source_roles:
             raise AnomalyRepositoryError(
@@ -135,6 +150,17 @@ class AnomalyService:
                 AnomalyReason.SOURCE_ROLE_MISMATCH,
                 "anchor source role differs from the requested source role",
             )
+        if expected_feature_checksum is not None and (
+            feature_version_checksum != expected_feature_checksum
+        ):
+            raise AnomalyRepositoryError(
+                AnomalyReason.FEATURE_SET_VERSION_MISMATCH,
+                "reference feature checksum changed after planning",
+            )
+        if expected_source_type is not None and anchor.source_type != expected_source_type:
+            raise AnomalyRepositoryError(
+                AnomalyReason.SOURCE_ROLE_MISMATCH, "anchor source type differs from the plan"
+            )
         with self._span("anomaly.reference.materialization", definition):
             with self._span("anomaly.reference.eligibility", definition):
                 dataset = await self.repository.materialize_reference(
@@ -143,7 +169,32 @@ class AnomalyService:
                     feature_version_checksum,
                     definition,
                     source_role,
+                    max_rows=max_reference_rows,
                 )
+        if (
+            len(dataset.rows) > max_reference_rows
+            or len({row.session_id for row in dataset.rows}) > max_reference_sessions
+        ):
+            raise AnomalyRepositoryError(
+                AnomalyReason.RESOURCE_LIMIT, "reference exceeds the declared resource budget"
+            )
+        if expected_source_type is not None and any(
+            row.source_type != expected_source_type for row in dataset.rows
+        ):
+            raise AnomalyRepositoryError(
+                AnomalyReason.SOURCE_ROLE_MISMATCH, "reference source type differs from the plan"
+            )
+        if (
+            expected_reference_checksum is not None
+            and dataset.checksum(definition) != expected_reference_checksum
+        ) or (
+            expected_source_fingerprint is not None
+            and dataset.source_fingerprint != expected_source_fingerprint
+        ):
+            raise AnomalyRepositoryError(
+                AnomalyReason.DATA_LEAKAGE_BLOCKED,
+                "reference dataset or source lineage changed after planning",
+            )
         if self.telemetry is not None:
             exclusion_counts: dict[str, int] = {}
             for item in dataset.exclusions:
@@ -223,6 +274,10 @@ class AnomalyService:
                 {"family": definition.family.value, "method": definition.method.value},
             )
         try:
+            if receipt.size_bytes > max_artifact_bytes:
+                raise AnomalyRepositoryError(
+                    AnomalyReason.RESOURCE_LIMIT, "detector artifact exceeds the declared budget"
+                )
             self.artifacts.verify_staged(
                 receipt,
                 definition=definition,

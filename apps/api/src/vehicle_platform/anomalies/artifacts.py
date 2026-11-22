@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import io
 import os
 import re
 import tempfile
@@ -24,6 +25,7 @@ from vehicle_platform.anomalies.domain import (
 )
 from vehicle_platform.features.domain import canonical_json
 from vehicle_platform.infrastructure.database import Database
+from vehicle_platform.infrastructure.trusted_files import TrustedFileError, read_verified_bytes
 from vehicle_platform.ml.artifacts import library_versions
 
 MAX_ARTIFACT_BYTES = 50 * 1024 * 1024
@@ -62,7 +64,7 @@ class ArtifactStore:
     """Read/write only internally generated registry-backed Phase 9C artifacts."""
 
     def __init__(self, root: Path = ARTIFACT_ROOT) -> None:
-        self.root = root.resolve()
+        self.root = Path(os.path.abspath(root))
 
     def write(
         self,
@@ -138,12 +140,6 @@ class ArtifactStore:
         if relative != expected:
             raise AnomalyArtifactError("staged artifact path differs from its fixed namespace")
         path = self._checked_path(relative)
-        if path.is_symlink() or not path.is_file():
-            raise AnomalyArtifactError("staged artifact is missing or unsafe")
-        if path.stat().st_size != receipt.size_bytes or not hmac.compare_digest(
-            _file_sha256(path), receipt.checksum
-        ):
-            raise AnomalyArtifactError("staged artifact size or checksum changed")
         self._verify_staged(
             path,
             receipt.checksum,
@@ -151,6 +147,7 @@ class ArtifactStore:
             fitted=fitted,
             version=version,
             fit_checksum=fit_checksum,
+            expected_size=receipt.size_bytes,
         )
 
     async def load_registered(
@@ -206,15 +203,8 @@ class ArtifactStore:
         if Path(str(row["artifact_path"])) != expected:
             raise AnomalyArtifactError("registered artifact path differs from its fixed namespace")
         path = self._checked_path(expected)
-        if path.is_symlink() or not path.is_file():
-            raise AnomalyArtifactError("registered detector artifact is missing or unsafe")
-        size = path.stat().st_size
-        if size != int(row["artifact_size_bytes"]) or not 1 <= size <= MAX_ARTIFACT_BYTES:
-            raise AnomalyArtifactError("registered detector artifact size is invalid")
-        checksum = _file_sha256(path)
-        if not hmac.compare_digest(checksum, str(row["artifact_checksum"])):
-            raise AnomalyArtifactError("registered detector artifact checksum mismatch")
-        bundle = self._trusted_load(path)
+        checksum = str(row["artifact_checksum"])
+        bundle = self._load_verified(path, checksum, expected_size=int(row["artifact_size_bytes"]))
         self._validate_bundle(
             bundle,
             definition=definition,
@@ -287,10 +277,9 @@ class ArtifactStore:
         fitted: FittedDetector,
         version: str,
         fit_checksum: str,
+        expected_size: int | None = None,
     ) -> None:
-        if not hmac.compare_digest(_file_sha256(path), checksum):
-            raise AnomalyArtifactError("staged detector artifact checksum mismatch")
-        bundle = self._trusted_load(path)
+        bundle = self._load_verified(path, checksum, expected_size=expected_size)
         self._validate_bundle(
             bundle,
             definition=definition,
@@ -344,11 +333,22 @@ class ArtifactStore:
         ):
             raise AnomalyArtifactError("detector artifact family, method, or reference mismatch")
 
-    @staticmethod
-    def _trusted_load(path: Path) -> dict[str, Any]:
-        # joblib uses pickle semantics; this is reached only after a registry path and SHA check.
+    def _load_verified(
+        self, path: Path, expected_checksum: str, *, expected_size: int | None = None
+    ) -> dict[str, Any]:
         try:
-            loaded = joblib.load(path)
+            payload = read_verified_bytes(
+                self.root,
+                path,
+                expected_checksum,
+                maximum_bytes=MAX_ARTIFACT_BYTES,
+                expected_size=expected_size,
+            )
+        except TrustedFileError as error:
+            raise AnomalyArtifactError(str(error)) from error
+        # Deserialize the exact bytes whose registered checksum was just verified.
+        try:
+            loaded = joblib.load(io.BytesIO(payload))
         except Exception:
             raise AnomalyArtifactError("trusted detector artifact failed deserialization") from None
         if not isinstance(loaded, dict):

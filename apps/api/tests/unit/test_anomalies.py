@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import io
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+from uuid import UUID, uuid4
 
+import joblib
 import numpy as np
 import pytest
 
@@ -51,8 +56,12 @@ from vehicle_platform.anomalies.evaluation import (
     select_detector_method,
     select_validation_threshold,
 )
-from vehicle_platform.anomalies.repository import _feature_exclusion
-from vehicle_platform.anomalies.service import _cohort_mismatch, summarize_family_findings
+from vehicle_platform.anomalies.repository import AnomalyRepositoryError, _feature_exclusion
+from vehicle_platform.anomalies.service import (
+    AnomalyService,
+    _cohort_mismatch,
+    summarize_family_findings,
+)
 from vehicle_platform.features.domain import stable_hash
 from vehicle_platform.features.registry import DEFAULT_REGISTRY
 
@@ -164,6 +173,34 @@ def _outlier(row: ReferenceRow, key: str) -> ReferenceRow:
     return replace(row, features=features)
 
 
+def _evaluation_rows(reference: AnomalyReferenceDataset, family: AnomalyFamily):
+    rows: list[ReferenceRow] = []
+    labels = []
+    detector = detector_definition(family, DetectorMethod.ROBUST_MAD)
+    for index in range(4):
+        row = reference.rows[index]
+        started = reference.observation_cutoff + timedelta(days=1, seconds=index * 30)
+        row = replace(
+            row,
+            row_id=stable_hash(["phase10-eval", family.value, index]),
+            feature_set_id=uuid4(),
+            session_id=f"evaluation-session-{index}",
+            pull_id=str(uuid4()),
+            pull_started_at=started,
+            pull_ended_at=started + timedelta(seconds=10),
+            observation_cutoff=started + timedelta(seconds=10),
+            source_hash=stable_hash(["phase10-eval-source", index]),
+            provenance_hash=stable_hash(["phase10-eval-provenance", index]),
+        )
+        scenario = "clean" if index < 2 else family.value
+        if scenario != "clean":
+            row = _outlier(row, detector.feature_keys[0])
+        rows.append(row)
+        labels.append((UUID(row.pull_id), scenario))
+    labels.sort(key=lambda item: str(item[0]))
+    return tuple(rows), tuple(labels)
+
+
 def test_registry_exposes_four_families_and_two_methods() -> None:
     assert len(DEFAULT_DETECTORS) == 8
     assert {item.family for item in DEFAULT_DETECTORS} == {
@@ -174,6 +211,665 @@ def test_registry_exposes_four_families_and_two_methods() -> None:
     }
     assert {item.method for item in DEFAULT_DETECTORS} == set(DetectorMethod)
     assert all(item.horizon == "AFTER_PULL_OFFLINE" for item in DEFAULT_DETECTORS)
+
+
+@pytest.mark.parametrize(
+    "family",
+    (AnomalyFamily.THERMAL, AnomalyFamily.BOOST_AIR, AnomalyFamily.PERFORMANCE, AnomalyFamily.FUEL),
+)
+def test_mlops_anomaly_evaluation_uses_separate_oracle_and_keeps_claims_bounded(family) -> None:
+    from vehicle_platform.mlops.anomaly_evaluation import evaluate_anomaly_candidate
+
+    definition, reference = _reference(family, DetectorMethod.ROBUST_MAD)
+    fitted = fit_detector(definition, reference)
+    artifact = TrustedAnomalyArtifact(
+        detector_version_id=str(uuid4()),
+        version="candidate-1",
+        definition=definition,
+        fitted=fitted,
+        reference_dataset_id=str(uuid4()),
+        reference_checksum=reference.checksum(definition),
+        reference_manifest=reference.manifest(definition),
+        cohort=reference.cohort,
+        fit_checksum=stable_hash("fit"),
+        artifact_checksum=stable_hash("artifact"),
+    )
+    rows, label_items = _evaluation_rows(reference, family)
+    oracle = {str(pull_id): scenario for pull_id, scenario in label_items}
+    report = evaluate_anomaly_candidate(
+        artifact,
+        rows,
+        oracle,
+        training_cutoff=reference.observation_cutoff,
+        cutoff=reference.observation_cutoff + timedelta(days=3),
+    )
+    assert report["status"] == "SYNTHETIC_EVALUATED"
+    assert report["support"]["partition_conservation"] is True
+    assert report["support"]["clean_rows"] == 2
+    assert report["support"]["target_injections"] == 2
+    assert report["target_metrics"]["positive_support"] == 2
+    assert report["target_metrics"]["negative_support"] == 2
+    assert report["score_is_probability"] is False
+    assert report["real_world_predictive_validity"] == "NOT_ESTABLISHED"
+    assert report["serving_action"] == "NONE"
+    with pytest.raises(ValueError, match="EVALUATION_SESSION_LEAKAGE"):
+        evaluate_anomaly_candidate(
+            artifact,
+            (replace(rows[0], session_id=reference.rows[0].session_id), *rows[1:]),
+            oracle,
+            training_cutoff=reference.observation_cutoff,
+            cutoff=reference.observation_cutoff + timedelta(days=3),
+        )
+
+
+def test_mlops_anomaly_evaluation_rejects_incompatible_lineage_and_unknown_oracle(monkeypatch):
+    from vehicle_platform.mlops import anomaly_evaluation
+
+    family = AnomalyFamily.THERMAL
+    definition, reference = _reference(family, DetectorMethod.ROBUST_MAD)
+    fitted = fit_detector(definition, reference)
+    artifact = TrustedAnomalyArtifact(
+        detector_version_id=str(uuid4()),
+        version="lineage-candidate",
+        definition=definition,
+        fitted=fitted,
+        reference_dataset_id=str(uuid4()),
+        reference_checksum=reference.checksum(definition),
+        reference_manifest=reference.manifest(definition),
+        cohort=reference.cohort,
+        fit_checksum=stable_hash("lineage-fit"),
+        artifact_checksum=stable_hash("lineage-artifact"),
+    )
+    rows, label_items = _evaluation_rows(reference, family)
+    oracle = {str(pull_id): scenario for pull_id, scenario in label_items}
+    options = {
+        "training_cutoff": reference.observation_cutoff,
+        "cutoff": reference.observation_cutoff + timedelta(days=3),
+    }
+
+    with pytest.raises(ValueError, match="EVALUATION_COHORT_MISMATCH"):
+        anomaly_evaluation.evaluate_anomaly_candidate(artifact, (), {}, **options)
+    with pytest.raises(ValueError, match="EVALUATION_COHORT_MISMATCH"):
+        anomaly_evaluation.evaluate_anomaly_candidate(artifact, rows, {}, **options)
+    with pytest.raises(ValueError, match="REFERENCE_LINEAGE_MISSING"):
+        anomaly_evaluation.evaluate_anomaly_candidate(
+            replace(artifact, reference_manifest={}), rows, oracle, **options
+        )
+    overlapping = (replace(rows[0], session_id=reference.rows[0].session_id), *rows[1:])
+    with pytest.raises(ValueError, match="EVALUATION_SESSION_LEAKAGE"):
+        anomaly_evaluation.evaluate_anomaly_candidate(artifact, overlapping, oracle, **options)
+    changed_cohort = (replace(rows[0], vehicle_id=uuid4()), *rows[1:])
+    with pytest.raises(ValueError, match="EVALUATION_COHORT_INCOMPATIBLE"):
+        anomaly_evaluation.evaluate_anomaly_candidate(artifact, changed_cohort, oracle, **options)
+    with pytest.raises(ValueError, match="EVALUATION_TIME_LEAKAGE"):
+        anomaly_evaluation.evaluate_anomaly_candidate(
+            artifact,
+            rows,
+            oracle,
+            training_cutoff=rows[0].pull_started_at,
+            cutoff=options["cutoff"],
+        )
+    with pytest.raises(ValueError, match="ORACLE_SCENARIO_UNSUPPORTED"):
+        anomaly_evaluation.evaluate_anomaly_candidate(
+            artifact, rows, {**oracle, rows[0].pull_id: "invented_label"}, **options
+        )
+    imported = tuple(
+        replace(row, source_role=SourceRole.IMPORTED, source_type="imported") for row in rows
+    )
+    with pytest.raises(ValueError, match="SOURCE_ROLE_MISMATCH"):
+        anomaly_evaluation.evaluate_anomaly_candidate(
+            replace(artifact, cohort=imported[0].cohort), imported, oracle, **options
+        )
+    with pytest.raises(ValueError, match="EVALUATION_TIME_LEAKAGE"):
+        anomaly_evaluation.evaluate_anomaly_candidate(
+            artifact,
+            rows,
+            oracle,
+            cutoff=rows[0].pull_ended_at - timedelta(seconds=1),
+            training_cutoff=options["training_cutoff"],
+        )
+
+    monkeypatch.setattr(
+        anomaly_evaluation,
+        "score_observation",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            score=0.7, status=SimpleNamespace(value="ANOMALOUS")
+        ),
+    )
+    quality_oracle = {**oracle, rows[0].pull_id: "quality_excluded"}
+    with pytest.raises(ValueError, match="QUALITY_CASE_NOT_ABSTAINED"):
+        anomaly_evaluation.evaluate_anomaly_candidate(artifact, rows, quality_oracle, **options)
+
+    unsupported_artifact = SimpleNamespace(
+        definition=SimpleNamespace(
+            family=SimpleNamespace(value="unsupported"), method=SimpleNamespace(value="fixture")
+        ),
+        reference_manifest={"selected_rows": []},
+        cohort=artifact.cohort,
+        fitted=artifact.fitted,
+        detector_version_id="unsupported-version",
+        artifact_checksum="a" * 64,
+        reference_checksum="b" * 64,
+    )
+    with pytest.raises(ValueError, match="DERIVED_FAMILY_NOT_EVALUABLE"):
+        anomaly_evaluation.evaluate_anomaly_candidate(unsupported_artifact, rows, oracle, **options)
+
+
+@pytest.mark.asyncio
+async def test_mlops_anomaly_evaluation_worker_verifies_lineage_and_report(
+    monkeypatch, tmp_path
+) -> None:
+    from vehicle_platform.evaluation.contracts import SourceRole as EvaluationSourceRole
+    from vehicle_platform.mlops import executor
+    from vehicle_platform.mlops.contracts import (
+        AnomalyOracleLabel,
+        PipelineDefinition,
+        PipelineKind,
+    )
+    from vehicle_platform.mlops.planner import (
+        anomaly_evaluation_checksum,
+        anomaly_evaluation_source_fingerprint,
+    )
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    monkeypatch.chdir(tmp_path)
+    family = AnomalyFamily.THERMAL
+    detector, reference = _reference(family, DetectorMethod.ROBUST_MAD)
+    rows, label_items = _evaluation_rows(reference, family)
+    labels = tuple(
+        AnomalyOracleLabel(pull_id=pull_id, scenario=scenario) for pull_id, scenario in label_items
+    )
+    evaluation_cutoff = reference.observation_cutoff + timedelta(days=3)
+    source_fingerprint = anomaly_evaluation_source_fingerprint(rows)
+    oracle_checksum = stable_hash([item.model_dump(mode="json") for item in labels])
+    definition = PipelineDefinition(
+        definition_version="anomaly-evaluation-worker-v1",
+        kind=PipelineKind.ANOMALY,
+        family=family.value,
+        method=DetectorMethod.ROBUST_MAD.value,
+        anchor_pull_id=uuid4(),
+        source_role=EvaluationSourceRole.SYNTHETIC,
+        cutoff=reference.rows[-1].pull_ended_at,
+        git_sha="a" * 40,
+        expected_source_fingerprint=reference.source_fingerprint,
+        expected_dataset_checksum=reference.checksum(detector),
+        expected_feature_checksum=reference.feature_set_version_checksum,
+        evaluation_cutoff=evaluation_cutoff,
+        evaluation_pull_ids=tuple(sorted((UUID(row.pull_id) for row in rows), key=str)),
+        expected_evaluation_checksum="0" * 64,
+        expected_evaluation_source_fingerprint=source_fingerprint,
+        evaluation_oracle=labels,
+        expected_oracle_checksum=oracle_checksum,
+    )
+    definition = definition.model_copy(
+        update={
+            "expected_evaluation_checksum": anomaly_evaluation_checksum(
+                definition,
+                detector.checksum,
+                reference.feature_set_version_checksum,
+                rows,
+            )
+        }
+    )
+    fitted = fit_detector(detector, reference)
+    artifact = TrustedAnomalyArtifact(
+        detector_version_id=str(uuid4()),
+        version="candidate-1",
+        definition=detector,
+        fitted=fitted,
+        reference_dataset_id=str(uuid4()),
+        reference_checksum=reference.checksum(detector),
+        reference_manifest=reference.manifest(detector),
+        cohort=reference.cohort,
+        fit_checksum=stable_hash("fit"),
+        artifact_checksum=stable_hash("artifact"),
+    )
+    database_digests = {"feature_sets": "1" * 64, "serving_bindings": "2" * 64}
+    repository = SimpleNamespace(load_targets=AsyncMock(return_value=rows))
+    store = SimpleNamespace(load_registered=AsyncMock(return_value=artifact))
+    monkeypatch.setattr(executor, "AnomalyDataRepository", lambda _: repository)
+    monkeypatch.setattr(executor, "DetectorArtifactStore", lambda: store)
+    monkeypatch.setattr(executor, "checkout_is_dirty", AsyncMock(return_value=False))
+    monkeypatch.setattr(executor, "source_table_digests", AsyncMock(return_value=database_digests))
+    run_id = uuid4()
+    result = await executor.evaluate_anomaly_job(
+        None, definition, run_id=run_id, detector_version_id=UUID(artifact.detector_version_id)
+    )
+    from vehicle_platform.mlops.report_store import read_report
+
+    assert result["evaluation_status"] == "SYNTHETIC_EVALUATED"
+    assert read_report(run_id, expected_checksum=result["report_file_checksum"]) == result["report"]
+    assert result["report"]["source_mutations"] is False
+    assert result["report"]["phase9g_protocol_version"] == "phase9g-protocol-v2"
+    assert result["serving_action"] == "NONE"
+    assert result["real_world_predictive_validity"] == "NOT_ESTABLISHED"
+
+
+@pytest.mark.asyncio
+async def test_anomaly_comparison_uses_matched_active_binding_without_mutation(monkeypatch):
+    from vehicle_platform.evaluation.contracts import SourceRole as EvaluationSourceRole
+    from vehicle_platform.mlops import anomaly_comparison, planner
+    from vehicle_platform.mlops.contracts import (
+        AnomalyOracleLabel,
+        PipelineDefinition,
+        PipelineKind,
+    )
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    family = AnomalyFamily.THERMAL
+    detector, reference = _reference(family, DetectorMethod.ROBUST_MAD)
+    rows, label_items = _evaluation_rows(reference, family)
+    labels = tuple(
+        AnomalyOracleLabel(pull_id=pull_id, scenario=scenario) for pull_id, scenario in label_items
+    )
+    monkeypatch.setattr(
+        planner,
+        "default_feature_version",
+        lambda: SimpleNamespace(
+            version=reference.feature_set_version,
+            checksum=reference.feature_set_version_checksum,
+        ),
+    )
+    definition = PipelineDefinition(
+        definition_version="anomaly-compare-v1",
+        kind=PipelineKind.ANOMALY,
+        family=family.value,
+        method=DetectorMethod.ROBUST_MAD.value,
+        anchor_pull_id=uuid4(),
+        source_role=EvaluationSourceRole.SYNTHETIC,
+        cutoff=reference.rows[-1].pull_ended_at,
+        git_sha="a" * 40,
+        expected_source_fingerprint=reference.source_fingerprint,
+        expected_dataset_checksum=reference.checksum(detector),
+        expected_feature_checksum=reference.feature_set_version_checksum,
+        evaluation_cutoff=reference.observation_cutoff + timedelta(days=3),
+        evaluation_pull_ids=tuple(sorted((UUID(row.pull_id) for row in rows), key=str)),
+        expected_evaluation_checksum="0" * 64,
+        expected_evaluation_source_fingerprint=planner.anomaly_evaluation_source_fingerprint(rows),
+        evaluation_oracle=labels,
+        expected_oracle_checksum=stable_hash([item.model_dump(mode="json") for item in labels]),
+    )
+    definition = definition.model_copy(
+        update={
+            "expected_evaluation_checksum": planner.anomaly_evaluation_checksum(
+                definition,
+                detector.checksum,
+                reference.feature_set_version_checksum,
+                rows,
+            )
+        }
+    )
+    fitted = fit_detector(detector, reference)
+    champion = TrustedAnomalyArtifact(
+        detector_version_id=str(uuid4()),
+        version="champion-1",
+        definition=detector,
+        fitted=fitted,
+        reference_dataset_id=str(uuid4()),
+        reference_checksum=reference.checksum(detector),
+        reference_manifest=reference.manifest(detector),
+        cohort=reference.cohort,
+        fit_checksum=stable_hash("champion-fit"),
+        artifact_checksum=stable_hash("champion-artifact"),
+    )
+    challenger = replace(
+        champion,
+        detector_version_id=str(uuid4()),
+        version="challenger-1",
+        fit_checksum=stable_hash("challenger-fit"),
+        artifact_checksum=stable_hash("challenger-artifact"),
+    )
+    binding_id, event_id = uuid4(), uuid4()
+    binding = SimpleNamespace(
+        id=binding_id,
+        is_active=True,
+        detector_version_id=UUID(champion.detector_version_id),
+        artifact_checksum=champion.artifact_checksum,
+        environment="test",
+        scope="controlled-engineering-dataset",
+        result_kind="anomaly",
+        subject_key=family.value,
+        source_role=EvaluationSourceRole.SYNTHETIC,
+        feature_set_version="phase9a-pull-v2",
+        feature_set_checksum=reference.feature_set_version_checksum,
+        latest_event_id=event_id,
+    )
+    database_digests = {"feature_sets": "1" * 64, "serving_bindings": "2" * 64}
+    prediction_repo = SimpleNamespace(binding=AsyncMock(return_value=binding))
+    anomaly_repo = SimpleNamespace(load_targets=AsyncMock(return_value=rows))
+    artifacts = SimpleNamespace(
+        load_registered=AsyncMock(side_effect=[champion, challenger, champion, challenger])
+    )
+    monkeypatch.setattr(anomaly_comparison, "checkout_is_dirty", AsyncMock(return_value=False))
+    monkeypatch.setattr(anomaly_comparison, "PredictionRepository", lambda _: prediction_repo)
+    monkeypatch.setattr(anomaly_comparison, "AnomalyDataRepository", lambda _: anomaly_repo)
+    monkeypatch.setattr(anomaly_comparison, "DetectorArtifactStore", lambda: artifacts)
+    monkeypatch.setattr(
+        anomaly_comparison, "prior_source_digest", AsyncMock(return_value=database_digests)
+    )
+    result = await anomaly_comparison.compare_anomaly(
+        object(),
+        definition,
+        champion_binding_id=binding_id,
+        challenger_version_id=UUID(challenger.detector_version_id),
+    )
+    assert result["status"] == "COMPARABLE_OFFLINE"
+    assert result["eligible_rows"] == len(rows)
+    assert result["method_score_scales_compared"] is False
+    assert result["delta"]["recall"] == 0.0
+    assert result["serving_action"] == "NONE"
+    assert result["real_world_predictive_validity"] == "NOT_ESTABLISHED"
+
+
+@pytest.mark.asyncio
+async def test_detector_fit_rejects_changed_reference_before_any_registration(tmp_path) -> None:
+    definition, reference = _reference(AnomalyFamily.THERMAL, DetectorMethod.ROBUST_MAD)
+    anchor = reference.rows[-1]
+    repo = SimpleNamespace(
+        load_anchor=AsyncMock(
+            return_value=(anchor, uuid4(), reference.feature_set_version_checksum)
+        ),
+        materialize_reference=AsyncMock(return_value=reference),
+    )
+    registry = SimpleNamespace(persist_reference=AsyncMock())
+    service = AnomalyService(
+        None, repository=repo, registry=registry, artifacts=ArtifactStore(tmp_path)
+    )
+    request = {
+        "anchor_pull_id": uuid4(),
+        "observation_cutoff": anchor.pull_ended_at,
+        "source_role": SourceRole.SYNTHETIC,
+        "family": "thermal",
+        "method": "robust_mad",
+    }
+    for invalid in (
+        {"expected_feature_checksum": "0" * 64},
+        {"expected_reference_checksum": "0" * 64},
+        {"expected_source_fingerprint": "0" * 64},
+        {"expected_source_type": "obd"},
+        {"max_reference_rows": 1},
+        {"max_reference_sessions": 1},
+    ):
+        with pytest.raises(AnomalyRepositoryError):
+            await service.fit_detector_version(**request, **invalid)
+    registry.persist_reference.assert_not_awaited()
+    assert (
+        reference.source_fingerprint
+        != replace(
+            reference, rows=(replace(reference.rows[0], source_hash="0" * 64), *reference.rows[1:])
+        ).source_fingerprint
+    )
+    assert reference.checksum(definition) != "0" * 64
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "family",
+    (AnomalyFamily.THERMAL, AnomalyFamily.BOOST_AIR, AnomalyFamily.PERFORMANCE, AnomalyFamily.FUEL),
+)
+@pytest.mark.parametrize("method", (DetectorMethod.ROBUST_MAD, DetectorMethod.ISOLATION_FOREST))
+async def test_guarded_detector_fit_uses_actual_9c_path(tmp_path, family, method) -> None:
+    detector, reference = _reference(family, method)
+    anchor = reference.rows[-1]
+    reference_id, version_id = uuid4(), uuid4()
+    repo = SimpleNamespace(
+        load_anchor=AsyncMock(
+            return_value=(anchor, uuid4(), reference.feature_set_version_checksum)
+        ),
+        materialize_reference=AsyncMock(return_value=reference),
+    )
+    registry = SimpleNamespace(
+        persist_reference=AsyncMock(return_value=reference_id),
+        reserve_version=AsyncMock(return_value="a00000001"),
+        persist_detector_version=AsyncMock(return_value=(version_id, "a00000001", True)),
+    )
+    service = AnomalyService(
+        None, repository=repo, registry=registry, artifacts=ArtifactStore(tmp_path)
+    )
+    result = await service.fit_detector_version(
+        anchor_pull_id=uuid4(),
+        observation_cutoff=anchor.pull_ended_at,
+        source_role=SourceRole.SYNTHETIC,
+        family=family.value,
+        method=method.value,
+        git_sha="a" * 40,
+        expected_reference_checksum=reference.checksum(detector),
+        expected_source_fingerprint=reference.source_fingerprint,
+        expected_feature_checksum=reference.feature_set_version_checksum,
+        expected_source_type="synthetic",
+        max_reference_rows=40,
+        max_reference_sessions=15,
+    )
+    assert result.reference_checksum == reference.checksum(detector)
+    assert result.detector_version_id == version_id
+    assert result.artifact_checksum is not None
+    assert result.state.value == "CANDIDATE"
+    registry.persist_reference.assert_awaited_once()
+    registry.persist_detector_version.assert_awaited_once()
+    assert list(tmp_path.rglob("*.joblib"))
+
+
+@pytest.mark.asyncio
+async def test_detector_artifact_budget_cleans_unregistered_staging(tmp_path) -> None:
+    _, reference = _reference(AnomalyFamily.THERMAL, DetectorMethod.ROBUST_MAD)
+    anchor = reference.rows[-1]
+    repo = SimpleNamespace(
+        load_anchor=AsyncMock(
+            return_value=(anchor, uuid4(), reference.feature_set_version_checksum)
+        ),
+        materialize_reference=AsyncMock(return_value=reference),
+    )
+    registry = SimpleNamespace(
+        persist_reference=AsyncMock(return_value=uuid4()),
+        reserve_version=AsyncMock(return_value="a00000001"),
+        persist_detector_version=AsyncMock(),
+    )
+    service = AnomalyService(
+        None, repository=repo, registry=registry, artifacts=ArtifactStore(tmp_path)
+    )
+    with pytest.raises(AnomalyRepositoryError, match="artifact exceeds"):
+        await service.fit_detector_version(
+            anchor_pull_id=uuid4(),
+            observation_cutoff=anchor.pull_ended_at,
+            source_role=SourceRole.SYNTHETIC,
+            family="thermal",
+            method="robust_mad",
+            git_sha="a" * 40,
+            max_artifact_bytes=1,
+        )
+    registry.persist_detector_version.assert_not_awaited()
+    assert not [path for path in tmp_path.rglob("*") if path.is_file()]
+
+
+@pytest.mark.asyncio
+async def test_reference_preflight_uses_snapshot_and_rejects_oversized_selection() -> None:
+    from vehicle_platform.anomalies.repository import AnomalyDataRepository
+
+    definition, reference = _reference(AnomalyFamily.THERMAL, DetectorMethod.ROBUST_MAD)
+    response = SimpleNamespace(
+        mappings=lambda: SimpleNamespace(one=lambda: {"row_count": 11, "payload_bytes": 1})
+    )
+
+    class ReadSession:
+        def __init__(self):
+            self.commands = []
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            return False
+
+        async def execute(self, statement, *_):
+            self.commands.append(str(statement))
+            return response
+
+    session = ReadSession()
+    repo = AnomalyDataRepository(SimpleNamespace(session=lambda: session))
+    with pytest.raises(AnomalyRepositoryError, match="declared row bound"):
+        await repo.materialize_reference(
+            reference.rows[-1],
+            uuid4(),
+            reference.feature_set_version_checksum,
+            definition,
+            SourceRole.SYNTHETIC,
+            max_rows=10,
+        )
+    assert "REPEATABLE READ READ ONLY" in session.commands[0]
+    assert len(session.commands) == 2
+
+
+@pytest.mark.asyncio
+async def test_mlops_anomaly_worker_records_only_verified_candidate(monkeypatch) -> None:
+    from vehicle_platform.anomalies.domain import DetectorLifecycle
+    from vehicle_platform.evaluation.contracts import SourceRole as EvaluationSourceRole
+    from vehicle_platform.mlops import executor
+    from vehicle_platform.mlops.contracts import PipelineDefinition, PipelineKind
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    detector, reference = _reference(AnomalyFamily.THERMAL, DetectorMethod.ROBUST_MAD)
+    definition = PipelineDefinition(
+        definition_version="anomaly-worker-v1",
+        kind=PipelineKind.ANOMALY,
+        family="thermal",
+        method="robust_mad",
+        anchor_pull_id=uuid4(),
+        source_role=EvaluationSourceRole.SYNTHETIC,
+        cutoff=reference.rows[-1].pull_ended_at,
+        git_sha="a" * 40,
+        expected_source_fingerprint=reference.source_fingerprint,
+        expected_dataset_checksum=reference.checksum(detector),
+        expected_feature_checksum=reference.feature_set_version_checksum,
+    )
+    version_id = uuid4()
+    checksum = "c" * 64
+    fit = SimpleNamespace(
+        state=DetectorLifecycle.CANDIDATE,
+        detector_version_id=version_id,
+        reference_dataset_id=uuid4(),
+        reference_checksum=definition.expected_dataset_checksum,
+        artifact_checksum=checksum,
+    )
+    service = SimpleNamespace(fit_detector_version=AsyncMock(return_value=fit))
+    artifact = SimpleNamespace(
+        artifact_checksum=checksum,
+        reference_checksum=definition.expected_dataset_checksum,
+        definition=detector,
+    )
+    store = SimpleNamespace(load_registered=AsyncMock(return_value=artifact))
+    record = AsyncMock()
+    monkeypatch.setattr(executor, "checkout_is_dirty", AsyncMock(return_value=False))
+    monkeypatch.setattr(executor, "AnomalyService", lambda _: service)
+    monkeypatch.setattr(executor, "DetectorArtifactStore", lambda: store)
+    monkeypatch.setattr(
+        executor, "ControlPlaneRepository", lambda _: SimpleNamespace(record_step=record)
+    )
+    output = await executor.execute_anomaly_fit_job(
+        None, definition, run_id=uuid4(), token=uuid4(), fence=1
+    )
+    assert output["evaluation_status"] == "NOT_EXECUTED"
+    assert output["serving_action"] == "NONE"
+    assert [call.kwargs["state"] for call in record.await_args_list] == [
+        "RUNNING",
+        "SUCCEEDED",
+        "RUNNING",
+        "SUCCEEDED",
+    ]
+    assert service.fit_detector_version.await_args.kwargs["expected_source_type"] == "synthetic"
+    artifact.artifact_checksum = "d" * 64
+    with pytest.raises(ValueError, match="ARTIFACT_TAMPERED"):
+        await executor.execute_anomaly_fit_job(
+            None, definition, run_id=uuid4(), token=uuid4(), fence=1
+        )
+    assert record.await_args_list[-1].kwargs["state"] == "FAILED"
+    assert record.await_args_list[-1].kwargs["output"]["reason"] == "ARTIFACT_INVALID"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "family",
+    (AnomalyFamily.THERMAL, AnomalyFamily.BOOST_AIR, AnomalyFamily.PERFORMANCE, AnomalyFamily.FUEL),
+)
+async def test_mlops_anomaly_plan_checks_reference_and_source_without_writes(monkeypatch, family):
+    from vehicle_platform.evaluation.contracts import SourceRole as EvaluationSourceRole
+    from vehicle_platform.mlops import planner
+    from vehicle_platform.mlops.contracts import (
+        AnomalyOracleLabel,
+        PipelineDefinition,
+        PipelineKind,
+    )
+
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    detector, reference = _reference(family, DetectorMethod.ROBUST_MAD)
+    anchor = reference.rows[-1]
+    evaluation_rows, oracle_labels = _evaluation_rows(reference, family)
+    repo = SimpleNamespace(
+        load_anchor=AsyncMock(
+            return_value=(anchor, uuid4(), reference.feature_set_version_checksum)
+        ),
+        materialize_reference=AsyncMock(return_value=reference),
+        load_targets=AsyncMock(return_value=evaluation_rows),
+    )
+    monkeypatch.setattr(planner, "checkout_is_dirty", AsyncMock(return_value=False))
+    monkeypatch.setattr(planner, "AnomalyDataRepository", lambda _: repo)
+    monkeypatch.setattr(
+        planner,
+        "default_feature_version",
+        lambda: SimpleNamespace(
+            version=reference.feature_set_version, checksum=reference.feature_set_version_checksum
+        ),
+    )
+    evaluation_oracle = tuple(
+        AnomalyOracleLabel(pull_id=pull_id, scenario=scenario)
+        for pull_id, scenario in oracle_labels
+    )
+    definition = PipelineDefinition(
+        definition_version=f"anomaly-{family.value}-v1",
+        kind=PipelineKind.ANOMALY,
+        family=family.value,
+        method="robust_mad",
+        anchor_pull_id=uuid4(),
+        source_role=EvaluationSourceRole.SYNTHETIC,
+        cutoff=anchor.pull_ended_at,
+        git_sha="a" * 40,
+        expected_source_fingerprint=reference.source_fingerprint,
+        expected_dataset_checksum=reference.checksum(detector),
+        expected_feature_checksum=reference.feature_set_version_checksum,
+        evaluation_cutoff=reference.observation_cutoff + timedelta(days=3),
+        evaluation_pull_ids=tuple(sorted((UUID(row.pull_id) for row in evaluation_rows), key=str)),
+        expected_evaluation_checksum="0" * 64,
+        expected_evaluation_source_fingerprint=planner.anomaly_evaluation_source_fingerprint(
+            evaluation_rows
+        ),
+        evaluation_oracle=evaluation_oracle,
+        expected_oracle_checksum=stable_hash(
+            [item.model_dump(mode="json") for item in evaluation_oracle]
+        ),
+    )
+    definition = definition.model_copy(
+        update={
+            "expected_evaluation_checksum": planner.anomaly_evaluation_checksum(
+                definition,
+                detector.checksum,
+                reference.feature_set_version_checksum,
+                evaluation_rows,
+            )
+        }
+    )
+    result = await planner.plan_anomaly(None, definition)
+    assert result["status"] == "READY_TO_REVIEW"
+    assert result["evaluation_status"] == "READY"
+    assert result["evaluation_rows"] == 4
+    assert result["writes_on_plan"] == []
+    assert result["serving_action"] == "NONE"
+    bad = definition.model_copy(update={"expected_source_fingerprint": "0" * 64})
+    assert (await planner.plan_anomaly(None, bad))["reason"] == "SOURCE_FINGERPRINT_MISMATCH"
+    repo.load_anchor.return_value = (
+        replace(anchor, source_type="obd"),
+        uuid4(),
+        reference.feature_set_version_checksum,
+    )
+    assert (await planner.plan_anomaly(None, definition))["reason"] == "SOURCE_ROLE_MISMATCH"
 
 
 def test_definition_lookup_rejects_unknown_and_derived_families() -> None:
@@ -476,6 +1172,36 @@ def test_artifact_staging_failure_removes_unregistered_files(tmp_path, monkeypat
     with pytest.raises(AnomalyArtifactError, match="interrupted verification"):
         store.write(definition, fitted, version="a00000002", fit_checksum=fit_checksum)
     assert not [path for path in tmp_path.rglob("*") if path.is_file()]
+
+
+def test_detector_loads_only_the_verified_snapshot(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    artifact = root / "detector.joblib"
+    stream = io.BytesIO()
+    joblib.dump({"safe": True}, stream)
+    content = stream.getvalue()
+    artifact.write_bytes(content)
+    checksum = hashlib.sha256(content).hexdigest()
+    load = joblib.load
+
+    def replace_after_verification(source):
+        artifact.write_bytes(b"replaced after verification")
+        assert isinstance(source, io.BytesIO)
+        return load(source)
+
+    monkeypatch.setattr(joblib, "load", replace_after_verification)
+    store = ArtifactStore(root)
+    assert store._load_verified(artifact, checksum) == {"safe": True}
+    monkeypatch.setattr(joblib, "load", lambda *_: pytest.fail("unverified bytes were loaded"))
+    with pytest.raises(AnomalyArtifactError, match="checksum"):
+        store._load_verified(artifact, checksum)
+    artifact.unlink()
+    external = tmp_path / "external.joblib"
+    external.write_bytes(content)
+    artifact.symlink_to(external)
+    with pytest.raises(AnomalyArtifactError, match="unsafe"):
+        store._load_verified(artifact, checksum)
 
 
 def test_cli_requires_timezone_and_bounded_unique_pull_ids() -> None:

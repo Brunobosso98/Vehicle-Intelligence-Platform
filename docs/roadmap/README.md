@@ -18,11 +18,12 @@
 - Phase 9D — Prediction Service (merged and verified; see its acceptance record)
 - Phase 9E — PredictionEvidence (merged at baseline `466ce900988bd81e1d968eb319e970955b4011d7`; see its acceptance record)
 - Phase 9F — Agent Integration (merged in baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`)
-- Phase 9G — Evaluation / Calibration (implemented on the dedicated branch; local independent
-  acceptance passed; exact-head PR checks and canonical Docker/full-stack validation determine
-  verified delivery)
-- Phase 9H — Predictive Intelligence UI (implemented on PR #57; exact-head delivery state is shown by its checks)
-- Phase 10 — MLOps Platform (planned)
+- Phase 9G — Evaluation / Calibration (merged through PR #55; scientific status remains
+  NOT_ESTABLISHED without verified outcomes)
+- Phase 9H — Predictive Intelligence UI (PR #57 merged to main at baseline
+  3085c5227a46c3c327249d0f2e982631d919b5a4)
+- Phase 10 — MLOps Platform (under implementation on codex/phase-10-mlops-platform;
+  not verified until exact-head acceptance and required CI pass)
 - Phase 11 — Agent Evals / Red Team (planned)
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
@@ -42,8 +43,10 @@ immutable 9D receipts and is merged at baseline
 agent through a controlled MCP scope; it does not start inference and is included in merged
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G adds an offline, immutable evaluation
 and research-only calibration foundation; its real-world scientific validity remains not
-established without verified outcomes. Phase 9H provides the protected, read-only historical UI;
-its delivery state follows the exact-head checks on the open Phase 9H PR.
+established without verified outcomes. Phase 9H provides the protected, read-only historical UI
+and is included in merged baseline 3085c5227a46c3c327249d0f2e982631d919b5a4. Phase 10 remains
+under implementation until independent acceptance and all required exact-head CI checks pass.
+Phases 11–13 remain future work.
 
 # Current phase
 

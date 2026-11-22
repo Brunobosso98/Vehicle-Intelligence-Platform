@@ -199,7 +199,8 @@ class AnomalyRegistry:
                     (
                         await db.execute(
                             text(
-                                "SELECT id,version,fit_checksum,state,artifact_checksum FROM "
+                                "SELECT id,version,fit_checksum,state,artifact_checksum,"
+                                "reference_dataset_id FROM "
                                 "anomaly_detector_versions WHERE fit_checksum=:fit"
                             ),
                             {"fit": fit_checksum},

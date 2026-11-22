@@ -9,6 +9,7 @@ import json
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.engine import RowMapping
@@ -73,9 +74,12 @@ def _canonical_hash(value: Any) -> str:
 
 async def _digests(database: Database) -> dict[str, str]:
     result: dict[str, str] = {}
+    allowed_tables = frozenset(TABLES)
     async with database.session() as db, db.begin():
         await db.execute(text("SET TRANSACTION READ ONLY"))
         for table in TABLES:
+            if table not in allowed_tables:
+                raise ValueError("source digest requested an unapproved table")
             rows = (
                 (
                     await db.execute(
@@ -162,26 +166,28 @@ async def prepare(database: Database, git_sha: str) -> dict[str, Any]:
         raise RuntimeError("Phase 9E acceptance returned no source receipts.")
     records: list[dict[str, Any]] = []
     ids = sorted(expected)
-    params = {f"receipt_{index}": value for index, value in enumerate(ids)}
-    placeholders = ",".join(f":receipt_{index}" for index in range(len(ids)))
+    receipt_ids = [UUID(value) for value in ids]
     async with database.session() as db, db.begin():
         await db.execute(text("SET TRANSACTION READ ONLY"))
         rows = (
             (
                 await db.execute(
                     text(
-                        "SELECT r.id,r.response_body,r.result_kind,r.horizon,r.status,r.source_role,"
+                        "SELECT r.id,r.response_body,r.result_kind,r.horizon,r.status,"
+                        "r.source_role,"
                         "r.requested_cutoff,r.effective_cutoff,r.engineering_validation_score,"
                         "r.anomaly_score,r.threshold,r.decision,r.quality_summary,r.created_at,"
                         "p.vehicle_id,p.session_id,p.id AS pull_id,"
                         "COALESCE(p.configuration_id,s.configuration_id) AS configuration_id,"
                         "s.source_type,b.id AS evidence_id,b.completeness,b.integrity "
                         "FROM prediction_receipts r JOIN pulls p ON p.id=r.pull_id "
-                        "JOIN driving_sessions s ON s.id=p.session_id AND s.vehicle_id=p.vehicle_id "
+                        "JOIN driving_sessions s ON s.id=p.session_id "
+                        "AND s.vehicle_id=p.vehicle_id "
                         "LEFT JOIN prediction_evidence_bundles b ON b.receipt_id=r.id "
-                        f"WHERE r.id IN ({placeholders}) ORDER BY r.created_at,r.id"
+                        "WHERE r.id=ANY(CAST(:receipt_ids AS uuid[])) "
+                        "ORDER BY r.created_at,r.id"
                     ),
-                    params,
+                    {"receipt_ids": receipt_ids},
                 )
             )
             .mappings()
@@ -512,7 +518,7 @@ async def run() -> None:
             {
                 "status": result.get("status", "PREPARED"),
                 "git_sha": args.expected_sha,
-                "records": len(result.get("records", [])),
+                "records": result.get("source_records", len(result.get("records", []))),
             },
             sort_keys=True,
         )

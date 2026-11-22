@@ -279,3 +279,26 @@ benchmark-predictive-reliability` and `make predictive-reliability-observability
 from the same independently checked receipt. The runner is offline and does not call external AI or
 embedding services. Without Docker, these database, migration, artifact-registry and full-stack
 results are `CI REQUIRED` until the canonical full-validation workflow passes on the same SHA.
+
+## Phase 10 MLOps control plane
+
+`make test-mlops` covers fixed contracts, source-role and temporal guards, same-cohort comparison,
+monitoring uncertainty, operator auth, replay, lease recovery and rollback planning. The dedicated
+`make phase10-acceptance` requires Docker and a disposable vehicle_test database; it round-trips
+migration 0020, executes 9A/9B/9C/9G paths, verifies all 3 supervised tasks and 4 anomaly families,
+checks registered artifact bytes and immutable dossiers, and runs an independent persisted-receipt
+oracle. The evaluator also checks matched comparisons, a same-seed reproduction, missing-label
+uncertainty, source immutability, and adversarial artifact/source cases.
+
+`make benchmark-mlops` and `make mlops-observability` consume the same exact-SHA acceptance
+receipt. The canonical full-validation workflow runs Phase 10 after the actual packaged Phase 9H
+browser regression. Without Docker, database, migration, artifact-registry, browser, image-security
+and full-stack gates are CI REQUIRED, not skipped or passed.
+
+The unit coverage denominator follows the existing rule for database-owned services: fenced run
+and proposal repositories, repeatable-read planning, registry-backed workers/comparisons, 9G
+report persistence, 9D rollback readiness, source digests and holdout queries are exercised through
+the independent disposable-PostgreSQL Phase 10 acceptance rather than mocked SQL branches. Pure
+contracts, deterministic 9C candidate scoring, secure local artifact reads, CLI dispatch, operator
+authentication and monitoring arithmetic remain in the separate 90% line and branch unit gate.
+The coverage thresholds are unchanged; the exact-SHA database acceptance remains mandatory.

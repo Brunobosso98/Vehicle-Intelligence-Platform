@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Integration tests exercise explicitly controlled operator and MLOps paths.
+export ENVIRONMENT=test
 # Isolated Compose project; no production volumes and no destructive application-db resets.
 project="vehicle-platform-tests-$$"
 export TEST_KAFKA_PORT

@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-11-22T02:20:19.523440+00:00",
+  "nodes": {
+    "apps_api_src_vehicle_platform_mlops_contracts_datasetbinding": {
+      "code_fingerprint": "df2c157b3d46dc2c27edf7e8dd802052c919594ddb2d7018c2633021246af287",
+      "label": "DatasetBinding",
+      "last": "2026-11-22T02:20:00.949831+00:00",
+      "provenance": [
+        {
+          "date": "2026-11-22T02:20:00.949831+00:00",
+          "outcome": "useful",
+          "q": "How should Phase 10 verify source roles for immutable anomaly evaluation pulls?"
+        }
+      ],
+      "score": 0.999995033,
+      "source_file": "apps/api/src/vehicle_platform/mlops/contracts.py",
+      "status": "tentative",
+      "uses": 1
+    }
+  },
+  "version": 1
+}
