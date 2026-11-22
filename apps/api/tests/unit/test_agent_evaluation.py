@@ -1,4 +1,6 @@
+import ast
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -43,6 +45,35 @@ def test_disposable_database_guard_rejects_remote_and_ambiguous_urls():
     assert not guard("postgresql+asyncpg://user:password@remote.example/vehicle_test")
     assert not guard("postgresql+asyncpg://user:password@localhost/vehicle_test?host=remote")
     assert not guard("postgresql+asyncpg://user:password@localhost/vehicle_production")
+
+
+def test_source_snapshot_covers_migrated_domain_tables_through_phase10():
+    migrations = Path(__file__).resolve().parents[2] / "migrations/versions"
+    tables = set()
+    for path in migrations.glob("*.py"):
+        if not path.name[:4].isdigit() or int(path.name[:4]) > 20:
+            continue
+        source = path.read_text()
+        tables.update(re.findall(r"CREATE TABLE\s+(\w+)", source, re.IGNORECASE))
+        for node in ast.walk(ast.parse(source)):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "create_table"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                tables.add(node.args[0].value)
+    audit_tables = {
+        "agent_runs",
+        "agent_tool_calls",
+        "agent_stream_events",
+        "agent_prediction_evidence_links",
+        "knowledge_retrieval_runs",
+        "prediction_evidence_verification_audits",
+    }
+    assert set(source_oracle.TABLES) == tables - audit_tables
 
 
 def test_frozen_suite_rejects_silent_case_edits(tmp_path):
