@@ -170,6 +170,33 @@ def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypat
         evaluator._json_safe_report_value({"unsupported": object()})
 
 
+def test_phase10_monitoring_acceptance_preserves_source_schema_provenance(monkeypatch):
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    evaluator_path = Path(__file__).resolve().parents[4] / "scripts" / "evaluate_mlops.py"
+    monkeypatch.syspath_prepend(str(evaluator_path.parent))
+    spec = spec_from_file_location("phase10_monitor_schema_provenance", evaluator_path)
+    assert spec is not None and spec.loader is not None
+    evaluator = module_from_spec(spec)
+    sys.modules[spec.name] = evaluator
+    spec.loader.exec_module(evaluator)
+
+    report = {
+        "schema_version": "phase10-monitoring-window-v1",
+        "feature_set_version": "phase9a-pull-v2",
+    }
+    assert evaluator._monitoring_acceptance_metadata(report) == report
+    with pytest.raises(ValueError, match="feature-set version is missing"):
+        evaluator._monitoring_acceptance_metadata(
+            {"schema_version": "phase10-monitoring-window-v1"}
+        )
+    with pytest.raises(ValueError, match="schema version is missing"):
+        evaluator._monitoring_acceptance_metadata(
+            {"schema_version": "unknown", "feature_set_version": "phase9a-pull-v2"}
+        )
+
+
 def test_trusted_artifact_files_are_bounded_private_and_checksum_bound(tmp_path):
     import hashlib
 

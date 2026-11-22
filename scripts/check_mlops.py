@@ -283,6 +283,10 @@ async def _verify_monitoring_arithmetic(
         _canonical_hash(protocol) == monitor.get("protocol_checksum"),
         "monitoring protocol checksum differs",
     )
+    _require(
+        monitor.get("schema_version") == "phase10-monitoring-window-v1",
+        "monitoring report schema version differs",
+    )
     binding_id = UUID(protocol["binding_id"])
     vehicle_id = UUID(protocol["vehicle_id"])
     configuration_id = UUID(protocol["configuration_id"])

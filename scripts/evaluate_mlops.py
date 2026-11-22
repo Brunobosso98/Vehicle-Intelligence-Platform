@@ -814,6 +814,19 @@ async def _run_definition(
     }
 
 
+def _monitoring_acceptance_metadata(report: dict[str, Any]) -> dict[str, str]:
+    schema_version = report.get("schema_version")
+    feature_set_version = report.get("feature_set_version")
+    if schema_version != "phase10-monitoring-window-v1":
+        raise ValueError("monitoring report schema version is missing or unsupported")
+    if not isinstance(feature_set_version, str) or not feature_set_version:
+        raise ValueError("monitoring feature-set version is missing")
+    return {
+        "schema_version": schema_version,
+        "feature_set_version": feature_set_version,
+    }
+
+
 async def _create_and_monitor_receipts(
     database: Database,
     settings: Settings,
@@ -929,6 +942,7 @@ async def _create_and_monitor_receipts(
         )
         return {
             "status": "PASS",
+            **_monitoring_acceptance_metadata(report),
             "protocol_checksum": protocol.checksum,
             "protocol": protocol.model_dump(mode="json"),
             "source_type_composition": report["source_type_composition"],
