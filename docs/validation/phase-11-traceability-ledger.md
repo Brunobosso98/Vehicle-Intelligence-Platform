@@ -66,6 +66,12 @@ complete merely because a scenario is present in JSON.
   `evaluation_runner_failure` before verdicts because the MCP SDK rejected stale-token session
   negotiation before `tools/call`. Current code probes the stale-token JSON-RPC HTTP call
   directly and requires HTTP 401; exact-SHA validation pending.
+- Exact-SHA suite-v6 run `45043159578` on `7382e6ef4c2306b20c2036f164798573114aafbf` passed
+  all 21/21 cases and independent receipt verification. Family counts: 2 benign, 1 critical,
+  12 red team, 2 metamorphic, 3 fault injection and 1 provider compatibility. Runtime 78.588s;
+  source fixture SHA `6cdbd90f9a4f2c526eab4d346d9858e24ae2f2671fdcfc27daa1f2612987eac5`, schema
+  revision `0020`, paid calls/cost 0. This satisfies the current 21-case acceptance run only;
+  it does not complete all 155 requirements or replace pending exact-head Phase 0–11 CI.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence

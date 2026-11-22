@@ -163,6 +163,13 @@ acceptance gates remain incomplete.
   during session negotiation, before issuing `tools/call`. The current revision probes the
   actual Streamable HTTP `tools/call` request directly and requires HTTP 401 in both grader and
   receipt validation. Sanitized report records zero paid calls and no case verdicts.
+- Exact-SHA suite-v6 run `45043159578` on `7382e6ef4c2306b20c2036f164798573114aafbf` passed:
+  21/21 attempted, 21 PASS, 0 failed, 0 NOT_RUN; independent receipt verification PASS;
+  source fixture SHA `6cdbd90f9a4f2c526eab4d346d9858e24ae2f2671fdcfc27daa1f2612987eac5`, schema
+  revision `0020`, 78.588 seconds, and zero paid calls/cost. Coverage by family: 2 benign,
+  1 critical, 12 red team, 2 metamorphic, 3 fault-injection and 1 provider-compatibility cases.
+  The passing critical revoked-credential probe recorded one stale-token MCP call and validates
+  HTTP 401. [Run and sanitized artifact](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45043159578).
 
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA
