@@ -637,7 +637,11 @@ async def evaluate(database_url: str) -> int:
         )
         actual_attempts.append(
             changed_attempt.model_copy(
-                update={"status": metamorph_status, "reasons": metamorph_reasons}
+                update={
+                    "status": metamorph_status,
+                    "reasons": metamorph_reasons,
+                    "resolved_oracle_facts": expected_facts,
+                }
             )
         )
 
