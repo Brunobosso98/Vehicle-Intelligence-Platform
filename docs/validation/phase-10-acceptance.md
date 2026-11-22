@@ -1,6 +1,6 @@
 # Phase 10 acceptance status
 
-Status: **VERIFIED on implementation SHA `c5114e07972456a9922f7d06f8c1925129adc351`.** Every mandatory acceptance workflow completed successfully on that exact SHA. PR [#64](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/64) remains open against `main` and is not merged. The final report-only commit receives its own exact-SHA workflows.
+Status: **NOT VERIFIED on the current report candidate until its exact-SHA suite passes.** The implementation and all mandatory gates passed on SHA `c5114e07972456a9922f7d06f8c1925129adc351`. On report SHA `e5a4093ffdf7bb6491a2408253b3966484119246`, Quality, Integration E2E, Security/Dependency Review/CodeQL, Phase 9G, Phase 9H and independent Phase 10 acceptance passed. Its 90-minute canonical run completed all preceding stages but hit the job timeout during the Phase 10 step. The workflow timeout is raised to 180 minutes for this final rerun. PR [#64](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/64) remains open against `main` and is not merged.
 
 ## Exact-SHA receipts
 
@@ -14,6 +14,8 @@ Status: **VERIFIED on implementation SHA `c5114e07972456a9922f7d06f8c1925129adc3
 | Phase 9H standalone/BFF regression                                   | [44988811046](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988811046) | PASS                                                                                      |
 
 The canonical run exercises the Docker stack, disposable database and migrations, browser E2E, observability, security scans, and deterministic regressions from Phase 0 through Phase 10. The exact run and independent receipt artifacts are attached to the linked workflows.
+
+The timed-out canonical run on `e5a4093` is [44993465000](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44993465000). All phases through 9H succeeded; the Phase 10 step was canceled when the workflow's 90-minute job timeout elapsed. The same SHA's independent Phase 10 disposable acceptance passed in [44993464930](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44993464930). The timeout change does not skip or relax any validation step.
 
 ## Implementation and independent acceptance
 
