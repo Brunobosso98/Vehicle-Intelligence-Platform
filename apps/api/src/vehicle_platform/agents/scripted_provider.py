@@ -269,7 +269,16 @@ class DeterministicProvider:
                 "porque",
             )
         )
-        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql|ignore)\b", question))
+        benign_quoted_instruction = bool(
+            re.search(
+                r"\b(explain|describe|interpret|explique|descreva|interprete)\b"
+                r".{0,80}\b(quoted|quote|phrase|frase citada|citação)\b",
+                question,
+            )
+        )
+        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql|ignore)\b", question)) and not (
+            benign_quoted_instruction
+        )
         comparison = any(
             word in question for word in ("configura", "intercooler", "peça", "antes", "depois")
         )

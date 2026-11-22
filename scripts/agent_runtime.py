@@ -51,8 +51,30 @@ class Process:
                         pass
                     await asyncio.sleep(0.2)
                 raise AssertionError("Acceptance process exited before readiness")
-        except BaseException:
+        except BaseException as exc:
             await self.stop()
+            self.log.flush()
+            self.log.seek(0)
+            diagnostic = redact_runtime_secrets(self.log.read(), self.env)
+            relevant = [
+                line
+                for line in diagnostic.splitlines()
+                if any(
+                    marker in line.casefold()
+                    for marker in (
+                        "traceback",
+                        '"level": "error"',
+                        "critical",
+                        "exception",
+                    )
+                )
+            ]
+            excerpt = "\n".join(relevant[-12:])[-6000:]
+            if excerpt:
+                raise AssertionError(
+                    f"Acceptance process for {self.ready} failed before readiness; "
+                    f"sanitized diagnostics:\n{excerpt}"
+                ) from exc
             raise
 
     async def stop(self) -> None:

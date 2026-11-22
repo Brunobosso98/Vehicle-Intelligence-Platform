@@ -37,25 +37,32 @@ acceptance gates remain incomplete.
 
 ## Validation performed in this implementation step
 
-- `make verify-cloud`: PASS after the persisted-run checker, corpus checksum pin and
-  pre-tool governance refusal changes. API checks passed 1,557 unit tests, Ruff, formatting,
-  configured Mypy gates, 95.74% line coverage and 90.02% branch coverage; web checks
-  passed 140 tests, lint, typecheck and production build. Context/contracts, project
+- `make verify-cloud`: PASS after the persisted-run checker, corpus checksum pin,
+  pre-tool governance refusal, benign-quoted-injection regression and sanitized startup
+  diagnostic changes. API checks passed 1,558 unit tests, Ruff, formatting, configured
+  Mypy gates, 95.74% line coverage and 90.02% branch coverage; web checks passed 140 tests,
+  lint, typecheck and production build. Context/contracts, project
   benchmarks, Gitleaks, dependency audit and Trivy also passed.
-- `make test-agent-evals`: PASS (37 focused deterministic evaluator tests); governance
+- `make test-agent-evals`: PASS (38 focused deterministic evaluator tests); governance
   routing and refusal tests pass in the broader API suite.
 - `vehicle-agent-evals list` and `plan`: PASS; the frozen 21-case manifest and its checksum
   are reported, and plan output records zero paid calls. The plan command reports the
   current committed HEAD; uncommitted worktree changes are not part of that SHA.
 - `uv lock --project apps/api --check`: PASS; lockfile unchanged.
 - `bash -n scripts/mcp-validation.sh`: PASS.
-- `graphify update .`: PASS; graph refreshed to 9,225 nodes after persisted-run checking,
+- `graphify update .`: PASS; graph refreshed to 9,226 nodes after persisted-run checking,
   frozen-suite checksum enforcement, MLOps attack execution and pre-tool governance refusal.
-- Docker availability: `docker` executable is absent; database-backed acceptance,
+- Docker availability: `docker` executable is absent locally; database-backed acceptance,
   container builds, Compose startup and full-stack validation are `CI REQUIRED`, not
   locally passed.
-- Exact-head GitHub checks, final Phase 0–11 Docker validation and PR delivery: NOT RUN.
-- Disposable database/MCP/API acceptance and integration tests have not been executed.
+- Draft PR #65 targets `main`; it is open and not merged.
+- Exact-head run at `26c4f1a00259de899183785920d931500b73eb69`: Phase 11 acceptance FAILED
+  after the disposable database stack started, but the API/MCP child process failed before
+  readiness and before any corpus case was graded. The new runner change emits selected
+  diagnostics after credential redaction so the next exact-head run can identify the
+  startup failure. CI, Security, Phase 9G, Phase 9H and Phase 10 passed; canonical full
+  validation remains in progress at the latest status read. Full Phase 11 integration
+  acceptance has not passed.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

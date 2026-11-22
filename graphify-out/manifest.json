@@ -1050,9 +1050,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/scripted_provider.py": {
-    "mtime": 1794673779.3011527,
-    "seen": 1794674058.4444487,
-    "ast_hash": "0ea60f588b598327dccf1f7b027bad1f",
+    "mtime": 1795353007.12169,
+    "seen": 1795353034.6595125,
+    "ast_hash": "10de24232755f98bd1a6b722adefde14",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agents/service.py": {
@@ -1164,8 +1164,8 @@
     "semantic_hash": ""
   },
   ".github/workflows/full-validation.yml": {
-    "mtime": 1795349769.52568,
-    "seen": 1795350052.4376285,
+    "mtime": 1795352798.8576772,
+    "seen": 1795353034.6600733,
     "ast_hash": "1fe47f7a3762b514fc6a8aa467a36a5e",
     "semantic_hash": ""
   },
@@ -1734,9 +1734,9 @@
     "semantic_hash": ""
   },
   "scripts/agent_runtime.py": {
-    "mtime": 1795350081.117687,
-    "seen": 1795350125.6541102,
-    "ast_hash": "268bfbb45ee51753bc03d82ad45eb899",
+    "mtime": 1795353363.5737092,
+    "seen": 1795353387.318225,
+    "ast_hash": "061ac60ec501bb6bfc00ee3d36929cb4",
     "semantic_hash": ""
   },
   "scripts/benchmark_agent.py": {
@@ -4170,9 +4170,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
-    "mtime": 1795352103.2936587,
-    "seen": 1795352145.2080436,
-    "ast_hash": "5955d322b8e3c58c014212283d761422",
+    "mtime": 1795353007.12169,
+    "seen": 1795353034.6597254,
+    "ast_hash": "31bd97c5fc793a3486a182c9fe38372e",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v1.json": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795351981.7177098,
-    "seen": 1795352145.2085967,
-    "ast_hash": "aac0ee0568dca04d064762a30d12dc99",
+    "mtime": 1795352604.5216868,
+    "seen": 1795353034.6602774,
+    "ast_hash": "85738542d8225ef2ea710dd56dce18d9",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
@@ -4248,9 +4248,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795349631.1537108,
-    "seen": 1795350052.4378366,
-    "ast_hash": "acc25f297fee807c3f6d2f9d8e41722b",
+    "mtime": 1795352515.605703,
+    "seen": 1795353034.6602821,
+    "ast_hash": "030b559af991ee607cbed58bcd2dba6f",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {
@@ -4260,9 +4260,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/phase11-acceptance.yml": {
-    "mtime": 1795349781.7896807,
-    "seen": 1795350052.4376307,
-    "ast_hash": "934235ee81f9170988b5fca2bfe9a831",
+    "mtime": 1795352874.0574946,
+    "seen": 1795353034.6600757,
+    "ast_hash": "27659bfe9495966f15037f6ea62eaaaf",
     "semantic_hash": ""
   }
 }

@@ -34,20 +34,21 @@ complete merely because a scenario is present in JSON.
 | 139–140        | `README.md`, `AI_CONTEXT.md`, roadmap, provider caveat doc                                                                        | Partial: Phase 10 merged state and Phase 11 in progress recorded; full historical cross-reference audit pending                                                      |
 | 141–145        | Make targets, reports, receipt checker                                                                                            | Partial: targets exist, but canonical CI integration and adversarial scientific controls are incomplete                                                              |
 | 146–148        | Reliability report, source snapshot helper, existing Makefile gates                                                               | Partial: local deterministic project benchmarks passed; disposable-stack reliability and Phase 0–10 integration regressions require Docker/canonical CI              |
-| 149–150        | Existing Phase 11 branch and pending delivery                                                                                     | Not started: no final implementation commit, push or PR yet                                                                                                          |
+| 149–150        | Existing Phase 11 branch and PR #65                                                                                               | Partial: implementation committed and pushed; draft PR targets main, acceptance remains incomplete                                                                   |
 | 151–155        | Definition of Done and final report spec                                                                                          | Not achieved: full corpus execution, independent acceptance, exact-head CI and review-ready PR remain required                                                       |
 
 ## Current evidence
 
-- `make verify-cloud`: all 1,557 API unit tests passed; line coverage 95.74%, branch
+- `make verify-cloud`: all 1,558 API unit tests passed; line coverage 95.74%, branch
   coverage 90.02%. It also passed 140 web tests, production build, contracts, formatting,
   context checks, project benchmarks, Gitleaks, dependency audit and Trivy.
-- `make test-agent-evals`: 37 focused evaluator tests passed after receipt manifest hardening.
+- `make test-agent-evals`: 38 focused evaluator tests passed after receipt manifest and
+  benign quoted-injection hardening.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
-- `make verify-cloud`: passed, including 140 web tests, production build, contracts,
-  formatting, project benchmarks, Gitleaks, dependency audit and Trivy scans.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence
   exists.
-- No GitHub Actions run, final SHA, pull request, real-provider run, performance
-  receipt or end-to-end Phase 11 acceptance is claimed.
+- PR #65 is open as a draft. The Phase 11 exact-head run at `26c4f1a` failed before
+  readiness; CI, Security, Phase 9G, Phase 9H and Phase 10 passed. Canonical full validation
+  remains in progress. Full integration acceptance and final-SHA checks are incomplete; no
+  performance or real-provider receipt is claimed.
