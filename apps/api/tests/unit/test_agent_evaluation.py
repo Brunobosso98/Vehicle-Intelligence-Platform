@@ -282,6 +282,14 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
         suite_version="phase11-agent-evals-v1",
     )
     assert ok and not reasons
+    forged_payload = payload | {
+        "attempts": [
+            attempt.model_copy(update={"successful_tools": ("read_fact",)}).model_dump(mode="json")
+        ]
+    }
+    forged = create_receipt(forged_payload).model_dump(mode="json")
+    ok, reasons = verify_receipt(forged, (_case(),), expected_sha="b" * 40, suite_sha="a" * 64)
+    assert not ok and "successful_tools_disagree_with_trace" in reasons
     ok, reasons = verify_receipt(
         receipt,
         (_case(),),

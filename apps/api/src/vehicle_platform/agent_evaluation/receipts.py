@@ -179,6 +179,14 @@ def verify_receipt(
     if set(attempts) != set(expected):
         reasons.append("case_coverage_incomplete")
     for attempt in receipt.attempts:
+        traced_tools = {trace.tool_name for trace in attempt.tool_trace}
+        completed_tools = {
+            trace.tool_name for trace in attempt.tool_trace if trace.status == "completed"
+        }
+        if set(attempt.observed_tools) != traced_tools:
+            reasons.append("observed_tools_disagree_with_trace")
+        if set(attempt.successful_tools) != completed_tools:
+            reasons.append("successful_tools_disagree_with_trace")
         if attempt.source_digest_before != receipt.source_fixture_sha256:
             reasons.append("attempt_source_digest_mismatch")
         if attempt.source_digest_after != receipt.source_fixture_sha256:
