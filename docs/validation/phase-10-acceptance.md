@@ -17,20 +17,21 @@ pipeline scenarios but failed while serializing a timezone-aware database
 `datetime` in the final JSON receipt. The evaluator now converts aware
 datetimes to ISO 8601 before calculating the receipt checksum and writing the
 report; naive datetimes and unsupported values are rejected. This regression
-passes its focused test. The correction and this report update are not yet
-published:
+passes its focused test. The source fix was published on SHA `246889c`.
+That SHA's Quality job passed the API suite, web lint/typecheck/tests and
+coverage, then stopped only because this report needed Prettier formatting.
+The formatting correction passed the one-file Prettier check locally; this
+final report update still needs exact-SHA CI:
 
-| Check                                   | Result                                                                               | Evidence                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------- |
-| Check                                   | Result                                                                                  | Evidence                                           |
-| --------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Phase 10 focused unit suite             | PASS: 50 tests                                                                          | `apps/api/tests/unit/test_mlops.py`                |
-| Datetime receipt regression             | PASS: aware ISO 8601, nested values, naive and unsupported-value rejection              | `test_phase10_acceptance_report_normalizes_aware_database_datetimes` |
-| Ruff, formatting and evaluator strict mypy | PASS on the modified evaluator and unit test                                           | Local focused checks                               |
-| Full API unit suite                     | PASS on SHA `59d40e5`: 1,507 tests, 95.83% line and 90.02% branch coverage               | `make check-api`                                   |
-| Web, contracts, docs and production build | PASS on SHA `59d40e5`; Next.js 16.4.6                                                  | `make verify-cloud`                                |
-| Analytics benchmark                     | PASS: 600,600 observations in 46.47 seconds; 5,398,831 peak traced Python bytes          | `make verify-cloud`                                |
-| 158-requirement traceability ledger     | PASS: exactly 158 mapped rows                                                           | `docs/validation/phase-10-traceability-ledger.md`  |
+| Check                                      | Result                                                                          | Evidence                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Phase 10 focused unit suite                | PASS: 50 tests                                                                  | `apps/api/tests/unit/test_mlops.py`                                  |
+| Datetime receipt regression                | PASS: aware ISO 8601, nested values, naive and unsupported-value rejection      | `test_phase10_acceptance_report_normalizes_aware_database_datetimes` |
+| Ruff, formatting and evaluator strict mypy | PASS on the modified evaluator and unit test                                    | Local focused checks                                                 |
+| Full API unit suite                        | PASS on SHA `59d40e5`: 1,507 tests, 95.83% line and 90.02% branch coverage      | `make check-api`                                                     |
+| Web, contracts, docs and production build  | PASS on SHA `59d40e5`; Next.js 16.4.6                                           | `make verify-cloud`                                                  |
+| Analytics benchmark                        | PASS: 600,600 observations in 46.47 seconds; 5,398,831 peak traced Python bytes | `make verify-cloud`                                                  |
+| 158-requirement traceability ledger        | PASS: exactly 158 mapped rows                                                   | `docs/validation/phase-10-traceability-ledger.md`                    |
 
 These local checks are not exact-final-SHA proof. Docker CLI is unavailable in
 this WSL distro. On `1f667cd03aeff9a92c19b7d2eee8b2563a7cc310`, Phase 9G, Phase
@@ -52,7 +53,10 @@ tables. Security artifact `14732242668` reports 107 accepted High package
 occurrences, zero Critical and zero blocked findings. Phase 10 failed only at
 the final report JSON serialization described above. The old SHA's in-progress
 full-validation run was canceled after this failure; it is not counted as a
-pass. All required checks must run on the correction SHA.
+pass. On SHA `246889c`, Quality failed only at Prettier for this report; the
+API suite passed 1,508 tests with 95.83% line and 90.02% branch coverage, and
+the one-file formatting correction now passes. The formatted report SHA must
+complete all exact-head checks.
 
 ## Required independent acceptance
 
