@@ -1,0 +1,44 @@
+name: Phase 11 independent agent evaluation acceptance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase11-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phase11:
+    name: Independent deterministic acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@94527e2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: 0.12.19
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - name: Install locked API dependencies
+        run: uv sync --project apps/api --frozen
+      - name: Create private acceptance artifact directory
+        run: mkdir -p .validation/phase11 && chmod 700 .validation/phase11
+      - name: Run Phase 11 disposable API/MCP acceptance
+        run: make phase11-acceptance
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: phase11-acceptance-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .validation/phase11/sanitized-report.json
+          if-no-files-found: warn
+          retention-days: 14
