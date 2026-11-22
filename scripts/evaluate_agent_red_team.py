@@ -31,6 +31,7 @@ from vehicle_platform.agent_evaluation.grader import grade
 from vehicle_platform.agent_evaluation.privacy import sanitize_attempt
 from vehicle_platform.agent_evaluation.receipts import create_receipt
 from vehicle_platform.agent_evaluation.source_oracle import (
+    is_disposable_database_url,
     resolve_case_facts,
     schema_revision,
     source_digest,
@@ -147,7 +148,7 @@ async def _evaluate_case(
 
 
 async def evaluate(database_url: str) -> int:
-    if not database_url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+    if not is_disposable_database_url(database_url):
         raise ValueError(
             "Phase 11 evaluation requires a disposable vehicle_test database"
         )

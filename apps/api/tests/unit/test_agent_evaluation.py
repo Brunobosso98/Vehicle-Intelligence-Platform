@@ -37,6 +37,14 @@ def test_phase11_corpus_is_frozen_versioned_and_broad():
     assert {case.language for case in cases} >= {"en", "pt-BR", "mixed"}
 
 
+def test_disposable_database_guard_rejects_remote_and_ambiguous_urls():
+    guard = source_oracle.is_disposable_database_url
+    assert guard("postgresql+asyncpg://user:password@127.0.0.1:5432/vehicle_test")
+    assert not guard("postgresql+asyncpg://user:password@remote.example/vehicle_test")
+    assert not guard("postgresql+asyncpg://user:password@localhost/vehicle_test?host=remote")
+    assert not guard("postgresql+asyncpg://user:password@localhost/vehicle_production")
+
+
 def test_frozen_suite_rejects_silent_case_edits(tmp_path):
     source = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v1.json"
     document = json.loads(source.read_text())
@@ -907,7 +915,9 @@ def test_cli_run_is_confined_to_frozen_suite_and_disposable_test_database(tmp_pa
     monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://localhost/vehicle")
     with pytest.raises(SystemExit):
         cli.main(["run"])
-    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql://vehicle:test-only@localhost/vehicle_test")
+    monkeypatch.setenv(
+        "TEST_DATABASE_URL", "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test"
+    )
     monkeypatch.setenv("ENVIRONMENT", "test")
     valid_copy = tmp_path / "suite-copy.json"
     valid_copy.write_bytes(cli.DEFAULT_SUITE.read_bytes())

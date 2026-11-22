@@ -16,6 +16,7 @@ from vehicle_platform.agent_evaluation.contracts import EvalReceipt
 from vehicle_platform.agent_evaluation.corpus import CorpusError, load_corpus, summarize
 from vehicle_platform.agent_evaluation.receipts import verify_receipt
 from vehicle_platform.agent_evaluation.source_oracle import (
+    is_disposable_database_url,
     persisted_agent_run,
     resolve_case_facts,
     schema_revision,
@@ -134,8 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         database_url = os.environ.get("TEST_DATABASE_URL")
         if database_url is None:
             parser.error("run requires a disposable vehicle_test database URL")
-        database_name = database_url.rsplit("/", 1)[-1].split("?", 1)[0]
-        if not database_name.startswith("vehicle_test"):
+        if not is_disposable_database_url(database_url):
             parser.error("run requires a disposable vehicle_test database URL")
         env = os.environ.copy() | {"TEST_DATABASE_URL": database_url}
         if GIT is not None:
@@ -295,10 +295,7 @@ def main(argv: list[str] | None = None) -> int:
     database_url = os.environ.get("TEST_DATABASE_URL")
     if os.environ.get("ENVIRONMENT") not in {"test", "development"}:
         parser.error("verify requires ENVIRONMENT=test or development")
-    database_name = (
-        database_url.rsplit("/", 1)[-1].split("?", 1)[0] if database_url is not None else ""
-    )
-    if not database_name.startswith("vehicle_test"):
+    if database_url is None or not is_disposable_database_url(database_url):
         parser.error("verify requires a disposable vehicle_test database URL")
     database_url = database_url or ""
     if GIT is None:

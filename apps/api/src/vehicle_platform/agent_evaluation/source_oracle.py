@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from vehicle_platform.agent_evaluation.contracts import AgentEvalCase, OracleFact
@@ -79,14 +80,26 @@ TABLES = (
 )
 
 
+def is_disposable_database_url(database_url: str) -> bool:
+    try:
+        url = make_url(database_url)
+    except Exception:
+        return False
+    return (
+        url.drivername == "postgresql+asyncpg"
+        and url.host in {"127.0.0.1", "localhost", "::1"}
+        and bool(url.database and url.database.startswith("vehicle_test"))
+        and not url.query
+    )
+
+
 def _canonical(values: list[dict[str, Any]]) -> bytes:
     return json.dumps(values, sort_keys=True, separators=(",", ":"), default=str).encode()
 
 
 async def source_digest(database_url: str) -> str:
     """Hash canonical Phase 1–10 rows directly, excluding append-only agent audit data."""
-    database_name = database_url.rsplit("/", 1)[-1].split("?", 1)[0]
-    if not database_name.startswith("vehicle_test"):
+    if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     engine = create_async_engine(
         database_url, pool_size=1, max_overflow=0, isolation_level="REPEATABLE READ"
@@ -120,6 +133,8 @@ async def source_digest(database_url: str) -> str:
 
 async def persisted_agent_run(database_url: str, run_id: str) -> dict[str, Any] | None:
     """Load persisted run, tool audit and event evidence independently of the receipt."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     try:
         identifier = UUID(run_id)
     except (ValueError, TypeError):
@@ -181,7 +196,7 @@ async def persisted_agent_run(database_url: str, run_id: str) -> dict[str, Any] 
 
 async def latest_session_id(database_url: str, vehicle_id: str) -> str:
     """Independent oracle: select the latest canonical session without agent code."""
-    if not database_url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+    if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
@@ -203,7 +218,7 @@ async def latest_session_id(database_url: str, vehicle_id: str) -> str:
 
 async def event_exists(database_url: str, vehicle_id: str, event_type: str) -> bool:
     """Check a golden event directly in the canonical source table."""
-    if not database_url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+    if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
@@ -246,7 +261,7 @@ async def resolve_case_facts(
 
 async def schema_revision(database_url: str) -> str:
     """Read the applied Alembic revision from the disposable acceptance database."""
-    if not database_url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+    if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
