@@ -627,7 +627,34 @@ async def evaluate(database_url: str) -> int:
 
 
 async def main() -> None:
-    raise SystemExit(await evaluate(os.environ["TEST_DATABASE_URL"]))
+    try:
+        result = await evaluate(os.environ["TEST_DATABASE_URL"])
+    except Exception as exc:
+        REPORT_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(REPORT_PATH.parent, stat.S_IRWXU)
+        reason = (
+            "runtime_process_startup_failure"
+            if "failed before readiness" in str(exc)
+            else "evaluation_runner_failure"
+        )
+        REPORT_PATH.write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0",
+                    "status": "INFRA_FAILURE",
+                    "reason_code": reason,
+                    "paid_provider_calls": 0,
+                    "provider_cost_usd": 0,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(REPORT_PATH, stat.S_IRUSR | stat.S_IWUSR)
+        print(json.dumps({"status": "INFRA_FAILURE", "reason_code": reason}))
+        raise
+    raise SystemExit(result)
 
 
 if __name__ == "__main__":

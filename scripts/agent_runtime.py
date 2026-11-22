@@ -63,13 +63,15 @@ class Process:
                     marker in line.casefold()
                     for marker in (
                         "traceback",
-                        '"level": "error"',
+                        "error",
                         "critical",
                         "exception",
                     )
                 )
             ]
             excerpt = "\n".join(relevant[-12:])[-6000:]
+            if len(relevant) < 2:
+                excerpt = "\n".join(diagnostic.splitlines()[-24:])[-6000:]
             if excerpt:
                 raise AssertionError(
                     f"Acceptance process for {self.ready} failed before readiness; "
