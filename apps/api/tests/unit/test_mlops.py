@@ -147,6 +147,33 @@ def test_independent_monitoring_query_reads_source_type_from_session():
     assert "p.source_type" not in query
 
 
+def test_phase10_observability_checker_accepts_exported_histogram_series():
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    checker_path = Path(__file__).resolve().parents[4] / "scripts" / "observability_mlops.py"
+    spec = spec_from_file_location("phase10_observability_checker", checker_path)
+    assert spec is not None and spec.loader is not None
+    checker = module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+
+    evidence = {
+        "spans": sorted(checker.REQUIRED_SPANS),
+        "metric_names": sorted(checker.REQUIRED_METRICS),
+        "metric_label_names": ["kind", "state"],
+        "span_attribute_names": ["mlops.pipeline.kind"],
+        "entity_ids_in_metric_labels": False,
+    }
+    assert checker._verify_evidence(evidence)[1] == checker.REQUIRED_METRICS
+    missing_series = evidence.copy()
+    missing_series["metric_names"] = [
+        item for item in evidence["metric_names"] if item != "mlops_monitor_duration_seconds_count"
+    ]
+    with pytest.raises(ValueError, match="required Phase 10 metrics are absent"):
+        checker._verify_evidence(missing_series)
+
+
 def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):
     import sys
     from importlib.util import module_from_spec, spec_from_file_location

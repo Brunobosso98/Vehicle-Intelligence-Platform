@@ -14,7 +14,9 @@ REQUIRED_SPANS = {"mlops.pipeline.run", "mlops.monitor"}
 REQUIRED_METRICS = {
     "mlops_pipeline_runs_total",
     "mlops_pipeline_stage_events_total",
-    "mlops_monitor_duration_seconds",
+    "mlops_monitor_duration_seconds_bucket",
+    "mlops_monitor_duration_seconds_count",
+    "mlops_monitor_duration_seconds_sum",
 }
 FORBIDDEN_LABELS = {
     "run_id",
@@ -37,13 +39,9 @@ def _require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
-def main() -> None:
-    report = json.loads(REPORT.read_text(encoding="utf-8"))
-    _require(
-        report.get("status") == "PASS",
-        "observability requires a passing acceptance receipt",
-    )
-    evidence = report.get("observability", {})
+def _verify_evidence(
+    evidence: dict[str, Any],
+) -> tuple[set[str], set[str], set[str], set[str]]:
     spans = set(evidence.get("spans", []))
     metrics = set(evidence.get("metric_names", []))
     labels = set(evidence.get("metric_label_names", []))
@@ -62,6 +60,17 @@ def main() -> None:
         evidence.get("entity_ids_in_metric_labels") is False,
         "entity label policy failed",
     )
+    return spans, metrics, labels, span_attributes
+
+
+def main() -> None:
+    report = json.loads(REPORT.read_text(encoding="utf-8"))
+    _require(
+        report.get("status") == "PASS",
+        "observability requires a passing acceptance receipt",
+    )
+    evidence = report.get("observability", {})
+    spans, metrics, labels, span_attributes = _verify_evidence(evidence)
     output: dict[str, Any] = {
         "schema_version": "phase10-observability-v1",
         "git_sha": report["git_sha"],
