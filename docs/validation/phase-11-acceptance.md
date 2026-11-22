@@ -72,8 +72,13 @@ acceptance gates remain incomplete.
 - A canonical full-validation run for `115f5bd31a9259b0e5d67cce1e090b035e45e67e` is
   currently live and has reached Phase 7B. It predates the current uncommitted v2 changes
   and does not count as final-SHA evidence.
-- Current code changes are not committed or pushed yet. Docker Phase 11 acceptance, all
-  mandatory pathway coverage and exact-final-SHA CI remain `CI REQUIRED` or incomplete.
+- Latest SQL column correction and this evidence update are not committed yet. Docker
+  Phase 11 acceptance, all mandatory pathway coverage and exact-final-SHA CI remain
+  `CI REQUIRED` or incomplete.
+- Exact-SHA Phase 11 run `45032358207` for `e3b50f93c747d2de69a57d9538581d59304f6658`
+  failed before grading cases. Its independent absence query referenced nonexistent
+  `telemetry_samples.signal`; migration 0002 defines `signal_key`. No case outcomes were
+  produced. The query is corrected locally and needs a new exact-SHA acceptance run.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

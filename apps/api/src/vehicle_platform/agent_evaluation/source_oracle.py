@@ -264,7 +264,7 @@ async def source_signal_present(database_url: str, vehicle_id: str, signal: str)
                     "AND s.id=(SELECT id FROM driving_sessions "
                     "WHERE vehicle_id=CAST(:vehicle AS uuid) "
                     "ORDER BY started_at DESC,id DESC LIMIT 1) "
-                    "AND t.signal=:signal)"
+                    "AND t.signal_key=:signal)"
                 ),
                 {"vehicle": vehicle_id, "signal": signal},
             )

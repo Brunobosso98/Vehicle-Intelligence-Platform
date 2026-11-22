@@ -74,6 +74,8 @@ def test_source_snapshot_covers_migrated_domain_tables_through_phase10():
         "prediction_evidence_verification_audits",
     }
     assert set(source_oracle.TABLES) == tables - audit_tables
+    telemetry_migration = (migrations / "0002_vehicle_telemetry_core.py").read_text()
+    assert 'sa.Column("signal_key"' in telemetry_migration
 
 
 def test_frozen_suite_rejects_silent_case_edits(tmp_path):
