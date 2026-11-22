@@ -345,6 +345,14 @@ def test_receipt_checker_recomputes_status_and_rejects_fake_pass():
     forged = create_receipt(forged_payload).model_dump(mode="json")
     ok, reasons = verify_receipt(forged, (_case(),), expected_sha="b" * 40, suite_sha="a" * 64)
     assert not ok and "successful_tools_disagree_with_trace" in reasons
+    forged_count_payload = payload | {
+        "attempts": [attempt.model_copy(update={"mcp_call_count": 1}).model_dump(mode="json")]
+    }
+    forged_count = create_receipt(forged_count_payload).model_dump(mode="json")
+    ok, reasons = verify_receipt(
+        forged_count, (_case(),), expected_sha="b" * 40, suite_sha="a" * 64
+    )
+    assert not ok and "tool_count_disagrees_with_trace" in reasons
     ok, reasons = verify_receipt(
         receipt,
         (_case(),),

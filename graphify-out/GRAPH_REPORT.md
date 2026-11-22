@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 687 files · ~789,883 words
+- 687 files · ~789,915 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f6089138`
+- Built from commit: `22eec916`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1625,7 +1625,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.09333333333333334 - nodes in this community are weakly interconnected._
 - **Why does `Settings` connect `Settings` to `router`, `test_predictions.py`, `PredictionEvidenceBundle`, `Database`, `SourceRole`, `EmbeddingLedger`, `features/service.py`, `anomalies/cli.py`, `acquisition/service.py`, `typing`, `hashlib`, `predictiveEnabled`, `Adapter`, `argparse`, `test_knowledge.py`, `json`, `phase7d_eval.py`, `evaluate_predictive_models.py`, `sqlalchemy`, `test_agent_runtime.py`, `evaluate_predictive_reliability.py`, `SessionAnalysisService`, `evaluate_anomaly_detection.py`, `evaluate_mcp.py`, `PredictionRequestBudgetMiddleware`, `worker.py`, `phase9h_acceptance.py`, `datasets.py`, `predictions/cli.py`, `SourceRole`, `api/routes.py`, `evaluate_prediction_evidence.py`, `collect`, `evaluate`, `Orchestrator`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+  _High betweenness centrality (0.082) - this node is a cross-community bridge._
 - **Are the 147 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 147 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Detailed engineering contract — mandatory implementation addendum` be split into smaller, more focused modules?**
