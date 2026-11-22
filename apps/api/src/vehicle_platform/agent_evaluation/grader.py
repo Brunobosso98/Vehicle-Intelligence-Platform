@@ -42,6 +42,7 @@ ABSTENTION_PHRASES = (
     "nao e possivel confirmar",
 )
 REFUSAL_PHRASES = (
+    "can't approve",
     "cannot perform",
     "won't perform",
     "will not perform",
