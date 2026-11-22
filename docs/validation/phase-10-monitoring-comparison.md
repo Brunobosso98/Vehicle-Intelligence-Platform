@@ -1,44 +1,26 @@
 # Phase 10 monitoring and comparison
 
-## Monitoring protocol
+## Monitoring actual persisted prediction receipts
 
-The monitor uses only already persisted Phase 9D prediction receipts. Its
-immutable protocol identifies the controlled serving binding, vehicle and
-configuration scope, source role, model/detector version, feature schema,
-baseline and comparison windows, observed and effective times, required
-features, support floors and versioned PSI/location-shift thresholds.
+The acceptance queried persisted Phase 9D prediction records from the disposable test database; it did not infer predictions or create Phase 9E evidence. Baseline and comparison windows were disjoint, scoped to the controlled binding, vehicle/configuration, source role, model version and feature schema. The report conserves each receipt once and reports counts, missingness, quality exclusion, abstention and independent session support.
 
-The report keeps receipt, session, scored, abstained, error, quality-excluded,
-missing-feature and source-role counts explicit. Baseline and comparison
-windows are disjoint and each receipt is conserved once. No rows are reported
-as NO_OBSERVATIONS; insufficient independent sessions remain
-INSUFFICIENT_SUPPORT.
+| Window     | Receipts | Scored | Abstained | Sessions | Details                                                                                 |
+| ---------- | -------: | -----: | --------: | -------: | --------------------------------------------------------------------------------------- |
+| Baseline   |       10 |      0 |        10 |        2 | `NO_OBSERVATIONS` for required signal; all source role synthetic                        |
+| Comparison |       30 |     26 |         4 |        2 | 2 insufficient-signal abstentions, 2 low-quality abstentions; all source role synthetic |
 
-Source-feature drift and score-distribution shift are reported independently.
-Without verified labels, performance and calibration are UNKNOWN. Synthetic
-fixture labels are not joined to real-world receipts. There is no inference,
-9E evidence materialization or agent execution in monitoring.
+The fixture's baseline has no scored observations. It is reported as `NO_OBSERVATIONS`, not as zero performance. The comparison feature distribution triggered `WARNING`; source-role drift and missingness had `NO_PREDECLARED_WARNING`. Score-distribution shift was `INSUFFICIENT_SUPPORT`. Performance and calibration were `UNKNOWN` because the persisted receipts had no verified outcomes. The monitor's source digest check passed.
 
-## Champion/challenger
+This acceptance is synthetic and bounded. It demonstrates pipeline behavior and denominator accounting; it does not establish a real fleet baseline or a production drift threshold. Source/covariate shift is distinct from score shift, and both differ from true label-verified performance drift. Unlabeled telemetry cannot establish accuracy, recall or calibration.
 
-The comparator reloads the actual active Phase 9D binding and its 9B/9C
-artifact, checks lifecycle state, artifact checksum, schema, role, target and
-cohort, then evaluates both versions on the exact same held-out rows. It
-reports support, abstention and uncertainty with the candidate metrics. Raw
-robust-MAD and isolation-forest scores are not compared across scales.
+## Champion/challenger comparison
 
-Any incompatibility, stale champion, missing bytes, changed cohort or leakage
-returns NOT_COMPARABLE and a reason without ranking. Comparison is read-only
-over prior Phase 9D/9E/9F/9G records.
+The evaluator loaded the current compatible Phase 9D binding and registered 9B/9C candidate, froze the same eligible held-out rows and checked schema, task/family, source role, cutoff and cohort. All seven matched comparisons completed with zero metric deltas. A deliberately incompatible candidate was rejected as `NOT_COMPARABLE`; it was not ranked. Detector scores on different scales were not compared.
 
-## Current evidence
+Monitoring and comparisons are read-only over prior Phase 9D/9E/9F/9G records. Four before/after digest snapshots spanning 19 source tables matched. The separate operator review and rollback-readiness proposal also left source records and active binding unchanged. Phase 9D remains the only serving-transition authority.
 
-The database-backed monitoring and comparison evaluator is not yet executed in
-this local environment because Docker is unavailable. Exact windows, counts,
-PSI, abstention rates, offline comparison deltas and immutable source digest
-results must come from the Phase 10 acceptance receipt for the exact final
-SHA. They are not claimed here.
+## Review and rollback boundaries
 
-Regardless of fixture results, unlabeled real telemetry does not establish
-predictive accuracy, recall or calibration. Real-world mechanical failure
-predictive reliability remains NOT_ESTABLISHED.
+The human review proposal reached `APPROVED_FOR_CONTROLLED_REVIEW`, while invalid reviewer authorization was denied. The proposal records no serving action (`NONE`) and is not a serving permission. Rollback planning found the prior binding `READY_FOR_SEPARATE_9D_REVIEW`, with no rollback performed. A stale artifact is rejected. Any actual transition requires a separate explicit authorized action through Phase 9D approval/activation/revocation/rollback controls.
+
+Real-world mechanical failure predictive reliability remains **NOT_ESTABLISHED**. Synthetic calibration is not real-world validation; Phase 9B scores are not mechanical failure probabilities; Phase 9C anomaly scores are not engine-health percentages or confirmed diagnoses.
