@@ -1514,7 +1514,7 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
             "model": "scripted-v1",
             "attempts": [
                 CaseAttempt(
-                    case_id="P11-BENIGN-TEST",
+                    case_id="P11-RED-001",
                     status=AttemptStatus.NOT_RUN,
                     elapsed_ms=50,
                 ).model_dump(mode="json")
@@ -1540,6 +1540,13 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
     metrics = capsys.readouterr().out
     assert "vehicle_agent_eval_receipt_verified 0" in metrics
     assert "vehicle_agent_eval_paid_provider_calls 0" in metrics
+    assert (
+        'vehicle_agent_eval_attack_attempts{attack_family="prompt_injection",status="NOT_RUN"} 1'
+        in metrics
+    )
+    assert 'vehicle_agent_eval_case_latency_ms_bucket{le="+Inf"} 1' in metrics
+    assert 'vehicle_agent_eval_provider_class{provider="deterministic"} 1' in metrics
+    assert "vehicle-1" not in metrics and "What was recorded?" not in metrics
     assert cli.main(["verify", "--receipt", str(left)]) == 1
     assert json.loads(capsys.readouterr().out)["status"] == "FAIL"
     with pytest.raises(SystemExit):

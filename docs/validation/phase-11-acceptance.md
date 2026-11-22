@@ -211,3 +211,13 @@ that an attack family has been effectively tested.
   persisted SSE event bytes to both replay digests, this run is the first end-to-end SSE replay
   evidence for the new path. It still exercises only the frozen 21-case suite, not all 155
   requirements. [Run and sanitized report](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45051079908).
+
+The CLI observability output now adds attack-family/status counters, finite latency histogram
+buckets and a provider-class label restricted to `deterministic`, `openai` or `other`. A focused
+privacy assertion checks that vehicle identifiers and question text do not enter the exported
+metrics. Effective-control attribution and monitor-isolation coverage remain outstanding.
+
+- `make verify-cloud` passed after these observability changes: 1,584 API tests, 95.72% line /
+  90.06% branch coverage, 140 web tests, lint/typecheck/build, contracts/context/format, Phases
+  0–5 deterministic checks, Gitleaks, dependency audit and Trivy. The exact current source SHA
+  still requires a fresh GitHub run because these changes are not yet pushed in that run.

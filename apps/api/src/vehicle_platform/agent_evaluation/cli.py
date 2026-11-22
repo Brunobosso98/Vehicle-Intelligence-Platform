@@ -308,11 +308,25 @@ def main(argv: list[str] | None = None) -> int:
             for attempt in parsed_receipt.attempts
             if attempt.case_id in case_map
         )
+        attack_counts = Counter(
+            (case_map[attempt.case_id].attack_family or "none", attempt.status.value)
+            for attempt in parsed_receipt.attempts
+            if attempt.case_id in case_map
+        )
         print("# HELP vehicle_agent_eval_case_attempts Phase 11 cases by family and status")
         print("# TYPE vehicle_agent_eval_case_attempts counter")
         for (family, status), count in sorted(counts.items()):
             print(
                 f'vehicle_agent_eval_case_attempts{{family="{family}",status="{status}"}} {count}'
+            )
+        print(
+            "# HELP vehicle_agent_eval_attack_attempts Phase 11 attack cases by family and status"
+        )
+        print("# TYPE vehicle_agent_eval_attack_attempts counter")
+        for (attack_family, status), count in sorted(attack_counts.items()):
+            print(
+                "vehicle_agent_eval_attack_attempts"
+                f'{{attack_family="{attack_family}",status="{status}"}} {count}'
             )
         latencies = [
             attempt.elapsed_ms
@@ -320,12 +334,24 @@ def main(argv: list[str] | None = None) -> int:
             if attempt.elapsed_ms is not None
         ]
         print("# HELP vehicle_agent_eval_case_latency_ms Observed case latency in milliseconds")
-        print("# TYPE vehicle_agent_eval_case_latency_ms summary")
+        print("# TYPE vehicle_agent_eval_case_latency_ms histogram")
+        for upper_bound in (100, 250, 500, 1000, 2500, 5000, 10000):
+            count = sum(latency <= upper_bound for latency in latencies)
+            print(f'vehicle_agent_eval_case_latency_ms_bucket{{le="{upper_bound}"}} {count}')
+        print(f'vehicle_agent_eval_case_latency_ms_bucket{{le="+Inf"}} {len(latencies)}')
         print(f"vehicle_agent_eval_case_latency_ms_count {len(latencies)}")
         print(f"vehicle_agent_eval_case_latency_ms_sum {sum(latencies)}")
         print("# HELP vehicle_agent_eval_paid_provider_calls Paid provider calls in receipt")
         print("# TYPE vehicle_agent_eval_paid_provider_calls gauge")
         print(f"vehicle_agent_eval_paid_provider_calls {parsed_receipt.paid_provider_calls}")
+        provider_class = (
+            parsed_receipt.provider
+            if parsed_receipt.provider in {"deterministic", "openai"}
+            else "other"
+        )
+        print("# HELP vehicle_agent_eval_provider_class Receipt provider class")
+        print("# TYPE vehicle_agent_eval_provider_class gauge")
+        print(f'vehicle_agent_eval_provider_class{{provider="{provider_class}"}} 1')
         print("# HELP vehicle_agent_eval_receipt_verified Receipt has independent DB verification")
         print("# TYPE vehicle_agent_eval_receipt_verified gauge")
         print("vehicle_agent_eval_receipt_verified 0")
