@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import stat
+import subprocess
 import sys
 from pathlib import Path
 from time import perf_counter
@@ -147,11 +148,33 @@ async def _evaluate_case(
     )
 
 
+def _require_clean_commit() -> str:
+    revision = os.environ.get("GIT_SHA")
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    worktree = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=normal"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    if revision != head or worktree:
+        raise ValueError("evaluation_requires_clean_exact_commit")
+    return head
+
+
 async def evaluate(database_url: str) -> int:
     if not is_disposable_database_url(database_url):
         raise ValueError(
             "Phase 11 evaluation requires a disposable vehicle_test database"
         )
+    revision = await asyncio.to_thread(_require_clean_commit)
     document, cases, suite_sha = load_corpus(SUITE_PATH)
     by_id = {case.case_id: case for case in cases}
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -473,11 +496,6 @@ async def evaluate(database_url: str) -> int:
         for case in cases
     )
     by_attempt = {attempt.case_id: attempt for attempt in attempts}
-    revision = os.environ.get("GIT_SHA")
-    if revision is None:
-        raise RuntimeError(
-            "git_sha_unavailable; invoke through vehicle-agent-evals or mcp-validation"
-        )
     receipt = create_receipt(
         {
             "schema_version": "1.0",
