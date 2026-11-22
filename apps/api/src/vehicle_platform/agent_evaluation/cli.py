@@ -13,8 +13,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from vehicle_platform.agent_evaluation.contracts import AgentEvalCase, EvalReceipt
+from vehicle_platform.agent_evaluation.contracts import AgentEvalCase, EvalReceipt, OracleFact
 from vehicle_platform.agent_evaluation.corpus import CorpusError, load_corpus, summarize
+from vehicle_platform.agent_evaluation.phase7d_history import load_phase7d_history
 from vehicle_platform.agent_evaluation.receipts import verify_receipt
 from vehicle_platform.agent_evaluation.source_oracle import (
     is_disposable_database_url,
@@ -26,7 +27,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
 )
 
 ROOT = Path(__file__).resolve().parents[5]
-DEFAULT_SUITE = ROOT / "evals/phase11/suite-v2.json"
+DEFAULT_SUITE = ROOT / "evals/phase11/suite-v14.json"
 GIT = shutil.which("git")
 
 
@@ -132,6 +133,7 @@ def main(argv: list[str] | None = None) -> int:
             "report",
             "benchmark",
             "observability",
+            "history-7d",
         ),
     )
     parser.add_argument("case_id", nargs="?")
@@ -144,6 +146,42 @@ def main(argv: list[str] | None = None) -> int:
     except CorpusError as exc:
         print(json.dumps({"status": "INVALID", "reason": str(exc)}))
         return 2
+    if args.command == "history-7d":
+        try:
+            history = load_phase7d_history()
+        except ValueError as exc:
+            print(json.dumps({"status": "INVALID", "reason": str(exc)}))
+            return 2
+        if args.case_id is not None:
+            mapping = next(
+                (
+                    item
+                    for item in history["case_mappings"]
+                    if item["legacy_case_id"] == args.case_id
+                ),
+                None,
+            )
+            if mapping is None:
+                print(json.dumps({"status": "NOT_FOUND", "legacy_case_id": args.case_id}))
+                return 2
+            print(json.dumps({"status": "HISTORICAL_CASE_MAPPING", **mapping}, indent=2))
+            return 0
+        print(
+            json.dumps(
+                {
+                    "status": "HISTORICAL_BASELINE",
+                    "mapping_version": history["mapping_version"],
+                    "source_suite": history["source_suite"],
+                    "source_suite_sha256": history["source_suite_sha256"],
+                    "case_count": len(history["case_mappings"]),
+                    "scheduled_slots": history["historical_observations"]["scheduled_slots"],
+                    "historical_observations": history["historical_observations"],
+                    "comparison_policy": history["comparison_policy"],
+                },
+                indent=2,
+            )
+        )
+        return 0
     if args.command == "list":
         print(
             json.dumps(
@@ -396,25 +434,36 @@ def main(argv: list[str] | None = None) -> int:
         text=True,
         check=False,
     )
-    fact_map = {
-        attempt["case_id"]: asyncio.run(
-            resolve_case_facts(
-                database_url,
-                next(case for case in cases if case.case_id == attempt["case_id"]),
-                attempt["selected_vehicle_id"],
+    case_by_id = {case.case_id: case for case in cases}
+    fact_map: dict[str, tuple[OracleFact, ...]] = {}
+    for attempt in raw.get("attempts", []):
+        case_id = attempt.get("case_id")
+        selected_vehicle_id = attempt.get("selected_vehicle_id")
+        case = case_by_id.get(case_id)
+        if case is None or not selected_vehicle_id:
+            continue
+        if case.intent == "source_change" and case.version >= 2:
+            # The mutable fixture is restored before receipt verification; use the
+            # predeclared metamorphic value and verify it against persisted run evidence.
+            fact_map[case_id] = case.expected_facts
+        else:
+            fact_map[case_id] = asyncio.run(
+                resolve_case_facts(database_url, case, selected_vehicle_id)
             )
-        )
-        for attempt in raw.get("attempts", [])
-        if attempt.get("selected_vehicle_id")
-        and attempt["case_id"] in {case.case_id for case in cases}
-    }
-    persisted_runs = {
-        attempt["case_id"]: persisted
-        for attempt in raw.get("attempts", [])
-        if attempt.get("run_id") and attempt["case_id"] in {case.case_id for case in cases}
-        if (persisted := asyncio.run(persisted_agent_run(database_url, attempt["run_id"])))
-        is not None
-    }
+    persisted_runs: dict[str, dict[str, Any]] = {}
+    case_ids = {case.case_id for case in cases}
+    for attempt in raw.get("attempts", []):
+        case_id = attempt.get("case_id")
+        if case_id not in case_ids:
+            continue
+        if run_id := attempt.get("run_id"):
+            if persisted := asyncio.run(persisted_agent_run(database_url, run_id)):
+                persisted_runs[case_id] = persisted
+        probe = attempt.get("direct_probe")
+        summary = probe.get("output_summary", {}) if isinstance(probe, dict) else {}
+        if isinstance(summary, dict) and (baseline_id := summary.get("baseline_run_id")):
+            if persisted := asyncio.run(persisted_agent_run(database_url, str(baseline_id))):
+                persisted_runs[f"{case_id}:baseline"] = persisted
     presence_mismatches = asyncio.run(
         _source_presence_mismatches(raw.get("attempts", []), cases, database_url)
     )

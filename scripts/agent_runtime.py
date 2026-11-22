@@ -135,8 +135,13 @@ async def runtime(
         "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
     }
+    env.pop("VIP_AGENT_TEST_PROVIDER_FAULT", None)
     if provider_fault is not None:
-        if provider_fault != "malformed_json":
+        if provider_fault not in {
+            "malformed_json",
+            "forged_citation",
+            "conflicting_unit",
+        }:
             raise ValueError("Unsupported test provider fault")
         env["VIP_AGENT_TEST_PROVIDER_FAULT"] = provider_fault
     if prediction_token is not None and prediction_vehicle_id is not None:
@@ -242,10 +247,19 @@ async def runtime(
             process.close()
 
 
-async def ask(api: httpx.AsyncClient, vehicle: str, question: str) -> dict[str, Any]:
+async def ask(
+    api: httpx.AsyncClient,
+    vehicle: str,
+    question: str,
+    *,
+    session_id: str | None = None,
+) -> dict[str, Any]:
     started = perf_counter()
     path = f"/api/v1/vehicles/{vehicle}/agent-runs"
-    response = await api.post(path, json={"question": question})
+    request_body: dict[str, str] = {"question": question}
+    if session_id is not None:
+        request_body["session_id"] = session_id
+    response = await api.post(path, json=request_body)
     response.raise_for_status()
     identifier = response.json()["id"]
     stream = await api.get(f"{path}/{identifier}/stream")

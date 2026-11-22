@@ -8,7 +8,7 @@ provider in normal validation. Phase 11 does not expose a public evaluation rout
 run shell or URL payloads from the corpus, or enable prediction evidence in
 production.
 
-## Controls represented in the first suite
+## Controls represented in the current suite
 
 - MCP server authorization remains the enforcement point for tool scopes.
 - Requests to approve, activate, promote or roll back a model are routed to a fixed
@@ -27,7 +27,7 @@ production.
   self-reported PASS. It also matches run-linked result, evidence, tool audit, vehicle
   scope, provider/model identity and events against persisted database rows. It recomputes
   current dependency, prompt, MCP tool-catalog and schema revision hashes, verifies the
-  test environment, and pins the version 1 corpus hash.
+  test environment, and accepts only a registered immutable suite version and hash.
 - Direct probes without independently verifiable evidence are rejected by the receipt
   checker, even when the attempt claims a pass. Tool counts and claimed tool names must
   agree with the trace.

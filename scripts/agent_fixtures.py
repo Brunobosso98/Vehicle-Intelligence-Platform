@@ -42,11 +42,38 @@ async def domain_fingerprint(url: str) -> dict[str, Any]:
         await engine.dispose()
 
 
+async def update_vehicle_nickname(url: str, vehicle_id: str, nickname: str) -> None:
+    """Apply a controlled source-value metamorph to a disposable synthetic vehicle."""
+    if (
+        not url.rsplit("/", 1)[-1].startswith("vehicle_test")
+        or not nickname
+        or len(nickname) > 120
+    ):
+        raise ValueError(
+            "Metamorphic fixture requires a disposable database and nickname"
+        )
+    engine = create_async_engine(url)
+    try:
+        async with engine.begin() as db:
+            result = await db.execute(
+                text(
+                    "UPDATE vehicles SET nickname=:nickname "
+                    "WHERE id=CAST(:vehicle AS uuid)"
+                ),
+                {"nickname": nickname, "vehicle": vehicle_id},
+            )
+            if result.rowcount != 1:
+                raise ValueError("Metamorphic vehicle fixture was not uniquely updated")
+    finally:
+        await engine.dispose()
+
+
 async def seed_agent(
     url: str,
     *,
     sample_hz: int = 5,
     omit_signals: frozenset[str] = frozenset(),
+    include_distinct_foreign_vehicle: bool = False,
 ) -> dict[str, Any]:
     fixture = await seed(url, sample_hz=sample_hz, omit_signals=omit_signals)
     engine = create_async_engine(url)
@@ -65,6 +92,28 @@ async def seed_agent(
                 .all()
             )
             boundary = starts[3]
+            if include_distinct_foreign_vehicle:
+                await db.execute(
+                    text(
+                        "UPDATE vehicles SET manufacturer='Toyota',model='GR Supra',"
+                        "generation='A90',engine_code='B58' WHERE id=CAST(:id AS uuid)"
+                    ),
+                    {"id": fixture["other_vehicle"]},
+                )
+                fixture["other_configuration"] = str(
+                    await db.scalar(
+                        text(
+                            "INSERT INTO vehicle_configurations(vehicle_id,effective_at,description,metadata,provenance) "
+                            "VALUES (CAST(:vehicle AS uuid),:effective,'distinct foreign B58 configuration',"
+                            "CAST(:metadata AS jsonb),'phase11-disposable-fixture') RETURNING id"
+                        ),
+                        {
+                            "vehicle": fixture["other_vehicle"],
+                            "effective": starts[0] - timedelta(days=1),
+                            "metadata": '{"fixture":"phase11-foreign-b58"}',
+                        },
+                    )
+                )
             for identifier, effective, ended in (
                 (fixture["configurations"][0], starts[0] - timedelta(days=1), boundary),
                 (fixture["configurations"][1], boundary, None),

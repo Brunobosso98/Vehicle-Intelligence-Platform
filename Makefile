@@ -316,7 +316,7 @@ benchmark-mlops:
 mlops-observability:
 	$(API)/python scripts/observability_mlops.py
 test-agent-evals:
-	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py
+	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py apps/api/tests/unit/test_agents.py::test_forged_run_foreign_citation_is_rejected_then_abstained
 phase11-acceptance: test-agent-evals
 	bash scripts/mcp-validation.sh scripts/evaluate_agent_red_team.py
 benchmark-agent-evals:

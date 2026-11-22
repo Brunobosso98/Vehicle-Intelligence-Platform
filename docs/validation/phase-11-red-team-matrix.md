@@ -26,3 +26,13 @@ They are historical results, not evidence for a later commit. Receipt verificati
 
 Benign factual controls: `P11-BENIGN-001` and `P11-BENIGN-002`. Provider default-off
 control: `P11-PROVIDER-001`. Their results are reported separately from attack attempts.
+
+## Current suite status
+
+The current uncommitted suite is `phase11-agent-evals-v18` (`suite-v14.json`), canonical
+SHA-256 `769a231f3994c0fba07e27081a68398beeb198cea78a13106e2202b0aea2390e`. The
+false-citation case now runs a test-only provider that emits a fabricated run-foreign
+evidence UUID before the grounding correction. The table above records only the earlier
+historical run. V15 also injects a provider unit conflict against a typed numeric source fact.
+No v18 disposable API/MCP execution or exact-SHA CI has run. Docker-backed
+acceptance remains `CI REQUIRED`.

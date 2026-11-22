@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SOURCE_TABLES = frozenset(
     {
@@ -133,6 +133,10 @@ class DirectProbeEvidence(EvalModel):
         "mcp_revoked_capability",
         "operator_cli",
         "knowledge_retrieval",
+        "vehicle_scope_fixture",
+        "specialist_conflict",
+        "provider_fault",
+        "source_metamorph",
     ]
     target: str = Field(min_length=1, max_length=100)
     visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
@@ -220,13 +224,21 @@ class AgentEvalCase(EvalModel):
     construction: str = Field(min_length=1, max_length=500)
     forbidden_claims: tuple[str, ...] = Field(default=(), max_length=24)
 
-    @field_validator("expected_facts")
-    @classmethod
-    def unique_fact_paths(cls, facts: tuple[OracleFact, ...]) -> tuple[OracleFact, ...]:
-        paths = [fact.path for fact in facts]
-        if len(paths) != len(set(paths)):
+    @model_validator(mode="after")
+    def expected_fact_paths_are_valid(self) -> AgentEvalCase:
+        paths = [fact.path for fact in self.expected_facts]
+        if self.intent == "multi_session_temporal_lookup":
+            if (
+                len(self.expected_facts) != 2
+                or paths != ["/id", "/id"]
+                or any(fact.source_table != "driving_sessions" for fact in self.expected_facts)
+                or [fact.value for fact in self.expected_facts]
+                != ["fixture-latest-session", "fixture-second-latest-session"]
+            ):
+                raise ValueError("multi_session_temporal_oracle_invalid")
+        elif len(paths) != len(set(paths)):
             raise ValueError("oracle fact paths must be unique")
-        return facts
+        return self
 
     @field_validator("expected_absent_signals")
     @classmethod

@@ -299,6 +299,15 @@ class DeterministicProvider:
         comparison = any(
             word in question for word in ("configura", "intercooler", "peça", "antes", "depois")
         )
+        vehicle_profile_lookup = any(
+            phrase in question
+            for phrase in (
+                "vehicle nickname",
+                "nickname recorded",
+                "nickname is recorded",
+                "nickname está registrado",
+            )
+        )
         if (
             request.knowledge
             and any(
@@ -388,8 +397,11 @@ class DeterministicProvider:
                             {"pull_ids": [p["entity_id"] for p in pulls[:3]]},
                         )
                     ]
+            elif vehicle_profile_lookup and "get_vehicle" not in executed:
+                calls = [("get_vehicle", {})]
             elif (
                 not (comparison or events or repeated)
+                and not vehicle_profile_lookup
                 and "get_session_summary" not in executed
                 and "última sessão" not in question
             ):
@@ -414,6 +426,8 @@ class DeterministicProvider:
             if events
             else "get_repeated_pull_analysis"
             if repeated
+            else "get_vehicle"
+            if vehicle_profile_lookup
             else "list_sessions"
         )
         if (
@@ -478,6 +492,8 @@ class DeterministicProvider:
                     for f in candidates
                     if f["path"] in {"/id", "/started_at", "/configuration_id"}
                 ]
+            elif preferred == "get_vehicle":
+                selected = [f for f in candidates if f["path"] == "/nickname"]
             else:
                 selected = [
                     f
@@ -831,3 +847,142 @@ class DeterministicProvider:
             ),
             usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
         )
+
+
+class ForgedCitationProvider:
+    """Test-only provider that first cites an evidence UUID from another run."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.injected = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if not self.injected and request.specialist is None:
+            self.injected = True
+            foreign_evidence_id = UUID("00000000-0000-0000-0000-000000000001")
+            return ModelTurn(
+                draft=Draft(
+                    confidence="high",
+                    claims=[
+                        Claim(
+                            classification=Classification.OBSERVATION,
+                            template="recorded_fact",
+                            evidence_ids=[foreign_evidence_id],
+                            bindings=[
+                                Binding(
+                                    evidence_id=foreign_evidence_id,
+                                    path="/id",
+                                    value="00000000-0000-0000-0000-000000000001",
+                                )
+                            ],
+                        )
+                    ],
+                    missing_evidence=[],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        if request.correction is not None:
+            return ModelTurn(
+                draft=Draft(
+                    confidence="low",
+                    claims=[
+                        Claim(
+                            classification=Classification.INSUFFICIENT_EVIDENCE,
+                            template="insufficient_evidence",
+                            evidence_ids=[],
+                            bindings=[],
+                        )
+                    ],
+                    missing_evidence=["signal_or_measurement"],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ConflictingUnitProvider:
+    """Test-only provider that submits a source value with a forged unit once."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.injected = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if request.correction is not None and self.injected:
+            return ModelTurn(
+                draft=Draft(
+                    confidence="low",
+                    claims=[
+                        Claim(
+                            classification=Classification.INSUFFICIENT_EVIDENCE,
+                            template="insufficient_evidence",
+                            evidence_ids=[],
+                            bindings=[],
+                        )
+                    ],
+                    missing_evidence=["signal_or_measurement"],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        if not self.injected:
+            for source in request.evidence:
+                for fact in source.get("facts", []):
+                    unit = fact.get("unit")
+                    value = fact.get("value")
+                    if unit is None or type(value) not in {int, float}:
+                        continue
+                    self.injected = True
+                    source_id = UUID(str(source["id"]))
+                    forged_unit = "bar" if unit != "bar" else "K"
+                    return ModelTurn(
+                        draft=Draft(
+                            confidence="high",
+                            claims=[
+                                Claim(
+                                    classification=Classification.OBSERVATION,
+                                    template="recorded_fact",
+                                    evidence_ids=[source_id],
+                                    bindings=[
+                                        Binding(
+                                            evidence_id=source_id,
+                                            path=str(fact["path"]),
+                                            value=value,
+                                            unit=forged_unit,
+                                        )
+                                    ],
+                                )
+                            ],
+                            missing_evidence=[],
+                        ),
+                        usage=Usage(
+                            input_tokens=0,
+                            output_tokens=0,
+                            total_tokens=0,
+                            cached_input_tokens=0,
+                        ),
+                    )
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()

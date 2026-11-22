@@ -5,12 +5,13 @@ from typing import Any
 
 import httpx
 from agent_fixtures import seed_agent
+from pydantic import SecretStr
 from vehicle_platform.core.config import Settings
 from vehicle_platform.events.synthetic import AnomalyInjection, anomaly_scenario
 from vehicle_platform.main import create_app
 
 
-def recording_csv(scenario, start: datetime, name: str) -> str:
+def recording_csv(scenario: Any, start: datetime, name: str) -> str:
     """Ten Hz independent canonical inputs; no signals or proprietary channels are invented."""
     shift = start - scenario.frames[0].observed_at
     units = {
@@ -57,7 +58,7 @@ async def seed_supervisor(url: str) -> dict[str, Any]:
     fixture = await seed_agent(url)
     comparison = await seed_agent(url)
     fixture["comparison_vehicle"] = comparison["vehicle"]
-    app = create_app(Settings(database_url=url, environment="test"))
+    app = create_app(Settings(database_url=SecretStr(url), environment="test"))
     recordings: dict[str, str] = {}
     async with (
         app.router.lifespan_context(app),

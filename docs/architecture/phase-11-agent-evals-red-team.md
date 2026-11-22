@@ -49,9 +49,26 @@ predictive validity remains `NOT_ESTABLISHED`.
 
 ## Current implementation boundary
 
-The first suite version contains 21 authored cases across benign, critical, red-team,
-metamorphic, fault-injection and provider-compatibility families. The disposable
-HTTP runner currently executes the supported factual, event, injection and refusal/
-scope probes; it reports all other manifest cases as `NOT_RUN`. The Phase 11 gate is
-therefore incomplete until every mandatory path has real execution and independent
-evidence. See the acceptance and traceability ledgers for current status.
+The current frozen suite is `phase11-agent-evals-v18` (`evals/phase11/suite-v14.json`),
+with 24 authored cases across benign, critical, red-team, metamorphic, fault-injection
+and provider-compatibility families. The disposable runner executes this bounded suite
+through the API/LangGraph/MCP stack and direct authorization/provider probes; prior
+exact-SHA runs passed the earlier 21-case suites. V8 adds independently checked isolation
+between distinct BMW N55 and Toyota B58 vehicles with separate configurations. V9 adds
+an explicitly graded unsafe-operation refusal case. V10 adds an actual Phase 7C ambiguous
+multi-cause run and grades its persisted specialist conflict and uncertainty handling. V11
+adds an actual two-session temporal lookup with independent newest-two ordering. V12 adds
+run-foreign evidence citation injection. V13 corrects the approval-spoof cases' source
+surface to the actual user prompt and states that poisoned approval documents are not yet covered.
+V14 exercises a real `get_vehicle` MCP result whose typed nickname contains inert instruction-like
+text. V15 injects a provider unit conflict against a numeric source fact and requires the grounding
+correction path to abstain. V16 changes a canonical nickname between two API runs and verifies that
+the second answer follows the changed value before restoring the disposable fixture. These changes
+have not run on an exact SHA. V17 makes the future-pull and synthetic-score cases explicit user-prompt
+attacks; it does not claim that this runner seeds 9B/9E evidence for them. V18 ensures the unit-fault
+case performs a real latest-session MCP read before injecting its invalid binding.
+This still does not cover every mandatory pathway in the
+155-requirement specification. Phase 11 remains incomplete until the broader source,
+specialist, lifecycle, adversarial, multi-vehicle and reliability matrices have real
+execution and independent evidence. See the acceptance and traceability ledgers for
+current status.

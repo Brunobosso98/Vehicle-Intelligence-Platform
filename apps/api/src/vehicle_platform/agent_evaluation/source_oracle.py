@@ -196,22 +196,37 @@ async def persisted_agent_run(database_url: str, run_id: str) -> dict[str, Any] 
 
 async def latest_session_id(database_url: str, vehicle_id: str) -> str:
     """Independent oracle: select the latest canonical session without agent code."""
+    return (await latest_session_ids(database_url, vehicle_id, limit=1))[0]
+
+
+async def latest_session_ids(
+    database_url: str, vehicle_id: str, *, limit: int = 2
+) -> tuple[str, ...]:
+    """Return the newest canonical session IDs in deterministic temporal order."""
     if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
+    if limit not in {1, 2}:
+        raise ValueError("session oracle limit is outside the supported bound")
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
         async with engine.connect() as connection:
-            value = await connection.scalar(
-                text(
-                    "SELECT id::text FROM driving_sessions "
-                    "WHERE vehicle_id=CAST(:vehicle AS uuid) "
-                    "ORDER BY started_at DESC, id DESC LIMIT 1"
-                ),
-                {"vehicle": vehicle_id},
+            values = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT id::text FROM driving_sessions "
+                            "WHERE vehicle_id=CAST(:vehicle AS uuid) "
+                            "ORDER BY started_at DESC, id DESC LIMIT :limit"
+                        ),
+                        {"vehicle": vehicle_id, "limit": limit},
+                    )
+                )
+                .scalars()
+                .all()
             )
-        if value is None:
+        if len(values) != limit:
             raise ValueError("fixture_has_no_sessions")
-        return str(value)
+        return tuple(str(value) for value in values)
     finally:
         await engine.dispose()
 
@@ -273,24 +288,106 @@ async def source_signal_present(database_url: str, vehicle_id: str, signal: str)
         await engine.dispose()
 
 
+async def verify_vehicle_scope_fixture(
+    database_url: str,
+    *,
+    source_vehicle_id: str,
+    request_vehicle_id: str,
+    source_session_id: str,
+) -> dict[str, str | int | float | bool | None]:
+    """Independently verify distinct vehicle/config identities and session ownership."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            row = (
+                (
+                    await connection.execute(
+                        text(
+                            """
+                        SELECT
+                            source_vehicle.id::text AS source_id,
+                            request_vehicle.id::text AS request_id,
+                            source_vehicle.manufacturer AS source_make,
+                            request_vehicle.manufacturer AS request_make,
+                            source_vehicle.engine_code AS source_engine,
+                            request_vehicle.engine_code AS request_engine,
+                            (SELECT count(*) FROM vehicle_configurations c
+                             WHERE c.vehicle_id=source_vehicle.id) AS source_configs,
+                            (SELECT count(*) FROM vehicle_configurations c
+                             WHERE c.vehicle_id=request_vehicle.id) AS request_configs,
+                            EXISTS(SELECT 1 FROM driving_sessions s
+                                   WHERE s.id=CAST(:session AS uuid)
+                                   AND s.vehicle_id=source_vehicle.id) AS session_owned_by_source,
+                            EXISTS(SELECT 1 FROM driving_sessions s
+                                   WHERE s.id=CAST(:session AS uuid)
+                                   AND s.vehicle_id=request_vehicle.id) AS session_owned_by_request
+                        FROM vehicles source_vehicle
+                        CROSS JOIN vehicles request_vehicle
+                        WHERE source_vehicle.id=CAST(:source AS uuid)
+                          AND request_vehicle.id=CAST(:request AS uuid)
+                        """
+                        ),
+                        {
+                            "source": source_vehicle_id,
+                            "request": request_vehicle_id,
+                            "session": source_session_id,
+                        },
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if row is None:
+            raise ValueError("vehicle_scope_fixture_missing")
+        return {
+            "distinct_vehicle_ids": row["source_id"] != row["request_id"],
+            "distinct_manufacturers": row["source_make"] != row["request_make"],
+            "distinct_engines": row["source_engine"] != row["request_engine"],
+            "source_vehicle_configuration_count": int(row["source_configs"]),
+            "request_vehicle_configuration_count": int(row["request_configs"]),
+            "session_owned_by_source_vehicle": bool(row["session_owned_by_source"]),
+            "session_not_owned_by_request_vehicle": not bool(row["session_owned_by_request"]),
+        }
+    finally:
+        await engine.dispose()
+
+
 async def resolve_case_facts(
     database_url: str, case: AgentEvalCase, vehicle_id: str
 ) -> tuple[OracleFact, ...]:
     """Resolve each corpus fact directly from its allowlisted source table."""
     resolved: list[OracleFact] = []
+    recent_session_ids: tuple[str, ...] | None = None
     for fact in case.expected_facts:
         value: str | int | float | bool | None
-        is_latest_session = (
+        is_recent_session = (
             fact.source_table == "driving_sessions"
             and fact.path == "/id"
-            and fact.value == "fixture-latest-session"
+            and fact.value in {"fixture-latest-session", "fixture-second-latest-session"}
         )
-        if is_latest_session:
-            value = await latest_session_id(database_url, vehicle_id)
+        if is_recent_session:
+            if recent_session_ids is None:
+                recent_session_ids = await latest_session_ids(database_url, vehicle_id)
+            offset = 0 if fact.value == "fixture-latest-session" else 1
+            value = recent_session_ids[offset]
         elif fact.source_table == "detected_events" and fact.path == "/event_type":
             if not await event_exists(database_url, vehicle_id, str(fact.value)):
                 raise ValueError("fixture_expected_event_missing")
             value = fact.value
+        elif fact.source_table == "vehicles" and fact.path == "/nickname":
+            engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+            try:
+                async with engine.connect() as connection:
+                    value = await connection.scalar(
+                        text("SELECT nickname FROM vehicles WHERE id=CAST(:vehicle AS uuid)"),
+                        {"vehicle": vehicle_id},
+                    )
+            finally:
+                await engine.dispose()
+            if not isinstance(value, str):
+                raise ValueError("fixture_expected_vehicle_nickname_missing")
         else:
             raise ValueError("independent_fact_resolver_unavailable")
         resolved.append(fact.model_copy(update={"value": value}))

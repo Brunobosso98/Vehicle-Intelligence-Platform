@@ -105,9 +105,11 @@
 - `scripts/evaluate_mlops.py`, `scripts/check_mlops.py`, `scripts/phase10-validation.sh`:
   Phase 10 real 9A/9B/9C/9G lifecycle evaluator, independent persisted-receipt/artifact checker,
   and migration/database acceptance runner.
-- `evals/phase11/suite-v2.json` (current; v1 retained for historical receipts), `scripts/evaluate_agent_red_team.py`,
+- `evals/phase11/suite-v14.json` (current suite v18; v1–v18 retained for historical receipts), `scripts/evaluate_agent_red_team.py`,
   `scripts/vehicle_agent_evals.py`: Phase 11 frozen deterministic evaluation scenarios,
-  actual API/MCP HTTP acceptance runner and operator list/inspect/plan/verify CLI.
+  actual API/MCP HTTP acceptance runner and operator list/inspect/plan/verify CLI. The
+  `vehicle-agent-evals history-7d` command verifies the immutable Phase 7D ID mapping and
+  reports its mixed-round history without merging it into Phase 11 receipts.
 - `scripts/check_phase9h_research_summary.py`: checksum and source-SHA gate for the static 9G
   synthetic research summary.
 - `apps/web/tests/e2e/predictive.spec.ts`: synthetic UX and persisted-record browser acceptance,

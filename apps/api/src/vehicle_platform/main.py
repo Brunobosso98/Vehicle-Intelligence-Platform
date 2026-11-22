@@ -76,10 +76,16 @@ def create_app(
         raise ValueError("Deterministic agent provider is restricted to development/test")
 
     def provider_factory() -> Provider:
-        if (
-            config.environment == "test"
-            and os.environ.get("VIP_AGENT_TEST_PROVIDER_FAULT") == "malformed_json"
-        ):
+        test_provider_fault = os.environ.get("VIP_AGENT_TEST_PROVIDER_FAULT")
+        if config.environment == "test" and test_provider_fault == "forged_citation":
+            from vehicle_platform.agents.scripted_provider import ForgedCitationProvider
+
+            return ForgedCitationProvider()
+        if config.environment == "test" and test_provider_fault == "conflicting_unit":
+            from vehicle_platform.agents.scripted_provider import ConflictingUnitProvider
+
+            return ConflictingUnitProvider()
+        if config.environment == "test" and test_provider_fault == "malformed_json":
             from vehicle_platform.agents.scripted_provider import ScriptedProvider
 
             return ScriptedProvider([AgentError("provider_invalid_response")])
