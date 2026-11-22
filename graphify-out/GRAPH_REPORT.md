@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 688 files · ~796,990 words
+- 688 files · ~797,102 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `76c6a491`
+- Built from commit: `0edab442`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1597,7 +1597,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `AnalyticsConfig` be split into smaller, more focused modules?**
   _Cohesion score 0.13429951690821257 - nodes in this community are weakly interconnected._
 - **Why does `Settings` connect `Settings` to `features/service.py`, `router`, `typing`, `PredictionEvidenceBundle`, `stable_hash`, `main.py`, `EmbeddingLedger`, `httpx`, `check_mlops.py`, `evaluate_agent_prediction.py`, `evaluate`, `adapter.py`, `uuid`, `AgentError`, `AcquisitionService`, `KnowledgeRepository`, `evaluate_predictive_reliability.py`, `Telemetry`, `PredictionService`, `test_acquisition.py`, `json`, `argparse`, `phase9h_acceptance.py`, `anomalies/cli.py`, `KnowledgeService`, `predictions/cli.py`, `datasets.py`, `Phase 9H predictive intelligence UI`, `api/routes.py`, `Database`, `test_predictions.py`, `phase7d_eval.py`, `time`, `Envelope`, `hashlib`?**
-  _High betweenness centrality (0.080) - this node is a cross-community bridge._
+  _High betweenness centrality (0.079) - this node is a cross-community bridge._
 - **Are the 148 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 148 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Detailed engineering contract — mandatory implementation addendum` be split into smaller, more focused modules?**

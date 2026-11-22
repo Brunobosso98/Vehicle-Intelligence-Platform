@@ -203,3 +203,11 @@ language and expected behavior. Receipt reports add case denominators and outcom
 family, severity, language, source surface, attack family, route and source role. These summaries
 make unexecuted cases visible as `NOT_RUN`; they do not upgrade manifest coverage into evidence
 that an attack family has been effectively tested.
+
+- Exact-SHA independent Phase 11 run `45051079908` on `0edab44226b275e05dd35027b1f4e7c60a580820`
+  passed 21/21 cases with 0 failures, 0 NOT_RUN, independent receipt verification PASS, source
+  fixture SHA `c608210236f940394bb696bb6a6966d5e4db028a5ff3f405197ad17902b55bc1`, schema revision
+  `0020`, runtime 55.582 seconds and zero paid calls/cost. Because the receipt checker now binds
+  persisted SSE event bytes to both replay digests, this run is the first end-to-end SSE replay
+  evidence for the new path. It still exercises only the frozen 21-case suite, not all 155
+  requirements. [Run and sanitized report](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45051079908).

@@ -8,8 +8,8 @@ import os
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
