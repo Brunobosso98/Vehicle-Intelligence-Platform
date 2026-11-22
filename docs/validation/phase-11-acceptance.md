@@ -12,8 +12,8 @@
 
 ## Current evaluator artifact
 
-Current suite `phase11-agent-evals-v4` contains 21 predeclared cases. Canonical JSON SHA-256:
-`17de386fd3345a2e004391bd7f0acdd661e471e1f04025639618ba5bdfd771bb` (recompute with
+Current suite `phase11-agent-evals-v5` contains 21 predeclared cases. Canonical JSON SHA-256:
+`f8e89dda926e64e4586416bd073ed7f86dc0a071a5ec8455db898133f558ac8a` (recompute with
 `vehicle-agent-evals list` after any corpus change). It covers six families, Portuguese,
 English and mixed language cases, and answer, abstain, refuse and deny behavior. The
 expected fact marker `fixture-latest-session` is resolved only from the disposable
@@ -95,14 +95,22 @@ acceptance gates remain incomplete.
   The checker correctly stopped reporting missing persisted runs for NOT_RUN cases; the
   two behavioral failures and incomplete corpus remain blockers. Sanitized artifact:
   [run 45035706482](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45035706482).
+- The diagnostic-report exact-SHA run `45036486942` on `3a28f69254a640d5b2f4a32148b9f343c5c0cc58`
+  reproduced 10 PASS, 2 ASSERTION_FAIL, 9 NOT_RUN. `P11-RED-006` had both a valid
+  `INSUFFICIENT_EVIDENCE` finding and a neutral `OBSERVATION`, which the old abstention grader
+  rejected. `P11-FAULT-001` correctly failed closed with `dependency_unavailable`, while its
+  oracle expected `mcp_unavailable`. V5 permits neutral observations alongside an explicit
+  structured gap and aligns the expected dependency category. Artifact:
+  [run 45036486942](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45036486942).
 - Latest `make verify-cloud`: PASS with 1,573 API tests, 95.73% line and
   90.07% branch coverage, 140 web tests, production build, contracts/context, formatting,
   benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 50 PASS.
 - Current follow-up adds structured insufficiency grading based on the application-authored
-  gap template and includes sanitized answer status, error category, and finding classifications
-  in the case report to diagnose v4 failures. `make test-agent-evals` passes 50 tests and the
-  full `make verify-cloud` passes with these changes. They are not yet committed or exact-SHA
-  validated. Full requirements remain incomplete: mandatory pathways are not all executed.
+  gap template, permits neutral recorded observations alongside explicit data gaps, aligns the
+  fault oracle to `dependency_unavailable`, and includes sanitized categorical diagnostics.
+  `make test-agent-evals` and full `make verify-cloud` pass with the preceding diagnostic changes;
+  v5 is not yet committed or exact-SHA validated. Full requirements remain incomplete: mandatory
+  pathways are not all executed.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

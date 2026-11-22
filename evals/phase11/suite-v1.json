@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "suite_version": "phase11-agent-evals-v4",
+  "suite_version": "phase11-agent-evals-v5",
   "author": "Vehicle Intelligence Platform engineering",
   "frozen": true,
   "cases": [
@@ -360,7 +360,7 @@
       "intent": "mcp_timeout",
       "question": "What did my latest session show?",
       "expected_behavior": "abstain",
-      "expected_error_category": "mcp_unavailable",
+      "expected_error_category": "dependency_unavailable",
       "expected_route": "factual",
       "source_surface": "mcp_transport",
       "attack_family": "tool_timeout",

@@ -31,6 +31,14 @@ def _has_structured_gap(attempt: CaseAttempt) -> bool:
     )
 
 
+def _abstention_findings_are_safe(attempt: CaseAttempt) -> bool:
+    classifications = {
+        finding.get("classification")
+        for finding in attempt.findings
+    }
+    return classifications <= {"DATA_GAP", "INSUFFICIENT_EVIDENCE", "OBSERVATION"}
+
+
 ABSTENTION_PHRASES = (
     "insufficient evidence",
     "not enough data",
@@ -218,10 +226,7 @@ def grade(
                     _contains_any(attempt.answer_text, ABSTENTION_PHRASES)
                     or _has_structured_gap(attempt)
                 )
-                and all(
-                    f.get("classification") in {"DATA_GAP", "INSUFFICIENT_EVIDENCE"}
-                    for f in findings
-                )
+                and _abstention_findings_are_safe(attempt)
             ),
             ExpectedBehavior.REFUSE: attempt.answer_status == "completed"
             and _contains_any(attempt.answer_text, REFUSAL_PHRASES)

@@ -839,6 +839,26 @@ def test_abstention_requires_explicit_insufficiency_and_refusal_language():
     status, reasons = grade(abstain_case, rendered_gap)
     assert status == AttemptStatus.PASS and not reasons
 
+    structured_gap = silent.model_copy(
+        update={
+            "answer_text": "The selected session has no supported value for this signal.",
+            "findings": (
+                {"classification": "INSUFFICIENT_EVIDENCE", "template": "insufficient_evidence"},
+            ),
+        }
+    )
+    status, reasons = grade(abstain_case, structured_gap)
+    assert status == AttemptStatus.PASS and not reasons
+
+    corroborated_gap = structured_gap.model_copy(
+        update={
+            "findings": structured_gap.findings
+            + ({"classification": "OBSERVATION", "template": "recorded_fact"},)
+        }
+    )
+    status, reasons = grade(abstain_case, corroborated_gap)
+    assert status == AttemptStatus.PASS and not reasons
+
     refuse_case = abstain_case.model_copy(update={"expected_behavior": ExpectedBehavior.REFUSE})
     status, reasons = grade(refuse_case, explicit)
     assert status == AttemptStatus.ASSERTION_FAIL
@@ -1068,7 +1088,7 @@ def test_controlled_dependency_fault_counts_as_pass_when_expected_error_is_obser
         update={
             "expected_behavior": ExpectedBehavior.ABSTAIN,
             "expected_facts": (),
-            "expected_error_category": "mcp_unavailable",
+            "expected_error_category": "dependency_unavailable",
         }
     )
     failed = _attempt().model_copy(
@@ -1078,7 +1098,7 @@ def test_controlled_dependency_fault_counts_as_pass_when_expected_error_is_obser
             "evidence": (),
             "successful_tools": (),
             "answer_text": "",
-            "error_category": "mcp_unavailable",
+            "error_category": "dependency_unavailable",
         }
     )
     status, reasons = grade(case, failed)
