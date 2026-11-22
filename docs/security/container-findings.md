@@ -1,10 +1,10 @@
 # Container scan findings and risk review
 
-## Latest Phase 10 exact-head scan — SHA 5b0c92f
+## Latest Phase 10 exact-head scan — SHA c2ffa6a
 
-Security run [44973958613](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613)
-scanned SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`; machine-readable results are in
-[artifact 14735002475](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613/artifacts/14735002475).
+Security run [44975653467](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44975653467)
+scanned SHA `c2ffa6a49009e87814a0e071cdbf6af10e4ecb78`; machine-readable results are in
+[artifact 14735462917](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44975653467/artifacts/14735462917).
 All selected runtime images have zero Critical and zero blocked High findings. The artifact reports
 107 accepted High package occurrences: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2,
 Tempo 2, Grafana 4, Kafka 0, and custom TimescaleDB 0. The 20 exact High-risk records were reviewed
@@ -12,7 +12,14 @@ on 2026-11-21 and expire 2026-12-05. The zlib exception that expired 2026-11-12 
 selected application images report no zlib CVE. The upstream TimescaleDB image separately reports
 271 High and 3 Critical findings; it is not selected for runtime, and the rebuilt custom image has
 zero High and Critical findings. No scanner is disabled, and no exception is silently extended.
-The current source-lineage checker correction still requires its own exact-head scan.
+The current matched-feature fingerprint correction still requires its own exact-head scan.
+
+## Previous Phase 10 exact-head scan — SHA 5b0c92f
+
+Security run [44973958613](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613)
+scanned SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`; machine-readable results are in
+[artifact 14735002475](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613/artifacts/14735002475).
+It likewise reported 107 accepted High occurrences and zero Critical or blocked findings.
 
 ## Previous Phase 10 exact-head scan — SHA da31da9
 

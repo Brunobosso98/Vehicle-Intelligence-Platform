@@ -3,15 +3,15 @@
 ## Current finding status
 
 The latest exact-head Security run is
-[44973958613](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613),
+[44975653467](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44975653467),
 artifact
-[14735002475](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613/artifacts/14735002475),
-for SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`. It reports the same 107
+[14735462917](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44975653467/artifacts/14735462917),
+for SHA `c2ffa6a49009e87814a0e071cdbf6af10e4ecb78`. It reports the same 107
 accepted High package occurrences, zero Critical and zero blocked findings
 across selected images. The 20 exact risk reviews remain dated 2026-11-21 and
 expire 2026-12-05. The expired zlib exception remains removed, and selected
 application images have no zlib CVE. A new scan is required for the pending
-source-lineage checker correction SHA.
+matched-feature fingerprint correction SHA.
 
 The policy on implementation SHA `74797be570e301444671cc9b307306647c15efcf`
 contains 20 exact High-risk records, all reviewed on 2026-11-21 and expiring
@@ -64,7 +64,14 @@ database oracle; public or production APIs do not expose training or MLOps.
 
 ## Current execution status
 
-The latest exact-head Phase 10 run on `5b0c92f` generated its evaluator receipt,
+The latest exact-head Phase 10 run on `c2ffa6a` generated its evaluator receipt,
+then the independent checker compared pull IDs to a fingerprint of 9C matched
+feature rows. The 9C row ID binds the 9A feature-set ID, source hash and
+observation cutoff. The checker now independently reconstructs those rows from
+the persisted feature set and version checksum before recomputing the
+fingerprint.
+
+The prior exact-head Phase 10 run on `5b0c92f` generated its evaluator receipt,
 then failed in the independent checker because it queried `pulls.source_type`,
 which actually belongs to the owning `driving_sessions` row. The checker now
 joins the table by the persisted pull session ID and verifies the session's

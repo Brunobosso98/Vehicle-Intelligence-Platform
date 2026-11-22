@@ -1518,9 +1518,9 @@
     "semantic_hash": ""
   },
   "docs/security/container-findings.md": {
-    "mtime": 1795312281.9753087,
-    "seen": 1795312314.508697,
-    "ast_hash": "8945edfeb4fda057a3a0267e39c2cd24",
+    "mtime": 1795314953.9313178,
+    "seen": 1795314980.3921607,
+    "ast_hash": "d35da99a27880ce2f86f297b9fadc9a0",
     "semantic_hash": ""
   },
   "docs/security/container-risk-acceptance.yaml": {
@@ -4008,9 +4008,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_mlops.py": {
-    "mtime": 1795313519.7353218,
-    "seen": 1795313554.1752448,
-    "ast_hash": "580edf57bd966d301e27f791bf82a083",
+    "mtime": 1795314885.4113204,
+    "seen": 1795314980.391665,
+    "ast_hash": "1c0885f7e41849b862ff67fd791bd6f1",
     "semantic_hash": ""
   },
   "scripts/benchmark_mlops.py": {
@@ -4020,9 +4020,9 @@
     "semantic_hash": ""
   },
   "scripts/check_mlops.py": {
-    "mtime": 1795313493.1193233,
-    "seen": 1795313554.1754007,
-    "ast_hash": "9ae697cbe0edd3558a65f440017342f6",
+    "mtime": 1795314885.4113204,
+    "seen": 1795314980.391829,
+    "ast_hash": "f0e541f5dea6be4db3370be3727b7f1a",
     "semantic_hash": ""
   },
   "scripts/evaluate_mlops.py": {
@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-10-acceptance.md": {
-    "mtime": 1795312724.0873349,
-    "seen": 1795313554.1757388,
-    "ast_hash": "7a7e8fb98b21af1aa167bd6e8c1c44cf",
+    "mtime": 1795314953.9313178,
+    "seen": 1795314980.3921697,
+    "ast_hash": "a689a65f0d3fd5e40b467699fc38a88f",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-monitoring-comparison.md": {
@@ -4104,9 +4104,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-10-security-reproducibility.md": {
-    "mtime": 1795312273.0233183,
-    "seen": 1795312314.508711,
-    "ast_hash": "4aef074779c11566b4ed8a1baf86dca1",
+    "mtime": 1795314953.9313178,
+    "seen": 1795314980.392175,
+    "ast_hash": "260fab79e33cee701648990eb84a8fe5",
     "semantic_hash": ""
   },
   "docs/validation/phase-10-traceability-ledger.md": {
@@ -4119,6 +4119,12 @@
     "mtime": 1795306302.5193064,
     "seen": 1795307042.633592,
     "ast_hash": "96e60a2aa3ad41b5eba4107daa79ea17",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261122_022000_1da3fc97_how_should_phase_10_verify_source_roles_for_immuta.md": {
+    "mtime": 1795314000.9502792,
+    "seen": 1795314980.3922365,
+    "ast_hash": "ca2023bd76dade86fb7f9ff512d31129",
     "semantic_hash": ""
   }
 }

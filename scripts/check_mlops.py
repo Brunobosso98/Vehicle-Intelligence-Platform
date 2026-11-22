@@ -66,9 +66,32 @@ def _candidate_artifact_query(kind: str) -> str:
 
 def _anomaly_evaluation_source_query() -> str:
     return (
-        "SELECT p.id::text AS id,s.source_type,p.started_at,p.ended_at "
-        "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
-        "WHERE p.id=ANY(CAST(:ids AS uuid[])) ORDER BY p.id"
+        "SELECT DISTINCT ON (fs.pull_id) p.id::text AS id,s.source_type,"
+        "p.started_at,p.ended_at,fs.id::text AS feature_set_id,fs.source_hash,"
+        "fs.provenance_hash,fs.observation_cutoff FROM feature_sets fs "
+        "JOIN pulls p ON p.id=fs.pull_id "
+        "JOIN driving_sessions s ON s.id=fs.session_id AND s.id=p.session_id "
+        "JOIN feature_set_versions v ON v.id=fs.feature_set_version_id "
+        "WHERE fs.pull_id=ANY(CAST(:ids AS uuid[])) AND fs.entity_scope='pull' "
+        "AND v.checksum=:feature_checksum AND fs.observation_cutoff<=:cutoff "
+        "ORDER BY fs.pull_id,fs.observation_cutoff DESC,fs.generated_at DESC,fs.id DESC"
+    )
+
+
+def _anomaly_feature_row_id(row: Any) -> str:
+    cutoff = row["observation_cutoff"]
+    if (
+        not isinstance(cutoff, datetime)
+        or cutoff.tzinfo is None
+        or cutoff.utcoffset() is None
+    ):
+        raise ValueError("anomaly feature source cutoff is not timezone-aware")
+    return _canonical_hash(
+        {
+            "feature_set_id": str(row["feature_set_id"]),
+            "source_hash": str(row["source_hash"]),
+            "observation_cutoff": cutoff.isoformat(),
+        }
     )
 
 
@@ -1071,11 +1094,23 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
             evaluation_ids = run["body"].get("evaluation_pull_ids", [])
             if not isinstance(evaluation_ids, list) or not evaluation_ids:
                 raise ValueError("anomaly definition has no frozen evaluation cohort")
+            training_cutoff = datetime.fromisoformat(
+                run["body"]["cutoff"].replace("Z", "+00:00")
+            )
+            evaluation_cutoff = datetime.fromisoformat(
+                run["body"]["evaluation_cutoff"].replace("Z", "+00:00")
+            )
             source_rows = (
                 (
                     await session.execute(
                         text(_anomaly_evaluation_source_query()),
-                        {"ids": [UUID(value) for value in evaluation_ids]},
+                        {
+                            "ids": [UUID(value) for value in evaluation_ids],
+                            "feature_checksum": run["body"][
+                                "expected_feature_checksum"
+                            ],
+                            "cutoff": evaluation_cutoff,
+                        },
                     )
                 )
                 .mappings()
@@ -1090,12 +1125,6 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
                 raise ValueError(
                     "anomaly comparison cohort source role is not synthetic"
                 )
-            training_cutoff = datetime.fromisoformat(
-                run["body"]["cutoff"].replace("Z", "+00:00")
-            )
-            evaluation_cutoff = datetime.fromisoformat(
-                run["body"]["evaluation_cutoff"].replace("Z", "+00:00")
-            )
             if any(
                 row["started_at"] <= training_cutoff
                 or row["ended_at"] > evaluation_cutoff
@@ -1104,11 +1133,14 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
                 raise ValueError(
                     "anomaly comparison source cohort violates the temporal cutoff"
                 )
-            if _canonical_hash(sorted(evaluation_source)) != item["comparison"].get(
+            matched_row_fingerprint = _canonical_hash(
+                sorted(_anomaly_feature_row_id(row) for row in source_rows)
+            )
+            if matched_row_fingerprint != item["comparison"].get(
                 "matched_row_fingerprint"
             ):
                 raise ValueError(
-                    "anomaly matched cohort fingerprint differs from immutable pulls"
+                    "anomaly matched cohort fingerprint differs from immutable feature rows"
                 )
     _require(
         [(row[0], row[1]) for row in run_events]

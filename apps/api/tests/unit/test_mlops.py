@@ -83,7 +83,9 @@ def test_independent_checker_measures_bounded_9b_artifact_without_registry_size(
         checker._read_private_artifact("supervised", relative.as_posix(), "0" * 64, None)
 
 
-def test_independent_checker_reads_pull_source_role_from_owning_session():
+def test_independent_checker_reconstructs_anomaly_cohort_from_source_feature_rows():
+    import hashlib
+    import json
     import sys
     from importlib.util import module_from_spec, spec_from_file_location
 
@@ -96,9 +98,36 @@ def test_independent_checker_reads_pull_source_role_from_owning_session():
 
     query = checker._anomaly_evaluation_source_query()
     assert "s.source_type" in query
-    assert "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id" in query
+    assert "JOIN pulls p ON p.id=fs.pull_id" in query
+    assert "JOIN driving_sessions s ON s.id=fs.session_id AND s.id=p.session_id" in query
+    assert "JOIN feature_set_versions v ON v.id=fs.feature_set_version_id" in query
+    assert "v.checksum=:feature_checksum" in query
+    assert "fs.observation_cutoff<=:cutoff" in query
+    assert "DISTINCT ON (fs.pull_id)" in query
     assert "p.source_type" not in query
     assert "p.started_at,p.ended_at" in query
+
+    row = {
+        "feature_set_id": "5d70173e-1af2-45d7-a352-a8cda0319a29",
+        "source_hash": "a" * 64,
+        "observation_cutoff": datetime(2026, 11, 21, 12, tzinfo=UTC),
+    }
+    expected = hashlib.sha256(
+        json.dumps(
+            {
+                "feature_set_id": row["feature_set_id"],
+                "source_hash": row["source_hash"],
+                "observation_cutoff": row["observation_cutoff"].isoformat(),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+            default=str,
+        ).encode()
+    ).hexdigest()
+    assert checker._anomaly_feature_row_id(row) == expected
+    with pytest.raises(ValueError, match="not timezone-aware"):
+        checker._anomaly_feature_row_id(row | {"observation_cutoff": datetime(2026, 11, 21, 12)})
 
 
 def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):

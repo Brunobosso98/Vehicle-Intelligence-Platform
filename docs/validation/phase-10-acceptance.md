@@ -6,6 +6,18 @@ branch SHA before verification.
 
 ## Current checkout evidence
 
+On SHA `c2ffa6a49009e87814a0e071cdbf6af10e4ecb78`, the evaluator completed
+and wrote a PASS receipt. The independent checker then rejected the anomaly
+comparison because it hashed pull IDs, while the 9C protocol hashes matched
+feature row IDs derived from immutable 9A feature-set ID, source hash and
+observation cutoff. The checker now reconstructs the selected feature rows
+using the registered feature checksum and evaluation cutoff, verifies both
+pull/session ownership links and recomputes the same row identity. This SHA
+passed Quality/Integration E2E, Security, Dependency Review, both CodeQL jobs,
+and Phase 9G/9H. Its canonical full-validation run was canceled while waiting
+for the focused Phase 10 retry; it is not a pass. The local 52-test suite,
+Ruff, formatting and strict mypy pass for the current correction.
+
 On SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`, the Phase 10 evaluator
 completed and emitted a PASS receipt, then the independent checker failed on
 its final lineage query because it selected `pulls.source_type`. The Phase 9A
@@ -123,10 +135,11 @@ receipt serialization on `2a9a91b` (`datetime`) and `74797be` (`UUID`). On
 `da31da9`, the evaluator scenarios and receipt completed, then the independent
 checker queried an unavailable 9B registry size column. On `5b0c92f`, the
 checker then queried `source_type` from `pulls` instead of its owning
-`driving_sessions` row. Each cause has a targeted correction and regression
-check. The Phase 10 and canonical full-stack receipts must rerun on the latest
-correction SHA. Exact task/family metrics, row counts, drift windows and
-performance will be recorded from the resulting checksum-bound artifacts,
+`driving_sessions` row. On `c2ffa6a`, it compared pull IDs against the 9C
+matched feature-row fingerprint. Each cause has a targeted correction and
+regression check. The Phase 10 and canonical full-stack receipts must rerun on
+the latest correction SHA. Exact task/family metrics, row counts, drift windows
+and performance will be recorded from the resulting checksum-bound artifacts,
 never inferred from fixture definitions.
 
 ## Scientific and serving status
@@ -142,14 +155,14 @@ approval, activation, revocation and rollback remain authoritative.
 
 ## Current blockers
 
-- Commit and push the Phase 9A source-lineage checker fix and updated reports to the
+- Commit and push the Phase 9A matched-feature fingerprint fix and updated reports to the
   existing Phase 10 branch; PR #64 is already open and must remain unmerged.
 - Run all required GitHub checks against the exact final SHA, including
   Quality, Integration E2E, Security, Dependency Review, CodeQL Python,
   CodeQL JavaScript/TypeScript, Phase 9G/9H regression, Phase 10 independent
   acceptance, and canonical Docker/full-stack Phase 0–10.
 - Rerun Security and verify the dated image-exception policy against the final
-  SHA. SHA `5b0c92f` passed its scan; the current checker correction SHA needs
+  SHA. SHA `c2ffa6a` passed its scan; the current checker correction SHA needs
   its own receipt.
 
 Until these gates pass on the exact PR head, Phase 10 remains NOT VERIFIED.
