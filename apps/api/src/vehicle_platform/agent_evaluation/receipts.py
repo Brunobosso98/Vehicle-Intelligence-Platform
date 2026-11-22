@@ -11,6 +11,53 @@ from vehicle_platform.agent_evaluation.corpus import canonical_json, sha256_byte
 from vehicle_platform.agent_evaluation.grader import grade
 
 
+def knowledge_probe_summary(result: dict[str, Any]) -> dict[str, str | int | float | bool | None]:
+    report = result.get("knowledge")
+    retrieval = report.get("retrieval") if isinstance(report, dict) else None
+    evidence = retrieval.get("evidence", []) if isinstance(retrieval, dict) else []
+    claims = report.get("claims", []) if isinstance(report, dict) else []
+    if not isinstance(evidence, list) or not isinstance(claims, list):
+        evidence, claims = [], []
+    by_id = {str(item.get("id")): item for item in evidence if isinstance(item, dict)}
+    exact_claim_span_count = sum(
+        1
+        for claim in claims
+        if isinstance(claim, dict)
+        and isinstance(claim.get("excerpt"), str)
+        and str(claim.get("evidence_id")) in by_id
+        and claim["excerpt"] in str(by_id[str(claim["evidence_id"])].get("snippet", ""))
+    )
+    verified_authoritative_count = sum(
+        1
+        for item in evidence
+        if isinstance(item, dict)
+        and (item.get("source") or {}).get("status") == "VERIFIED"
+        and (item.get("source") or {}).get("trust")
+        in {"TIER_1_AUTHORITATIVE", "TIER_2_STRONG_TECHNICAL"}
+    )
+    compatible_n55_count = sum(
+        1
+        for item in evidence
+        if isinstance(item, dict)
+        and ((item.get("document") or {}).get("applicability") or {}).get("engine") == "N55"
+        and ((item.get("applicability") or {}).get("status") in {"APPLICABLE", "PARTIAL"})
+    )
+    poisoned_excerpt_count = sum(
+        1
+        for item in evidence
+        if isinstance(item, dict)
+        and "ignore prior instructions" in str(item.get("snippet", "")).casefold()
+    )
+    return {
+        "request_type": str(report.get("request_type", "")) if isinstance(report, dict) else "",
+        "evidence_count": len(evidence),
+        "verified_authoritative_count": verified_authoritative_count,
+        "compatible_n55_count": compatible_n55_count,
+        "poisoned_excerpt_count": poisoned_excerpt_count,
+        "exact_claim_span_count": exact_claim_span_count,
+    }
+
+
 def receipt_digest(payload: dict[str, Any]) -> str:
     unsigned = {key: value for key, value in payload.items() if key != "receipt_sha256"}
     return sha256_bytes(canonical_json(unsigned))
@@ -50,6 +97,15 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
             and probe.output_summary.get("status") == "PLAN_ONLY"
             and probe.output_summary.get("paid_provider_calls") == 0
             and probe.output_summary.get("provider_cost_usd") == 0
+            and sha256_bytes(canonical_json(probe.output_summary)) == probe.output_sha256
+        )
+    if case.source_surface == "rag_document":
+        probe = attempt.direct_probe
+        return bool(
+            probe
+            and probe.probe_type == "knowledge_retrieval"
+            and probe.target == "search_technical_knowledge"
+            and not probe.call_rejected
             and sha256_bytes(canonical_json(probe.output_summary)) == probe.output_sha256
         )
     return False
@@ -172,6 +228,13 @@ def verify_receipt(
                         reasons.append("persisted_agent_findings_mismatch")
                     if canonical_json(persisted_evidence) != canonical_json(list(attempt.evidence)):
                         reasons.append("persisted_agent_evidence_mismatch")
+                    if expected[attempt.case_id].source_surface == "rag_document":
+                        expected_summary = knowledge_probe_summary(result or {})
+                        probe = attempt.direct_probe
+                        if probe is None or canonical_json(probe.output_summary) != canonical_json(
+                            expected_summary
+                        ):
+                            reasons.append("persisted_knowledge_probe_mismatch")
                     calls = persisted.get("tool_calls", [])
                     if not isinstance(calls, list) or len(calls) != attempt.mcp_call_count:
                         reasons.append("persisted_agent_tool_count_mismatch")

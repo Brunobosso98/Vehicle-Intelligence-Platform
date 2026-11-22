@@ -107,24 +107,38 @@ acceptance gates remain incomplete.
   the incomplete corpus, as required. The 12 include the missing-measurement abstention and
   controlled dependency outage. Artifact:
   [run 45036858295](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45036858295).
+- Exact-SHA run `45037890073` on `2f0663ad616e8cf7c4490da145f3c3a867c90553` graded 18/21:
+  15 PASS, `P11-RED-003`, `P11-RED-004`, and `P11-RED-005` ASSERTION_FAIL, and
+  `P11-RED-007`, `P11-FAULT-002`, and `P11-FAULT-003` NOT_RUN. The independent checker
+  rejected both behavioral failures and incomplete coverage. The current local follow-up adds
+  unsupported-source abstention handling, actual disposable RAG ingestion/retrieval with
+  applicable and poisoned sources, and a persisted malformed-provider-output fault attempt.
+  These changes have local checks but await exact-SHA CI. Artifact:
+  [run 45037890073](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45037890073).
 - Latest `make verify-cloud`: PASS with 1,573 API tests, 95.73% line and
   90.07% branch coverage, 140 web tests, production build, contracts/context, formatting,
-  benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 51 PASS.
+  benchmarks, Gitleaks, dependency audit and Trivy on the prior implementation snapshot.
 - Current follow-up adds structured insufficiency grading based on the application-authored
   gap template, permits neutral recorded observations alongside explicit data gaps, aligns the
   fault oracle to `dependency_unavailable`, and includes sanitized categorical diagnostics.
   The 51 focused tests pass and the full `make check-api` result is recorded below. Full
   requirements remain incomplete: mandatory pathways are not all executed.
-- The next runner iteration adds actual HTTP/LangGraph attempts for `P11-RED-003`, `RED-004`,
+- The prior runner iteration added actual HTTP/LangGraph attempts for `P11-RED-003`, `RED-004`,
   `RED-005`, `RED-008` and `META-002`, plus an independently hashed `vehicle-agent-evals plan`
   subprocess probe for `P11-PROVIDER-001`. The operator CLI probe is accepted by both the
   deterministic grader and independent receipt checker only when its captured summary hashes
-  correctly and proves `PLAN_ONLY`, zero calls and zero cost. On the local worktree, `make
-  check-api` completed with 1,574 passing tests and API coverage of 95.73% line / 90.08% branch;
-  the focused evaluation suite has 51 passing tests and Ruff passed. This runner iteration has
-  not yet run against a disposable database or exact SHA. Its expected 18/21 attempted count
-  is not an outcome: `P11-RED-007`, `P11-FAULT-002` and `P11-FAULT-003` remain unattempted,
-  and the independent completeness checker must continue to reject any such partial run.
+  correctly and proves `PLAN_ONLY`, zero calls and zero cost. The pushed exact-SHA result is
+  recorded above. Current worktree changes add explicit unsupported-source abstention, real
+  disposable RAG ingestion/retrieval, and a persisted malformed-provider-output run; they have
+  not yet run in exact-SHA CI.
+- Latest `make check-api`: PASS, 1,581 tests, 95.70% line coverage and 90.02% branch
+  coverage. The 58-test focused evaluation suite and Ruff pass. Exact-SHA execution of the new
+  RAG and provider-fault runner paths is pending; `P11-FAULT-003` and the broader mandatory
+  pathway matrix remain incomplete.
+- Latest `make verify-cloud`: PASS on the current worktree with API 1,581 tests, web 140 tests,
+  lint/typecheck, production build, contract/context/format checks, project benchmarks, Gitleaks,
+  dependency audit and Trivy. Docker is absent locally, so disposable DB/MCP/API and container
+  acceptance remain CI REQUIRED.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

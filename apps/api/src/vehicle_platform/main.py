@@ -14,7 +14,7 @@ from vehicle_platform.agents.config import AgentSettings
 from vehicle_platform.agents.investigation.repository import InvestigationRepository
 from vehicle_platform.agents.investigation.routes import investigation_router
 from vehicle_platform.agents.investigation.service import InvestigationService
-from vehicle_platform.agents.provider import Provider
+from vehicle_platform.agents.provider import AgentError, Provider
 from vehicle_platform.agents.repository import AgentRepository
 from vehicle_platform.agents.routes import agent_router
 from vehicle_platform.agents.service import AgentService
@@ -76,6 +76,13 @@ def create_app(
         raise ValueError("Deterministic agent provider is restricted to development/test")
 
     def provider_factory() -> Provider:
+        if (
+            config.environment == "test"
+            and os.environ.get("VIP_AGENT_TEST_PROVIDER_FAULT") == "malformed_json"
+        ):
+            from vehicle_platform.agents.scripted_provider import ScriptedProvider
+
+            return ScriptedProvider([AgentError("provider_invalid_response")])
         if agent_config.provider == "deterministic":
             from vehicle_platform.agents.scripted_provider import DeterministicProvider
 

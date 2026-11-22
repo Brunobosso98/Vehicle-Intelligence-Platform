@@ -102,6 +102,7 @@ async def runtime(
     failure_log_directory: str | Path = ".validation/agent",
     enable_prediction_evidence: bool = False,
     prediction_vehicle_id: str | None = None,
+    provider_fault: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise AssertionError(
@@ -133,6 +134,10 @@ async def runtime(
         "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
     }
+    if provider_fault is not None:
+        if provider_fault != "malformed_json":
+            raise ValueError("Unsupported test provider fault")
+        env["VIP_AGENT_TEST_PROVIDER_FAULT"] = provider_fault
     if prediction_token is not None and prediction_vehicle_id is not None:
         env |= {
             "PREDICTION_SERVICE_ENABLED": "true",

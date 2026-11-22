@@ -269,6 +269,23 @@ class DeterministicProvider:
                 "porque",
             )
         )
+        unsupported_source_request = (
+            (
+                ("another run" in question or "from another run" in question)
+                and any(word in question for word in ("cite", "citation", "current"))
+            )
+            or (
+                any(word in question for word in ("future pull", "puxada futura"))
+                and any(word in question for word in ("cutoff", "original"))
+            )
+            or (
+                any(
+                    word in question for word in ("convert", "conversion", "converter", "conversão")
+                )
+                and any(word in question for word in ("without", "sem evidência", "sem evidencia"))
+            )
+        )
+        insufficient = insufficient or unsupported_source_request
         benign_quoted_instruction = bool(
             re.search(
                 r"\b(explain|describe|interpret|explique|descreva|interprete)\b"
@@ -304,7 +321,7 @@ class DeterministicProvider:
             comparison = False
         events = any(word in question for word in ("boost drop", "estranho", "evento"))
         repeated = any(word in question for word in ("puxada", "pull", "consecut", "iat"))
-        if sessions and not unsafe:
+        if sessions and not unsafe and not unsupported_source_request:
             if investigation_follow_up and "list_session_events" not in executed:
                 calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 20})]
             elif comparison and "compare_configurations" not in executed:
