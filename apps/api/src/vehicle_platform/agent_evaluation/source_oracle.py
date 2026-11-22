@@ -88,7 +88,9 @@ async def source_digest(database_url: str) -> str:
     database_name = database_url.rsplit("/", 1)[-1].split("?", 1)[0]
     if not database_name.startswith("vehicle_test"):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
-    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    engine = create_async_engine(
+        database_url, pool_size=1, max_overflow=0, isolation_level="REPEATABLE READ"
+    )
     try:
         parts: list[tuple[str, list[dict[str, Any]]]] = []
         async with engine.connect() as connection:

@@ -4164,9 +4164,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/source_oracle.py": {
-    "mtime": 1795355159.6257052,
-    "seen": 1795355181.0787294,
-    "ast_hash": "c37f8fe8e05a1641fbc86129457c8063",
+    "mtime": 1795355203.0217054,
+    "seen": 1795355224.2368586,
+    "ast_hash": "ddb2212ed4a3a0eee608fb91d3e7899b",
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
