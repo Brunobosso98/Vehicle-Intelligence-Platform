@@ -225,7 +225,7 @@ async def test_deterministic_provider_quotes_inert_vehicle_nickname_as_typed_fac
     request = ModelInput(
         question="What nickname is recorded on my vehicle?",
         tools=[],
-        context={"vehicle_id": vehicle_id, "sessions": [{"id": "session-1"}]},
+        context={"vehicle_id": vehicle_id, "sessions": []},
         evidence=[],
         messages=[],
     )

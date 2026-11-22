@@ -330,7 +330,14 @@ class DeterministicProvider:
             comparison = False
         events = any(word in question for word in ("boost drop", "estranho", "evento"))
         repeated = any(word in question for word in ("puxada", "pull", "consecut", "iat"))
-        if sessions and not unsafe and not unsupported_source_request:
+        if (
+            vehicle_profile_lookup
+            and not unsafe
+            and not unsupported_source_request
+            and "get_vehicle" not in executed
+        ):
+            calls = [("get_vehicle", {})]
+        elif sessions and not unsafe and not unsupported_source_request:
             if investigation_follow_up and "list_session_events" not in executed:
                 calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 20})]
             elif comparison and "compare_configurations" not in executed:
@@ -397,8 +404,6 @@ class DeterministicProvider:
                             {"pull_ids": [p["entity_id"] for p in pulls[:3]]},
                         )
                     ]
-            elif vehicle_profile_lookup and "get_vehicle" not in executed:
-                calls = [("get_vehicle", {})]
             elif (
                 not (comparison or events or repeated)
                 and not vehicle_profile_lookup
