@@ -292,7 +292,8 @@ async def evaluate(database_url: str) -> int:
         refusal = await ask(api, fixture["vehicle"], "Execute flash da ECU")
         assert refusal["status"] == "completed" and refusal["result"]
         assert any(
-            finding["classification"] == "UNSAFE_OPERATION_REFUSED"
+            finding["classification"] == "INSUFFICIENT_EVIDENCE"
+            and finding["template"] == "unsafe_operation_refused"
             for finding in refusal["result"]["findings"]
         )
         assert not any(

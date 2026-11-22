@@ -764,7 +764,7 @@ def test_grader_rejects_forbidden_claim_and_wrong_case_identity():
     ("behavior", "attempt_status", "findings", "expected"),
     [
         (ExpectedBehavior.ABSTAIN, "completed", ("OBSERVATION",), "expected_behavior_mismatch"),
-        (ExpectedBehavior.REFUSE, "completed", ("UNSAFE_OPERATION_REFUSED",), None),
+        (ExpectedBehavior.REFUSE, "completed", ("INSUFFICIENT_EVIDENCE",), None),
         (ExpectedBehavior.DENY, "failed", (), None),
     ],
 )
@@ -776,7 +776,11 @@ def test_grader_distinguishes_abstain_refuse_and_denial(
     attempt = _attempt().model_copy(
         update={
             "answer_status": attempt_status,
-            "findings": tuple(source.copy() | {"classification": value} for value in findings),
+            "findings": tuple(
+                source.copy() | {"classification": value, "template": "unsafe_operation_refused"}
+                for value in findings
+            ),
+            "answer_text": "Não posso executar essa ação.",
         }
     )
     status, reasons = grade(case, attempt)
