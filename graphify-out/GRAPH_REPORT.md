@@ -1,17 +1,17 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 688 files · ~795,383 words
+- 688 files · ~795,523 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
 ## Summary
-- 9269 nodes · 26201 edges · 400 communities (299 shown, 101 thin omitted)
+- 9269 nodes · 26203 edges · 404 communities (300 shown, 104 thin omitted)
 - Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 4894 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e2e438dc`
+- Built from commit: `39c193e2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -250,7 +250,7 @@
 - check_phase9h_research_summary.py
 - drift.py
 - predictive-workspace.test.tsx
-- json
+- security-policy.py
 - test_elm_tcp_transport_connects_reads_reuses_and_closes
 - acquisition/cli.py
 - ADR 0047: Controlled offline MLOps lifecycle
@@ -389,6 +389,10 @@
 - 0019_predictive_reliability.py
 - 0020_mlops_control_plane.py
 - ._abort_invalidated
+- benchmark_mlops.py
+- observability_mlops.py
+- report_agent_prediction.py
+- report_prediction_evidence.py
 
 ## God Nodes (most connected - your core abstractions)
 1. `AgentError` - 263 edges
@@ -417,7 +421,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (400 total, 101 thin omitted)
+## Communities (404 total, 104 thin omitted)
 
 ### Community 0 - "AnalyticsConfig"
 Cohesion: 0.08
@@ -725,11 +729,11 @@ Nodes (21): auth_headers(), collect(), send(), scope(), test_forwarded_private_a
 
 ### Community 101 - "asyncio"
 Cohesion: 0.08
-Nodes (14): main(), test_knowledge_upgrade_downgrade_reupgrade_preserves_vehicle_rows(), domain_fingerprint(), buffered_points(), canonical_counts(), main(), memory_snapshot(), worker_metrics() (+6 more)
+Nodes (14): main(), test_knowledge_upgrade_downgrade_reupgrade_preserves_vehicle_rows(), buffered_points(), canonical_counts(), main(), memory_snapshot(), worker_metrics(), main() (+6 more)
 
 ### Community 102 - "phase7d_eval.py"
 Cohesion: 0.07
-Nodes (31): load_suite(), test_v2_preserves_questions_fixtures_repeats_and_original_v1(), test_identity_requires_clean_exact_commit(), test_projection_calibration_requires_full_attempted_schedule(), test_exact_versioned_dataset_and_fixed_schedule(), test_versioned_questions_match_the_authoritative_specification(), database_command(), free_port() (+23 more)
+Nodes (32): load_suite(), test_v2_preserves_questions_fixtures_repeats_and_original_v1(), test_identity_requires_clean_exact_commit(), test_projection_calibration_requires_full_attempted_schedule(), test_exact_versioned_dataset_and_fixed_schedule(), test_versioned_questions_match_the_authoritative_specification(), database_command(), free_port() (+24 more)
 
 ### Community 103 - "pull_request_template.md"
 Cohesion: 0.22
@@ -944,8 +948,8 @@ Cohesion: 0.11
 Nodes (16): Detector card: boost and air behavior, Detector card: fuel pressure, Detector card: comparable RPM performance, Phase 9C detector cards, Detector card: thermal behavior, Evidence boundary and temporal split, Exact-head GitHub acceptance and benchmark, Expanding-window and quality controls (+8 more)
 
 ### Community 178 - "os"
-Cohesion: 0.07
-Nodes (26): main(), seed_agent(), main(), main(), ask(), runtime(), main(), main() (+18 more)
+Cohesion: 0.06
+Nodes (30): main(), seed_agent(), main(), main(), ask(), runtime(), main(), main() (+22 more)
 
 ### Community 179 - "SafeMCPServer"
 Cohesion: 0.15
@@ -1042,10 +1046,6 @@ Nodes (28): ADR 0016: Deterministic, immutable automotive analytics, Consequence
 ### Community 205 - "phase10-validation.sh"
 Cohesion: 0.20
 Nodes (8): DATABASE_URL, ENVIRONMENT, GIT_COMMIT_SHA, GIT_SHA, MCP_TEST_PROJECT, phase10-validation.sh script, TEST_DATABASE_URL, TEST_KAFKA_PORT
-
-### Community 206 - "collector.py"
-Cohesion: 0.16
-Nodes (5): compose(), main(), wait_for_browser_proxies(), dataset(), main()
 
 ### Community 207 - "SyntheticLiveAdapter"
 Cohesion: 0.17
@@ -1215,9 +1215,9 @@ Nodes (11): _brier(), drift_experiment(), _finite_vector(), ood_distances(), pop
 Cohesion: 0.06
 Nodes (22): HistoryItem, audit, result, Stream, chartItems, evidence, historyItem, installPrivateApi() (+14 more)
 
-### Community 252 - "json"
-Cohesion: 0.07
-Nodes (19): main(), _require(), _write(), main(), main(), main(), _require(), _verify_evidence() (+11 more)
+### Community 252 - "security-policy.py"
+Cohesion: 0.33
+Nodes (5): accepted(), load_exceptions(), load_findings(), main(), parse_args()
 
 ### Community 254 - "acquisition/cli.py"
 Cohesion: 0.19
@@ -1372,8 +1372,8 @@ Cohesion: 0.33
 Nodes (5): ADR 0042: Phase 9D trusted artifacts and bounded inference workers, Alternatives considered, Consequences, Context, Decision
 
 ### Community 294 - "evaluate_supervisor.py"
-Cohesion: 0.27
-Nodes (5): finalized_fixture(), evaluate(), score_claims(), follow_up(), score_execution()
+Cohesion: 0.17
+Nodes (7): domain_fingerprint(), finalized_fixture(), evaluate_hybrid(), evaluate(), score_claims(), follow_up(), score_execution()
 
 ### Community 295 - "AcquisitionService"
 Cohesion: 0.21
@@ -1615,10 +1615,18 @@ Nodes (5): Evidence, Phase 9H independent acceptance, Required final checks, Sci
 Cohesion: 0.12
 Nodes (16): _json(), _latest_receipt(), main(), _receipt_argument(), _source_presence_mismatches(), summarize(), _canonical(), event_exists() (+8 more)
 
+### Community 400 - "benchmark_mlops.py"
+Cohesion: 0.47
+Nodes (3): main(), _require(), _write()
+
+### Community 401 - "observability_mlops.py"
+Cohesion: 0.53
+Nodes (3): main(), _require(), _verify_evidence()
+
 ## Knowledge Gaps
 - **89 isolated node(s):** `vehicle-platform-api`, `react-dom`, `@types/node`, `@types/react`, `@types/react-dom` (+84 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4497 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **101 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **104 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_

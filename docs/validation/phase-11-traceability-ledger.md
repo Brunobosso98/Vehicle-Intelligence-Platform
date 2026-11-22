@@ -58,6 +58,10 @@ complete merely because a scenario is present in JSON.
   Phases 0–5 gates, Gitleaks, dependency audit and Trivy. Strict Mypy for the Phase 11 runner
   and runtime/fixture helpers also passes. Suite v6 uses the versioned 21-case corpus and
   preserves suite v5 unchanged. Docker-backed Phase 11 execution remains CI REQUIRED.
+- Exact-SHA Phase 11 run `45042245872` on `39c193e2b4bbc440bcdafc39e7c7e15f3a45d905`
+  failed before grading: replacement MCP token entropy validation prevented process startup.
+  Sanitized receipt recorded `runtime_process_startup_failure`, zero paid calls, and no case
+  verdicts. Runner now uses a 48-byte URL-safe random replacement token; exact-SHA retry pending.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence

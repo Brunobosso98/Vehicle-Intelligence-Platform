@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import os
+import secrets
 import stat
 import subprocess
 import sys
@@ -673,7 +674,7 @@ async def evaluate(database_url: str) -> int:
 
         mcp_process = stack["mcp"]
         await mcp_process.stop()
-        mcp_process.env["VIP_MCP_PREDICTION_TOKEN"] = "revoked-" + uuid4().hex
+        mcp_process.env["VIP_MCP_PREDICTION_TOKEN"] = secrets.token_urlsafe(48)
         await mcp_process.start()
         revoked_arguments = {
             "vehicle_id": fixture["vehicle"],

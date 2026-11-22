@@ -153,6 +153,11 @@ acceptance gates remain incomplete.
   and receipt tests. It lists the prediction capability under the fixture token, rotates the
   MCP token, and records the actual stale-token call output digest. The database-backed probe
   has not yet run locally; exact-SHA CI is required for that evidence.
+- Exact-SHA run `45042245872` for `39c193e2b4bbc440bcdafc39e7c7e15f3a45d905` failed before
+  case grading with `runtime_process_startup_failure`: the replacement prediction token was
+  shorter than the MCP high-entropy minimum. Sanitized report has no case verdicts and records
+  zero paid calls. The runner now rotates to `secrets.token_urlsafe(48)`; this fix awaits a new
+  exact-SHA run. Phase 9G passed on the same prior SHA (`45042245777`).
 
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA
