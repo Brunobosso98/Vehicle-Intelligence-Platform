@@ -1052,7 +1052,7 @@ async def test_source_oracle_resolves_case_facts_from_canonical_tables(monkeypat
 
 
 @pytest.mark.asyncio
-async def test_source_digest_skips_absent_tables_and_normalizes_json_rows(monkeypatch):
+async def test_source_digest_rejects_missing_source_tables(monkeypatch):
     class PartialConnection:
         async def __aenter__(self):
             return self
@@ -1083,7 +1083,7 @@ async def test_source_digest_skips_absent_tables_and_normalizes_json_rows(monkey
     monkeypatch.setattr(
         source_oracle, "create_async_engine", lambda *_args, **_kwargs: PartialEngine()
     )
-    digest = await source_oracle.source_digest(
-        "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test"
-    )
-    assert len(digest) == 64
+    with pytest.raises(ValueError, match="fixture_source_table_missing:vehicles"):
+        await source_oracle.source_digest(
+            "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test"
+        )

@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-22)
 
 ## Corpus Check
-- 687 files · ~789,408 words
+- 687 files · ~789,405 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `19abc8a4`
+- Built from commit: `8862889d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1028,7 +1028,7 @@ Nodes (13): SyntheticLiveAdapter, preflight(), Readiness, capabilities(), test_c
 
 ### Community 201 - "test_source_digest_skips_absent_tables_and_normalizes_json_rows"
 Cohesion: 0.12
-Nodes (3): test_source_digest_skips_absent_tables_and_normalizes_json_rows(), test_source_oracle_reads_allowlisted_tables_and_refuses_non_disposable_db(), test_source_oracle_resolves_case_facts_from_canonical_tables()
+Nodes (3): test_source_digest_rejects_missing_source_tables(), test_source_oracle_reads_allowlisted_tables_and_refuses_non_disposable_db(), test_source_oracle_resolves_case_facts_from_canonical_tables()
 
 ### Community 203 - "Model card: next-pull thermal degradation"
 Cohesion: 0.29

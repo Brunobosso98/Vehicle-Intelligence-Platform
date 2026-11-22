@@ -69,7 +69,6 @@ TABLES = (
     "knowledge_chunks",
     "knowledge_embeddings",
     "knowledge_conflicts",
-    "mlops_candidates",
     "mlops_definitions",
     "mlops_runs",
     "mlops_proposals",
@@ -96,7 +95,7 @@ async def source_digest(database_url: str) -> str:
             for table in TABLES:
                 exists = await connection.scalar(text("SELECT to_regclass(:name)"), {"name": table})
                 if exists is None:
-                    continue
+                    raise ValueError(f"fixture_source_table_missing:{table}")
                 rows = (
                     (
                         await connection.execute(
