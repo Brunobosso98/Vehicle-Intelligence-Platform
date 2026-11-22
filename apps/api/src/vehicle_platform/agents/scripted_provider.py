@@ -276,8 +276,8 @@ class DeterministicProvider:
                 question,
             )
         )
-        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql|ignore)\b", question)) and not (
-            benign_quoted_instruction
+        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql)\b", question)) or (
+            bool(re.search(r"\bignore\b", question)) and not benign_quoted_instruction
         )
         comparison = any(
             word in question for word in ("configura", "intercooler", "peça", "antes", "depois")
