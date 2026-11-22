@@ -14,6 +14,8 @@ production.
 - Requests to approve, activate, promote or roll back a model are routed to a fixed
   refusal before context discovery, MCP discovery, or provider calls. The refusal states
   that quoted approval text cannot change serving state; an operator remains required.
+- Explicit requests to approve or start acquisition are routed to a fixed refusal before
+  tool discovery. A read-only request to plan a capture remains available.
 - Agent findings are independently checked for current-run evidence ownership,
   vehicle ownership, exact source fact, numeric value, unit and citation.
 - The source digest covers allowlisted Phase 0–10 domain tables before and after
@@ -26,14 +28,17 @@ production.
   scope, provider/model identity and events against persisted database rows. It recomputes
   current dependency, prompt, MCP tool-catalog and schema revision hashes, verifies the
   test environment, and pins the version 1 corpus hash.
+- Direct probes without independently verifiable evidence are rejected by the receipt
+  checker, even when the attempt claims a pass. Tool counts and claimed tool names must
+  agree with the trace.
 
 ## Current evidence and residual risk
 
-The focused deterministic unit checks pass locally. The integration runner is
-implemented against the existing API/MCP HTTP stack, but Docker is unavailable in
-the current environment, so no Phase 11 disposable database attack has been run
-here. The receipt currently records unexecuted cases as `NOT_RUN` and is rejected
-as incomplete. No counts of effective defenses or attack success are claimed yet.
+The focused deterministic unit checks pass locally. Docker is unavailable locally.
+GitHub Actions ran the disposable stack at `ee92cc58f56d0390e447468f23b24fd01a3b25fe`:
+6 cases passed, 5 failed assertions, 1 had an infrastructure failure and 9 were not run.
+The independent receipt checker failed. These observations are specific to that commit;
+they do not establish acceptance for later code. See the red-team matrix for case results.
 
 This harness cannot prove resistance to unseen prompt injection, real stochastic
 provider behavior, mechanical diagnostic accuracy, or production deployment

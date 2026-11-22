@@ -37,5 +37,6 @@ in reports. Do not copy secrets or raw private telemetry into checked-in docs.
 
 The current acceptance runner is incomplete: unsupported cases are recorded as
 `NOT_RUN`, and the receipt checker rejects the run. Docker is required for the real
-database/MCP/API path. No paid-provider budget or authorization mechanism is
+database/MCP/API path. Direct MCP probes also require independent evidence before a
+receipt can verify; a claimed denial alone is insufficient. No paid-provider budget or authorization mechanism is
 available in this iteration.
