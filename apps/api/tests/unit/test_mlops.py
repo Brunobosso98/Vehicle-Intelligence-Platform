@@ -130,6 +130,23 @@ def test_independent_checker_reconstructs_anomaly_cohort_from_source_feature_row
         checker._anomaly_feature_row_id(row | {"observation_cutoff": datetime(2026, 11, 21, 12)})
 
 
+def test_independent_monitoring_query_reads_source_type_from_session():
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    checker_path = Path(__file__).resolve().parents[4] / "scripts" / "check_mlops.py"
+    spec = spec_from_file_location("phase10_monitor_source_checker", checker_path)
+    assert spec is not None and spec.loader is not None
+    checker = module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+
+    query = checker._monitoring_receipt_query()
+    assert "s.source_type" in query
+    assert "JOIN driving_sessions s ON s.id=p.session_id" in query
+    assert "p.source_type" not in query
+
+
 def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):
     import sys
     from importlib.util import module_from_spec, spec_from_file_location

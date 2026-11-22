@@ -78,6 +78,26 @@ def _anomaly_evaluation_source_query() -> str:
     )
 
 
+def _monitoring_receipt_query() -> str:
+    return (
+        "SELECT r.id::text AS id,r.status,r.coverage,r.engineering_validation_score,"
+        "r.anomaly_score,r.source_role,r.effective_cutoff,r.created_at,"
+        "r.quality_summary,s.source_type,p.ended_at AS observed_end,"
+        "p.session_id::text AS session_id,p.vehicle_id,"
+        "COALESCE(p.configuration_id,s.configuration_id) AS configuration_id,"
+        "(SELECT jsonb_object_agg(k.feature_key,fs.feature_values->k.feature_key) "
+        "FROM unnest(CAST(:feature_keys AS text[])) AS k(feature_key)) "
+        "AS selected_features,fs.quality_metadata AS feature_quality_metadata "
+        "FROM prediction_receipts r JOIN pulls p ON p.id=r.pull_id "
+        "JOIN driving_sessions s ON s.id=p.session_id AND s.vehicle_id=p.vehicle_id "
+        "LEFT JOIN feature_sets fs ON fs.id=r.feature_set_id "
+        "WHERE r.binding_id=:binding AND p.vehicle_id=:vehicle "
+        "AND COALESCE(p.configuration_id,s.configuration_id)=:configuration "
+        "AND r.created_at>=:start AND r.created_at<:end "
+        "ORDER BY r.created_at,r.id LIMIT :limit"
+    )
+
+
 def _anomaly_feature_row_id(row: Any) -> str:
     cutoff = row["observation_cutoff"]
     if (
@@ -369,25 +389,7 @@ async def _verify_monitoring_arithmetic(
             rows = (
                 (
                     await session.execute(
-                        text(
-                            "SELECT r.id::text AS id,r.status,r.coverage,r.engineering_validation_score,"
-                            "r.anomaly_score,r.source_role,r.effective_cutoff,r.created_at,"
-                            "r.quality_summary,p.source_type,p.ended_at AS observed_end,"
-                            "p.session_id::text AS session_id,p.vehicle_id,"
-                            "COALESCE(p.configuration_id,s.configuration_id) AS configuration_id,"
-                            "(SELECT jsonb_object_agg(k.feature_key,fs.feature_values->k.feature_key) "
-                            "FROM unnest(CAST(:feature_keys AS text[])) AS k(feature_key)) "
-                            "AS selected_features "
-                            ",fs.quality_metadata AS feature_quality_metadata "
-                            ",r.quality_summary "
-                            "FROM prediction_receipts r JOIN pulls p ON p.id=r.pull_id "
-                            "JOIN driving_sessions s ON s.id=p.session_id AND s.vehicle_id=p.vehicle_id "
-                            "LEFT JOIN feature_sets fs ON fs.id=r.feature_set_id "
-                            "WHERE r.binding_id=:binding AND p.vehicle_id=:vehicle "
-                            "AND COALESCE(p.configuration_id,s.configuration_id)=:configuration "
-                            "AND r.created_at>=:start AND r.created_at<:end "
-                            "ORDER BY r.created_at,r.id LIMIT :limit"
-                        ),
+                        text(_monitoring_receipt_query()),
                         {
                             "binding": binding_id,
                             "vehicle": vehicle_id,
