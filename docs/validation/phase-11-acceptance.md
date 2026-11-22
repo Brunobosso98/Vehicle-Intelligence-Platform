@@ -12,9 +12,11 @@
 
 ## Current evaluator artifact
 
-Current suite `phase11-agent-evals-v5` contains 21 predeclared cases. Canonical JSON SHA-256:
-`f8e89dda926e64e4586416bd073ed7f86dc0a071a5ec8455db898133f558ac8a` (recompute with
-`vehicle-agent-evals list` after any corpus change). It covers six families, Portuguese,
+Current suite `phase11-agent-evals-v6` contains 21 predeclared cases. Canonical JSON SHA-256:
+`ecff27f5c704e7f7a63c9fb7babe209a0c2105b2d964e2e26993a5ab8b124077` (recompute with
+`vehicle-agent-evals list` after any corpus change). The v5 `suite-v1.json` and its checksum
+remain supported for historical receipts. V6 adds the explicit non-persistence policy needed
+for its direct permission-revocation probe; it does not rewrite v1. It covers six families, Portuguese,
 English and mixed language cases, and answer, abstain, refuse and deny behavior. The
 expected fact marker `fixture-latest-session` is resolved only from the disposable
 canonical `driving_sessions` table by the independent oracle.
@@ -131,15 +133,26 @@ acceptance gates remain incomplete.
   recorded above. Current worktree changes add explicit unsupported-source abstention, real
   disposable RAG ingestion/retrieval, and a persisted malformed-provider-output run; they have
   not yet run in exact-SHA CI.
-- Latest `make check-api`: PASS, 1,581 tests, 95.70% line coverage and 90.02% branch
-  coverage. The 58-test focused evaluation suite and Ruff pass. Exact-SHA execution of the new
-  RAG and provider-fault runner paths is pending; `P11-FAULT-003` and the broader mandatory
-  pathway matrix remain incomplete.
-- Latest `make verify-cloud`: PASS on the current worktree with API 1,581 tests, web 140 tests,
-  lint/typecheck, production build, contract/context/format checks, project benchmarks, Gitleaks,
-  dependency audit and Trivy. Docker is absent locally, so disposable DB/MCP/API and container
-  acceptance remain CI REQUIRED.
+- Latest `make check-api`: PASS, 1,583 tests, 95.70% line coverage and 90.02% branch
+  coverage. The 60-test focused evaluation suite, Ruff, configured Mypy, and strict Mypy for
+  the Phase 11 integration scripts pass. Suite v6 preserves v5 history and adds a direct MCP
+  revocation evidence contract that requires capability visibility before token rotation and
+  rejection after rotation. The exact-SHA run for this path is pending.
+- Latest `make verify-cloud`: PASS on the current worktree with API 1,583 tests, 95.70% line
+  and 90.02% branch coverage, web 140 tests, lint/typecheck, production build, contract/context/
+  format checks, Phase 0–5 deterministic regressions and benchmarks, Gitleaks, dependency audit
+  and Trivy. A separate strict Mypy run for the Phase 11 runner and fixture/runtime helpers also
+  passed. Docker is absent locally, so disposable DB/MCP/API and container acceptance remain
+  CI REQUIRED.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
+
+- Local Docker detection: no Docker executable is available. Disposable database/MCP/API
+  acceptance and container checks are `CI REQUIRED`, not locally passed. The pushed exact-SHA
+  CI run and sanitized suite-v6 report will be recorded here before any verification claim.
+- Suite-v6 direct credential-revocation probe is implemented and covered by unit-level grader
+  and receipt tests. It lists the prediction capability under the fixture token, rotates the
+  MCP token, and records the actual stale-token call output digest. The database-backed probe
+  has not yet run locally; exact-SHA CI is required for that evidence.
 
 This report is a progress record, not a completion receipt. It must be replaced with
 observed case IDs, denominators, outcomes, digests, regression evidence and exact-SHA

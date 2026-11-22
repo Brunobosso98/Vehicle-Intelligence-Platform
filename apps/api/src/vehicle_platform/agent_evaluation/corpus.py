@@ -13,8 +13,18 @@ class CorpusError(ValueError):
     pass
 
 
-FROZEN_SUITE_VERSION = "phase11-agent-evals-v5"
-FROZEN_SUITE_SHA256 = "f8e89dda926e64e4586416bd073ed7f86dc0a071a5ec8455db898133f558ac8a"
+FROZEN_SUITE_VERSION = "phase11-agent-evals-v6"
+FROZEN_SUITE_SHA256 = "ecff27f5c704e7f7a63c9fb7babe209a0c2105b2d964e2e26993a5ab8b124077"
+FROZEN_SUITES = {
+    (
+        "phase11-agent-evals-v5",
+        "suite-v1.json",
+    ): "f8e89dda926e64e4586416bd073ed7f86dc0a071a5ec8455db898133f558ac8a",
+    (
+        "phase11-agent-evals-v6",
+        "suite-v2.json",
+    ): "ecff27f5c704e7f7a63c9fb7babe209a0c2105b2d964e2e26993a5ab8b124077",
+}
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -75,7 +85,8 @@ def load_corpus(path: Path) -> tuple[dict[str, Any], tuple[AgentEvalCase, ...], 
     if len(ids) != len(set(ids)):
         raise CorpusError("corpus_case_ids_not_unique")
     digest = sha256_bytes(canonical_json(document))
-    if document["suite_version"] != FROZEN_SUITE_VERSION or digest != FROZEN_SUITE_SHA256:
+    expected_digest = FROZEN_SUITES.get((document["suite_version"], path.name))
+    if expected_digest is None or digest != expected_digest:
         raise CorpusError("frozen_suite_checksum_mismatch")
     return document, cases, digest
 

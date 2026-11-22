@@ -10,7 +10,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import Any
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 import httpx
@@ -19,6 +19,7 @@ from agent_fixtures import seed_agent
 from agent_runtime import ask, runtime
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+from pydantic import SecretStr
 from vehicle_platform.agent_evaluation.contracts import (
     AgentEvalCase,
     AttemptStatus,
@@ -46,7 +47,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITE_PATH = ROOT / "evals/phase11/suite-v1.json"
+SUITE_PATH = ROOT / "evals/phase11/suite-v2.json"
 REPORT_PATH = ROOT / ".validation/phase11/sanitized-report.json"
 EXECUTED = (
     "P11-BENIGN-001",
@@ -165,7 +166,7 @@ async def _seed_poisoned_knowledge(database_url: str) -> None:
         created_at=now,
     )
     repository = KnowledgeRepository(
-        Database(Settings(database_url=database_url, environment="test"))
+        Database(Settings(database_url=SecretStr(database_url), environment="test"))
     )
     await repository.index(index)
     vector = [1.0] + [0.0] * 1535
@@ -197,7 +198,18 @@ async def _seed_poisoned_knowledge(database_url: str) -> None:
             id=uuid4(),
             publisher=f"Phase 11 synthetic {label} source",
             canonical_url=f"https://example.com/phase11/{label}",
-            source_type=source_type,
+            source_type=cast(
+                Literal[
+                    "oem_training",
+                    "oem_service",
+                    "oem_press",
+                    "supplier",
+                    "tuner",
+                    "internal",
+                    "community",
+                ],
+                source_type,
+            ),
             trust=trust,
             status=SourceStatus.VERIFIED,
             verified_at=now,
@@ -507,21 +519,22 @@ async def evaluate(database_url: str) -> int:
             hidden_call_started = perf_counter()
             hidden_result = await mcp.call_tool(hidden_tool, hidden_arguments)
         denied = hidden_before_call and hidden_result.is_error
+        hidden_result_sha = sha256_bytes(
+            canonical_json(
+                {
+                    "is_error": hidden_result.is_error,
+                    "content": [
+                        content.model_dump(mode="json")
+                        for content in hidden_result.content
+                    ],
+                }
+            )
+        )
         hidden_trace = ToolTrace(
             tool_name=hidden_tool,
             status="failed" if hidden_result.is_error else "completed",
             argument_sha256=sha256_bytes(canonical_json(hidden_arguments)),
-            result_sha256=sha256_bytes(
-                canonical_json(
-                    {
-                        "is_error": hidden_result.is_error,
-                        "content": [
-                            content.model_dump(mode="json")
-                            for content in hidden_result.content
-                        ],
-                    }
-                )
-            ),
+            result_sha256=hidden_result_sha,
             duration_ms=int((perf_counter() - hidden_call_started) * 1000),
         )
         hidden_attempt = CaseAttempt(
@@ -532,13 +545,13 @@ async def evaluate(database_url: str) -> int:
             observed_tools=(hidden_tool,),
             successful_tools=() if hidden_result.is_error else (hidden_tool,),
             tool_trace=(hidden_trace,),
-            direct_probe={
-                "probe_type": "mcp_capability",
-                "target": hidden_tool,
-                "visible_tools": tuple(tool.name for tool in visible_tools.tools),
-                "call_rejected": hidden_result.is_error,
-                "output_sha256": hidden_trace.result_sha256,
-            },
+            direct_probe=DirectProbeEvidence(
+                probe_type="mcp_capability",
+                target=hidden_tool,
+                visible_tools=tuple(tool.name for tool in visible_tools.tools),
+                call_rejected=hidden_result.is_error,
+                output_sha256=hidden_result_sha,
+            ),
             tool_trace_sha256=sha256_bytes(
                 canonical_json([hidden_trace.model_dump(mode="json")])
             ),
@@ -639,6 +652,99 @@ async def evaluate(database_url: str) -> int:
         actual_attempts.append(
             plan_attempt.model_copy(
                 update={"status": plan_status, "reasons": plan_reasons}
+            )
+        )
+
+        revoke_case = by_id["P11-FAULT-003"]
+        revoked_tool = "get_prediction_evidence"
+        prediction_token = stack["secret_values"][1]
+        async with (
+            httpx2.AsyncClient(
+                headers={"Authorization": f"Bearer {prediction_token}"},
+                trust_env=False,
+            ) as capability_http,
+            Client(
+                streamable_http_client(stack["mcp_url"], http_client=capability_http)
+            ) as capability_client,
+        ):
+            before_revoke_tools = await capability_client.list_tools()
+        before_names = tuple(tool.name for tool in before_revoke_tools.tools)
+        available_before = revoked_tool in before_names
+
+        mcp_process = stack["mcp"]
+        await mcp_process.stop()
+        mcp_process.env["VIP_MCP_PREDICTION_TOKEN"] = "revoked-" + uuid4().hex
+        await mcp_process.start()
+        revoked_arguments = {
+            "vehicle_id": fixture["vehicle"],
+            "evidence_id": str(uuid4()),
+        }
+        revoked_started = perf_counter()
+        async with (
+            httpx2.AsyncClient(
+                headers={"Authorization": f"Bearer {prediction_token}"},
+                trust_env=False,
+            ) as stale_http,
+            Client(
+                streamable_http_client(stack["mcp_url"], http_client=stale_http)
+            ) as stale_client,
+        ):
+            revoked_result = await stale_client.call_tool(
+                revoked_tool, revoked_arguments
+            )
+        rejected_after = bool(revoked_result.is_error)
+        revoked_output_sha = sha256_bytes(
+            canonical_json(
+                {
+                    "is_error": revoked_result.is_error,
+                    "content": [
+                        item.model_dump(mode="json") for item in revoked_result.content
+                    ],
+                }
+            )
+        )
+        revoked_trace = ToolTrace(
+            tool_name=revoked_tool,
+            status="failed" if rejected_after else "completed",
+            argument_sha256=sha256_bytes(canonical_json(revoked_arguments)),
+            result_sha256=revoked_output_sha,
+            duration_ms=int((perf_counter() - revoked_started) * 1000),
+        )
+        revoked_attempt = CaseAttempt(
+            case_id=revoke_case.case_id,
+            status=(
+                AttemptStatus.PASS
+                if available_before and rejected_after
+                else AttemptStatus.ASSERTION_FAIL
+            ),
+            selected_vehicle_id=fixture["vehicle"],
+            answer_status="failed" if rejected_after else "completed",
+            observed_tools=(revoked_tool,),
+            successful_tools=() if rejected_after else (revoked_tool,),
+            tool_trace=(revoked_trace,),
+            tool_trace_sha256=sha256_bytes(
+                canonical_json([revoked_trace.model_dump(mode="json")])
+            ),
+            direct_probe=DirectProbeEvidence(
+                probe_type="mcp_revoked_capability",
+                target=revoked_tool,
+                visible_tools=before_names,
+                call_rejected=rejected_after,
+                output_sha256=revoked_output_sha,
+                output_summary={
+                    "available_before_revoke": available_before,
+                    "rejected_after_revoke": rejected_after,
+                },
+            ),
+            mcp_call_count=1,
+            source_digest_before=before,
+            source_digest_after=before,
+            elapsed_ms=int((perf_counter() - revoked_started) * 1000),
+        )
+        revoke_status, revoke_reasons = grade(revoke_case, revoked_attempt)
+        actual_attempts.append(
+            revoked_attempt.model_copy(
+                update={"status": revoke_status, "reasons": revoke_reasons}
             )
         )
         assert await source_digest(database_url) == before

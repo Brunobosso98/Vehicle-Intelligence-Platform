@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Any
 
 import httpx
+from pydantic import SecretStr
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from vehicle_platform.core.config import Settings
@@ -21,7 +22,7 @@ async def seed(
         raise ValueError("MCP validation requires a disposable vehicle_test* database")
     if sample_hz not in {5, 10}:
         raise ValueError("Fixture sampling must be 5 or 10 Hz")
-    app = create_app(Settings(database_url=url, environment="test"))
+    app = create_app(Settings(database_url=SecretStr(url), environment="test"))
     scenario = anomaly_scenario("phase6", (AnomalyInjection("boost_drop", 1),))
     fixture: dict[str, Any] = {"sessions": [], "pulls": [], "configurations": []}
     async with (

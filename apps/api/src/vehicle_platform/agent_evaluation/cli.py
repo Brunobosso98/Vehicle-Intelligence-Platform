@@ -25,7 +25,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
 )
 
 ROOT = Path(__file__).resolve().parents[5]
-DEFAULT_SUITE = ROOT / "evals/phase11/suite-v1.json"
+DEFAULT_SUITE = ROOT / "evals/phase11/suite-v2.json"
 GIT = shutil.which("git")
 
 

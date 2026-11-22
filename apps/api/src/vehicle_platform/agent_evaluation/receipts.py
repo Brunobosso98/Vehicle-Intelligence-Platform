@@ -74,12 +74,27 @@ def create_receipt(payload: dict[str, Any]) -> EvalReceipt:
 def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt) -> bool:
     if case.source_surface == "mcp_authorization":
         probe = attempt.direct_probe
+        revoked = bool(probe and probe.probe_type == "mcp_revoked_capability")
+        expected_visibility = (
+            probe.target in probe.visible_tools
+            if probe is not None and revoked
+            else probe.target not in probe.visible_tools
+            if probe is not None
+            else False
+        )
         return bool(
             probe
-            and probe.probe_type == "mcp_capability"
+            and probe.probe_type in {"mcp_capability", "mcp_revoked_capability"}
             and probe.target in case.forbidden_tools
-            and probe.target not in probe.visible_tools
+            and expected_visibility
             and probe.call_rejected
+            and (
+                not revoked
+                or (
+                    probe.output_summary.get("available_before_revoke") is True
+                    and probe.output_summary.get("rejected_after_revoke") is True
+                )
+            )
             and any(
                 trace.tool_name == probe.target
                 and trace.status == "failed"

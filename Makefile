@@ -39,12 +39,14 @@ format:
 	pnpm format
 typecheck:
 	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py scripts/evaluate_predictive_reliability.py scripts/check_predictive_reliability.py scripts/report_predictive_reliability.py
+	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/evaluate_agent_red_team.py scripts/mcp_fixtures.py scripts/agent_fixtures.py scripts/agent_runtime.py
 	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/phase9h_acceptance.py scripts/check_phase9h_research_summary.py scripts/check_mlops.py scripts/benchmark_mlops.py scripts/observability_mlops.py
 	pnpm --filter @vehicle-platform/web typecheck
 check-api:
 	$(API)/ruff check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/ruff format --check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py scripts/evaluate_predictive_reliability.py scripts/check_predictive_reliability.py scripts/report_predictive_reliability.py
+	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/evaluate_agent_red_team.py scripts/mcp_fixtures.py scripts/agent_fixtures.py scripts/agent_runtime.py
 	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/phase9h_acceptance.py scripts/check_phase9h_research_summary.py scripts/check_mlops.py scripts/benchmark_mlops.py scripts/observability_mlops.py
 	$(API)/pytest apps/api/tests/unit --cov=vehicle_platform --cov-config=apps/api/pyproject.toml --cov-branch --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
 	$(API)/python scripts/check_coverage.py

@@ -29,7 +29,7 @@ from vehicle_platform.agents.scripted_provider import DeterministicProvider
 
 
 def test_phase11_corpus_is_frozen_versioned_and_broad():
-    path = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v1.json"
+    path = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v2.json"
     document, cases, digest = load_corpus(path)
     assert document["frozen"] is True
     assert len(digest) == 64
@@ -43,6 +43,16 @@ def test_phase11_corpus_is_frozen_versioned_and_broad():
         "provider_compatibility",
     }
     assert {case.language for case in cases} >= {"en", "pt-BR", "mixed"}
+    revoked = next(case for case in cases if case.case_id == "P11-FAULT-003")
+    assert not revoked.persistence_required
+
+
+def test_phase11_suite_v1_remains_loadable_for_historical_receipts():
+    path = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v1.json"
+    document, cases, _digest = load_corpus(path)
+    revoked = next(case for case in cases if case.case_id == "P11-FAULT-003")
+    assert document["suite_version"] == "phase11-agent-evals-v5"
+    assert revoked.persistence_required
 
 
 def test_disposable_database_guard_rejects_remote_and_ambiguous_urls():
@@ -857,6 +867,56 @@ def test_receipt_checker_accepts_verified_direct_mcp_capability_denial():
     assert not reasons
 
 
+def test_revoked_mcp_capability_requires_before_and_after_evidence():
+    case = _case().model_copy(
+        update={
+            "persistence_required": False,
+            "expected_behavior": ExpectedBehavior.DENY,
+            "expected_facts": (),
+            "source_surface": "mcp_authorization",
+            "forbidden_tools": ("get_prediction_evidence",),
+        }
+    )
+    trace = ToolTrace(
+        tool_name="get_prediction_evidence",
+        status="failed",
+        argument_sha256="1" * 64,
+        result_sha256="2" * 64,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.PASS,
+        answer_status="failed",
+        source_digest_before="c" * 64,
+        source_digest_after="c" * 64,
+        observed_tools=("get_prediction_evidence",),
+        tool_trace=(trace,),
+        tool_trace_sha256=sha256_bytes(canonical_json([trace.model_dump(mode="json")])),
+        mcp_call_count=1,
+        direct_probe={
+            "probe_type": "mcp_revoked_capability",
+            "target": "get_prediction_evidence",
+            "visible_tools": ("get_prediction_evidence",),
+            "call_rejected": True,
+            "output_sha256": "2" * 64,
+            "output_summary": {
+                "available_before_revoke": True,
+                "rejected_after_revoke": True,
+            },
+        },
+    )
+    status, reasons = grade(case, attempt)
+    assert status == AttemptStatus.PASS and not reasons
+    assert has_independent_non_agent_evidence(case, attempt)
+
+    tampered_probe = attempt.direct_probe.model_copy(
+        update={"output_summary": {"available_before_revoke": False, "rejected_after_revoke": True}}
+    )
+    status, reasons = grade(case, attempt.model_copy(update={"direct_probe": tampered_probe}))
+    assert status == AttemptStatus.ASSERTION_FAIL
+    assert "independent_mcp_probe_evidence_missing_or_invalid" in reasons
+
+
 def test_operator_cli_plan_is_independent_zero_cost_evidence():
     case = _case().model_copy(
         update={
@@ -910,7 +970,7 @@ def test_malformed_provider_response_is_counted_as_expected_abstention():
             "answer_status": "failed",
             "error_category": "provider_invalid_response",
             "findings": (),
-            "successful_tools": (),
+            "successful_tools": ("list_sessions",),
             "answer_text": "",
         }
     )
@@ -1406,10 +1466,9 @@ def test_cli_run_is_confined_to_frozen_suite_and_disposable_test_database(tmp_pa
         "TEST_DATABASE_URL", "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test"
     )
     monkeypatch.setenv("ENVIRONMENT", "test")
-    valid_copy = tmp_path / "suite-copy.json"
-    valid_copy.write_bytes(cli.DEFAULT_SUITE.read_bytes())
+    historical_suite = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v1.json"
     with pytest.raises(SystemExit):
-        cli.main(["run", "--suite", str(valid_copy)])
+        cli.main(["run", "--suite", str(historical_suite)])
     commands: list[list[str]] = []
 
     def fake_run(command, **_kwargs):

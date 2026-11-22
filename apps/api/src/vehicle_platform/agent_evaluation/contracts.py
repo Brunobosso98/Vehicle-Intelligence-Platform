@@ -128,7 +128,12 @@ class ToolTrace(EvalModel):
 
 
 class DirectProbeEvidence(EvalModel):
-    probe_type: Literal["mcp_capability", "operator_cli", "knowledge_retrieval"]
+    probe_type: Literal[
+        "mcp_capability",
+        "mcp_revoked_capability",
+        "operator_cli",
+        "knowledge_retrieval",
+    ]
     target: str = Field(min_length=1, max_length=100)
     visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
     call_rejected: bool
