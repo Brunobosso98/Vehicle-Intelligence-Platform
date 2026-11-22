@@ -6,6 +6,17 @@ branch SHA before verification.
 
 ## Current checkout evidence
 
+On SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`, the Phase 10 evaluator
+completed and emitted a PASS receipt, then the independent checker failed on
+its final lineage query because it selected `pulls.source_type`. The Phase 9A
+schema stores that field on `driving_sessions`; the checker now joins each
+immutable pull to its owning session and checks the session's source role.
+The 52-test focused suite, Ruff, formatting and strict mypy pass locally. The
+same SHA passed Quality, Integration E2E, Security, Dependency Review, both
+CodeQL analyses, and Phase 9G/9H. The canonical full-validation workflow was
+canceled after the Phase 10 failure and is not a pass. This focused acceptance
+must pass before the full workflow is rerun.
+
 The latest exact-head run, on SHA `da31da985ebf2f13cf62cf3ae7762606742238e1`,
 completed the Phase 10 evaluator and wrote a PASS receipt, but the independent
 receipt checker correctly failed closed: its query requested
@@ -25,11 +36,11 @@ acceptance failed only at the checker schema query above; the canonical Phase
 0 full-validation run was canceled afterward and is not a pass. Every required
 workflow must run again on the correction's exact final SHA.
 
-After this targeted correction, local `make verify-cloud` passed: API 1,509
-tests (95.83% line and 90.02% branch coverage), web 140 tests (91.96% line
+After the Phase 9A lineage correction, local `make verify-cloud` passed: API
+1,510 tests (95.83% line and 90.02% branch coverage), web 140 tests (91.96% line
 coverage), production build, contracts, docs, Phase 0–5 deterministic checks,
 analytics benchmark and cloud security checks. The analytics benchmark processed
-600,600 observations in 46.30 seconds with 5,400,981 peak traced Python bytes.
+600,600 observations in 46.71 seconds with 5,401,131 peak traced Python bytes.
 Docker is unavailable locally, so database/container integration and the
 canonical Phase 0–10 run remain `CI REQUIRED`; the local command is not exact-SHA
 evidence.
@@ -110,11 +121,13 @@ The disposable Phase 10 evaluator failed at the rollback-binding snapshot on
 `1f667cd`, at the synthetic approval rationale on `59d40e5`, and during final
 receipt serialization on `2a9a91b` (`datetime`) and `74797be` (`UUID`). On
 `da31da9`, the evaluator scenarios and receipt completed, then the independent
-checker queried an unavailable 9B registry size column. Each cause has a
-targeted correction and regression check. The Phase 10 and canonical
-full-stack receipts must rerun on the latest correction SHA. Exact task/family
-metrics, row counts, drift windows and performance will be recorded from the
-resulting checksum-bound artifacts, never inferred from fixture definitions.
+checker queried an unavailable 9B registry size column. On `5b0c92f`, the
+checker then queried `source_type` from `pulls` instead of its owning
+`driving_sessions` row. Each cause has a targeted correction and regression
+check. The Phase 10 and canonical full-stack receipts must rerun on the latest
+correction SHA. Exact task/family metrics, row counts, drift windows and
+performance will be recorded from the resulting checksum-bound artifacts,
+never inferred from fixture definitions.
 
 ## Scientific and serving status
 
@@ -129,14 +142,14 @@ approval, activation, revocation and rollback remain authoritative.
 
 ## Current blockers
 
-- Commit and push the 9B artifact-checker schema fix and updated reports to the
+- Commit and push the Phase 9A source-lineage checker fix and updated reports to the
   existing Phase 10 branch; PR #64 is already open and must remain unmerged.
 - Run all required GitHub checks against the exact final SHA, including
   Quality, Integration E2E, Security, Dependency Review, CodeQL Python,
   CodeQL JavaScript/TypeScript, Phase 9G/9H regression, Phase 10 independent
   acceptance, and canonical Docker/full-stack Phase 0–10.
 - Rerun Security and verify the dated image-exception policy against the final
-  SHA. SHA `da31da9` passed its scan; the checker correction SHA needs its own
-  receipt.
+  SHA. SHA `5b0c92f` passed its scan; the current checker correction SHA needs
+  its own receipt.
 
 Until these gates pass on the exact PR head, Phase 10 remains NOT VERIFIED.

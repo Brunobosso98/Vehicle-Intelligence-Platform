@@ -83,6 +83,24 @@ def test_independent_checker_measures_bounded_9b_artifact_without_registry_size(
         checker._read_private_artifact("supervised", relative.as_posix(), "0" * 64, None)
 
 
+def test_independent_checker_reads_pull_source_role_from_owning_session():
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    checker_path = Path(__file__).resolve().parents[4] / "scripts" / "check_mlops.py"
+    spec = spec_from_file_location("phase10_pull_source_checker", checker_path)
+    assert spec is not None and spec.loader is not None
+    checker = module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+
+    query = checker._anomaly_evaluation_source_query()
+    assert "s.source_type" in query
+    assert "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id" in query
+    assert "p.source_type" not in query
+    assert "p.started_at,p.ended_at" in query
+
+
 def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):
     import sys
     from importlib.util import module_from_spec, spec_from_file_location

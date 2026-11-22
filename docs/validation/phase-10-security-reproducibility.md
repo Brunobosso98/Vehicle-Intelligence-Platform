@@ -3,15 +3,15 @@
 ## Current finding status
 
 The latest exact-head Security run is
-[44971412567](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44971412567),
+[44973958613](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613),
 artifact
-[14733941386](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44971412567/artifacts/14733941386),
-for SHA `da31da985ebf2f13cf62cf3ae7762606742238e1`. It reports the same 107
+[14735002475](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44973958613/artifacts/14735002475),
+for SHA `5b0c92f9f44945af0680b97474721b7ea48145e9`. It reports the same 107
 accepted High package occurrences, zero Critical and zero blocked findings
 across selected images. The 20 exact risk reviews remain dated 2026-11-21 and
 expire 2026-12-05. The expired zlib exception remains removed, and selected
 application images have no zlib CVE. A new scan is required for the pending
-checker correction SHA.
+source-lineage checker correction SHA.
 
 The policy on implementation SHA `74797be570e301444671cc9b307306647c15efcf`
 contains 20 exact High-risk records, all reviewed on 2026-11-21 and expiring
@@ -64,12 +64,18 @@ database oracle; public or production APIs do not expose training or MLOps.
 
 ## Current execution status
 
-The latest exact-head Phase 10 run on `da31da9` generated its evaluator receipt,
+The latest exact-head Phase 10 run on `5b0c92f` generated its evaluator receipt,
+then failed in the independent checker because it queried `pulls.source_type`,
+which actually belongs to the owning `driving_sessions` row. The checker now
+joins the table by the persisted pull session ID and verifies the session's
+source type without changing source data.
+
+The preceding exact-head Phase 10 run on `da31da9` generated its evaluator receipt,
 then failed in the independent checker because it queried the nonexistent
 `ml_model_versions.artifact_size_bytes` column. The checker now measures 9B
 artifact size from the safely opened file, enforces the byte bound and matches
 the receipt checksum and size; a focused test covers the actual 9B/9C query
-schemas. The current correction passes 51 Phase 10 unit tests, Ruff,
+schemas. The current correction passes 52 Phase 10 unit tests, Ruff,
 formatting and strict Mypy locally. `make check-api` on SHA `59d40e5` passed 1,507 API tests,
 95.83% line coverage and 90.02% branch coverage. The preceding exact-head SHA
 `1f667cd03aeff9a92c19b7d2eee8b2563a7cc310`

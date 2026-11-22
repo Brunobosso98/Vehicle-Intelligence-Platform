@@ -64,6 +64,14 @@ def _candidate_artifact_query(kind: str) -> str:
     raise ValueError("unknown acceptance artifact kind")
 
 
+def _anomaly_evaluation_source_query() -> str:
+    return (
+        "SELECT p.id::text AS id,s.source_type,p.started_at,p.ended_at "
+        "FROM pulls p JOIN driving_sessions s ON s.id=p.session_id "
+        "WHERE p.id=ANY(CAST(:ids AS uuid[])) ORDER BY p.id"
+    )
+
+
 def _as_mapping(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise TypeError(f"{label} is not an object")
@@ -1066,10 +1074,7 @@ async def _verify_run(database: Database, item: dict[str, Any]) -> int:
             source_rows = (
                 (
                     await session.execute(
-                        text(
-                            "SELECT id::text AS id,source_type,started_at,ended_at "
-                            "FROM pulls WHERE id=ANY(CAST(:ids AS uuid[])) ORDER BY id"
-                        ),
+                        text(_anomaly_evaluation_source_query()),
                         {"ids": [UUID(value) for value in evaluation_ids]},
                     )
                 )
