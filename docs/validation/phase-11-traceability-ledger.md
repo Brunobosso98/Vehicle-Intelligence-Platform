@@ -48,6 +48,7 @@ complete merely because a scenario is present in JSON.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence
   exists.
-- PR #65 is open as a draft. Exact Phase 11 runs at `1022265` and `77e9f30` failed after grading
-  12/21 cases; exact run details and sanitized artifacts are in `phase-11-acceptance.md`. Full integration
-  acceptance and final-SHA checks are incomplete; no performance or real-provider receipt is claimed.
+- PR #65 is open as a draft. The latest exact Phase 11 run `45036858295` graded 12/21 (12 PASS,
+  9 NOT_RUN) and failed the completeness gate. Earlier behavioral failures are recorded in
+  `phase-11-acceptance.md`. Full integration acceptance and final-SHA checks are incomplete;
+  no performance or real-provider receipt is claimed.

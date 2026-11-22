@@ -32,10 +32,7 @@ def _has_structured_gap(attempt: CaseAttempt) -> bool:
 
 
 def _abstention_findings_are_safe(attempt: CaseAttempt) -> bool:
-    classifications = {
-        finding.get("classification")
-        for finding in attempt.findings
-    }
+    classifications = {finding.get("classification") for finding in attempt.findings}
     return classifications <= {"DATA_GAP", "INSUFFICIENT_EVIDENCE", "OBSERVATION"}
 
 

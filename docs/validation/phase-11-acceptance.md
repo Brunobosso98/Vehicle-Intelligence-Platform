@@ -102,15 +102,19 @@ acceptance gates remain incomplete.
   oracle expected `mcp_unavailable`. V5 permits neutral observations alongside an explicit
   structured gap and aligns the expected dependency category. Artifact:
   [run 45036486942](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45036486942).
+- Suite v5 exact-SHA run `45036858295` on `29d449bd0f9bf8d87405e397128c9cc99662d54e`
+  graded 12/21: all 12 attempted cases PASS, with 9 NOT_RUN. The independent checker rejected
+  the incomplete corpus, as required. The 12 include the missing-measurement abstention and
+  controlled dependency outage. Artifact:
+  [run 45036858295](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45036858295).
 - Latest `make verify-cloud`: PASS with 1,573 API tests, 95.73% line and
   90.07% branch coverage, 140 web tests, production build, contracts/context, formatting,
   benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 50 PASS.
 - Current follow-up adds structured insufficiency grading based on the application-authored
   gap template, permits neutral recorded observations alongside explicit data gaps, aligns the
   fault oracle to `dependency_unavailable`, and includes sanitized categorical diagnostics.
-  `make test-agent-evals` and full `make verify-cloud` pass with the preceding diagnostic changes;
-  v5 is not yet committed or exact-SHA validated. Full requirements remain incomplete: mandatory
-  pathways are not all executed.
+  The 50 focused tests pass. A formatting-only fix is uncommitted; full `make check-api` is
+  running. Full requirements remain incomplete: mandatory pathways are not all executed.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with
