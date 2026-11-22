@@ -109,6 +109,9 @@ async def runtime(
         )
     token = secrets.token_urlsafe(48)
     prediction_token = secrets.token_urlsafe(48) if enable_prediction_evidence else None
+    prediction_operator_token = (
+        secrets.token_urlsafe(48) if enable_prediction_evidence else None
+    )
     if enable_prediction_evidence and prediction_vehicle_id is None:
         raise ValueError(
             "prediction capability fixture requires an explicit vehicle id"
@@ -133,6 +136,7 @@ async def runtime(
     if prediction_token is not None and prediction_vehicle_id is not None:
         env |= {
             "PREDICTION_SERVICE_ENABLED": "true",
+            "PREDICTION_OPERATOR_TOKEN": prediction_operator_token or "",
             "VIP_MCP_PREDICTION_EVIDENCE_ENABLED": "true",
             "VIP_MCP_PREDICTION_TOKEN": prediction_token,
             "VIP_MCP_PREDICTION_VEHICLE_IDS": json.dumps([prediction_vehicle_id]),
@@ -142,6 +146,7 @@ async def runtime(
     }
     if enable_prediction_evidence:
         api_env.pop("PREDICTION_SERVICE_ENABLED", None)
+        api_env.pop("PREDICTION_OPERATOR_TOKEN", None)
     processes = [
         Process(
             [sys.executable, "-m", "vehicle_platform.mcp.cli"], env, mcp_base + "/ready"
@@ -197,7 +202,7 @@ async def runtime(
             "mcp_url": mcp_base + "/mcp",
             "mcp": processes[0],
             "token": token,
-            "secret_values": (token, prediction_token)
+            "secret_values": (token, prediction_token, prediction_operator_token)
             if prediction_token
             else (token,),
             "processes": processes,
