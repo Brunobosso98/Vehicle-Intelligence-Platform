@@ -129,6 +129,8 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) test-evaluation-calibration phase9g-acceptance benchmark-predictive-reliability predictive-reliability-observability
 	$(MAKE) phase9h-acceptance
 	$(MAKE) phase10-acceptance
+	$(MAKE) phase11-acceptance
+	$(MAKE) benchmark-agent-evals agent-evals-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -302,7 +304,7 @@ predictive-reliability-observability: phase9g-acceptance
 phase9h-acceptance:
 	bash scripts/phase9h-validation.sh
 
-.PHONY: test-mlops phase10-acceptance benchmark-mlops mlops-observability
+.PHONY: test-mlops phase10-acceptance benchmark-mlops mlops-observability test-agent-evals phase11-acceptance benchmark-agent-evals agent-evals-observability
 test-mlops:
 	$(API)/pytest apps/api/tests/unit/test_mlops.py
 phase10-acceptance:
@@ -311,3 +313,11 @@ benchmark-mlops:
 	$(API)/python scripts/benchmark_mlops.py
 mlops-observability:
 	$(API)/python scripts/observability_mlops.py
+test-agent-evals:
+	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py
+phase11-acceptance: test-agent-evals
+	bash scripts/mcp-validation.sh scripts/evaluate_agent_red_team.py
+benchmark-agent-evals:
+	$(API)/python scripts/vehicle_agent_evals.py benchmark
+agent-evals-observability:
+	$(API)/python scripts/vehicle_agent_evals.py observability

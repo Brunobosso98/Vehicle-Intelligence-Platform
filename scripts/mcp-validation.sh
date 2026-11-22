@@ -24,6 +24,7 @@ port=$(docker compose -p "$project" -f infra/docker/compose.test.yaml port db 54
 export TEST_DATABASE_URL="postgresql+asyncpg://vehicle:test-only@127.0.0.1:${port}/vehicle_test"
 export DATABASE_URL="$TEST_DATABASE_URL"
 export ENVIRONMENT=test
+export GIT_SHA="$(git rev-parse HEAD)"
 (cd apps/api && .venv/bin/alembic upgrade head)
 entrypoint="${1:-scripts/evaluate_mcp.py}"
 evidence=.validation/mcp
@@ -31,6 +32,7 @@ case "$entrypoint" in
   scripts/*knowledge*) evidence=.validation/knowledge ;;
   scripts/*supervisor*) evidence=.validation/supervisor ;;
   scripts/*agent*|scripts/*grounding*) evidence=.validation/agent ;;
+  scripts/*red_team*) evidence=.validation/phase11 ;;
   scripts/*investigation*) evidence=.validation/investigation ;;
 esac
 mkdir -p "$evidence"

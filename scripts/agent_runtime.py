@@ -1,16 +1,20 @@
 """Bounded local HTTP processes for disposable Phase 7A acceptance only."""
 
 import asyncio
+import json
 import os
 import secrets
 import socket
 import sys
 import tempfile
+from collections.abc import AsyncIterator
 from contextlib import ExitStack, asynccontextmanager
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import httpx
+from vehicle_platform.agent_evaluation.privacy import redact_runtime_secrets
 
 
 def free_port() -> int:
@@ -66,13 +70,25 @@ class Process:
 
 @asynccontextmanager
 async def runtime(
-    url: str, *, web: bool = False, real: bool = False, worker: bool = False
-):
+    url: str,
+    *,
+    web: bool = False,
+    real: bool = False,
+    worker: bool = False,
+    failure_log_directory: str | Path = ".validation/agent",
+    enable_prediction_evidence: bool = False,
+    prediction_vehicle_id: str | None = None,
+) -> AsyncIterator[dict[str, Any]]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise AssertionError(
             "Phase 7A acceptance requires disposable vehicle_test* database"
         )
     token = secrets.token_urlsafe(48)
+    prediction_token = secrets.token_urlsafe(48) if enable_prediction_evidence else None
+    if enable_prediction_evidence and prediction_vehicle_id is None:
+        raise ValueError(
+            "prediction capability fixture requires an explicit vehicle id"
+        )
     mcp_port, api_port, web_port = free_port(), free_port(), free_port()
     mcp_base, api_base = f"http://127.0.0.1:{mcp_port}", f"http://127.0.0.1:{api_port}"
     env = os.environ | {
@@ -89,6 +105,15 @@ async def runtime(
         "VIP_AGENT_MCP_TOKEN": token,
         "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
+    }
+    if prediction_token is not None and prediction_vehicle_id is not None:
+        env |= {
+            "VIP_MCP_PREDICTION_EVIDENCE_ENABLED": "true",
+            "VIP_MCP_PREDICTION_TOKEN": prediction_token,
+            "VIP_MCP_PREDICTION_VEHICLE_IDS": json.dumps([prediction_vehicle_id]),
+        }
+    api_env = {
+        key: value for key, value in env.items() if not key.startswith("VIP_MCP_")
     }
     processes = [
         Process(
@@ -107,7 +132,7 @@ async def runtime(
                 str(api_port),
                 "--no-access-log",
             ],
-            env,
+            api_env,
             api_base + "/health/ready",
         ),
     ]
@@ -115,7 +140,7 @@ async def runtime(
         processes.append(
             Process(
                 [sys.executable, "-m", "vehicle_platform.acquisition.worker"],
-                env | {"WORKER_METRICS_HOST": "127.0.0.2"},
+                api_env | {"WORKER_METRICS_HOST": "127.0.0.2"},
                 "http://127.0.0.2:8001/metrics",
             )
         )
@@ -132,7 +157,7 @@ async def runtime(
                     "--port",
                     str(web_port),
                 ],
-                env,
+                api_env,
                 f"http://127.0.0.1:{web_port}",
             )
         )
@@ -142,8 +167,12 @@ async def runtime(
         yield {
             "api": api_base,
             "web": f"http://127.0.0.1:{web_port}",
+            "mcp_url": mcp_base + "/mcp",
             "mcp": processes[0],
             "token": token,
+            "secret_values": (token, prediction_token)
+            if prediction_token
+            else (token,),
             "processes": processes,
         }
     except BaseException:
@@ -155,20 +184,19 @@ async def runtime(
                 if line.startswith('{"timestamp"')
             ]
             safe = "\n".join(operational).replace(token, "[redacted]")
-            if env.get("VIP_AGENT_API_KEY"):
-                safe = safe.replace(env["VIP_AGENT_API_KEY"], "[redacted]")
-            directory = Path(".validation/agent")
-            directory.mkdir(parents=True, exist_ok=True)
-            (directory / f"runtime-{index}-failure.log").write_text(safe)
+            safe = redact_runtime_secrets(safe, env)
+            directory = Path(failure_log_directory)
+            directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(directory, 0o700)
+            failure_log = directory / f"runtime-{index}-failure.log"
+            failure_log.write_text(safe)
+            os.chmod(failure_log, 0o600)
             diagnostics = process.log
             diagnostics.seek(0)
-            diagnostic = diagnostics.read().replace(url, "[redacted-database]")
-            for key, value in env.items():
-                if value and key.endswith(("TOKEN", "KEY", "PASSWORD")):
-                    diagnostic = diagnostic.replace(value, "[redacted]")
-            (directory / f"runtime-{index}-diagnostic.log").write_text(
-                diagnostic[-20000:]
-            )
+            diagnostic = redact_runtime_secrets(diagnostics.read(), env)
+            diagnostic_path = directory / f"runtime-{index}-diagnostic.log"
+            diagnostic_path.write_text(diagnostic[-20000:])
+            os.chmod(diagnostic_path, 0o600)
         raise
     finally:
         for process in reversed(processes):
@@ -177,6 +205,7 @@ async def runtime(
 
 
 async def ask(api: httpx.AsyncClient, vehicle: str, question: str) -> dict[str, Any]:
+    started = perf_counter()
     path = f"/api/v1/vehicles/{vehicle}/agent-runs"
     response = await api.post(path, json={"question": question})
     response.raise_for_status()
@@ -185,4 +214,10 @@ async def ask(api: httpx.AsyncClient, vehicle: str, question: str) -> dict[str, 
     assert stream.status_code == 200, stream.text
     response = await api.get(f"{path}/{identifier}")
     response.raise_for_status()
-    return response.json() | {"stream": stream.text}
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise TypeError("agent run response must be a JSON object")
+    return payload | {
+        "stream": stream.text,
+        "elapsed_ms": int((perf_counter() - started) * 1000),
+    }

@@ -117,6 +117,22 @@ def risk_sensitive_question(question: str) -> bool:
     return any(re.search(pattern, q) for pattern in patterns)
 
 
+def privileged_governance_question(question: str) -> bool:
+    """Detect requests to change model-serving state or claim operator approval."""
+    q = question.casefold()
+    english = re.search(
+        r"\b(?:approv(?:e|ed|al)|activat(?:e|ed|ion)|promot(?:e|ed|ion)|rollback|roll back|"
+        r"release|serve)\b.{0,100}\b(model|candidate|serving|mlops)\b",
+        q,
+    )
+    portuguese = re.search(
+        r"\b(aprov(?:e|ado|ada|ação)|ativ(?:e|ar|ado|ada)|promov(?:a|er|ido)|reverter|reversão|publicar)\b"
+        r".{0,100}\b(modelo|candidato|serviço|mlops)\b",
+        q,
+    )
+    return bool(english or portuguese)
+
+
 def prediction_specialists(question: str, evidence: list[Evidence]) -> tuple[Specialist, ...]:
     q = question.casefold()
     interpretive = re.search(

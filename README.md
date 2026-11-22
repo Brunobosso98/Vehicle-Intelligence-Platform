@@ -11,8 +11,9 @@ somente leitura; a evidência de entrega está no [relatório de aceitação](do
 A Fase 5 fornece analytics determinísticos e versionados sobre telemetria, sessões, pulls,
 eventos factuais e configurações históricas. A Fase 4 fornece aquisição somente leitura,
 receitas, preflight e streaming durável. As Fases 7A/7B fornecem agentes fundamentados
-e investigação com aprovação explícita. A Fase 7C está em implementação e validação.
-Diagnóstico/root cause, RAG e ML permanecem planejados. Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
+e investigação com aprovação explícita. A Fase 7C foi verificada. As fases 8–10 estão
+concluídas com os limites científicos descritos abaixo; a Fase 11 está em implementação.
+Veja [a arquitetura de analytics](docs/architecture/phase-5-automotive-analytics.md).
 Veja [a arquitetura de telemetria](docs/architecture/phase-1-telemetry.md) e o
 [desenho de análise da Fase 2](docs/architecture/phase-2-session-analysis.md) e o
 [desenho de eventos da Fase 3](docs/architecture/phase-3-event-anomaly-engine.md), o
@@ -174,9 +175,10 @@ diagnoses or failure probabilities. Phase 9D and 9E are merged, and Phase 9F is 
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G's offline evaluation and
 research-only calibration foundation is merged through PR #55; real-world calibration remains
 `NOT_ESTABLISHED`. Phase 9H PR #57 is merged into baseline
-`3085c5227a46c3c327249d0f2e982631d919b5a4`. Phase 10 is under implementation on the existing
-branch; it is **NOT VERIFIED** until independent database acceptance and all required exact-head
-CI gates pass. See the
+`3085c5227a46c3c327249d0f2e982631d919b5a4`. Phase 10 PR #64 is merged as
+`bfa491f2818fea9914ae113077ce6704fdb6312f`. Phase 11 is under implementation on the existing
+`codex/phase-11-agent-evals-red-team` branch; its completion status is recorded in the
+[Phase 11 acceptance report](docs/validation/phase-11-acceptance.md). See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),

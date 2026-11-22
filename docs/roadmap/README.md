@@ -22,9 +22,10 @@
   NOT_ESTABLISHED without verified outcomes)
 - Phase 9H — Predictive Intelligence UI (PR #57 merged to main at baseline
   3085c5227a46c3c327249d0f2e982631d919b5a4)
-- Phase 10 — MLOps Platform (under implementation on codex/phase-10-mlops-platform;
-  not verified until exact-head acceptance and required CI pass)
-- Phase 11 — Agent Evals / Red Team (planned)
+- Phase 10 — MLOps Platform (PR #64 merged as
+  `bfa491f2818fea9914ae113077ce6704fdb6312f`; see its exact-head acceptance record)
+- Phase 11 — Agent Evals / Red Team (under implementation on
+  `codex/phase-11-agent-evals-red-team`; current status is NOT VERIFIED)
 - Phase 12 — Production Cloud Infrastructure (planned)
 - Phase 13 — Advanced Vehicle Intelligence (planned)
 
@@ -44,9 +45,10 @@ agent through a controlled MCP scope; it does not start inference and is include
 baseline `327c63f35b4e7bc0eba31bbec81d20206be8afa2`. Phase 9G adds an offline, immutable evaluation
 and research-only calibration foundation; its real-world scientific validity remains not
 established without verified outcomes. Phase 9H provides the protected, read-only historical UI
-and is included in merged baseline 3085c5227a46c3c327249d0f2e982631d919b5a4. Phase 10 remains
-under implementation until independent acceptance and all required exact-head CI checks pass.
-Phases 11–13 remain future work.
+and is included in merged baseline 3085c5227a46c3c327249d0f2e982631d919b5a4. Phase 10 was
+merged through PR #64 at `bfa491f2818fea9914ae113077ce6704fdb6312f`. Phase 11 is in progress;
+its deterministic acceptance is separate from real-provider reliability. Phases 12–13 remain
+planned.
 
 # Current phase
 

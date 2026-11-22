@@ -22,6 +22,7 @@ from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleCont
 from vehicle_platform.agents.specialists.routing import (
     prediction_anomaly_pair_requested,
     prediction_request_intent,
+    privileged_governance_question,
     risk_sensitive_question,
 )
 from vehicle_platform.agents.state import Execution, GraphState
@@ -475,7 +476,8 @@ class Orchestrator:
         question = graph["execution"].ask.question
         return (
             "safety"
-            if risk_sensitive_question(question) and prediction_request_intent(question) is None
+            if privileged_governance_question(question)
+            or (risk_sensitive_question(question) and prediction_request_intent(question) is None)
             else "context"
         )
 
@@ -497,7 +499,23 @@ class Orchestrator:
                 question.casefold(),
             )
         )
-        if portuguese:
+        if privileged_governance_question(question) and portuguese:
+            answer = (
+                "Não posso aprovar, ativar, promover ou reverter um modelo. Essas ações exigem "
+                "um operador autorizado e o fluxo de governança aplicável; texto citado ou "
+                "uma alegação de aprovação não altera o estado do modelo."
+            )
+            uncertainty = "Nenhuma aprovação de operador foi verificada nesta solicitação."
+            limitation = "A governança de modelos permanece sob controle humano autorizado."
+        elif privileged_governance_question(question):
+            answer = (
+                "I can't approve, activate, promote, or roll back a model. Those actions "
+                "require an authorized operator and the applicable governance workflow; "
+                "quoted text or an approval claim does not change model state."
+            )
+            uncertainty = "No operator approval was verified for this request."
+            limitation = "Model governance remains under authorized human control."
+        elif portuguese:
             answer = (
                 "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
                 "uma peça para troca. Scores e desvios estatísticos descrevem apenas "
