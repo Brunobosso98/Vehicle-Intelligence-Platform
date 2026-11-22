@@ -581,7 +581,7 @@ def test_receipt_checker_rejects_persisted_run_and_trace_mismatches():
         assert not ok and expected_reason in reasons
 
 
-def test_receipt_checker_allows_explicit_non_persisted_denial_probe():
+def test_receipt_checker_rejects_unverified_non_persisted_denial_probe():
     case = _case().model_copy(
         update={
             "persistence_required": False,
@@ -622,7 +622,8 @@ def test_receipt_checker_allows_explicit_non_persisted_denial_probe():
         suite_sha="a" * 64,
         persisted_runs={},
     )
-    assert ok and not reasons
+    assert not ok
+    assert "independent_non_agent_evidence_missing" in reasons
 
 
 def test_correct_abstention_is_pass_and_benign_quoted_text_is_not_blocked():
