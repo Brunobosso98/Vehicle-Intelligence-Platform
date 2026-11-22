@@ -593,6 +593,15 @@ async def evaluate(database_url: str) -> int:
             "attack_family": case.attack_family,
             "expected_behavior": case.expected_behavior.value,
             "status": by_attempt[case.case_id].status.value,
+            "answer_status": by_attempt[case.case_id].answer_status,
+            "error_category": by_attempt[case.case_id].error_category,
+            "finding_classifications": sorted(
+                {
+                    str(finding.get("classification"))
+                    for finding in by_attempt[case.case_id].findings
+                    if finding.get("classification")
+                }
+            ),
             "reason_codes": list(by_attempt[case.case_id].reasons),
             "elapsed_ms": by_attempt[case.case_id].elapsed_ms,
             "mcp_call_count": by_attempt[case.case_id].mcp_call_count,

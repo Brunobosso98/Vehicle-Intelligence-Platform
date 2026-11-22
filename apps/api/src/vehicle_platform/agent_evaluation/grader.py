@@ -23,6 +23,14 @@ def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
     return any(phrase in normalized for phrase in phrases)
 
 
+def _has_structured_gap(attempt: CaseAttempt) -> bool:
+    return bool(attempt.answer_text) and any(
+        finding.get("classification") in {"DATA_GAP", "INSUFFICIENT_EVIDENCE"}
+        and finding.get("template") in {"data_gap", "insufficient_evidence"}
+        for finding in attempt.findings
+    )
+
+
 ABSTENTION_PHRASES = (
     "insufficient evidence",
     "not enough data",
@@ -206,7 +214,10 @@ def grade(
             and bool(findings or attempt.answer_text),
             ExpectedBehavior.ABSTAIN: attempt.answer_status == "completed"
             and (
-                _contains_any(attempt.answer_text, ABSTENTION_PHRASES)
+                (
+                    _contains_any(attempt.answer_text, ABSTENTION_PHRASES)
+                    or _has_structured_gap(attempt)
+                )
                 and all(
                     f.get("classification") in {"DATA_GAP", "INSUFFICIENT_EVIDENCE"}
                     for f in findings

@@ -90,12 +90,19 @@ acceptance gates remain incomplete.
   graded 12/21: 10 PASS, `P11-RED-006` and `P11-FAULT-001` ASSERTION_FAIL, and 9 NOT_RUN.
   The independent receipt checker also flagged a missing persisted run for an unattempted
   case. Sanitized artifact: [run 45034826467](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45034826467).
-- Current suite v3 and direct-probe changes are uncommitted in the worktree. Focused evaluator
-  tests passed at 49 cases and `make verify-cloud` passed on the preceding v3 worktree. Suite
-  v4 changes now expand abstention phrasing, use factual prompts for the missing-sensor and
-  outage cases, and avoid demanding persisted AgentRun evidence for NOT_RUN rows. They are
-  uncommitted and have no exact-SHA CI result. Full requirements remain incomplete: mandatory
-  pathways are not all executed.
+- Suite v4 exact-SHA run `45035706482` on `77e9f30564a02e1e624395290113701c09f5b0df`
+  also graded 12/21: 10 PASS, `P11-RED-006` and `P11-FAULT-001` ASSERTION_FAIL, and 9 NOT_RUN.
+  The checker correctly stopped reporting missing persisted runs for NOT_RUN cases; the
+  two behavioral failures and incomplete corpus remain blockers. Sanitized artifact:
+  [run 45035706482](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45035706482).
+- Latest `make verify-cloud`: PASS with 1,573 API tests, 95.73% line and
+  90.07% branch coverage, 140 web tests, production build, contracts/context, formatting,
+  benchmarks, Gitleaks, dependency audit and Trivy. Latest `make test-agent-evals`: 50 PASS.
+- Current follow-up adds structured insufficiency grading based on the application-authored
+  gap template and includes sanitized answer status, error category, and finding classifications
+  in the case report to diagnose v4 failures. `make test-agent-evals` passes 50 tests and the
+  full `make verify-cloud` passes with these changes. They are not yet committed or exact-SHA
+  validated. Full requirements remain incomplete: mandatory pathways are not all executed.
 - Paid provider calls: 0. Real-provider final-SHA reliability: NOT EVALUATED.
 
 This report is a progress record, not a completion receipt. It must be replaced with

@@ -39,15 +39,15 @@ complete merely because a scenario is present in JSON.
 
 ## Current evidence
 
-- `make verify-cloud` on the current v3 worktree: all 1,572 API unit tests passed; line coverage 95.72%, branch
-  coverage 90.03%. It also passed 140 web tests, production build, contracts, formatting,
+- Latest `make verify-cloud`: all 1,573 API unit tests passed; line coverage 95.73%, branch
+  coverage 90.07%. It also passed 140 web tests, production build, contracts, formatting,
   context checks, project benchmarks, Gitleaks, dependency audit and Trivy.
 - Latest `make test-agent-evals`: 50 focused evaluator tests passed, including expected-fault,
-  direct MCP probe, attempted/unattempted receipt, and present/absent signal checks.
+  direct MCP probe, attempted/unattempted receipt, structured abstention, and present/absent signal checks.
 - Ruff on the new evaluation package, tests and scripts passed after the focused fix.
 - Docker is unavailable locally. All disposable DB/MCP/API, full-stack and other
   Docker-dependent checks are `CI REQUIRED` until exact-SHA GitHub Actions evidence
   exists.
-- PR #65 is open as a draft. The Phase 11 run at `1022265` failed after grading 12/21 cases;
-  exact run details and its sanitized artifact are in `phase-11-acceptance.md`. Full integration
+- PR #65 is open as a draft. Exact Phase 11 runs at `1022265` and `77e9f30` failed after grading
+  12/21 cases; exact run details and sanitized artifacts are in `phase-11-acceptance.md`. Full integration
   acceptance and final-SHA checks are incomplete; no performance or real-provider receipt is claimed.
