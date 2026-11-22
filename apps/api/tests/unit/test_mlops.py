@@ -41,6 +41,35 @@ def test_independent_acceptance_oracle_uses_hand_computed_small_fixture():
     assert result["psi"] == pytest.approx(0.25 * math.log(3))
 
 
+def test_phase10_acceptance_report_normalizes_aware_database_datetimes(monkeypatch):
+    import sys
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    evaluator_path = Path(__file__).resolve().parents[4] / "scripts" / "evaluate_mlops.py"
+    monkeypatch.syspath_prepend(str(evaluator_path.parent))
+    spec = spec_from_file_location("phase10_report_serialization", evaluator_path)
+    assert spec is not None and spec.loader is not None
+    evaluator = module_from_spec(spec)
+    sys.modules[spec.name] = evaluator
+    spec.loader.exec_module(evaluator)
+
+    normalized = evaluator._json_safe_report_value(
+        {
+            "recorded_at": datetime(2026, 11, 22, 1, 2, 3, tzinfo=UTC),
+            "nested": [datetime(2026, 11, 22, 1, 2, tzinfo=UTC)],
+        }
+    )
+
+    assert normalized == {
+        "recorded_at": "2026-11-22T01:02:03+00:00",
+        "nested": ["2026-11-22T01:02:00+00:00"],
+    }
+    with pytest.raises(ValueError, match="must include a timezone"):
+        evaluator._json_safe_report_value({"recorded_at": datetime(2026, 11, 22)})
+    with pytest.raises(TypeError, match="unsupported object value"):
+        evaluator._json_safe_report_value({"unsupported": object()})
+
+
 def test_trusted_artifact_files_are_bounded_private_and_checksum_bound(tmp_path):
     import hashlib
 

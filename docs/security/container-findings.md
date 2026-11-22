@@ -2,6 +2,24 @@
 
 ## Phase 10 exact-head scan — 2026-11-22
 
+Security run [44967839980](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980)
+scanned SHA `2a9a91b5174a95f8114662d12aed5197b3f96c04`; machine-readable results are in
+[artifact 14732242668](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44967839980/artifacts/14732242668).
+All selected runtime images have zero Critical and zero blocked High findings. The artifact reports
+107 accepted High package occurrences: API 50, Web 48, OpenTelemetry Collector 1, Prometheus 2,
+Tempo 2, Grafana 4, Kafka 0, and custom TimescaleDB 0. Each accepted finding matches an exact
+image/CVE/package risk record active on the scan date.
+
+The 20 exact High-risk records are reviewed on 2026-11-21 and expire 2026-12-05. The old zlib
+exception for `CVE-2026-76844` expired on November 12 and remains removed; selected API/Web images
+use patched Debian zlib and show no selected-image zlib CVE. The upstream
+`timescale/timescaledb:2.30.2-pg17` scan separately reports 271 High and 3 Critical occurrences;
+the selected custom TimescaleDB image reports zero High and zero Critical. No scanner is disabled,
+no finding is hidden or downgraded, and no expiry is silently extended. The correction SHA still
+requires its own scan.
+
+## Previous Phase 10 exact-head scan — 2026-11-22
+
 Security run [44966623657](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657)
 scanned SHA `59d40e58823bab24114f508204a6732dc6c9f06a`; its machine-readable image and policy
 reports are in [artifact 14731604483](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44966623657/artifacts/14731604483).

@@ -144,6 +144,28 @@ def _require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def _json_safe_report_value(value: Any) -> Any:
+    """Normalize database and report values before hashing and writing receipts."""
+    if isinstance(value, datetime):
+        if value.utcoffset() is None:
+            raise ValueError("acceptance report datetimes must include a timezone")
+        return value.isoformat()
+    if isinstance(value, dict):
+        normalized: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError("acceptance report object keys must be strings")
+            normalized[key] = _json_safe_report_value(item)
+        return normalized
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_report_value(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise TypeError(
+        f"acceptance report contains unsupported {type(value).__name__} value"
+    )
+
+
 def _git_sha() -> str:
     git = shutil.which("git")
     if git is None:
@@ -1678,7 +1700,9 @@ async def _main() -> dict[str, Any]:
 
 async def main() -> None:
     EVIDENCE.mkdir(parents=True, exist_ok=True)
-    result = await _main()
+    result = _json_safe_report_value(await _main())
+    if not isinstance(result, dict):
+        raise TypeError("Phase 10 acceptance report must be an object")
     result["acceptance_checksum"] = stable_hash(
         {key: value for key, value in result.items() if key != "acceptance_checksum"}
     )
