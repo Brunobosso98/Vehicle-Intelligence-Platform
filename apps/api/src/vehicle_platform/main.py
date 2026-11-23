@@ -75,8 +75,53 @@ def create_app(
     if config.environment == "production" and agent_config.provider == "deterministic":
         raise ValueError("Deterministic agent provider is restricted to development/test")
 
+    wait_provider_used = False
+    timeout_provider_used = False
+
     def provider_factory() -> Provider:
+        nonlocal timeout_provider_used, wait_provider_used
         test_provider_fault = os.environ.get("VIP_AGENT_TEST_PROVIDER_FAULT")
+        if config.environment == "test" and test_provider_fault == "wait_after_tool":
+            if wait_provider_used:
+                from vehicle_platform.agents.scripted_provider import DeterministicProvider
+
+                return DeterministicProvider()
+            from vehicle_platform.agents.scripted_provider import WaitAfterToolProvider
+
+            wait_provider_used = True
+            return WaitAfterToolProvider()
+        if config.environment == "test" and test_provider_fault in {
+            "provider_retry_once",
+            "provider_retry_rate_limit_and_unavailable",
+        }:
+            from vehicle_platform.agents.scripted_provider import RetryOnceProvider
+
+            error_categories = (
+                ("provider_rate_limit", "provider_unavailable")
+                if test_provider_fault == "provider_retry_rate_limit_and_unavailable"
+                else ("provider_unavailable",)
+            )
+            return RetryOnceProvider(error_categories)
+        if config.environment == "test" and test_provider_fault == "provider_timeout_once":
+            if timeout_provider_used:
+                from vehicle_platform.agents.scripted_provider import DeterministicProvider
+
+                return DeterministicProvider()
+            from vehicle_platform.agents.scripted_provider import ProviderTimeoutProbe
+
+            timeout_provider_used = True
+            return ProviderTimeoutProbe()
+        if config.environment == "test" and test_provider_fault == "specialist_timeout":
+            from vehicle_platform.agents.scripted_provider import SpecialistTimeoutProbe
+
+            return SpecialistTimeoutProbe()
+        if config.environment == "test" and test_provider_fault == "provider_canary":
+            from vehicle_platform.agents.scripted_provider import ProviderCanaryBoundaryProbe
+
+            canary = os.environ.get("VIP_AGENT_TEST_SECRET_CANARY")
+            if not canary:
+                raise ValueError("provider boundary fixture requires a secret canary")
+            return ProviderCanaryBoundaryProbe(canary)
         if config.environment == "test" and test_provider_fault == "forged_citation":
             from vehicle_platform.agents.scripted_provider import ForgedCitationProvider
 

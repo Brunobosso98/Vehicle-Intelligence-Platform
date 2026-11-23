@@ -7,12 +7,14 @@ import copy
 import json
 import os
 import secrets
+import stat
 import statistics
 import subprocess
 import tempfile
 import time
 import traceback
 from collections import Counter
+from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -937,13 +939,26 @@ async def evaluate() -> dict[str, Any]:
 
     try:
         await database.check()
-        with tempfile.TemporaryDirectory(prefix="phase9e-artifacts-") as temporary:
-            root = Path(temporary)
+        with ExitStack() as artifact_scope:
+            configured_root = os.environ.get("PHASE9E_ARTIFACT_ROOT")
+            root = (
+                Path(configured_root)
+                if configured_root
+                else Path(
+                    artifact_scope.enter_context(
+                        tempfile.TemporaryDirectory(prefix="phase9e-artifacts-")
+                    )
+                )
+            )
+            root.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(root, stat.S_IRWXU)
+            model_root = root / "phase9b"
+            anomaly_root = root / "phase9c"
             fixture, trained = await phase9d._train_models(
-                database, telemetry, root / "phase9b"
+                database, telemetry, model_root
             )
             primary, _secondary, anomaly_context = await phase9d._train_detectors(
-                database, telemetry, root / "phase9c"
+                database, telemetry, anomaly_root
             )
             targets = await _select_pull_with_future_target(database, fixture)
             legacy_before = await _legacy_digests(database)
@@ -986,8 +1001,8 @@ async def evaluate() -> dict[str, Any]:
             _monitor_database_sessions(
                 prediction_service.database, api_connection_counts
             )
-            model_store = ModelArtifactStore(root / "phase9b")
-            anomaly_store = AnomalyArtifactStore(root / "phase9c")
+            model_store = ModelArtifactStore(model_root)
+            anomaly_store = AnomalyArtifactStore(anomaly_root)
             prediction_service.model_artifacts = model_store
             prediction_service.anomaly_artifacts = anomaly_store
             prediction_service.anomaly_service.artifacts = anomaly_store
@@ -2493,6 +2508,35 @@ async def evaluate() -> dict[str, Any]:
                             + api_connection_counts["maximum"]
                         ),
                     )
+
+                    private_fixture = os.environ.get("PHASE11_AGENT_PREDICTION_FIXTURE")
+                    if private_fixture:
+                        bundle = source_bundles[MLTask.THERMAL_DEGRADATION.value]
+                        if bundle.source_role is not SourceRole.SYNTHETIC:
+                            raise AssertionError(
+                                "Phase 11 agent fixture must use a synthetic prediction bundle"
+                            )
+                        fixture_path = Path(private_fixture)
+                        fixture_path.parent.mkdir(
+                            parents=True, exist_ok=True, mode=0o700
+                        )
+                        fixture_path.write_text(
+                            json.dumps(
+                                {
+                                    "schema_version": "phase11-9f-agent-fixture-v1",
+                                    "vehicle_id": str(vehicle_id),
+                                    "evidence_id": str(bundle.evidence_id),
+                                    "horizon": bundle.horizon.value,
+                                    "source_role": bundle.source_role.value,
+                                    "integrity": bundle.integrity.value,
+                                    "completeness": bundle.completeness.value,
+                                },
+                                sort_keys=True,
+                            )
+                            + "\n",
+                            encoding="utf-8",
+                        )
+                        os.chmod(fixture_path, stat.S_IRUSR | stat.S_IWUSR)
 
                     performance_bundle = source_bundles["anomaly:performance"]
                     performance_detector_id = next(

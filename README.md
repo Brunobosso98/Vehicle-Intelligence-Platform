@@ -178,7 +178,14 @@ research-only calibration foundation is merged through PR #55; real-world calibr
 `3085c5227a46c3c327249d0f2e982631d919b5a4`. Phase 10 PR #64 is merged as
 `bfa491f2818fea9914ae113077ce6704fdb6312f`. Phase 11 is under implementation on the existing
 `codex/phase-11-agent-evals-red-team` branch; its completion status is recorded in the
-[Phase 11 acceptance report](docs/validation/phase-11-acceptance.md). See the
+[Phase 11 acceptance report](docs/validation/phase-11-acceptance.md),
+[architecture](docs/architecture/phase-11-agent-evals-red-team.md),
+[security matrix](docs/validation/phase-11-red-team-matrix.md),
+[operator runbook](docs/runbooks/agent-evaluation-red-team.md),
+[155-requirement ledger](docs/validation/phase-11-traceability-ledger.md), and
+[ADR 0051](docs/adr/0051-phase11-independent-agent-evaluation.md) and
+[ADR 0052](docs/adr/0052-phase11-holdout-and-red-team-gates.md). Phase 11 remains NOT VERIFIED
+until the disposable runner and exact-SHA gates pass. See the
 [Phase 9B architecture](docs/architecture/phase-9b-predictive-models.md),
 [training runbook](docs/runbooks/model-training.md), and [acceptance report](docs/validation/phase-9b-acceptance.md),
 plus the [Phase 9C architecture](docs/architecture/phase-9c-anomaly-detection.md),

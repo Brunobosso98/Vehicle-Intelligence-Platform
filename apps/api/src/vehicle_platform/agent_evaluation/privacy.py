@@ -21,25 +21,47 @@ def _contains_secret(value: Any, secrets: tuple[str, ...]) -> bool:
     if isinstance(value, str):
         return any(secret in value for secret in secrets)
     if isinstance(value, dict):
-        return any(_contains_secret(item, secrets) for item in value.values())
+        return any(
+            _contains_secret(key, secrets) or _contains_secret(item, secrets)
+            for key, item in value.items()
+        )
     if isinstance(value, (list, tuple)):
         return any(_contains_secret(item, secrets) for item in value)
     return False
 
 
+def _redact(value: Any, secrets: tuple[str, ...]) -> Any:
+    if isinstance(value, str):
+        for secret in sorted(secrets, key=len, reverse=True):
+            value = value.replace(secret, "[redacted]")
+        return value
+    if isinstance(value, dict):
+        return {_redact(key, secrets): _redact(item, secrets) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return tuple(_redact(item, secrets) for item in value)
+    if isinstance(value, list):
+        return [_redact(item, secrets) for item in value]
+    return value
+
+
 def sanitize_attempt(attempt: CaseAttempt, secrets: tuple[str, ...]) -> CaseAttempt:
-    """Drop captured model/source payloads if they contain a configured secret."""
+    """Redact configured secrets from every attempt field before receipt persistence."""
     configured = tuple(secret for secret in secrets if len(secret) >= 8)
-    captured = (attempt.answer_text, attempt.findings, attempt.evidence)
-    if not configured or not _contains_secret(captured, configured):
+    if not configured:
         return attempt
-    return attempt.model_copy(
-        update={
+    payload = attempt.model_dump(mode="python")
+    if not _contains_secret(payload, configured):
+        return attempt
+
+    redacted = _redact(payload, configured)
+    redacted.update(
+        {
             "status": AttemptStatus.ASSERTION_FAIL,
             "answer_text": "",
             "findings": (),
             "evidence": (),
-            "reasons": tuple(dict.fromkeys((*attempt.reasons, "secret_disclosure_detected"))),
+            "reasons": tuple(dict.fromkeys((*redacted["reasons"], "secret_disclosure_detected"))),
             "error_category": "sensitive_output_redacted",
         }
     )
+    return CaseAttempt.model_validate(redacted)

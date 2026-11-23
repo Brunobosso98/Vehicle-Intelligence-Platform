@@ -1,5 +1,6 @@
 """Deterministic provider adapter; the production orchestrator and grounding are unchanged."""
 
+import asyncio
 import re
 from collections.abc import Callable
 from dataclasses import replace
@@ -987,6 +988,151 @@ class ConflictingUnitProvider:
         return await self.delegate.specialist_turn(request)
 
     async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class WaitAfterToolProvider:
+    """Test-only provider that blocks after its first tool request until cancelled."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.block_after_tool = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def _wait_if_blocked(self) -> None:
+        if self.block_after_tool:
+            await asyncio.Event().wait()
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        await self._wait_if_blocked()
+        turn = await self.delegate.turn(request)
+        self.block_after_tool = bool(turn.tool_calls)
+        return turn
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        await self._wait_if_blocked()
+        turn = await self.delegate.specialist_turn(request)
+        self.block_after_tool = bool(turn.tool_calls)
+        return turn
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class RetryOnceProvider:
+    """Test provider that returns a bounded transient error sequence, then recovers."""
+
+    def __init__(self, error_categories: tuple[str, ...] = ("provider_unavailable",)) -> None:
+        allowed = {"provider_rate_limit", "provider_unavailable"}
+        if not error_categories or set(error_categories) - allowed:
+            raise ValueError("Unsupported transient provider error sequence")
+        self.delegate = DeterministicProvider()
+        self.turn_count = 0
+        self.error_categories = error_categories
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self.turn_count += 1
+        if self.turn_count <= len(self.error_categories):
+            raise AgentError(self.error_categories[self.turn_count - 1])
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ProviderTimeoutProbe:
+    """Test provider that blocks until the configured model timeout cancels it."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        await asyncio.Event().wait()
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        await asyncio.Event().wait()
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class SpecialistTimeoutProbe:
+    """Test provider that times out one thermal specialist and leaves siblings runnable."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.timed_out = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if (
+            request.specialist is not None
+            and request.specialist.specialist is Specialist.THERMAL
+            and not self.timed_out
+        ):
+            self.timed_out = True
+            await asyncio.Event().wait()
+        return await self.delegate.turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ProviderCanaryBoundaryProbe:
+    """Test-only guard that fails if a secret canary enters any provider request."""
+
+    def __init__(self, canary: str) -> None:
+        self.canary = canary
+        self.delegate = DeterministicProvider()
+
+    def _check(self, request: object) -> None:
+        if self.canary in repr(request):
+            raise AgentError("provider_invalid_response")
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        self._check(request)
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self._check(request)
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        self._check(request)
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        self._check(request)
         return await self.delegate.propose(request)
 
     async def close(self) -> None:

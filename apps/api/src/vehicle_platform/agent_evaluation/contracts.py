@@ -27,6 +27,8 @@ SOURCE_TABLES = frozenset(
     }
 )
 
+SPECIALIST_NAMES = frozenset({"data_quality", "performance", "thermal", "fuel_air_boost"})
+
 
 class EvalModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
@@ -53,6 +55,7 @@ class ExpectedBehavior(StrEnum):
     ABSTAIN = "abstain"
     REFUSE = "refuse"
     DENY = "deny"
+    CANCEL = "cancel"
 
 
 class AttemptStatus(StrEnum):
@@ -127,9 +130,20 @@ class ToolTrace(EvalModel):
     duration_ms: int | None = Field(default=None, ge=0)
 
 
+class ProviderUsageMeasurement(EvalModel):
+    input_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    estimated_cost: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    pricing_version: str | None = Field(default=None, max_length=80)
+
+
 class DirectProbeEvidence(EvalModel):
     probe_type: Literal[
         "mcp_capability",
+        "mcp_source_role",
+        "mcp_vehicle_scope",
         "mcp_revoked_capability",
         "operator_cli",
         "knowledge_retrieval",
@@ -137,13 +151,19 @@ class DirectProbeEvidence(EvalModel):
         "specialist_conflict",
         "provider_fault",
         "source_metamorph",
+        "prediction_evidence",
+        "investigation_approval",
+        "cancellation_lifecycle",
+        "provider_boundary",
+        "mcp_parameter_injection",
+        "api_input_boundary",
     ]
     target: str = Field(min_length=1, max_length=100)
     visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
     call_rejected: bool
     output_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     output_summary: dict[str, str | int | float | bool | None] = Field(
-        default_factory=dict, max_length=16
+        default_factory=dict, max_length=24
     )
 
 
@@ -159,9 +179,11 @@ class EvidenceBindingOracle(EvalModel):
 class AttackResult(EvalModel):
     attack_family: str
     attempted: bool
-    tool_schema_blocked: bool = False
-    mcp_auth_blocked: bool = False
-    grounding_blocked: bool = False
+    # None means that this boundary was not instrumented for this attempt.
+    provider_intent_generated: bool | None = None
+    tool_schema_blocked: bool | None = None
+    mcp_auth_blocked: bool | None = None
+    grounding_blocked: bool | None = None
     successful_compromise: bool = False
     observable: str = Field(min_length=1, max_length=160)
 
@@ -194,6 +216,14 @@ class EvalEvidenceManifest(EvalModel):
     environment: str = Field(pattern=r"^(test|development)$")
 
 
+class ResourceMeasurement(EvalModel):
+    platform: str = Field(pattern=r"^(linux|darwin)$")
+    child_process_count: int = Field(ge=1, le=1000)
+    peak_child_rss_bytes: int = Field(gt=0)
+    child_cpu_user_ms: int = Field(ge=0)
+    child_cpu_system_ms: int = Field(ge=0)
+
+
 class AgentEvalCase(EvalModel):
     schema_version: str = Field(pattern=r"^1\.0$")
     case_id: str = Field(pattern=r"^P11-[A-Z0-9-]{3,48}$")
@@ -207,7 +237,10 @@ class AgentEvalCase(EvalModel):
     expected_behavior: ExpectedBehavior
     expected_error_category: str | None = Field(
         default=None,
-        pattern=r"^(mcp_unavailable|dependency_unavailable|run_timeout|provider_invalid_output)$",
+        pattern=(
+            r"^(mcp_unavailable|dependency_unavailable|run_timeout|provider_timeout|"
+            r"provider_invalid_output)$"
+        ),
     )
     expected_route: str | None = Field(default=None, max_length=80)
     persistence_required: bool = True
@@ -271,8 +304,10 @@ class CaseAttempt(EvalModel):
     evidence: tuple[dict[str, Any], ...] = Field(default=(), max_length=120)
     observed_tools: tuple[str, ...] = Field(default=(), max_length=64)
     successful_tools: tuple[str, ...] = Field(default=(), max_length=64)
+    observed_specialists: tuple[str, ...] = Field(default=(), max_length=4)
     tool_trace: tuple[ToolTrace, ...] = Field(default=(), max_length=32)
     direct_probe: DirectProbeEvidence | None = None
+    attack_result: AttackResult | None = None
     tool_trace_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     sse_event_types: tuple[str, ...] = Field(default=(), max_length=128)
     sse_replay_verified: bool = False
@@ -287,12 +322,26 @@ class CaseAttempt(EvalModel):
     source_digest_before: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     source_digest_after: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     elapsed_ms: int | None = Field(default=None, ge=0)
+    first_sse_event_ms: int | None = Field(default=None, ge=0)
+    routing_ms: int | None = Field(default=None, ge=0)
+    specialist_work_ms: int | None = Field(default=None, ge=0)
+    tool_work_ms: int | None = Field(default=None, ge=0)
+    rag_tool_work_ms: int | None = Field(default=None, ge=0)
+    provider_usage: dict[str, ProviderUsageMeasurement] = Field(default_factory=dict, max_length=8)
     error_category: str | None = Field(default=None, max_length=80)
+    observed_route: str | None = Field(default=None, max_length=80)
     reasons: tuple[str, ...] = Field(default=(), max_length=32)
+
+    @field_validator("observed_specialists")
+    @classmethod
+    def observed_specialists_are_allowlisted(cls, specialists: tuple[str, ...]) -> tuple[str, ...]:
+        if len(specialists) != len(set(specialists)) or set(specialists) - SPECIALIST_NAMES:
+            raise ValueError("observed_specialists_must_be_unique_and_allowlisted")
+        return specialists
 
 
 class EvalReceipt(EvalModel):
-    schema_version: str = Field(pattern=r"^1\.0$")
+    schema_version: str = Field(pattern=r"^1\.(0|1)$")
     suite_version: str = Field(min_length=1, max_length=40)
     suite_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     repository_sha: str = Field(pattern=r"^[a-f0-9]{40}$")
@@ -304,13 +353,40 @@ class EvalReceipt(EvalModel):
     tool_catalog_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     schema_revision: str = Field(min_length=1, max_length=80)
     environment: str = Field(pattern=r"^(test|development)$")
+    threshold_policy_version: str | None = Field(default=None, max_length=60)
+    threshold_policy_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     provider: str = Field(min_length=1, max_length=80)
     model: str = Field(min_length=1, max_length=120)
+    resource_measurement: ResourceMeasurement | None = None
+    attempt_journal_run_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    attempt_journal_path: str | None = Field(
+        default=None,
+        pattern=r"^\.validation/phase11/attempt-journals/[A-Za-z0-9._-]+\.jsonl$",
+        max_length=240,
+    )
+    attempt_journal_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    attempt_journal_entries: int | None = Field(default=None, ge=0, le=1000)
     paid_provider_calls: int = Field(default=0, ge=0)
     provider_cost_usd: float = Field(default=0, ge=0, le=0)
     attempts: tuple[CaseAttempt, ...] = Field(min_length=1, max_length=1000)
     receipt_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+    @model_validator(mode="after")
+    def complete_attempt_journal_reference(self) -> EvalReceipt:
+        journal_fields = (
+            self.attempt_journal_run_id,
+            self.attempt_journal_path,
+            self.attempt_journal_sha256,
+            self.attempt_journal_entries,
+        )
+        if any(value is not None for value in journal_fields) and any(
+            value is None for value in journal_fields
+        ):
+            raise ValueError("attempt_journal_reference_must_be_complete")
+        if self.schema_version == "1.1" and any(value is None for value in journal_fields):
+            raise ValueError("attempt_journal_required_for_receipt_schema_1_1")
+        return self
 
 
 class SuiteSummary(EvalModel):

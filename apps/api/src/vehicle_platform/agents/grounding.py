@@ -439,7 +439,8 @@ def validate(draft: Draft, registry: EvidenceRegistry, context: VehicleContext) 
                 f"papel da fonte: {values['/prediction/source_role']}; "
                 f"corte de entrada: {values['/prediction/effective_cutoff']}. "
                 "O score não é probabilidade calibrada de falha nem telemetria observada "
-                "da próxima puxada."
+                "da próxima puxada. Ele também não é diagnóstico nem avaliação de "
+                "segurança para dirigir."
             )
         elif claim.template == "anomaly_result":
             if len(cited) != 1 or cited[0].source_tool != "get_prediction_evidence":

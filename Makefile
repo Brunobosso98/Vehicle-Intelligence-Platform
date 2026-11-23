@@ -316,9 +316,9 @@ benchmark-mlops:
 mlops-observability:
 	$(API)/python scripts/observability_mlops.py
 test-agent-evals:
-	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py apps/api/tests/unit/test_agents.py::test_forged_run_foreign_citation_is_rejected_then_abstained
+	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py apps/api/tests/unit/test_agent_eval_attack_attribution.py apps/api/tests/unit/test_agent_eval_journal.py apps/api/tests/unit/test_agent_eval_mutations.py apps/api/tests/unit/test_agent_eval_runtime_resources.py apps/api/tests/unit/test_agent_eval_thresholds.py apps/api/tests/unit/test_agents.py::test_forged_run_foreign_citation_is_rejected_then_abstained
 phase11-acceptance: test-agent-evals
-	bash scripts/mcp-validation.sh scripts/evaluate_agent_red_team.py
+	bash scripts/phase11-validation.sh
 benchmark-agent-evals:
 	$(API)/python scripts/vehicle_agent_evals.py benchmark
 agent-evals-observability:

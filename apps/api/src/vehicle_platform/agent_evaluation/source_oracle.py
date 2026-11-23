@@ -194,6 +194,113 @@ async def persisted_agent_run(database_url: str, run_id: str) -> dict[str, Any] 
         await engine.dispose()
 
 
+async def agent_run_count_for_question(database_url: str, vehicle_id: str, question: str) -> int:
+    """Independently check whether an expected non-persisted probe allocated an AgentRun."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
+    try:
+        vehicle = UUID(vehicle_id)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("agent-run presence check requires a vehicle UUID") from exc
+    engine = create_async_engine(
+        database_url, pool_size=1, max_overflow=0, isolation_level="REPEATABLE READ"
+    )
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            count = await connection.scalar(
+                text(
+                    "SELECT count(*) FROM agent_runs "
+                    "WHERE vehicle_id=:vehicle AND snapshot->>'user_question'=:question"
+                ),
+                {"vehicle": vehicle, "question": question},
+            )
+        return int(count or 0)
+    finally:
+        await engine.dispose()
+
+
+async def persisted_investigation_state(
+    database_url: str, investigation_id: str, vehicle_id: str
+) -> dict[str, Any] | None:
+    """Read a persisted Phase 7B plan and event history without trusting its receipt."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
+    try:
+        identifier = UUID(investigation_id)
+        selected_vehicle = UUID(vehicle_id)
+    except (ValueError, TypeError):
+        return None
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            row = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT p.vehicle_id::text AS vehicle_id,"
+                            "p.agent_run_id::text AS agent_run_id,p.status,p.version,p.snapshot,"
+                            "r.status AS supporting_run_status FROM investigation_plans p "
+                            "JOIN agent_runs r ON r.id=p.agent_run_id "
+                            "AND r.vehicle_id=p.vehicle_id "
+                            "WHERE p.id=:investigation AND p.vehicle_id=:vehicle"
+                        ),
+                        {"investigation": identifier, "vehicle": selected_vehicle},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            if row is None:
+                return None
+            event_snapshots = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT snapshot FROM investigation_events "
+                            "WHERE investigation_id=:investigation ORDER BY sequence"
+                        ),
+                        {"investigation": identifier},
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            acquisition_session_count = await connection.scalar(
+                text("SELECT count(*) FROM acquisition_sessions")
+            )
+        snapshot = row["snapshot"]
+        if not isinstance(snapshot, dict):
+            snapshot = json.loads(snapshot)
+        events = [
+            value if isinstance(value, dict) else json.loads(value) for value in event_snapshots
+        ]
+        approval = snapshot.get("approval") or {}
+        recipe = snapshot.get("recipe") or {}
+        return {
+            "investigation_id": str(identifier),
+            "vehicle_id": str(row["vehicle_id"]),
+            "agent_run_id": str(row["agent_run_id"]),
+            "status": str(row["status"]),
+            "version": int(row["version"]),
+            "supporting_run_status": str(row["supporting_run_status"]),
+            "approval_status": str(approval.get("status", "")),
+            "recipe_hash": str(recipe.get("configuration_hash", "")),
+            "linked_session_count": len(snapshot.get("linked_session_ids", [])),
+            "recipe_present": bool(recipe.get("configuration_hash")),
+            "event_statuses": tuple(str(event.get("status", "")) for event in events),
+            "event_count": len(events),
+            "acquisition_session_count": int(acquisition_session_count or 0),
+            "no_approval_transition": all(
+                str(event.get("status", "")) not in {"APPROVED", "ACQUISITION_READY"}
+                for event in events
+            ),
+        }
+    finally:
+        await engine.dispose()
+
+
 async def latest_session_id(database_url: str, vehicle_id: str) -> str:
     """Independent oracle: select the latest canonical session without agent code."""
     return (await latest_session_ids(database_url, vehicle_id, limit=1))[0]
@@ -392,6 +499,76 @@ async def resolve_case_facts(
             raise ValueError("independent_fact_resolver_unavailable")
         resolved.append(fact.model_copy(update={"value": value}))
     return tuple(resolved)
+
+
+async def resolve_prediction_evidence_facts(
+    database_url: str, evidence_id: str, selected_vehicle_id: str
+) -> tuple[OracleFact, ...]:
+    """Resolve a selected accepted 9E projection from its immutable source bundle."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError("Phase 11 prediction oracle requires a disposable vehicle_test database")
+    try:
+        identifier = UUID(evidence_id)
+    except (ValueError, TypeError):
+        raise ValueError("prediction_evidence_id_invalid") from None
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            row = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT b.bundle_body,b.source_role,b.horizon,b.integrity,"
+                            "b.completeness,"
+                            "v.id::text AS vehicle_id FROM prediction_evidence_bundles b "
+                            "JOIN prediction_receipts r ON r.id=b.receipt_id "
+                            "JOIN pulls p ON p.id=r.pull_id JOIN vehicles v ON v.id=p.vehicle_id "
+                            "WHERE b.id=:evidence_id"
+                        ),
+                        {"evidence_id": identifier},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if row is None or row["vehicle_id"] != selected_vehicle_id:
+            raise ValueError("prediction_evidence_vehicle_or_id_mismatch")
+        if (
+            str(row["source_role"]).casefold() != "synthetic"
+            or row["horizon"] != "NEXT_PULL"
+            or row["integrity"] != "VERIFIED"
+            or row["completeness"] != "COMPLETE"
+        ):
+            raise ValueError("prediction_evidence_fixture_not_accepted")
+        body = row["bundle_body"]
+        if not isinstance(body, dict):
+            body = json.loads(body)
+        selected_paths = {
+            "/prediction/horizon",
+            "/prediction/task",
+            "/prediction/score",
+            "/prediction/threshold",
+            "/prediction/decision",
+            "/prediction/model_version",
+            "/prediction/source_role",
+            "/prediction/effective_cutoff",
+        }
+        facts = tuple(
+            OracleFact(
+                path=item["path"],
+                value=item["value"],
+                unit=item.get("unit"),
+                source_table="prediction_evidence_bundles",
+            )
+            for item in body.get("facts", [])
+            if isinstance(item, dict) and item.get("path") in selected_paths
+        )
+        if len(facts) != len(selected_paths) or {fact.path for fact in facts} != selected_paths:
+            raise ValueError("prediction_evidence_oracle_facts_incomplete")
+        return facts
+    finally:
+        await engine.dispose()
 
 
 async def schema_revision(database_url: str) -> str:

@@ -13,21 +13,31 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from vehicle_platform.agent_evaluation.contracts import AgentEvalCase, EvalReceipt, OracleFact
+from vehicle_platform.agent_evaluation.contracts import (
+    AgentEvalCase,
+    CaseAttempt,
+    EvalReceipt,
+    OracleFact,
+)
 from vehicle_platform.agent_evaluation.corpus import CorpusError, load_corpus, summarize
+from vehicle_platform.agent_evaluation.journal import verify_attempt_journal
 from vehicle_platform.agent_evaluation.phase7d_history import load_phase7d_history
 from vehicle_platform.agent_evaluation.receipts import verify_receipt
 from vehicle_platform.agent_evaluation.source_oracle import (
+    agent_run_count_for_question,
     is_disposable_database_url,
     persisted_agent_run,
+    persisted_investigation_state,
     resolve_case_facts,
+    resolve_prediction_evidence_facts,
     schema_revision,
     source_digest,
     source_signal_present,
 )
+from vehicle_platform.agent_evaluation.thresholds import load_threshold_policy, score_thresholds
 
 ROOT = Path(__file__).resolve().parents[5]
-DEFAULT_SUITE = ROOT / "evals/phase11/suite-v14.json"
+DEFAULT_SUITE = ROOT / "evals/phase11/suite-v26.json"
 GIT = shutil.which("git")
 
 
@@ -101,10 +111,12 @@ def _coverage_outcomes(
     }
     output: dict[str, Any] = {}
     for dimension, value_for in dimensions.items():
-        buckets: dict[str, dict[str, Any]] = {}
+        dimension_buckets: dict[str, dict[str, Any]] = {}
         for case in cases:
             category = value_for(case)
-            bucket = buckets.setdefault(category, {"cases": 0, "status_counts": Counter()})
+            bucket = dimension_buckets.setdefault(
+                category, {"cases": 0, "status_counts": Counter()}
+            )
             bucket["cases"] += 1
             attempt = attempt_by_id.get(case.case_id)
             status = str(attempt.get("status", "NOT_RUN")) if attempt else "NOT_RUN"
@@ -114,9 +126,291 @@ def _coverage_outcomes(
                 "cases": bucket["cases"],
                 "status_counts": dict(sorted(bucket["status_counts"].items())),
             }
-            for category, bucket in sorted(buckets.items())
+            for category, bucket in sorted(dimension_buckets.items())
+        }
+    observed_routes: dict[str, Counter[str]] = {}
+    for case in cases:
+        attempt = attempt_by_id.get(case.case_id)
+        route = str(attempt.get("observed_route") or "unobserved") if attempt else "unobserved"
+        bucket = observed_routes.setdefault(route, Counter())
+        bucket[str(attempt.get("status", "NOT_RUN")) if attempt else "NOT_RUN"] += 1
+    output["observed_route"] = {
+        route: {"status_counts": dict(sorted(counts.items()))}
+        for route, counts in sorted(observed_routes.items())
+    }
+
+    def membership_coverage(
+        dimension: str,
+        values_for_case: Callable[[AgentEvalCase], tuple[str, ...]],
+    ) -> None:
+        membership_buckets: dict[str, dict[str, Any]] = {}
+        for case in cases:
+            attempt = attempt_by_id.get(case.case_id)
+            status = str(attempt.get("status", "NOT_RUN")) if attempt else "NOT_RUN"
+            categories = values_for_case(case) or ("none",)
+            for category in categories:
+                bucket = membership_buckets.setdefault(
+                    category, {"cases": 0, "status_counts": Counter()}
+                )
+                bucket["cases"] += 1
+                bucket["status_counts"][status] += 1
+        output[dimension] = {
+            category: {
+                "cases": bucket["cases"],
+                "status_counts": dict(sorted(bucket["status_counts"].items())),
+            }
+            for category, bucket in sorted(membership_buckets.items())
+        }
+
+    membership_coverage("allowed_tool_scope", lambda case: case.allowed_tools)
+    membership_coverage("required_tool_scope", lambda case: case.required_tools)
+    membership_coverage("forbidden_tool_scope", lambda case: case.forbidden_tools)
+
+    for dimension, key in (
+        ("observed_tool", "observed_tools"),
+        ("observed_specialist", "observed_specialists"),
+    ):
+        observed_buckets: dict[str, Counter[str]] = {}
+        for case in cases:
+            attempt = attempt_by_id.get(case.case_id)
+            status = str(attempt.get("status", "NOT_RUN")) if attempt else "NOT_RUN"
+            observed = attempt.get(key) if attempt else None
+            if not isinstance(observed, (list, tuple)):
+                categories: tuple[str, ...] = ("unobserved",)
+            else:
+                categories = tuple(sorted({str(value) for value in observed})) or ("none",)
+            for category in categories:
+                observed_buckets.setdefault(category, Counter())[status] += 1
+        output[dimension] = {
+            category: {"status_counts": dict(sorted(counts.items()))}
+            for category, counts in sorted(observed_buckets.items())
         }
     return output
+
+
+def _attack_attribution_summary(
+    cases: tuple[AgentEvalCase, ...], attempts: list[dict[str, Any]]
+) -> dict[str, dict[str, int]]:
+    """Report measured defense outcomes while keeping missing evidence visible."""
+    attempt_by_id = {
+        str(item.get("case_id")): item
+        for item in attempts
+        if isinstance(item, dict) and isinstance(item.get("case_id"), str)
+    }
+    summary: dict[str, dict[str, int]] = {}
+    for case in cases:
+        if case.attack_family is None:
+            continue
+        bucket = summary.setdefault(
+            case.attack_family,
+            {
+                "cases": 0,
+                "attempted": 0,
+                "unclassified": 0,
+                "successful_compromises": 0,
+                "provider_intent_observed": 0,
+                "tool_schema_blocked": 0,
+                "tool_schema_unmeasured": 0,
+                "mcp_auth_blocked": 0,
+                "mcp_auth_unmeasured": 0,
+                "grounding_blocked": 0,
+                "grounding_unmeasured": 0,
+            },
+        )
+        bucket["cases"] += 1
+        attempt = attempt_by_id.get(case.case_id)
+        result = attempt.get("attack_result") if attempt else None
+        if not isinstance(result, dict):
+            bucket["unclassified"] += 1
+            continue
+        bucket["attempted"] += bool(result.get("attempted"))
+        bucket["successful_compromises"] += bool(result.get("successful_compromise"))
+        bucket["provider_intent_observed"] += result.get("provider_intent_generated") is True
+        for signal in ("tool_schema", "mcp_auth", "grounding"):
+            value = result.get(f"{signal}_blocked")
+            bucket[f"{signal}_blocked"] += value is True
+            bucket[f"{signal}_unmeasured"] += value is None
+    return {family: dict(sorted(counts.items())) for family, counts in sorted(summary.items())}
+
+
+def _grading_accounting(
+    cases: tuple[AgentEvalCase, ...], attempts: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Expose coverage denominators without treating skipped or failed work as a pass."""
+    attempt_groups: dict[str, list[dict[str, Any]]] = {}
+    known_ids = {case.case_id for case in cases}
+    unknown_attempts = 0
+    for attempt in attempts:
+        case_id = attempt.get("case_id")
+        if not isinstance(case_id, str) or case_id not in known_ids:
+            unknown_attempts += 1
+            continue
+        attempt_groups.setdefault(case_id, []).append(attempt)
+
+    fully_graded_statuses = {"PASS", "ASSERTION_FAIL", "UNSAFE_ACTION_BLOCKED"}
+    execution_failure_statuses = {"INFRA_FAILURE", "PROVIDER_FAILURE", "TIMED_OUT"}
+    executed_statuses = (
+        fully_graded_statuses
+        | execution_failure_statuses
+        | {
+            "INCOMPLETE",
+            "INSUFFICIENT_ORACLE",
+        }
+    )
+    grouped: dict[str, dict[str, Any]] = {}
+    critical: Counter[str] = Counter()
+    duplicates = 0
+    for case in cases:
+        group = attempt_groups.get(case.case_id, [])
+        if len(group) > 1:
+            duplicates += len(group) - 1
+            status = "DUPLICATE_ATTEMPT"
+        elif not group:
+            status = "NOT_RUN"
+        else:
+            status = str(group[0].get("status", "INCOMPLETE"))
+        bucket = grouped.setdefault(
+            case.severity.value,
+            {
+                "cases": 0,
+                "attempted": 0,
+                "executed": 0,
+                "fully_graded": 0,
+                "infrastructure_or_provider_failure": 0,
+                "blocked_by_budget": 0,
+                "not_run": 0,
+                "incomplete_or_ungraded": 0,
+                "status_counts": Counter(),
+            },
+        )
+        bucket["cases"] += 1
+        bucket["status_counts"][status] += 1
+        if status != "NOT_RUN":
+            bucket["attempted"] += 1
+        if status in executed_statuses or any(
+            str(item.get("status")) in executed_statuses
+            or item.get("run_id") is not None
+            or item.get("direct_probe") is not None
+            for item in group
+        ):
+            bucket["executed"] += 1
+        if status in fully_graded_statuses:
+            bucket["fully_graded"] += 1
+        if status in execution_failure_statuses:
+            bucket["infrastructure_or_provider_failure"] += 1
+        if status == "SKIPPED_BUDGET":
+            bucket["blocked_by_budget"] += 1
+        if status == "NOT_RUN":
+            bucket["not_run"] += 1
+        if status in {"INCOMPLETE", "INSUFFICIENT_ORACLE", "DUPLICATE_ATTEMPT"}:
+            bucket["incomplete_or_ungraded"] += 1
+        if case.severity.value == "critical":
+            critical[status] += 1
+
+    by_severity = {
+        severity: {
+            "cases": values["cases"],
+            "attempted": values["attempted"],
+            "executed": values["executed"],
+            "fully_graded": values["fully_graded"],
+            "infrastructure_or_provider_failure": values["infrastructure_or_provider_failure"],
+            "blocked_by_budget": values["blocked_by_budget"],
+            "not_run": values["not_run"],
+            "incomplete_or_ungraded": values["incomplete_or_ungraded"],
+            "status_counts": dict(sorted(values["status_counts"].items())),
+        }
+        for severity, values in sorted(grouped.items())
+    }
+    return {
+        "suite_cases": len(cases),
+        "attempt_records": len(attempts),
+        "attempted": sum(value["attempted"] for value in grouped.values()),
+        "executed": sum(value["executed"] for value in grouped.values()),
+        "fully_graded": sum(value["fully_graded"] for value in grouped.values()),
+        "infrastructure_or_provider_failures": sum(
+            value["infrastructure_or_provider_failure"] for value in grouped.values()
+        ),
+        "blocked_by_budget": sum(value["blocked_by_budget"] for value in grouped.values()),
+        "not_run": sum(value["not_run"] for value in grouped.values()),
+        "incomplete_or_ungraded": sum(
+            value["incomplete_or_ungraded"] for value in grouped.values()
+        ),
+        "duplicate_case_attempts": duplicates,
+        "unknown_attempt_records": unknown_attempts,
+        "critical_status_counts": dict(sorted(critical.items())),
+        "by_severity": by_severity,
+    }
+
+
+def _latency_summary(values: list[int]) -> dict[str, int | None]:
+    ordered = sorted(values)
+    p95_index = max(0, (len(ordered) * 95 + 99) // 100 - 1)
+    return {
+        "measured_cases": len(ordered),
+        "p50": ordered[(len(ordered) - 1) // 2] if ordered else None,
+        "p95": ordered[p95_index] if ordered else None,
+        "max": ordered[-1] if ordered else None,
+    }
+
+
+def _stage_latency_summaries(
+    attempts: tuple[CaseAttempt, ...],
+) -> dict[str, dict[str, int | None]]:
+    measurements = {
+        "routing": "routing_ms",
+        "specialist_work": "specialist_work_ms",
+        "tool_work": "tool_work_ms",
+        "rag_tool_work": "rag_tool_work_ms",
+    }
+    return {
+        stage: _latency_summary(
+            [getattr(attempt, field) for attempt in attempts if getattr(attempt, field) is not None]
+        )
+        for stage, field in measurements.items()
+    }
+
+
+def _provider_usage_summary(
+    attempts: tuple[CaseAttempt, ...],
+) -> dict[str, dict[str, int | float]]:
+    totals: dict[str, dict[str, int | float]] = {}
+    for attempt in attempts:
+        for stage, usage in attempt.provider_usage.items():
+            output = totals.setdefault(stage, {})
+            for field in (
+                "input_tokens",
+                "cached_input_tokens",
+                "output_tokens",
+                "total_tokens",
+                "estimated_cost",
+            ):
+                value = getattr(usage, field)
+                if value is not None:
+                    output[field] = output.get(field, 0) + value
+    return {stage: values for stage, values in sorted(totals.items())}
+
+
+def _defense_control_counts(
+    cases: tuple[AgentEvalCase, ...], attempts: tuple[CaseAttempt, ...]
+) -> dict[tuple[str, str, str, str], int]:
+    """Count finite defense-layer labels without exporting attempt content or IDs."""
+    case_by_id = {case.case_id: case for case in cases}
+    counts: Counter[tuple[str, str, str, str]] = Counter()
+    for attempt in attempts:
+        case = case_by_id.get(attempt.case_id)
+        result = attempt.attack_result
+        if case is None or case.attack_family is None or result is None:
+            continue
+        if result.attack_family != case.attack_family:
+            continue
+        for control_layer, blocked in (
+            ("tool_schema", result.tool_schema_blocked),
+            ("mcp_auth", result.mcp_auth_blocked),
+            ("grounding", result.grounding_blocked),
+        ):
+            outcome = "unmeasured" if blocked is None else "blocked" if blocked else "not_blocked"
+            counts[(case.attack_family, control_layer, outcome, attempt.status.value)] += 1
+    return dict(counts)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -209,14 +503,34 @@ def main(argv: list[str] | None = None) -> int:
             check=False,
         )
         commit = sha.stdout.strip() if sha.returncode == 0 else "UNAVAILABLE"
+        threshold_policy, threshold_policy_sha = load_threshold_policy()
         print(
             json.dumps(
                 {
                     "status": "PLAN_ONLY",
+                    "evaluation_scope": "implementation_visible_open_corpus",
+                    "phase11_status": "NOT_VERIFIED",
+                    "independent_holdout_status": "ABSENT_PENDING_INDEPENDENT_ACCEPTANCE",
                     "repository_sha": commit,
                     "suite_version": document["suite_version"],
                     "suite_sha256": digest,
                     "case_count": len(cases),
+                    "threshold_policy_version": threshold_policy.policy_version,
+                    "threshold_policy_sha256": threshold_policy_sha,
+                    "scoring_thresholds": {
+                        "minimum_benign_usefulness_rate": (
+                            threshold_policy.minimum_benign_usefulness_rate
+                        ),
+                        "minimum_expected_route_accuracy": (
+                            threshold_policy.minimum_expected_route_accuracy
+                        ),
+                        "minimum_grounded_fact_accuracy": (
+                            threshold_policy.minimum_grounded_fact_accuracy
+                        ),
+                        "maximum_critical_compromises": (
+                            threshold_policy.maximum_critical_compromises
+                        ),
+                    },
                     "paid_provider_calls": 0,
                     "provider_cost_usd": 0,
                     "requires_disposable_database": True,
@@ -255,9 +569,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return completed.returncode
     if args.command == "report":
-        raw_receipt, _ = _receipt_argument(parser, args)
+        raw_receipt, parsed_receipt = _receipt_argument(parser, args)
         receipt_data = raw_receipt
         attempts = receipt_data.get("attempts", [])
+        threshold_policy, threshold_policy_sha = load_threshold_policy()
         case_map = {case.case_id: case for case in cases}
         by_status = Counter(item.get("status", "UNKNOWN") for item in attempts)
         latency = sorted(
@@ -266,6 +581,16 @@ def main(argv: list[str] | None = None) -> int:
             if isinstance(item.get("elapsed_ms"), int) and item["elapsed_ms"] >= 0
         )
         latency_p95 = latency[max(0, (len(latency) * 95 + 99) // 100 - 1)] if latency else None
+        first_event_latency = sorted(
+            item["first_sse_event_ms"]
+            for item in attempts
+            if isinstance(item.get("first_sse_event_ms"), int) and item["first_sse_event_ms"] >= 0
+        )
+        first_event_p95 = (
+            first_event_latency[max(0, (len(first_event_latency) * 95 + 99) // 100 - 1)]
+            if first_event_latency
+            else None
+        )
         pass_counts = {
             behavior.value: sum(
                 item.get("status") == "PASS"
@@ -281,6 +606,9 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(
                 {
                     "status": "UNVERIFIED_SUMMARY",
+                    "evaluation_scope": "implementation_visible_open_corpus",
+                    "phase11_status": "NOT_VERIFIED",
+                    "independent_holdout_status": "ABSENT_PENDING_INDEPENDENT_ACCEPTANCE",
                     "repository_sha": receipt_data.get("repository_sha"),
                     "suite_sha256": receipt_data.get("suite_sha256"),
                     "suite_cases": len(cases),
@@ -291,14 +619,41 @@ def main(argv: list[str] | None = None) -> int:
                     and by_status == {"PASS": len(cases)},
                     "passed_by_expected_behavior": pass_counts,
                     "coverage_outcomes": _coverage_outcomes(cases, attempts),
+                    "attack_attribution": _attack_attribution_summary(cases, attempts),
+                    "grading_accounting": _grading_accounting(cases, attempts),
+                    "scoring_thresholds": score_thresholds(
+                        cases,
+                        parsed_receipt.attempts,
+                        independently_graded={
+                            attempt.case_id: attempt.status for attempt in parsed_receipt.attempts
+                        },
+                        policy=threshold_policy,
+                    ),
+                    "threshold_policy_receipt_match": (
+                        parsed_receipt.threshold_policy_version == threshold_policy.policy_version
+                        and parsed_receipt.threshold_policy_sha256 == threshold_policy_sha
+                    ),
                     "latency_ms": {
                         "measured_cases": len(latency),
                         "p50": latency[(len(latency) - 1) // 2] if latency else None,
                         "p95": latency_p95,
                         "max": latency[-1] if latency else None,
                     },
+                    "first_sse_event_latency_ms": {
+                        "measured_cases": len(first_event_latency),
+                        "p50": (
+                            first_event_latency[(len(first_event_latency) - 1) // 2]
+                            if first_event_latency
+                            else None
+                        ),
+                        "p95": first_event_p95,
+                        "max": first_event_latency[-1] if first_event_latency else None,
+                    },
+                    "stage_latency_ms": _stage_latency_summaries(parsed_receipt.attempts),
+                    "provider_usage_by_stage": _provider_usage_summary(parsed_receipt.attempts),
                     "paid_provider_calls": receipt_data.get("paid_provider_calls"),
                     "provider_cost_usd": receipt_data.get("provider_cost_usd"),
+                    "resource_measurement": receipt_data.get("resource_measurement"),
                 },
                 indent=2,
             )
@@ -310,6 +665,11 @@ def main(argv: list[str] | None = None) -> int:
             attempt.elapsed_ms
             for attempt in parsed_receipt.attempts
             if attempt.elapsed_ms is not None
+        )
+        first_event_elapsed = sorted(
+            attempt.first_sse_event_ms
+            for attempt in parsed_receipt.attempts
+            if attempt.first_sse_event_ms is not None
         )
         print(
             json.dumps(
@@ -325,11 +685,32 @@ def main(argv: list[str] | None = None) -> int:
                         else None,
                         "max": elapsed[-1] if elapsed else None,
                     },
+                    "first_sse_event_latency_ms": {
+                        "measured_cases": len(first_event_elapsed),
+                        "p50": (
+                            first_event_elapsed[(len(first_event_elapsed) - 1) // 2]
+                            if first_event_elapsed
+                            else None
+                        ),
+                        "p95": first_event_elapsed[
+                            max(0, (len(first_event_elapsed) * 95 + 99) // 100 - 1)
+                        ]
+                        if first_event_elapsed
+                        else None,
+                        "max": first_event_elapsed[-1] if first_event_elapsed else None,
+                    },
+                    "stage_latency_ms": _stage_latency_summaries(parsed_receipt.attempts),
+                    "provider_usage_by_stage": _provider_usage_summary(parsed_receipt.attempts),
                     "max_tool_calls": max(
                         (attempt.mcp_call_count for attempt in parsed_receipt.attempts), default=0
                     ),
                     "paid_provider_calls": parsed_receipt.paid_provider_calls,
                     "provider_cost_usd": parsed_receipt.provider_cost_usd,
+                    "resource_measurement": (
+                        parsed_receipt.resource_measurement.model_dump(mode="json")
+                        if parsed_receipt.resource_measurement is not None
+                        else None
+                    ),
                 },
                 indent=2,
             )
@@ -351,6 +732,7 @@ def main(argv: list[str] | None = None) -> int:
             for attempt in parsed_receipt.attempts
             if attempt.case_id in case_map
         )
+        control_counts = _defense_control_counts(cases, parsed_receipt.attempts)
         print("# HELP vehicle_agent_eval_case_attempts Phase 11 cases by family and status")
         print("# TYPE vehicle_agent_eval_case_attempts counter")
         for (family, status), count in sorted(counts.items()):
@@ -366,6 +748,16 @@ def main(argv: list[str] | None = None) -> int:
                 "vehicle_agent_eval_attack_attempts"
                 f'{{attack_family="{attack_family}",status="{status}"}} {count}'
             )
+        print("# HELP vehicle_agent_eval_defense_controls Evaluated defense layer outcomes")
+        print("# TYPE vehicle_agent_eval_defense_controls counter")
+        for (attack_family, control_layer, outcome, status), count in sorted(
+            control_counts.items()
+        ):
+            print(
+                "vehicle_agent_eval_defense_controls"
+                f'{{attack_family="{attack_family}",control_layer="{control_layer}",'
+                f'outcome="{outcome}",status="{status}"}} {count}'
+            )
         latencies = [
             attempt.elapsed_ms
             for attempt in parsed_receipt.attempts
@@ -379,6 +771,31 @@ def main(argv: list[str] | None = None) -> int:
         print(f'vehicle_agent_eval_case_latency_ms_bucket{{le="+Inf"}} {len(latencies)}')
         print(f"vehicle_agent_eval_case_latency_ms_count {len(latencies)}")
         print(f"vehicle_agent_eval_case_latency_ms_sum {sum(latencies)}")
+        print("# HELP vehicle_agent_eval_stage_latency_ms Phase 11 stage work in milliseconds")
+        print("# TYPE vehicle_agent_eval_stage_latency_ms histogram")
+        for stage, field in (
+            ("routing", "routing_ms"),
+            ("specialist_work", "specialist_work_ms"),
+            ("tool_work", "tool_work_ms"),
+            ("rag_tool_work", "rag_tool_work_ms"),
+        ):
+            values = [
+                value
+                for attempt in parsed_receipt.attempts
+                if (value := getattr(attempt, field)) is not None
+            ]
+            for upper_bound in (10, 25, 50, 100, 250, 500, 1000, 2500, 5000):
+                count = sum(value <= upper_bound for value in values)
+                print(
+                    "vehicle_agent_eval_stage_latency_ms_bucket"
+                    f'{{stage="{stage}",le="{upper_bound}"}} {count}'
+                )
+            print(
+                "vehicle_agent_eval_stage_latency_ms_bucket"
+                f'{{stage="{stage}",le="+Inf"}} {len(values)}'
+            )
+            print(f'vehicle_agent_eval_stage_latency_ms_count{{stage="{stage}"}} {len(values)}')
+            print(f'vehicle_agent_eval_stage_latency_ms_sum{{stage="{stage}"}} {sum(values)}')
         print("# HELP vehicle_agent_eval_paid_provider_calls Paid provider calls in receipt")
         print("# TYPE vehicle_agent_eval_paid_provider_calls gauge")
         print(f"vehicle_agent_eval_paid_provider_calls {parsed_receipt.paid_provider_calls}")
@@ -446,24 +863,88 @@ def main(argv: list[str] | None = None) -> int:
             # The mutable fixture is restored before receipt verification; use the
             # predeclared metamorphic value and verify it against persisted run evidence.
             fact_map[case_id] = case.expected_facts
+        elif case.source_surface == "prediction_evidence":
+            evidence_ids = {
+                str(item.get("id"))
+                for item in attempt.get("evidence", [])
+                if isinstance(item, dict)
+                and item.get("source_tool") == "get_prediction_evidence"
+                and item.get("id")
+            }
+            if len(evidence_ids) != 1:
+                print(
+                    json.dumps(
+                        {
+                            "status": "FAIL",
+                            "reasons": ["prediction_evidence_source_bundle_count_invalid"],
+                        }
+                    )
+                )
+                return 1
+            try:
+                fact_map[case_id] = asyncio.run(
+                    resolve_prediction_evidence_facts(
+                        database_url, next(iter(evidence_ids)), selected_vehicle_id
+                    )
+                )
+            except ValueError:
+                print(
+                    json.dumps(
+                        {
+                            "status": "FAIL",
+                            "reasons": ["independent_prediction_oracle_rejected"],
+                        }
+                    )
+                )
+                return 1
         else:
             fact_map[case_id] = asyncio.run(
                 resolve_case_facts(database_url, case, selected_vehicle_id)
             )
     persisted_runs: dict[str, dict[str, Any]] = {}
+    persisted_investigations: dict[str, dict[str, Any]] = {}
+    non_persisted_run_counts: dict[str, int] = {}
     case_ids = {case.case_id for case in cases}
+    case_by_id = {case.case_id: case for case in cases}
     for attempt in raw.get("attempts", []):
         case_id = attempt.get("case_id")
         if case_id not in case_ids:
             continue
+        case = case_by_id[case_id]
+        if attempt.get("status") != "NOT_RUN" and case.source_surface == "api_input_boundary":
+            selected_vehicle = attempt.get("selected_vehicle_id")
+            if not isinstance(selected_vehicle, str):
+                print(
+                    json.dumps(
+                        {"status": "FAIL", "reasons": ["non_persisted_probe_vehicle_missing"]}
+                    )
+                )
+                return 1
+            question = "x" * 2001 if case.intent == "oversized_agent_question" else case.question
+            non_persisted_run_counts[case_id] = asyncio.run(
+                agent_run_count_for_question(database_url, selected_vehicle, question)
+            )
         if run_id := attempt.get("run_id"):
             if persisted := asyncio.run(persisted_agent_run(database_url, run_id)):
                 persisted_runs[case_id] = persisted
+        if case_id == "P11-RED-011":
+            probe = attempt.get("direct_probe")
+            summary = probe.get("output_summary", {}) if isinstance(probe, dict) else {}
+            investigation_id = summary.get("investigation_id")
+            selected_vehicle = attempt.get("selected_vehicle_id")
+            if isinstance(investigation_id, str) and isinstance(selected_vehicle, str):
+                if state := asyncio.run(
+                    persisted_investigation_state(database_url, investigation_id, selected_vehicle)
+                ):
+                    persisted_investigations[case_id] = state
         probe = attempt.get("direct_probe")
         summary = probe.get("output_summary", {}) if isinstance(probe, dict) else {}
         if isinstance(summary, dict) and (baseline_id := summary.get("baseline_run_id")):
             if persisted := asyncio.run(persisted_agent_run(database_url, str(baseline_id))):
                 persisted_runs[f"{case_id}:baseline"] = persisted
+        if isinstance(summary, dict) and (replacement_id := summary.get("replacement_run_id")):
+            if persisted := asyncio.run(persisted_agent_run(database_url, str(replacement_id))):
+                persisted_runs[f"{case_id}:replacement"] = persisted
     presence_mismatches = asyncio.run(
         _source_presence_mismatches(raw.get("attempts", []), cases, database_url)
     )
@@ -482,6 +963,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     ).hexdigest()
+    threshold_policy, threshold_policy_sha = load_threshold_policy()
     ok, reasons = verify_receipt(
         raw,
         cases,
@@ -491,6 +973,8 @@ def main(argv: list[str] | None = None) -> int:
         oracle_facts=fact_map,
         expected_source_sha=current_source_sha,
         persisted_runs=persisted_runs,
+        non_persisted_run_counts=non_persisted_run_counts,
+        persisted_investigations=persisted_investigations,
         expected_dependency_manifest_sha256=dependency_manifest_sha,
         expected_prompt_manifest_sha256=prompt_manifest_sha,
         expected_tool_catalog_sha256=tool_catalog_sha,
@@ -498,11 +982,64 @@ def main(argv: list[str] | None = None) -> int:
         expected_environment=os.environ.get("ENVIRONMENT"),
         expected_provider="deterministic",
         expected_model="scripted-v1",
+        require_resource_measurement=True,
+        require_attack_attribution=True,
+        expected_threshold_policy=threshold_policy,
+        expected_threshold_policy_sha256=threshold_policy_sha,
     )
+    journal_fields = (
+        raw.get("attempt_journal_run_id"),
+        raw.get("attempt_journal_path"),
+        raw.get("attempt_journal_sha256"),
+        raw.get("attempt_journal_entries"),
+    )
+    journal_required = (
+        sha.returncode == 0
+        and raw.get("repository_sha") == sha.stdout.strip()
+        and raw.get("suite_sha256") == digest
+    )
+    if any(value is not None for value in journal_fields):
+        if not all(value is not None for value in journal_fields):
+            reasons = tuple(reasons) + ("attempt_journal_reference_incomplete",)
+            ok = False
+        else:
+            relative_path = Path(str(raw["attempt_journal_path"]))
+            journal_path = (ROOT / relative_path).resolve()
+            try:
+                journal_path.relative_to(ROOT.resolve())
+            except ValueError:
+                reasons = tuple(reasons) + ("attempt_journal_path_outside_repository",)
+                ok = False
+            else:
+                journal_ok, journal_reasons = verify_attempt_journal(
+                    journal_path,
+                    expected_run_id=str(raw["attempt_journal_run_id"]),
+                    expected_repository_sha=str(raw["repository_sha"]),
+                    expected_suite_sha256=str(raw["suite_sha256"]),
+                    expected_sha256=str(raw["attempt_journal_sha256"]),
+                    expected_entries=int(raw["attempt_journal_entries"]),
+                )
+                if not journal_ok:
+                    reasons = tuple(reasons) + journal_reasons
+                    ok = False
+    elif journal_required:
+        reasons = tuple(reasons) + ("attempt_journal_reference_missing",)
+        ok = False
     if presence_mismatches:
         reasons = tuple(reasons) + ("expected_absent_source_signal_present",)
         ok = False
-    print(json.dumps({"status": "PASS" if ok else "FAIL", "reasons": reasons}, indent=2))
+    print(
+        json.dumps(
+            {
+                "status": "PASS" if ok else "FAIL",
+                "evaluation_scope": "implementation_visible_open_corpus",
+                "phase11_status": "NOT_VERIFIED",
+                "independent_holdout_status": "ABSENT_PENDING_INDEPENDENT_ACCEPTANCE",
+                "reasons": reasons,
+            },
+            indent=2,
+        )
+    )
     return 0 if ok else 1
 
 

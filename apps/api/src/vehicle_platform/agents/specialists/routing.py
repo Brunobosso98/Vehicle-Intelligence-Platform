@@ -1,5 +1,7 @@
 """Hybrid routing: typed model intent constrained by question and actual evidence families."""
 
+import base64
+import binascii
 import re
 from dataclasses import dataclass
 
@@ -101,14 +103,31 @@ def prediction_request_intent(question: str) -> Intent | None:
 
 
 def unsafe_ecu_operation_question(question: str) -> bool:
-    """Recognize direct requests to flash/program/write the ECU before tool discovery."""
-    return bool(
-        re.search(
-            r"\b(?:flash|reflash|program|reprogram|write to|write)\b"
-            r".{0,60}\b(?:ecu|engine control unit)\b",
-            question.casefold(),
-        )
+    """Recognize plain or simply Base64-encoded ECU writes before tool discovery."""
+    operation = re.compile(
+        r"\b(?:flash|reflash|program|reprogram|write to|write)\b"
+        r".{0,60}\b(?:ecu|engine control unit)\b",
+        re.IGNORECASE | re.DOTALL,
     )
+    if operation.search(question):
+        return True
+
+    # Inspect short, syntactically valid Base64 tokens. The question schema caps input
+    # at 2,000 characters, so scanning every token stays bounded without a bypass via
+    # harmless tokens placed before the encoded instruction.
+    candidates = re.findall(
+        r"(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{12,172}={0,2}(?![A-Za-z0-9+/])",
+        question,
+    )
+    for candidate in candidates:
+        padded = candidate + "=" * (-len(candidate) % 4)
+        try:
+            decoded = base64.b64decode(padded, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError):
+            continue
+        if operation.search(decoded):
+            return True
+    return False
 
 
 def risk_sensitive_question(question: str) -> bool:
