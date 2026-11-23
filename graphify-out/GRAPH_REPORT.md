@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-23)
 
 ## Corpus Check
-- 727 files · ~883,245 words
+- 727 files · ~883,265 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d112e72a`
+- Built from commit: `63e84143`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

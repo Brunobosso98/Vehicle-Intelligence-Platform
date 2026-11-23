@@ -4295,6 +4295,9 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
     assert report["attempts"] == 1
     assert report["status"] == "UNVERIFIED_SUMMARY"
     assert report["cases_not_run"] == 1
+    assert report["statistical_uncertainty"]["status"] == "UNDEFINED"
+    assert report["statistical_uncertainty"]["reason"] == "no_fully_graded_cases"
+    assert report["statistical_uncertainty"]["cases_graded"] == 0
     assert report["latency_ms"] == {"measured_cases": 1, "p50": 50, "p95": 50, "max": 50}
     assert report["first_sse_event_latency_ms"] == {
         "measured_cases": 1,
@@ -4315,6 +4318,8 @@ def test_cli_list_inspect_plan_report_compare_and_verify(tmp_path, monkeypatch, 
     assert cli.main(["benchmark", "--receipt", str(left)]) == 0
     benchmark = json.loads(capsys.readouterr().out)
     assert benchmark["status"] == "UNVERIFIED_BENCHMARK"
+    assert benchmark["statistical_uncertainty"]["status"] == "UNDEFINED"
+    assert benchmark["statistical_uncertainty"]["reason"] == "no_fully_graded_cases"
     assert benchmark["latency_ms"]["p95"] == 50
     assert benchmark["first_sse_event_latency_ms"]["p95"] == 20
     assert benchmark["stage_latency_ms"]["rag_tool_work"]["p95"] == 7
