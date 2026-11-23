@@ -648,8 +648,12 @@ PostgreSQL connection after Docker DNAT, so `seed_agent` received a connection r
 sanitized report recorded `INFRA_FAILURE`, zero attempts and zero provider calls. A second exact-SHA
 run (`84f55a08e587fffef6d0a3b4e45de10738848362`) failed identically: conntrack's original-destination
 match did not admit this host's Docker path. The source now inspects the disposable database
-container IP and allows only TCP/5432 to that private address. Shell syntax and the cloud-compatible
-gate pass; Docker confirmation is pending on a new final-SHA run. On `54076e7`, CI, Security, Phase
-9G, Phase 9H and Phase 10 passed; Phase 0 full validation was cancelled after the known Phase 11
-failure. Phase 11 remains **NOT VERIFIED**; independent holdout selection and the remaining
-acceptance gaps are still outstanding.
+container IP and allows only TCP/5432 to that private address. A third run on
+`b6dff4c1e4b70c2ab7da8dff09e0050cecc0d6af` confirmed DB access and journaled 16 attempts, then failed
+with HTTP 422 on `P11-RED-016`: the harness omitted the required prediction capability header. The
+runner now carries that ephemeral capability only on explicitly authorized evidence requests, and
+has regression tests; the negative capability case still omits it. The current local source passes
+207 focused evaluator/runtime tests, strict runner typing, and `make verify-cloud` with 1,734 API
+tests and 140 web tests. On `54076e7`, CI, Security, Phase 9G, Phase 9H and Phase 10 passed;
+Phase 0 full validation was cancelled after the known Phase 11 failure. Phase 11 remains **NOT
+VERIFIED**; independent holdout selection and the remaining acceptance gaps are still outstanding.

@@ -859,12 +859,14 @@ async def _evaluate_case(
     database_url: str,
     *,
     prediction_evidence_ids: tuple[str, ...] = (),
+    prediction_capability: str | None = None,
 ) -> CaseAttempt:
     result = await ask(
         api,
         vehicle_id,
         case.question,
         prediction_evidence_ids=prediction_evidence_ids,
+        prediction_capability=prediction_capability,
     )
     audit_response = await api.get(
         f"/api/v1/vehicles/{vehicle_id}/agent-runs/{result['id']}/audit"
@@ -2003,6 +2005,7 @@ async def _evaluate_missing_9e_artifact(
             source_sha,
             database_url,
             prediction_evidence_ids=(evidence_id,),
+            prediction_capability=stack["prediction_capability"],
         )
     evidence_sources = [
         item
@@ -2578,6 +2581,7 @@ async def evaluate(database_url: str) -> int:
             prediction_fixture["vehicle_id"],
             prediction_case.question,
             prediction_evidence_ids=(prediction_fixture["evidence_id"],),
+            prediction_capability=stack["prediction_capability"],
         )
         prediction_audit = await api.get(
             f"/api/v1/vehicles/{prediction_fixture['vehicle_id']}/agent-runs/"

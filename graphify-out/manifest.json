@@ -1734,9 +1734,9 @@
     "semantic_hash": ""
   },
   "scripts/agent_runtime.py": {
-    "mtime": 1795465901.230531,
-    "seen": 1795467133.2942924,
-    "ast_hash": "a2fa543f812a948ab7073a5f7bdf5ace",
+    "mtime": 1795472093.514528,
+    "seen": 1795472508.9551306,
+    "ast_hash": "1fdbbc8cf6332bd8fbbfcce3d995bde7",
     "semantic_hash": ""
   },
   "scripts/benchmark_agent.py": {
@@ -4182,9 +4182,9 @@
     "semantic_hash": ""
   },
   "scripts/evaluate_agent_red_team.py": {
-    "mtime": 1795469825.566527,
-    "seen": 1795470334.4365284,
-    "ast_hash": "62e3a2eb825b7bf553c8fe6228ed761d",
+    "mtime": 1795472093.518528,
+    "seen": 1795472508.9551697,
+    "ast_hash": "75b4b0f2f5e79cd6735ff58e3e80bec2",
     "semantic_hash": ""
   },
   "scripts/vehicle_agent_evals.py": {
@@ -4218,15 +4218,15 @@
     "semantic_hash": ""
   },
   "docs/security/phase-11-agent-red-team.md": {
-    "mtime": 1795460445.714517,
-    "seen": 1795460501.2455347,
-    "ast_hash": "ab38b3a19af15d92ae6197373df6dcfd",
+    "mtime": 1795471517.166531,
+    "seen": 1795472508.9555035,
+    "ast_hash": "22f891750cc6e8c03ba2be8373c30bbc",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795469554.3185155,
-    "seen": 1795470334.436872,
-    "ast_hash": "d6338ff2caafcd0b7471609ea9a4cf51",
+    "mtime": 1795472169.518528,
+    "seen": 1795472508.9555194,
+    "ast_hash": "39e97aa8210bae65c59596bd14d1a10d",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
@@ -4242,15 +4242,15 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-reliability-evaluation.md": {
-    "mtime": 1795469647.8425078,
-    "seen": 1795470334.4368753,
-    "ast_hash": "d49d6ad48cdc604819b6960ce481a106",
+    "mtime": 1795472169.518528,
+    "seen": 1795472508.955523,
+    "ast_hash": "e3fd3f9a90b7f675c5f9e680e6386324",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795470007.446536,
-    "seen": 1795470334.4368768,
-    "ast_hash": "9c27f9b0e9963013bcf502545469f83c",
+    "mtime": 1795472169.518528,
+    "seen": 1795472508.9555244,
+    "ast_hash": "4977f79dc87eeace9ff1c089e4a4f658",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {
@@ -4374,9 +4374,9 @@
     "semantic_hash": ""
   },
   "scripts/phase11-validation.sh": {
-    "mtime": 1795460416.81452,
-    "seen": 1795460501.2452884,
-    "ast_hash": "2cb77cbb47e875b24a9692b8b203bc94",
+    "mtime": 1795471517.166531,
+    "seen": 1795472508.9552276,
+    "ast_hash": "def69977c98a11ed98a9057aadaabc93",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v18.json": {
@@ -4410,9 +4410,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_eval_runtime_resources.py": {
-    "mtime": 1795459481.6705136,
-    "seen": 1795459578.1565483,
-    "ast_hash": "9d3ed3937d1234adf2711587c27b7f0f",
+    "mtime": 1795472124.9745276,
+    "seen": 1795472508.9548514,
+    "ast_hash": "82f89e3a9db6c57dcec8e7c7e8d40950",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v23.json": {

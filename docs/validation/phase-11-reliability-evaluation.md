@@ -90,7 +90,13 @@ DNAT; the report records zero attempts and zero provider calls. A second exact-S
 (`84f55a08e587fffef6d0a3b4e45de10738848362`) failed identically: the host's Docker path did not
 match conntrack's original-destination rule. The source now inspects the disposable database
 container IP and permits only TCP/5432 to that address; shell syntax and the cloud gate pass, but
-Docker confirmation awaits a new final-SHA run. On `54076e7`, CI, Security, Phase 9G, Phase 9H and
-Phase 10 passed; full validation was cancelled after the known Phase 11 failure. Independent
-holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10 action coverage
-remain unresolved; Phase 11 is **NOT VERIFIED**.
+Docker confirmation awaits a new final-SHA run. A third run on
+`b6dff4c1e4b70c2ab7da8dff09e0050cecc0d6af` confirmed DB access and journaled 16 attempts, then
+failed with HTTP 422 on `P11-RED-016`: the harness omitted the required prediction capability header.
+The runner now supplies that ephemeral header only for explicitly authorized evidence reads, with
+focused regression coverage. Current local validation passes 207 focused evaluator/runtime tests,
+strict runner typing, and `make verify-cloud` with 1,734 API and 140 web tests; final-SHA validation
+remains pending. On `54076e7`, CI, Security,
+Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
+failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10
+action coverage remain unresolved; Phase 11 is **NOT VERIFIED**.

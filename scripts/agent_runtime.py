@@ -301,6 +301,7 @@ async def runtime(
             "mcp_url": mcp_base + "/mcp",
             "mcp": processes[0],
             "token": token,
+            "prediction_capability": prediction_operator_token,
             "secret_values": tuple(
                 value
                 for value in (
@@ -353,16 +354,21 @@ async def ask(
     *,
     session_id: str | None = None,
     prediction_evidence_ids: tuple[str, ...] = (),
+    prediction_capability: str | None = None,
 ) -> dict[str, Any]:
     started = perf_counter()
     path = f"/api/v1/vehicles/{vehicle}/agent-runs"
     request_body: dict[str, Any] = {"question": question}
     if session_id is not None:
         request_body["session_id"] = session_id
+    headers: dict[str, str] = {}
     if prediction_evidence_ids:
+        if not prediction_capability:
+            raise ValueError("prediction evidence reads require a runtime capability")
         request_body["include_prediction_evidence"] = True
         request_body["prediction_evidence_ids"] = list(prediction_evidence_ids)
-    response = await api.post(path, json=request_body)
+        headers["X-VIP-Prediction-Agent-Capability"] = prediction_capability
+    response = await api.post(path, json=request_body, headers=headers)
     response.raise_for_status()
     identifier = response.json()["id"]
     stream_started = perf_counter()

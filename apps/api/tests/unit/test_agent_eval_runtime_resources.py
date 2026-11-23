@@ -86,6 +86,67 @@ async def test_ask_measures_first_sse_event_from_stream_delivery():
 
 
 @pytest.mark.asyncio
+async def test_ask_sends_prediction_capability_only_for_explicit_evidence_reads():
+    run = {"id": "run-1", "status": "completed", "result": {"answer": "recorded"}}
+    post_request: httpx.Request | None = None
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal post_request
+        if request.method == "POST":
+            post_request = request
+            return httpx.Response(201, json={"id": "run-1"})
+        if request.url.path.endswith("/stream"):
+            if request.url.params.get("after") == "2":
+                return httpx.Response(200, content=b"")
+            if request.url.params.get("after") == "0":
+                return httpx.Response(
+                    200,
+                    content=(
+                        b"id: 1\nevent: run_started\ndata: {}\n\n"
+                        b"id: 2\nevent: run_completed\ndata: {}\n\n"
+                    ),
+                )
+            return httpx.Response(200, stream=DelayedSSEBody())
+        if request.url.path.endswith("/audit"):
+            return httpx.Response(200, json={"tool_calls": []})
+        return httpx.Response(200, json=run)
+
+    async with httpx.AsyncClient(
+        base_url="http://phase11.test", transport=httpx.MockTransport(handler)
+    ) as client:
+        result = await ask(
+            client,
+            "vehicle-1",
+            "What does the recorded prediction show?",
+            prediction_evidence_ids=("00000000-0000-4000-8000-000000000001",),
+            prediction_capability="controlled-runtime-capability",
+        )
+
+    assert post_request is not None
+    assert post_request.headers["X-VIP-Prediction-Agent-Capability"] == (
+        "controlled-runtime-capability"
+    )
+    assert result["sse_replay"]["verified"] is True
+
+
+@pytest.mark.asyncio
+async def test_ask_rejects_prediction_evidence_without_runtime_capability():
+    async with httpx.AsyncClient(
+        base_url="http://phase11.test",
+        transport=httpx.MockTransport(
+            lambda _request: pytest.fail("request must be rejected before API call")
+        ),
+    ) as client:
+        with pytest.raises(ValueError, match="require a runtime capability"):
+            await ask(
+                client,
+                "vehicle-1",
+                "What does the prediction show?",
+                prediction_evidence_ids=("00000000-0000-4000-8000-000000000001",),
+            )
+
+
+@pytest.mark.asyncio
 async def test_prediction_evidence_runtime_passes_controlled_service_to_api(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

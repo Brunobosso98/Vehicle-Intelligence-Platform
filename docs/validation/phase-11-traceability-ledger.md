@@ -181,9 +181,13 @@ complete merely because a scenario is present in JSON.
   sanitized artifact records `INFRA_FAILURE`, zero attempts and zero provider calls. A second
   attempt on `84f55a0` failed identically because conntrack's original-destination rule did not
   match the host's Docker path. The source now inspects the disposable database IP and permits only
-  TCP/5432 to that destination; shell syntax and cloud-compatible checks pass, but final-SHA Docker
-  confirmation must rerun. CI, Security, Phase 9G, Phase 9H and Phase 10 passed on `54076e7`;
-  canonical full validation was cancelled after the known Phase 11 failure.
+  TCP/5432 to that destination. Run `b6dff4c` confirmed DB access and journaled 16 attempts, then
+  failed with HTTP 422 on `P11-RED-016` because the runner omitted its required prediction
+  capability header. The runner now passes the ephemeral capability only to authorized reads and
+  has regression tests; current local focused tests, typing and `make verify-cloud` pass. Final-SHA
+  Docker confirmation must rerun. CI, Security, Phase 9G, Phase 9H and
+  Phase 10 passed on `54076e7`; canonical full validation was cancelled after the known Phase 11
+  failure.
 - On remote SHA `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`, Phase 11 independent acceptance
   failed during API startup; the security workflow failed on refreshed OpenSSL findings, and
   canonical full validation was cancelled after those failures. Phase 9G, Phase 9H, Phase 10,
