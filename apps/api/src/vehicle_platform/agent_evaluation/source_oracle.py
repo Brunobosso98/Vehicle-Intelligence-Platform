@@ -520,10 +520,11 @@ async def resolve_prediction_evidence_facts(
                     await connection.execute(
                         text(
                             "SELECT b.bundle_body,b.source_role,b.horizon,b.integrity,"
-                            "b.completeness,"
+                            "b.completeness,mv.version AS model_version,"
                             "v.id::text AS vehicle_id FROM prediction_evidence_bundles b "
                             "JOIN prediction_receipts r ON r.id=b.receipt_id "
                             "JOIN pulls p ON p.id=r.pull_id JOIN vehicles v ON v.id=p.vehicle_id "
+                            "LEFT JOIN ml_model_versions mv ON mv.id=r.model_version_id "
                             "WHERE b.id=:evidence_id"
                         ),
                         {"evidence_id": identifier},
@@ -544,28 +545,31 @@ async def resolve_prediction_evidence_facts(
         body = row["bundle_body"]
         if not isinstance(body, dict):
             body = json.loads(body)
-        selected_paths = {
-            "/prediction/horizon",
-            "/prediction/task",
-            "/prediction/score",
-            "/prediction/threshold",
-            "/prediction/decision",
-            "/prediction/model_version",
-            "/prediction/source_role",
-            "/prediction/effective_cutoff",
+        prediction = body.get("prediction")
+        values = {
+            "/prediction/horizon": body.get("horizon"),
+            "/prediction/task": body.get("task"),
+            "/prediction/score": prediction.get("score") if isinstance(prediction, dict) else None,
+            "/prediction/threshold": (
+                prediction.get("threshold") if isinstance(prediction, dict) else None
+            ),
+            "/prediction/decision": (
+                prediction.get("decision") if isinstance(prediction, dict) else None
+            ),
+            "/prediction/model_version": row["model_version"],
+            "/prediction/source_role": str(row["source_role"]).upper(),
+            "/prediction/effective_cutoff": body.get("effective_cutoff"),
         }
+        if any(value is None for value in values.values()):
+            raise ValueError("prediction_evidence_oracle_facts_incomplete")
         facts = tuple(
             OracleFact(
-                path=item["path"],
-                value=item["value"],
-                unit=item.get("unit"),
+                path=path,
+                value=value,
                 source_table="prediction_evidence_bundles",
             )
-            for item in body.get("facts", [])
-            if isinstance(item, dict) and item.get("path") in selected_paths
+            for path, value in values.items()
         )
-        if len(facts) != len(selected_paths) or {fact.path for fact in facts} != selected_paths:
-            raise ValueError("prediction_evidence_oracle_facts_incomplete")
         return facts
     finally:
         await engine.dispose()

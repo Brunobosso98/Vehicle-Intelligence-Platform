@@ -5786,12 +5786,20 @@ async def test_prediction_oracle_accepts_phase9e_lowercase_source_role(monkeypat
     )
     row = {
         "bundle_body": {
-            "facts": [{"path": path, "value": "value", "unit": None} for path in paths]
+            "horizon": "NEXT_PULL",
+            "task": "NEXT_PULL_THERMAL_DEGRADATION",
+            "effective_cutoff": "2026-01-01T00:00:00Z",
+            "prediction": {
+                "score": 0.7,
+                "threshold": 0.5,
+                "decision": True,
+            },
         },
         "source_role": "synthetic",
         "horizon": "NEXT_PULL",
         "integrity": "VERIFIED",
         "completeness": "COMPLETE",
+        "model_version": "model-v1",
         "vehicle_id": "vehicle-1",
     }
 
@@ -5831,7 +5839,7 @@ async def test_prediction_oracle_accepts_phase9e_lowercase_source_role(monkeypat
     )
     assert tuple(fact.path for fact in facts) == paths
     assert all(fact.source_table == "prediction_evidence_bundles" for fact in facts)
-    row["bundle_body"]["facts"].append(row["bundle_body"]["facts"][0])
+    row["bundle_body"]["task"] = None
     with pytest.raises(ValueError, match="prediction_evidence_oracle_facts_incomplete"):
         await source_oracle.resolve_prediction_evidence_facts(
             "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test",

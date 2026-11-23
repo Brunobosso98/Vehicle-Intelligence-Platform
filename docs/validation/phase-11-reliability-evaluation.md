@@ -94,9 +94,14 @@ Docker confirmation awaits a new final-SHA run. A third run on
 `b6dff4c1e4b70c2ab7da8dff09e0050cecc0d6af` confirmed DB access and journaled 16 attempts, then
 failed with HTTP 422 on `P11-RED-016`: the harness omitted the required prediction capability header.
 The runner now supplies that ephemeral header only for explicitly authorized evidence reads, with
-focused regression coverage. Current local validation passes 207 focused evaluator/runtime tests,
-strict runner typing, and `make verify-cloud` with 1,734 API and 140 web tests; final-SHA validation
-remains pending. On `54076e7`, CI, Security,
+focused regression coverage. Exact-SHA run `f8a8b1465d867199f0baf662880082b0bc816ccc` passed CI,
+Security, Phase 9G, Phase 9H, and Phase 10, then reached the same authorized 9E read and failed
+because the independent source oracle expected projected `path` entries inside the immutable bundle;
+the persisted 9E schema stores those outputs in typed bundle fields and model-version lineage. The
+oracle now derives its eight expected facts from the accepted immutable bundle and its receipt-bound
+model version. Local `make test-agent-evals` passes 207 tests, and the changed oracle passes Ruff,
+format checking, and mypy. The Phase 11 disposable integration and final-SHA gates remain pending;
+the current branch is **NOT VERIFIED**. On `54076e7`, CI, Security,
 Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
 failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10
-action coverage remain unresolved; Phase 11 is **NOT VERIFIED**.
+action coverage remain unresolved.

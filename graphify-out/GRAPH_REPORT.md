@@ -1,7 +1,7 @@
 # Graph Report - Vehicle-Intelligence-Platform  (2026-11-23)
 
 ## Corpus Check
-- 738 files · ~931,729 words
+- 738 files · ~931,877 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 19 file(s) not represented in the graph (top: (none) 11, .Dockerfile 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b6dff4c1`
+- Built from commit: `f8a8b146`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1520,14 +1520,14 @@ Nodes (11): 44. D01, 45. D02, 46. D03, 47. D04, 48. D05, 49. D06, 50. D07, 51. D
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Settings` connect `Settings` to `datasets.py`, `evaluate_predictive_reliability.py`, `EmbeddingLedger`, `time`, `api/routes.py`, `predictions/domain.py`, `FeatureGenerationService`, `json`, `EventAnalysisService`, `telemetry/domain.py`, `sqlalchemy`, `router`, `Database`, `PredictionService`, `pytest`, `anomalies/service.py`, `Database`, `phase7d_eval.py`, `uuid`, `Adapter`, `acquisition/cli.py`, `evaluate_agent_prediction.py`, `Phase 9H predictive intelligence UI`, `test_knowledge.py`, `argparse`, `PredictionRequestBudgetMiddleware`, `collect`, `MLTask`, `settings`, `test_predictions.py`, `KnowledgeRepository`, `acquisition/service.py`, `phase9h_acceptance.py`, `check_mlops.py`?**
-  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+  _High betweenness centrality (0.065) - this node is a cross-community bridge._
 - **Are the 153 inferred relationships involving `AgentError` (e.g. with `EvidenceRegistry` and `InvestigationRepository`) actually correct?**
   _`AgentError` has 153 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `vehicle-platform-api`, `react-dom`, `@types/node` to the rest of the system?**
   _99 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `analytics/domain.py` be split into smaller, more focused modules?**
   _Cohesion score 0.07763157894736843 - nodes in this community are weakly interconnected._
-- **Why does `Phase 11 requirement traceability ledger` connect `agent_evaluation/receipts.py` to `agent_evaluation/cli.py`, `AttemptStatus`, `mutations.py`, `evaluate_agent_red_team.py`, `test_cli_verify_recomputes_each_supported_oracle_path`, `orchestration.py`, `README.md`?**
+- **Why does `Operator authorization` connect `Phase 9H predictive intelligence UI` to `predictiveEnabled`?**
   _High betweenness centrality (0.058) - this node is a cross-community bridge._
 - **Are the 149 inferred relationships involving `Database` (e.g. with `AcquisitionCapabilitySource` and `AcquisitionService`) actually correct?**
   _`Database` has 149 INFERRED edges - model-reasoned connections that need verification._
