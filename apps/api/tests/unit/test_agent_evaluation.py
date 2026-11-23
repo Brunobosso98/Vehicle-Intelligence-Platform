@@ -243,6 +243,54 @@ def test_coverage_report_separates_expected_from_observed_route():
     assert outcomes["observed_specialist"]["unobserved"]["status_counts"] == {"NOT_RUN": 35}
 
 
+def test_clustered_bootstrap_does_not_count_near_duplicate_cases_as_independent():
+    base = _case()
+    cases = (
+        base.model_copy(update={"case_id": "P11-BOOT-001", "attack_family": "prompt_injection"}),
+        base.model_copy(
+            update={
+                "case_id": "P11-BOOT-002",
+                "attack_family": "prompt_injection",
+                "intent": "quoted_prompt_injection",
+            }
+        ),
+        base.model_copy(
+            update={
+                "case_id": "P11-BOOT-003",
+                "attack_family": "foreign_vehicle_scope",
+                "vehicle_fixture": "synthetic-b",
+            }
+        ),
+    )
+    attempts = [
+        {"case_id": "P11-BOOT-001", "status": "PASS"},
+        {"case_id": "P11-BOOT-002", "status": "ASSERTION_FAIL"},
+        {"case_id": "P11-BOOT-003", "status": "PASS"},
+    ]
+
+    summary = cli._clustered_pass_rate_interval(cases, attempts, resamples=500)
+
+    assert summary["status"] == "DEFINED"
+    assert summary["cases_graded"] == 3
+    assert summary["independent_clusters"] == 2
+    assert summary["clustered_pass_rate"] == 0.75
+    assert (
+        summary["interval_95"]
+        == cli._clustered_pass_rate_interval(cases, attempts, resamples=500)["interval_95"]
+    )
+    assert summary["interpretation"].endswith("not_stochastic_provider_reliability")
+
+
+def test_clustered_bootstrap_is_undefined_without_two_independent_clusters():
+    case = _case().model_copy(update={"case_id": "P11-BOOT-004", "attack_family": "one_group"})
+    summary = cli._clustered_pass_rate_interval(
+        (case,), [{"case_id": case.case_id, "status": "PASS"}]
+    )
+    assert summary["status"] == "UNDEFINED"
+    assert summary["reason"] == "fewer_than_two_independent_clusters"
+    assert "interval_95" not in summary
+
+
 def test_report_grading_accounting_keeps_unrun_budget_and_infra_separate():
     base = _case()
     cases = (

@@ -4134,9 +4134,9 @@
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/cli.py": {
-    "mtime": 1795458077.88253,
-    "seen": 1795458140.6782277,
-    "ast_hash": "c4c13d9d97fe5a9492ef68316e444190",
+    "mtime": 1795460264.2625182,
+    "seen": 1795460295.2192,
+    "ast_hash": "835884b57ac8f538206ee7a06a744fde",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/contracts.py": {
@@ -4170,9 +4170,9 @@
     "semantic_hash": ""
   },
   "apps/api/tests/unit/test_agent_evaluation.py": {
-    "mtime": 1795458184.7385314,
-    "seen": 1795458245.2658467,
-    "ast_hash": "1c9244d9d335abd869f9228a38ced4a5",
+    "mtime": 1795460264.270518,
+    "seen": 1795460295.2194645,
+    "ast_hash": "6cd8042a562d7a09f9498b2ac3c0911d",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v1.json": {
@@ -4224,9 +4224,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
-    "mtime": 1795458867.5505328,
-    "seen": 1795458898.1464407,
-    "ast_hash": "1c3fd57f9da212442db671c3817094bc",
+    "mtime": 1795459768.4665163,
+    "seen": 1795460295.220051,
+    "ast_hash": "6f85325365ce9cba85c78720e5f8d05c",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-provider-caveats.md": {
@@ -4242,15 +4242,15 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-reliability-evaluation.md": {
-    "mtime": 1795406101.4736974,
-    "seen": 1795406185.0730321,
-    "ast_hash": "1956d7a29863bc561ef20d080735167b",
+    "mtime": 1795460211.642515,
+    "seen": 1795460295.220055,
+    "ast_hash": "3930d1f45b18f1f1c311e9eeb7461107",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795458858.394519,
-    "seen": 1795458898.1464455,
-    "ast_hash": "52a6dc237885eb637c1de40ab99d8856",
+    "mtime": 1795460277.2711263,
+    "seen": 1795460295.2200563,
+    "ast_hash": "00578c5073bf5a00298d4a506a64c997",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {

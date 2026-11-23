@@ -34,3 +34,14 @@ Future reports must keep separate denominators for predeclared, attempted, execu
 fully graded, infrastructure-failed, skipped-budget, and not-run cases. Correct
 abstentions/refusals count according to each case oracle. Critical failures must be
 reported individually and cannot be hidden in an aggregate score.
+
+The CLI `report` and `benchmark` outputs also compute a deterministic 95% percentile
+cluster-bootstrap interval for the observed PASS rate. A cluster is
+`attack_family × vehicle_fixture`, or `family × intent × vehicle_fixture` when no
+attack family is registered. Each unique, fully graded case contributes to its
+cluster mean; duplicate, unrun, incomplete, infrastructure-failed and budget-skipped
+attempts do not enter the rate. The seeded bootstrap resamples clusters, not prompt
+variants. With no graded cases or fewer than two independent clusters, the interval
+is `UNDEFINED` with a reason and denominator. These intervals describe the tested
+open corpus and deterministic provider only; they are not confidence bounds for
+stochastic provider or real-world vehicle reliability.

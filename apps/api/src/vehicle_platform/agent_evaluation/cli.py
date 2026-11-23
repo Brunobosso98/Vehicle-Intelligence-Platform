@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -370,6 +371,66 @@ def _stage_latency_summaries(
     }
 
 
+def _clustered_pass_rate_interval(
+    cases: tuple[AgentEvalCase, ...],
+    attempts: list[dict[str, Any]],
+    *,
+    resamples: int = 2000,
+) -> dict[str, Any]:
+    """Bootstrap case-group means so near-duplicate scenarios are not independent samples."""
+    if resamples < 200:
+        raise ValueError("cluster bootstrap requires at least 200 resamples")
+    attempt_groups: dict[str, list[dict[str, Any]]] = {}
+    for attempt in attempts:
+        case_id = attempt.get("case_id")
+        if isinstance(case_id, str):
+            attempt_groups.setdefault(case_id, []).append(attempt)
+
+    cluster_outcomes: dict[str, list[int]] = {}
+    graded_cases = 0
+    for case in cases:
+        group = attempt_groups.get(case.case_id, [])
+        if len(group) != 1:
+            continue
+        status = str(group[0].get("status", "INCOMPLETE"))
+        if status not in {"PASS", "ASSERTION_FAIL", "UNSAFE_ACTION_BLOCKED"}:
+            continue
+        graded_cases += 1
+        group_name = case.attack_family or f"{case.family.value}:{case.intent}"
+        cluster_key = f"{group_name}:{case.vehicle_fixture}"
+        cluster_outcomes.setdefault(cluster_key, []).append(int(status == "PASS"))
+
+    cluster_rates = [
+        sum(outcomes) / len(outcomes) for _cluster, outcomes in sorted(cluster_outcomes.items())
+    ]
+    result: dict[str, Any] = {
+        "method": "percentile_cluster_bootstrap",
+        "confidence_level": 0.95,
+        "replicates": resamples,
+        "cluster_unit": "attack_family_or_family_intent_by_vehicle_fixture",
+        "cases_graded": graded_cases,
+        "independent_clusters": len(cluster_rates),
+        "success_definition": "independent_grader_status_PASS",
+        "interpretation": "descriptive_open_corpus_only_not_stochastic_provider_reliability",
+    }
+    if graded_cases == 0:
+        return {**result, "status": "UNDEFINED", "reason": "no_fully_graded_cases"}
+    if len(cluster_rates) < 2:
+        return {**result, "status": "UNDEFINED", "reason": "fewer_than_two_independent_clusters"}
+
+    result["status"] = "DEFINED"
+    result["clustered_pass_rate"] = sum(cluster_rates) / len(cluster_rates)
+    rng = random.Random(0)  # noqa: S311 - deterministic statistical resampling, not cryptography
+    bootstrap_rates = sorted(
+        sum(rng.choice(cluster_rates) for _ in cluster_rates) / len(cluster_rates)
+        for _ in range(resamples)
+    )
+    lower_index = max(0, (len(bootstrap_rates) * 25) // 1000)
+    upper_index = min(len(bootstrap_rates) - 1, (len(bootstrap_rates) * 975) // 1000)
+    result["interval_95"] = [bootstrap_rates[lower_index], bootstrap_rates[upper_index]]
+    return result
+
+
 def _provider_usage_summary(
     attempts: tuple[CaseAttempt, ...],
 ) -> dict[str, dict[str, int | float]]:
@@ -650,6 +711,10 @@ def main(argv: list[str] | None = None) -> int:
                         "max": first_event_latency[-1] if first_event_latency else None,
                     },
                     "stage_latency_ms": _stage_latency_summaries(parsed_receipt.attempts),
+                    "statistical_uncertainty": _clustered_pass_rate_interval(
+                        cases,
+                        [attempt.model_dump(mode="json") for attempt in parsed_receipt.attempts],
+                    ),
                     "provider_usage_by_stage": _provider_usage_summary(parsed_receipt.attempts),
                     "paid_provider_calls": receipt_data.get("paid_provider_calls"),
                     "provider_cost_usd": receipt_data.get("provider_cost_usd"),
@@ -700,6 +765,10 @@ def main(argv: list[str] | None = None) -> int:
                         "max": first_event_elapsed[-1] if first_event_elapsed else None,
                     },
                     "stage_latency_ms": _stage_latency_summaries(parsed_receipt.attempts),
+                    "statistical_uncertainty": _clustered_pass_rate_interval(
+                        cases,
+                        [attempt.model_dump(mode="json") for attempt in parsed_receipt.attempts],
+                    ),
                     "provider_usage_by_stage": _provider_usage_summary(parsed_receipt.attempts),
                     "max_tool_calls": max(
                         (attempt.mcp_call_count for attempt in parsed_receipt.attempts), default=0
