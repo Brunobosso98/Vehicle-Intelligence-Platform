@@ -636,6 +636,34 @@ def _load_prediction_fixture() -> dict[str, str]:
     }
 
 
+async def _fault_inject_prediction_bundle_update(
+    database_url: str,
+    connection: Any,
+    statement: str,
+    parameters: dict[str, Any],
+) -> Any:
+    """Change one test bundle while the immutable trigger is disabled transactionally."""
+    if not is_disposable_database_url(database_url):
+        raise ValueError(
+            "Phase 11 fault injection requires a disposable vehicle_test database"
+        )
+    await connection.execute(
+        text(
+            "ALTER TABLE prediction_evidence_bundles "
+            "DISABLE TRIGGER trg_prediction_evidence_bundles_immutable"
+        )
+    )
+    try:
+        return await connection.execute(text(statement), parameters)
+    finally:
+        await connection.execute(
+            text(
+                "ALTER TABLE prediction_evidence_bundles "
+                "ENABLE TRIGGER trg_prediction_evidence_bundles_immutable"
+            )
+        )
+
+
 async def _acquisition_session_count(database_url: str) -> int:
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
@@ -671,12 +699,12 @@ async def _tamper_prediction_source_role(
                 or original.get("source_role") != "synthetic"
             ):
                 raise AssertionError("prediction_evidence_source_role_fixture_invalid")
-            updated = await connection.execute(
-                text(
-                    "UPDATE prediction_evidence_bundles SET bundle_body="
-                    "jsonb_set(bundle_body,'{source_role}',to_jsonb(CAST(:role AS text)),false) "
-                    "WHERE id=CAST(:id AS uuid)"
-                ),
+            updated = await _fault_inject_prediction_bundle_update(
+                database_url,
+                connection,
+                "UPDATE prediction_evidence_bundles SET bundle_body="
+                "jsonb_set(bundle_body,'{source_role}',to_jsonb(CAST(:role AS text)),false) "
+                "WHERE id=CAST(:id AS uuid)",
                 {"id": evidence_id, "role": source_role},
             )
             if updated.rowcount != 1:
@@ -709,13 +737,13 @@ async def _tamper_prediction_content_checksum(
             if not isinstance(original_checksum, str) or len(original_checksum) != 64:
                 raise AssertionError("prediction_evidence_checksum_fixture_invalid")
             corrupted = "0" * 64 if original_checksum != "0" * 64 else "1" * 64
-            result = await connection.execute(
-                text(
-                    "UPDATE prediction_evidence_bundles SET bundle_body="
-                    "jsonb_set(bundle_body,'{content_checksum}',"
-                    "to_jsonb(CAST(:checksum AS text)),false) "
-                    "WHERE id=CAST(:id AS uuid)"
-                ),
+            result = await _fault_inject_prediction_bundle_update(
+                database_url,
+                connection,
+                "UPDATE prediction_evidence_bundles SET bundle_body="
+                "jsonb_set(bundle_body,'{content_checksum}',"
+                "to_jsonb(CAST(:checksum AS text)),false) "
+                "WHERE id=CAST(:id AS uuid)",
                 {"id": evidence_id, "checksum": corrupted},
             )
             if result.rowcount != 1 or corrupted == original_checksum:
@@ -731,13 +759,13 @@ async def _restore_prediction_content_checksum(
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
         async with engine.begin() as connection:
-            result = await connection.execute(
-                text(
-                    "UPDATE prediction_evidence_bundles SET bundle_body="
-                    "jsonb_set(bundle_body,'{content_checksum}',"
-                    "to_jsonb(CAST(:checksum AS text)),false) "
-                    "WHERE id=CAST(:id AS uuid)"
-                ),
+            result = await _fault_inject_prediction_bundle_update(
+                database_url,
+                connection,
+                "UPDATE prediction_evidence_bundles SET bundle_body="
+                "jsonb_set(bundle_body,'{content_checksum}',"
+                "to_jsonb(CAST(:checksum AS text)),false) "
+                "WHERE id=CAST(:id AS uuid)",
                 {"id": evidence_id, "checksum": checksum},
             )
             if result.rowcount != 1:
@@ -752,11 +780,11 @@ async def _restore_prediction_bundle(
     engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
     try:
         async with engine.begin() as connection:
-            updated = await connection.execute(
-                text(
-                    "UPDATE prediction_evidence_bundles SET bundle_body=CAST(:body AS jsonb) "
-                    "WHERE id=CAST(:id AS uuid)"
-                ),
+            updated = await _fault_inject_prediction_bundle_update(
+                database_url,
+                connection,
+                "UPDATE prediction_evidence_bundles SET bundle_body=CAST(:body AS jsonb) "
+                "WHERE id=CAST(:id AS uuid)",
                 {
                     "id": evidence_id,
                     "body": json.dumps(bundle_body, separators=(",", ":")),

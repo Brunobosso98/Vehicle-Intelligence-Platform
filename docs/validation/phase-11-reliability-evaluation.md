@@ -106,5 +106,11 @@ flattens nested scalar fields before recording and hashing the probe summary. `m
 passes 208 tests; the runner passes strict mypy, and Ruff/format checks pass. The disposable
 integration and final-SHA gates remain pending; the current branch is **NOT VERIFIED**. On `54076e7`, CI, Security,
 Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
-failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10
-action coverage remain unresolved.
+failure. The following exact-SHA run `f3427410dccea2112d2e64e91aab1173ebdd0ccd` passed the operator
+plan case and journaled 29 attempts, then the disposable source-role tamper hit the existing Phase
+9E immutable-bundle trigger before the intended read-side check. The test harness now disables only
+that table trigger inside a transaction against `vehicle_test`, re-enables it before the MCP read,
+and restores the original body through the same bounded fault-injection path. Production code and
+database migrations are unchanged. The next exact-SHA run must confirm this path. Independent
+holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10 action coverage
+remain unresolved.

@@ -2278,6 +2278,51 @@ def test_operator_plan_probe_flattens_nested_threshold_summary(monkeypatch):
     }
 
 
+def test_runner_reenables_immutable_bundle_trigger_after_fault_injection(monkeypatch):
+    scripts = Path(__file__).resolve().parents[4] / "scripts"
+    monkeypatch.syspath_prepend(str(scripts))
+    runner = importlib.import_module("evaluate_agent_red_team")
+
+    class Connection:
+        def __init__(self, *, fail_update=False):
+            self.statements = []
+            self.fail_update = fail_update
+
+        async def execute(self, statement, _parameters=None):
+            sql = str(statement)
+            self.statements.append(sql)
+            if self.fail_update and sql.startswith("UPDATE"):
+                raise RuntimeError("injected update failure")
+            return "updated"
+
+    update = "UPDATE prediction_evidence_bundles SET bundle_body='{}'"
+    database_url = "postgresql+asyncpg://vehicle:test-only@localhost/vehicle_test"
+
+    async def exercise():
+        normal = Connection()
+        result = await runner._fault_inject_prediction_bundle_update(
+            database_url, normal, update, {}
+        )
+        assert result == "updated"
+        assert "DISABLE TRIGGER" in normal.statements[0]
+        assert normal.statements[1] == update
+        assert "ENABLE TRIGGER" in normal.statements[2]
+
+        failed = Connection(fail_update=True)
+        with pytest.raises(RuntimeError, match="injected update failure"):
+            await runner._fault_inject_prediction_bundle_update(database_url, failed, update, {})
+        assert "ENABLE TRIGGER" in failed.statements[-1]
+        with pytest.raises(ValueError, match="disposable vehicle_test database"):
+            await runner._fault_inject_prediction_bundle_update(
+                "postgresql+asyncpg://vehicle:secret@prod.example/vehicle",
+                Connection(),
+                update,
+                {},
+            )
+
+    asyncio.run(exercise())
+
+
 def test_unit_conflict_grader_requires_distinct_injected_unit_and_correction():
     path = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v14.json"
     case = next(item for item in load_corpus(path)[1] if item.case_id == "P11-RED-005")
