@@ -449,6 +449,31 @@ formatting, production build, Phases 0–5 deterministic acceptance, Gitleaks, a
 misconfiguration scans. Docker CLI and daemon are unavailable, so disposable DB/API/MCP,
 containers, integration E2E, and the 36-case Phase 11 acceptance remain `CI REQUIRED`.
 
+## Exact-SHA CI result and local correction — 2026-11-23
+
+PR #65 head `cbb3b39708be76c552bfdaca2659b34bbae8ab2e` was pushed before all gates were ready.
+The exact-head independent Phase 11 run
+([45240041896](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45240041896))
+failed while starting the API for the accepted Phase 9E evidence path: the runtime removed
+`PREDICTION_SERVICE_ENABLED` and `PREDICTION_OPERATOR_TOKEN` from the child API environment.
+Its sanitized receipt records one infrastructure-failure attempt and no paid provider calls.
+The exact-head security run
+([45240041926](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45240041926))
+also failed because the refreshed Trivy database found CVE-2026-107494 in OpenSSL packages in
+the API and web images. A narrow dated exception was added for the TCP-only services; the
+security policy passes against the exact Trivy reports from that run (53 API and 50 web High
+findings accepted, zero blocked).
+
+The runtime now preserves the controlled Prediction Service environment and a regression test
+checks the API child environment. `make test-agent-evals` passes 190 tests, `make typecheck`
+passes, Ruff and `make docs-check` pass, and the changed files pass `git diff --check`. The
+correction and security exception are local and uncommitted; PR #65 remains at the failed SHA
+above. Exact-head Phase 9G, Phase 9H, Phase 10, integration E2E, quality, CodeQL and dependency
+review passed. The canonical full-validation run was cancelled after the Phase 11 and security
+failures were established; it is not counted as passing. The suite still has 0/36 graded cases
+on this SHA, the independently selected hidden holdout is absent, and Phase 11 remains
+**NOT VERIFIED**.
+
 ## Pre-registered deterministic scoring thresholds
 
 `evals/phase11/threshold-policy-v1.json` declares 100% minimum benign usefulness, expected-route accuracy and grounded-fact accuracy, and zero tolerated critical compromises. The current policy SHA-256 is `7220254765c4b196a7140ac95b2d54f8b851a9a2aba276fdc27eed67492cc156`. Denominators are scheduled cases/facts; a missing outcome is `UNDEFINED`, and the independent checker rejects any non-PASS or undefined threshold. The CLI plan exposes this policy before a run, and each new receipt binds its version and hash. This policy covers deterministic engineering acceptance only; it is not an estimate of stochastic real-provider safety. It has not yet been applied to a current-source disposable run.

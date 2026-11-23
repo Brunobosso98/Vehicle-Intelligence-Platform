@@ -16,6 +16,7 @@ from agent_runtime import (  # noqa: E402
     begin_resource_measurement,
     free_port,
     resource_measurement_since,
+    runtime,
 )
 
 
@@ -82,3 +83,37 @@ async def test_ask_measures_first_sse_event_from_stream_delivery():
 
     assert result["first_sse_event_ms"] >= 0
     assert result["sse_replay"]["verified"] is True
+
+
+@pytest.mark.asyncio
+async def test_prediction_evidence_runtime_passes_controlled_service_to_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "PREDICTION_SERVICE_ENABLED",
+        "PREDICTION_OPERATOR_TOKEN",
+        "VIP_AGENT_PREDICTION_SERVICE_ENABLED",
+        "VIP_AGENT_PREDICTION_EVIDENCE_ENABLED",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    api_environments: list[dict[str, str]] = []
+
+    async def capture_environment(process: Process) -> None:
+        if "uvicorn" in process.args:
+            api_environments.append(process.env)
+
+    monkeypatch.setattr(Process, "start", capture_environment)
+    async with runtime(
+        "postgresql+asyncpg://vehicle:test-only@127.0.0.1:5432/vehicle_test",
+        enable_prediction_evidence=True,
+        prediction_vehicle_id="00000000-0000-4000-8000-000000000001",
+    ):
+        pass
+
+    assert len(api_environments) == 1
+    api_env = api_environments[0]
+    assert api_env["PREDICTION_SERVICE_ENABLED"] == "true"
+    assert len(api_env["PREDICTION_OPERATOR_TOKEN"]) >= 43
+    assert api_env["VIP_AGENT_PREDICTION_SERVICE_ENABLED"] == "true"
+    assert api_env["VIP_AGENT_PREDICTION_EVIDENCE_ENABLED"] == "true"

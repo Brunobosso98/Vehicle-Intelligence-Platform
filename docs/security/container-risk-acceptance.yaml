@@ -1,5 +1,28 @@
 version: 1
 exceptions:
+  - id: api-web-cve-2026-107494
+    images:
+      - vehicle-platform-api:local
+      - vehicle-platform-web:local
+    vulnerability_id: CVE-2026-107494
+    packages:
+      - libssl3t64
+      - openssl
+      - openssl-provider-legacy
+    owner: repository-maintainer
+    reviewed_on: "2026-11-23"
+    expires: "2026-12-05"
+    remediation_condition: >-
+      Rebuild both images as soon as Debian publishes a fixed package; review the
+      upstream fix and Debian package status again by 2026-12-05.
+    rationale: >-
+      The finding is limited to OpenSSL QUIC frame handling. The API and web
+      containers serve HTTP over TCP and do not create or accept OpenSSL QUIC
+      connections. This temporary exception is limited to the affected OpenSSL
+      packages in these two images and expires on 2026-12-05. See the OpenSSL
+      vulnerability record at https://access.redhat.com/security/cve/cve-2026-107494
+      and the Debian tracker at
+      https://security-tracker.debian.org/tracker/CVE-2026-107494.
   - id: api-web-cve-2025-69720
     images:
       - vehicle-platform-api:local

@@ -228,9 +228,6 @@ async def runtime(
     }
     mcp_env = env.copy()
     mcp_env.pop("VIP_AGENT_TEST_SECRET_CANARY", None)
-    if enable_prediction_evidence:
-        api_env.pop("PREDICTION_SERVICE_ENABLED", None)
-        api_env.pop("PREDICTION_OPERATOR_TOKEN", None)
     processes = [
         Process(
             [sys.executable, "-m", "vehicle_platform.mcp.cli"],
