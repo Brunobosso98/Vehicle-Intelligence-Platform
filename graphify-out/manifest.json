@@ -4218,9 +4218,9 @@
     "semantic_hash": ""
   },
   "docs/security/phase-11-agent-red-team.md": {
-    "mtime": 1795458858.394519,
-    "seen": 1795458898.1464245,
-    "ast_hash": "cb0ec300eb24be3940b63eb531924f7b",
+    "mtime": 1795460445.714517,
+    "seen": 1795460501.2455347,
+    "ast_hash": "ab38b3a19af15d92ae6197373df6dcfd",
     "semantic_hash": ""
   },
   "docs/validation/phase-11-acceptance.md": {
@@ -4248,9 +4248,9 @@
     "semantic_hash": ""
   },
   "docs/validation/phase-11-traceability-ledger.md": {
-    "mtime": 1795460277.2711263,
-    "seen": 1795460295.2200563,
-    "ast_hash": "00578c5073bf5a00298d4a506a64c997",
+    "mtime": 1795460471.1145163,
+    "seen": 1795460501.2455547,
+    "ast_hash": "be08d0a47bcdb7c6b0ad0ff4bf454056",
     "semantic_hash": ""
   },
   "apps/api/src/vehicle_platform/agent_evaluation/privacy.py": {
@@ -4374,9 +4374,9 @@
     "semantic_hash": ""
   },
   "scripts/phase11-validation.sh": {
-    "mtime": 1795389713.1336966,
-    "seen": 1795390382.4879436,
-    "ast_hash": "734e4bf63b7a7e73c21bc0bf7ba8dbf4",
+    "mtime": 1795460416.81452,
+    "seen": 1795460501.2452884,
+    "ast_hash": "2cb77cbb47e875b24a9692b8b203bc94",
     "semantic_hash": ""
   },
   "evals/phase11/suite-v18.json": {

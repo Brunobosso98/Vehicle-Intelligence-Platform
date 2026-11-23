@@ -55,6 +55,12 @@ production.
 - The prediction-evidence scenario uses a Phase 9E accepted synthetic bundle and a read-only
   oracle over the immutable bundle facts. A source-role mismatch found during unit validation
   was corrected; the combined 9E-to-9F Docker path has not yet run on this worktree.
+- Immediately before deterministic agent evaluation, `scripts/phase11-validation.sh` installs
+  dedicated IPv4 and IPv6 OUTPUT chains that allow loopback and reject all other host egress.
+  The exit trap removes both chains before Compose teardown and artifact upload, including on
+  failure. The CI runner must provide `iptables`, `ip6tables`, and root or non-interactive sudo;
+  the acceptance fails closed if the fence cannot be installed. Local execution cannot verify
+  this firewall because Docker is unavailable in this environment.
 
 ## Current evidence and residual risk
 
