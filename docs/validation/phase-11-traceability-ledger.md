@@ -178,11 +178,12 @@ complete merely because a scenario is present in JSON.
 - Commit `54076e758928981404b495a7c67880f118a2af1c` is pushed to open draft PR #65. Current-source
   `make verify-cloud` passes. Exact-SHA Phase 11 workflow 45273030474 failed before executing cases:
   the host egress fence blocked the loopback-published disposable database after Docker DNAT. Its
-  sanitized artifact records `INFRA_FAILURE`, zero attempts and zero provider calls. The source
-  now contains the narrow original-loopback-destination/port firewall exception; shell syntax and
-  cloud-compatible checks pass, but final-SHA Docker confirmation must rerun. CI, Security, Phase
-  9G, Phase 9H and Phase 10 passed on `54076e7`; canonical full validation was cancelled after the
-  known Phase 11 failure.
+  sanitized artifact records `INFRA_FAILURE`, zero attempts and zero provider calls. A second
+  attempt on `84f55a0` failed identically because conntrack's original-destination rule did not
+  match the host's Docker path. The source now inspects the disposable database IP and permits only
+  TCP/5432 to that destination; shell syntax and cloud-compatible checks pass, but final-SHA Docker
+  confirmation must rerun. CI, Security, Phase 9G, Phase 9H and Phase 10 passed on `54076e7`;
+  canonical full validation was cancelled after the known Phase 11 failure.
 - On remote SHA `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`, Phase 11 independent acceptance
   failed during API startup; the security workflow failed on refreshed OpenSSL findings, and
   canonical full validation was cancelled after those failures. Phase 9G, Phase 9H, Phase 10,

@@ -645,9 +645,11 @@ docs, formatting, build, deterministic Phase 0–5 checks and security scans). C
 `54076e758928981404b495a7c67880f118a2af1c` was pushed to PR #65. Exact-SHA run 45273030474
 failed before case execution: the host egress fence blocked the loopback-published disposable
 PostgreSQL connection after Docker DNAT, so `seed_agent` received a connection reset and the
-sanitized report recorded `INFRA_FAILURE`, zero attempts and zero provider calls. The source now
-permits only that original loopback destination and port through a conntrack match; shell syntax and
-the complete cloud-compatible gate pass after the correction. Docker confirmation is pending on a
-new final-SHA run. On `54076e7`, CI, Security, Phase 9G, Phase 9H and Phase 10 passed; Phase 0 full
-validation was cancelled after the known Phase 11 failure. Phase 11 remains **NOT VERIFIED**;
-independent holdout selection and the remaining acceptance gaps are still outstanding.
+sanitized report recorded `INFRA_FAILURE`, zero attempts and zero provider calls. A second exact-SHA
+run (`84f55a08e587fffef6d0a3b4e45de10738848362`) failed identically: conntrack's original-destination
+match did not admit this host's Docker path. The source now inspects the disposable database
+container IP and allows only TCP/5432 to that private address. Shell syntax and the cloud-compatible
+gate pass; Docker confirmation is pending on a new final-SHA run. On `54076e7`, CI, Security, Phase
+9G, Phase 9H and Phase 10 passed; Phase 0 full validation was cancelled after the known Phase 11
+failure. Phase 11 remains **NOT VERIFIED**; independent holdout selection and the remaining
+acceptance gaps are still outstanding.

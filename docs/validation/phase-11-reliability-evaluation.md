@@ -86,9 +86,11 @@ case to eight concurrent over-limit requests. The focused evaluator suite passes
 Current-source `make verify-cloud` passes with 1,732 API tests, 140 web tests, 95.35%/90.07% API
 line/branch coverage and all cloud-compatible checks. Exact-SHA CI run 45273030474 failed before
 case execution because the egress firewall blocked the loopback-published Docker database after
-DNAT; the report records zero attempts and zero provider calls. The source now permits only the
-original loopback destination and published port through a conntrack match; shell syntax and the
-cloud gate pass, but Docker confirmation awaits a new final-SHA run. On `54076e7`, CI, Security,
-Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
-failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase
-7B/9F/10 action coverage remain unresolved; Phase 11 is **NOT VERIFIED**.
+DNAT; the report records zero attempts and zero provider calls. A second exact-SHA attempt
+(`84f55a08e587fffef6d0a3b4e45de10738848362`) failed identically: the host's Docker path did not
+match conntrack's original-destination rule. The source now inspects the disposable database
+container IP and permits only TCP/5432 to that address; shell syntax and the cloud gate pass, but
+Docker confirmation awaits a new final-SHA run. On `54076e7`, CI, Security, Phase 9G, Phase 9H and
+Phase 10 passed; full validation was cancelled after the known Phase 11 failure. Independent
+holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10 action coverage
+remain unresolved; Phase 11 is **NOT VERIFIED**.

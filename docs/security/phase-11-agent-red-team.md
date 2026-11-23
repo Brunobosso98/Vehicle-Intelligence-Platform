@@ -57,8 +57,8 @@ production.
   was corrected; the combined 9E-to-9F Docker path has not yet run on this worktree.
 - Immediately before deterministic agent evaluation, `scripts/phase11-validation.sh` installs
   dedicated IPv4 and IPv6 OUTPUT chains that allow loopback and reject all other host egress.
-  The IPv4 chain also permits only the original loopback destination and ephemeral published port
-  of the disposable PostgreSQL service; Docker DNATs this host-local socket onto its bridge.
+  The IPv4 chain also permits TCP/5432 only to the private IP of the disposable PostgreSQL
+  container; Docker DNATs the host-local published socket onto that bridge address.
   The exit trap removes both chains before Compose teardown and artifact upload, including on
   failure. The CI runner must provide `iptables`, `ip6tables`, and root or non-interactive sudo;
   the acceptance fails closed if the fence cannot be installed. Local execution cannot verify

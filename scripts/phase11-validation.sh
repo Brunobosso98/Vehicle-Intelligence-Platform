@@ -41,6 +41,12 @@ trap cleanup EXIT
 
 "${compose[@]}" up -d db --wait
 port=$("${compose[@]}" port db 5432 | cut -d: -f2)
+db_container=$("${compose[@]}" ps -q db)
+db_ip=$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$db_container")
+if [[ ! "$db_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+  echo "Cannot identify the disposable PostgreSQL container IPv4 address" >&2
+  exit 1
+fi
 export TEST_DATABASE_URL="postgresql+asyncpg://vehicle:test-only@127.0.0.1:${port}/vehicle_test"
 export DATABASE_URL="$TEST_DATABASE_URL"
 export ENVIRONMENT=test
@@ -72,10 +78,9 @@ done
 firewall_v4_created=1
 "${firewall_privilege[@]}" iptables -A "$firewall_chain" -o lo -j ACCEPT
 # Docker DNATs the disposable PostgreSQL loopback-published port onto its bridge.
-# Match the original destination so the fence permits only this database socket.
+# Permit only the disposable database container's private address and PostgreSQL port.
 "${firewall_privilege[@]}" iptables -A "$firewall_chain" \
-  -p tcp -m conntrack --ctstate NEW,ESTABLISHED \
-  --ctorigdst 127.0.0.1/32 --ctorigdstport "$port" -j ACCEPT
+  -p tcp -d "$db_ip/32" --dport 5432 -j ACCEPT
 "${firewall_privilege[@]}" iptables -A "$firewall_chain" -j REJECT
 "${firewall_privilege[@]}" iptables -I OUTPUT 1 -j "$firewall_chain"
 "${firewall_privilege[@]}" ip6tables -N "$firewall_chain"
