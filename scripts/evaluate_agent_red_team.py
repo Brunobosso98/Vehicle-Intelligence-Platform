@@ -10,7 +10,7 @@ import shutil
 import stat
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal, cast
@@ -18,7 +18,12 @@ from uuid import UUID, uuid4
 
 import httpx
 import httpx2
-from agent_fixtures import seed_agent, update_vehicle_nickname
+from agent_fixtures import (
+    move_third_session_to_latest,
+    restore_session_time,
+    seed_agent,
+    update_vehicle_nickname,
+)
 from agent_runtime import (
     ask,
     begin_resource_measurement,
@@ -79,7 +84,7 @@ from vehicle_platform.knowledge.domain import KnowledgeIndexVersion
 
 ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git")
-SUITE_PATH = ROOT / "evals/phase11/suite-v26.json"
+SUITE_PATH = ROOT / "evals/phase11/suite-v37.json"
 REPORT_PATH = ROOT / ".validation/phase11/sanitized-report.json"
 
 
@@ -661,6 +666,66 @@ async def _tamper_prediction_source_role(
         await engine.dispose()
 
 
+async def _tamper_prediction_content_checksum(
+    database_url: str, evidence_id: str
+) -> str:
+    """Corrupt only the stored 9E checksum in a disposable fixture."""
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.begin() as connection:
+            original = await connection.execute(
+                text(
+                    "SELECT bundle_body FROM prediction_evidence_bundles "
+                    "WHERE id=CAST(:id AS uuid) FOR UPDATE"
+                ),
+                {"id": evidence_id},
+            )
+            original_body = original.scalar_one_or_none()
+            original_checksum = (
+                original_body.get("content_checksum")
+                if isinstance(original_body, dict)
+                else None
+            )
+            if not isinstance(original_checksum, str) or len(original_checksum) != 64:
+                raise AssertionError("prediction_evidence_checksum_fixture_invalid")
+            corrupted = "0" * 64 if original_checksum != "0" * 64 else "1" * 64
+            result = await connection.execute(
+                text(
+                    "UPDATE prediction_evidence_bundles SET bundle_body="
+                    "jsonb_set(bundle_body,'{content_checksum}',"
+                    "to_jsonb(CAST(:checksum AS text)),false) "
+                    "WHERE id=CAST(:id AS uuid)"
+                ),
+                {"id": evidence_id, "checksum": corrupted},
+            )
+            if result.rowcount != 1 or corrupted == original_checksum:
+                raise AssertionError("prediction_evidence_checksum_tamper_failed")
+            return original_checksum
+    finally:
+        await engine.dispose()
+
+
+async def _restore_prediction_content_checksum(
+    database_url: str, evidence_id: str, checksum: str
+) -> None:
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.begin() as connection:
+            result = await connection.execute(
+                text(
+                    "UPDATE prediction_evidence_bundles SET bundle_body="
+                    "jsonb_set(bundle_body,'{content_checksum}',"
+                    "to_jsonb(CAST(:checksum AS text)),false) "
+                    "WHERE id=CAST(:id AS uuid)"
+                ),
+                {"id": evidence_id, "checksum": checksum},
+            )
+            if result.rowcount != 1:
+                raise AssertionError("prediction_evidence_checksum_restore_failed")
+    finally:
+        await engine.dispose()
+
+
 async def _restore_prediction_bundle(
     database_url: str, evidence_id: str, bundle_body: dict[str, Any]
 ) -> None:
@@ -792,8 +857,15 @@ async def _evaluate_case(
     vehicle_id: str,
     source_sha: str,
     database_url: str,
+    *,
+    prediction_evidence_ids: tuple[str, ...] = (),
 ) -> CaseAttempt:
-    result = await ask(api, vehicle_id, case.question)
+    result = await ask(
+        api,
+        vehicle_id,
+        case.question,
+        prediction_evidence_ids=prediction_evidence_ids,
+    )
     audit_response = await api.get(
         f"/api/v1/vehicles/{vehicle_id}/agent-runs/{result['id']}/audit"
     )
@@ -1000,9 +1072,14 @@ async def _evaluate_api_input_boundary(
         prior_runs = await api.get(runs_path)
         prior_runs.raise_for_status()
         oversized_question = "x" * 2001
-        response = await api.post(
-            f"/api/v1/vehicles/{vehicle_id}/agent-runs",
-            json={"question": oversized_question},
+        responses = await asyncio.gather(
+            *(
+                api.post(
+                    f"/api/v1/vehicles/{vehicle_id}/agent-runs",
+                    json={"question": oversized_question},
+                )
+                for _ in range(8)
+            )
         )
         current_runs = await api.get(runs_path)
         current_runs.raise_for_status()
@@ -1010,7 +1087,14 @@ async def _evaluate_api_input_boundary(
     prior_ids = tuple(str(item["id"]) for item in prior_runs.json())
     current_ids = tuple(str(item["id"]) for item in current_runs.json())
     summary: dict[str, str | int | float | bool | None] = {
-        "http_status": response.status_code,
+        "http_status": responses[0].status_code,
+        "request_count": len(responses),
+        "rejected_statuses_csv": ",".join(
+            str(response.status_code) for response in responses
+        ),
+        "all_requests_rejected": all(
+            response.status_code == 422 for response in responses
+        ),
         "question_length": len(oversized_question),
         "run_not_created": prior_ids == current_ids,
         "source_unchanged": before == after == source_sha,
@@ -1018,7 +1102,7 @@ async def _evaluate_api_input_boundary(
     probe = DirectProbeEvidence(
         probe_type="api_input_boundary",
         target="agent_run_create_question_limit",
-        call_rejected=response.status_code == 422,
+        call_rejected=all(response.status_code == 422 for response in responses),
         output_sha256=sha256_bytes(canonical_json(summary)),
         output_summary=summary,
     )
@@ -1026,7 +1110,11 @@ async def _evaluate_api_input_boundary(
         case_id=case.case_id,
         status=AttemptStatus.PASS,
         selected_vehicle_id=vehicle_id,
-        answer_status="failed" if response.status_code == 422 else "completed",
+        answer_status=(
+            "failed"
+            if all(response.status_code == 422 for response in responses)
+            else "completed"
+        ),
         direct_probe=probe,
         source_digest_before=before,
         source_digest_after=after,
@@ -1517,6 +1605,631 @@ async def _evaluate_specialist_timeout(
     )
 
 
+async def _evaluate_orphaned_run_recovery(
+    api: httpx.AsyncClient,
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Age one disposable persisted run, then verify API-triggered reconciliation."""
+    started = await ask(api, vehicle_id, case.question)
+    run_id = str(started["id"])
+    base = f"/api/v1/vehicles/{vehicle_id}/agent-runs/{run_id}"
+    aged_started_at = datetime.now(UTC) - timedelta(seconds=200)
+
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            baseline = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT snapshot, "
+                            "(SELECT count(*) FROM agent_tool_calls WHERE agent_run_id=:id) AS tool_count, "
+                            "(SELECT count(*) FROM agent_stream_events WHERE agent_run_id=:id) AS event_count, "
+                            "(SELECT count(*) FROM agent_runs WHERE vehicle_id=:vehicle "
+                            "AND snapshot->>'user_question'=:question) AS matching_run_count "
+                            "FROM agent_runs WHERE id=:id AND vehicle_id=:vehicle"
+                        ),
+                        {
+                            "id": run_id,
+                            "vehicle": vehicle_id,
+                            "question": case.question,
+                        },
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+    finally:
+        await engine.dispose()
+    if baseline is None or not isinstance(baseline["snapshot"], dict):
+        raise AssertionError("orphaned_run_baseline_unavailable")
+    prior_snapshot = baseline["snapshot"]
+    prior_usage_hash = sha256_bytes(canonical_json(prior_snapshot.get("usage") or {}))
+
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.begin() as connection:
+            orphan = dict(prior_snapshot)
+            orphan.update(
+                {
+                    "status": "running",
+                    "started_at": aged_started_at.isoformat(),
+                    "completed_at": None,
+                    "result": None,
+                    "evidence": [],
+                    "duration_seconds": None,
+                    "error_category": None,
+                    "supervisor": None,
+                }
+            )
+            updated = await connection.execute(
+                text(
+                    "UPDATE agent_runs SET status='running',started_at=:started, "
+                    "snapshot=CAST(:snapshot AS jsonb) WHERE id=:id AND vehicle_id=:vehicle"
+                ),
+                {
+                    "id": run_id,
+                    "vehicle": vehicle_id,
+                    "started": aged_started_at,
+                    "snapshot": json.dumps(orphan, separators=(",", ":")),
+                },
+            )
+            if updated.rowcount != 1:
+                raise AssertionError("orphaned_run_fixture_update_failed")
+    finally:
+        await engine.dispose()
+
+    recovered_response = await api.get(base)
+    recovered = (
+        recovered_response.json() if recovered_response.status_code == 200 else {}
+    )
+    audit_response = await api.get(f"{base}/audit")
+    events_response = await api.get(f"{base}/events")
+    audit = audit_response.json() if audit_response.status_code == 200 else {}
+    events = events_response.json() if events_response.status_code == 200 else []
+
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            persisted = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT status,snapshot, "
+                            "(SELECT count(*) FROM agent_tool_calls WHERE agent_run_id=:id) AS tool_count, "
+                            "(SELECT count(*) FROM agent_stream_events WHERE agent_run_id=:id) AS event_count, "
+                            "(SELECT count(*) FROM agent_runs WHERE vehicle_id=:vehicle "
+                            "AND snapshot->>'user_question'=:question) AS matching_run_count "
+                            "FROM agent_runs WHERE id=:id AND vehicle_id=:vehicle"
+                        ),
+                        {
+                            "id": run_id,
+                            "vehicle": vehicle_id,
+                            "question": case.question,
+                        },
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+    finally:
+        await engine.dispose()
+
+    final_snapshot = persisted["snapshot"] if persisted else {}
+    final_event = None
+    if persisted is not None:
+        engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+        try:
+            async with engine.connect() as connection:
+                await connection.execute(text("SET TRANSACTION READ ONLY"))
+                final_event = await connection.scalar(
+                    text(
+                        "SELECT snapshot FROM agent_stream_events WHERE agent_run_id=:id "
+                        "ORDER BY sequence DESC LIMIT 1"
+                    ),
+                    {"id": run_id},
+                )
+        finally:
+            await engine.dispose()
+    latest_event = final_event if isinstance(final_event, dict) else {}
+    tool_count_unchanged = (
+        persisted is not None and persisted["tool_count"] == baseline["tool_count"]
+    )
+    agent_run_count_unchanged = (
+        persisted is not None
+        and persisted["matching_run_count"] == baseline["matching_run_count"]
+    )
+    provider_usage_unchanged = (
+        sha256_bytes(canonical_json(final_snapshot.get("usage") or {}))
+        == prior_usage_hash
+    )
+    terminal_failure_event = bool(
+        latest_event.get("type") == "run_failed"
+        and latest_event.get("data", {}).get("error_category")
+        == "execution_interrupted"
+        and persisted is not None
+        and persisted["event_count"] == baseline["event_count"] + 1
+        and events
+        and events[-1].get("type") == "run_failed"
+    )
+    summary: dict[str, str | int | float | bool | None] = {
+        "api_recovery_status": recovered_response.status_code,
+        "persisted_status": str(persisted["status"]) if persisted else "missing",
+        "error_category": str(final_snapshot.get("error_category")),
+        "terminal_failure_event": terminal_failure_event,
+        "tool_call_count_unchanged": tool_count_unchanged,
+        "agent_run_count_unchanged": agent_run_count_unchanged,
+        "provider_usage_unchanged": provider_usage_unchanged,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="run_recovery",
+        target="stale_running_agent_run",
+        call_rejected=False,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.INCOMPLETE,
+        run_id=run_id,
+        selected_vehicle_id=vehicle_id,
+        answer_status=str(recovered.get("status")),
+        answer_text="",
+        evidence=tuple(recovered.get("evidence", [])),
+        observed_tools=tuple(
+            call.get("tool_name", "") for call in audit.get("tool_calls", [])
+        ),
+        successful_tools=tuple(
+            call.get("tool_name", "")
+            for call in audit.get("tool_calls", [])
+            if call.get("status") == "completed"
+        ),
+        direct_probe=probe,
+        source_digest_before=source_sha,
+        source_digest_after=await source_digest(database_url),
+        error_category=str(recovered.get("error_category")),
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id=vehicle_id)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+async def _evaluate_database_failure(
+    api: httpx.AsyncClient,
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Prove a real API database outage fails closed and restores the disposable role."""
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+
+    async def counts() -> tuple[int, int]:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            result = await connection.execute(
+                text(
+                    "SELECT (SELECT count(*) FROM agent_runs WHERE vehicle_id=:vehicle "
+                    "AND snapshot->>'user_question'=:question) AS runs, "
+                    "(SELECT count(*) FROM agent_tool_calls c JOIN agent_runs r "
+                    "ON r.id=c.agent_run_id WHERE r.vehicle_id=:vehicle) AS tool_calls"
+                ),
+                {"vehicle": vehicle_id, "question": case.question},
+            )
+            row = result.mappings().one()
+            return int(row["runs"]), int(row["tool_calls"])
+
+    try:
+        before_counts = await counts()
+        login_disabled = False
+        try:
+            async with engine.begin() as connection:
+                await connection.execute(text("ALTER ROLE vehicle NOLOGIN"))
+                terminated = await connection.scalar(
+                    text(
+                        "SELECT count(*) FROM pg_stat_activity WHERE usename='vehicle' "
+                        "AND pid<>pg_backend_pid() AND pg_terminate_backend(pid)"
+                    )
+                )
+                login_enabled = await connection.scalar(
+                    text("SELECT rolcanlogin FROM pg_roles WHERE rolname='vehicle'")
+                )
+                login_disabled = login_enabled is False and int(terminated or 0) > 0
+            response = await api.post(
+                f"/api/v1/vehicles/{vehicle_id}/agent-runs",
+                json={"question": case.question},
+            )
+            body = response.json()
+        finally:
+            async with engine.begin() as connection:
+                await connection.execute(text("ALTER ROLE vehicle LOGIN"))
+
+        health = await api.get("/health/ready")
+        after_counts = await counts()
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            role_login_restored = await connection.scalar(
+                text("SELECT rolcanlogin FROM pg_roles WHERE rolname='vehicle'")
+            )
+    finally:
+        await engine.dispose()
+
+    error = body.get("error", {}) if isinstance(body, dict) else {}
+    error_code = error.get("code") if isinstance(error, dict) else None
+    summary: dict[str, str | int | float | bool | None] = {
+        "http_status": response.status_code,
+        "error_code": str(error_code),
+        "login_disabled_during_probe": login_disabled,
+        "role_login_restored": role_login_restored is True,
+        "agent_run_count_unchanged": after_counts[0] == before_counts[0],
+        "tool_call_count_unchanged": after_counts[1] == before_counts[1],
+        "service_recovered": health.status_code == 200,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="api_dependency_failure",
+        target="agent_run_create_database_outage",
+        call_rejected=response.status_code == 503
+        and error_code == "DATABASE_UNAVAILABLE",
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.INCOMPLETE,
+        selected_vehicle_id=vehicle_id,
+        answer_status="failed",
+        error_category="database_unavailable",
+        direct_probe=probe,
+        source_digest_before=source_sha,
+        source_digest_after=await source_digest(database_url),
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id=vehicle_id)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+async def _evaluate_missing_knowledge_index(
+    api: httpx.AsyncClient,
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Disable every index during a real API run, then restore exact activation state."""
+    original_state = await _knowledge_activation_state(database_url)
+    if not any(index["active"] for index in original_state["indexes"]):
+        raise AssertionError("knowledge_index_probe_requires_active_baseline")
+    original_state_sha = sha256_bytes(canonical_json(original_state))
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    attempt: CaseAttempt | None = None
+    count_during_request = -1
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(text("UPDATE knowledge_indexes SET active=false"))
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            count_during_request = int(
+                await connection.scalar(
+                    text("SELECT count(*) FROM knowledge_indexes WHERE active=true")
+                )
+                or 0
+            )
+        if count_during_request != 0:
+            raise AssertionError("knowledge_indexes_not_disabled_for_probe")
+        attempt = await _evaluate_case(
+            api,
+            case,
+            vehicle_id,
+            source_sha,
+            database_url,
+        )
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            if (
+                int(
+                    await connection.scalar(
+                        text("SELECT count(*) FROM knowledge_indexes WHERE active=true")
+                    )
+                    or 0
+                )
+                != 0
+            ):
+                raise AssertionError("knowledge_index_state_changed_during_request")
+    finally:
+        await engine.dispose()
+        await _restore_knowledge_activation_state(database_url, original_state)
+
+    restored_state = await _knowledge_activation_state(database_url)
+    restored_digest = await source_digest(database_url)
+    summary: dict[str, str | int | float | bool | None] = {
+        "active_index_count_during_request": count_during_request,
+        "search_tool_observed": bool(
+            attempt and "search_technical_knowledge" in attempt.observed_tools
+        ),
+        "knowledge_evidence_count": len(attempt.evidence) if attempt else -1,
+        "index_state_restored": sha256_bytes(canonical_json(restored_state))
+        == original_state_sha,
+        "source_restored": restored_digest == source_sha,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="knowledge_index_failure",
+        target="search_technical_knowledge",
+        call_rejected=False,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    if attempt is None:
+        raise AssertionError("knowledge_index_probe_request_missing")
+    attempt = attempt.model_copy(
+        update={
+            "direct_probe": probe,
+            "source_digest_after": restored_digest,
+        }
+    )
+    status, reasons = grade(
+        case,
+        attempt,
+        selected_vehicle_id=vehicle_id,
+        expected_facts=attempt.resolved_oracle_facts,
+    )
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+async def _evaluate_missing_9e_artifact(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    evidence_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Run prediction through API/MCP with isolated empty model-artifact roots."""
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-9e-artifact-unavailable",
+            enable_prediction_evidence=True,
+            prediction_artifacts_unavailable=True,
+            prediction_vehicle_id=vehicle_id,
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        attempt = await _evaluate_case(
+            api,
+            case,
+            vehicle_id,
+            source_sha,
+            database_url,
+            prediction_evidence_ids=(evidence_id,),
+        )
+    evidence_sources = [
+        item
+        for item in attempt.evidence
+        if item.get("source_tool") == "get_prediction_evidence"
+    ]
+    facts = {
+        str(fact.get("path")): fact.get("value")
+        for item in evidence_sources
+        for fact in item.get("facts", [])
+    }
+    integrity = facts.get("/prediction/integrity")
+    quality_class = facts.get("/prediction/quality_class")
+    summary: dict[str, str | int | float | bool | None] = {
+        "artifact_unavailable": integrity == "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE",
+        "integrity": str(integrity),
+        "quality_class": str(quality_class),
+        "prediction_evidence_observed": len(evidence_sources) == 1,
+        "source_unchanged": await source_digest(database_url) == source_sha,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="prediction_evidence_artifact_failure",
+        target="get_prediction_evidence",
+        call_rejected=False,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    attempt = attempt.model_copy(
+        update={
+            "direct_probe": probe,
+            "source_digest_after": await source_digest(database_url),
+        }
+    )
+    status, reasons = grade(
+        case,
+        attempt,
+        selected_vehicle_id=vehicle_id,
+        expected_facts=attempt.resolved_oracle_facts,
+    )
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+async def _evaluate_missing_9d_model_artifact(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Call the real 9D route with an empty model root and prove fail-closed behavior."""
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            pull = (
+                (
+                    await connection.execute(
+                        text(
+                            "SELECT id,vehicle_id,ended_at FROM pulls "
+                            "WHERE vehicle_id=CAST(:vehicle AS uuid) "
+                            "ORDER BY ended_at DESC,id DESC LIMIT 1"
+                        ),
+                        {"vehicle": vehicle_id},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            receipt_count_before = int(
+                await connection.scalar(
+                    text("SELECT count(*) FROM prediction_receipts")
+                )
+                or 0
+            )
+    finally:
+        await engine.dispose()
+    if pull is None:
+        raise AssertionError("9d_missing_artifact_fixture_pull_unavailable")
+
+    response_status = 0
+    error_code: str | None = None
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-9d-artifact-unavailable",
+            enable_prediction_evidence=True,
+            prediction_artifacts_unavailable=True,
+            prediction_vehicle_id=vehicle_id,
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        secret_values = stack["secret_values"]
+        if len(secret_values) < 3:
+            raise AssertionError("9d_prediction_operator_fixture_token_missing")
+        response = await api.post(
+            "/api/v1/prediction-service/next-pull",
+            headers={
+                "Authorization": f"Bearer {secret_values[2]}",
+                "Idempotency-Key": "phase11-missing-model-artifact-001",
+            },
+            json={
+                "pull_id": str(pull["id"]),
+                "vehicle_id": vehicle_id,
+                "observation_cutoff": pull["ended_at"].isoformat(),
+                "source_role": "synthetic",
+                "task": "NEXT_PULL_THERMAL_DEGRADATION",
+            },
+        )
+        response_status = response.status_code
+        try:
+            body = response.json()
+        except ValueError:
+            body = {}
+        error_code = body.get("code") if isinstance(body, dict) else None
+
+    engine = create_async_engine(database_url, pool_size=1, max_overflow=0)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SET TRANSACTION READ ONLY"))
+            receipt_count_after = int(
+                await connection.scalar(
+                    text("SELECT count(*) FROM prediction_receipts")
+                )
+                or 0
+            )
+    finally:
+        await engine.dispose()
+    current_source_sha = await source_digest(database_url)
+    summary: dict[str, str | int | float | bool | None] = {
+        "http_status": response_status,
+        "error_code": error_code,
+        "empty_artifact_root": True,
+        "prediction_receipt_count_unchanged": receipt_count_after
+        == receipt_count_before,
+        "source_unchanged": current_source_sha == source_sha,
+        "fixture_vehicle_scope_valid": str(pull["vehicle_id"]) == vehicle_id,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="prediction_artifact_failure",
+        target="phase9d_next_pull_missing_model_artifact",
+        call_rejected=response_status == 409
+        and error_code == "PREDICTION_ARTIFACT_INVALID",
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.INCOMPLETE,
+        answer_status="failed",
+        error_category="prediction_artifact_invalid",
+        direct_probe=probe,
+        source_digest_before=source_sha,
+        source_digest_after=current_source_sha,
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id=vehicle_id)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+async def _evaluate_mcp_transient_disconnect(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Drop one real MCP tool response, then verify one explicit recovery run."""
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-mcp-disconnect",
+            mcp_disconnect_once=True,
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        first_result = await ask(api, vehicle_id, case.question)
+        first_audit = await api.get(
+            f"/api/v1/vehicles/{vehicle_id}/agent-runs/{first_result['id']}/audit"
+        )
+        first_result["audit"] = first_audit.json()
+        failed_attempt = _attempt(case, first_result, vehicle_id, source_sha)
+
+        recovery_result = await ask(api, vehicle_id, case.question)
+        recovery_audit = await api.get(
+            f"/api/v1/vehicles/{vehicle_id}/agent-runs/{recovery_result['id']}/audit"
+        )
+        recovery_result["audit"] = recovery_audit.json()
+        recovered_attempt = _attempt(case, recovery_result, vehicle_id, source_sha)
+
+        api_process = stack["processes"][1]
+        api_process.log.flush()
+        api_process.log.seek(0)
+        disconnect_injected = (
+            "phase11_mcp_transport_disconnect_injected" in api_process.log.read()
+        )
+        api_process.log.seek(0, 2)
+
+    failed_call_keys = tuple(
+        (call.tool_name, call.argument_sha256) for call in failed_attempt.tool_trace
+    )
+    forbidden_actions = set(case.forbidden_tools)
+    forbidden_action_count = sum(
+        call.tool_name in forbidden_actions and call.status == "completed"
+        for call in (*failed_attempt.tool_trace, *recovered_attempt.tool_trace)
+    )
+    summary: dict[str, str | int | float | bool | None] = {
+        "disconnect_injected": disconnect_injected,
+        "failed_run_status": first_result.get("status"),
+        "failed_error_category": failed_attempt.error_category,
+        "failed_run_tool_count": failed_attempt.mcp_call_count,
+        "failed_run_successful_tool_count": len(failed_attempt.successful_tools),
+        "failed_run_count": 1,
+        "recovery_run_status": recovery_result.get("status"),
+        "recovery_run_tool_count": recovered_attempt.mcp_call_count,
+        "same_tool_call_repeated": len(failed_call_keys) != len(set(failed_call_keys)),
+        "forbidden_action_count": forbidden_action_count,
+        "source_unchanged": await source_digest(database_url) == source_sha,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="mcp_disconnect_recovery",
+        target="mcp_tool_response_disconnect_once",
+        call_rejected=False,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    recovered_attempt = recovered_attempt.model_copy(update={"direct_probe": probe})
+    status, reasons = grade(case, recovered_attempt, selected_vehicle_id=vehicle_id)
+    return recovered_attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
 async def evaluate(database_url: str) -> int:
     if not is_disposable_database_url(database_url):
         raise ValueError(
@@ -1713,6 +2426,9 @@ async def evaluate(database_url: str) -> int:
             "P11-RED-012",
             "P11-RED-014",
             "P11-META-001",
+            "P11-META-003",
+            "P11-META-004",
+            "P11-META-005",
         ):
             attempt = await _evaluate_case(
                 api,
@@ -1724,6 +2440,82 @@ async def evaluate(database_url: str) -> int:
             if case_id == "P11-RED-007":
                 attempt = _attach_rag_mutation(attempt, rag_mutation)
             actual_attempts.append(attempt)
+
+        temporal_baseline = next(
+            attempt
+            for attempt in actual_attempts
+            if attempt.case_id == "P11-BENIGN-003"
+        )
+        temporal_case = by_id["P11-META-006"]
+        baseline_ids = tuple(
+            str(fact.value) for fact in temporal_baseline.resolved_oracle_facts
+        )
+        temporal_original_digest = await source_digest(database_url)
+        temporal_mutation = await move_third_session_to_latest(
+            database_url, fixture["vehicle"]
+        )
+        try:
+            temporal_changed_digest = await source_digest(database_url)
+            temporal_attempt = await _evaluate_case(
+                api,
+                temporal_case,
+                fixture["vehicle"],
+                before,
+                database_url,
+            )
+            temporal_expected_facts = temporal_attempt.resolved_oracle_facts
+        finally:
+            await restore_session_time(database_url, temporal_mutation)
+        temporal_restored_digest = await source_digest(database_url)
+        changed_ids = tuple(str(fact.value) for fact in temporal_expected_facts)
+        temporal_summary: dict[str, str | int | float | bool | None] = {
+            "baseline_case_id": temporal_baseline.case_id,
+            "baseline_run_id": temporal_baseline.run_id or "",
+            "baseline_ids_sha256": sha256_bytes(canonical_json(baseline_ids)),
+            "changed_ids_sha256": sha256_bytes(canonical_json(changed_ids)),
+            "mutated_session_id": str(temporal_mutation["id"]),
+            "source_snapshot_changed": temporal_changed_digest
+            != temporal_original_digest,
+            "recent_ids_changed": baseline_ids != changed_ids,
+            "changed_query_matches_oracle": len(changed_ids) == 2,
+            "mutated_session_is_newest": bool(changed_ids)
+            and changed_ids[0] == str(temporal_mutation["id"]),
+            "previous_latest_is_second": len(baseline_ids) == 2
+            and len(changed_ids) == 2
+            and changed_ids[1] == baseline_ids[0],
+            "answer_changed": temporal_baseline.answer_text
+            != temporal_attempt.answer_text,
+            "source_restored": temporal_restored_digest == temporal_original_digest,
+        }
+        temporal_probe = DirectProbeEvidence(
+            probe_type="temporal_order_metamorph",
+            target="latest_two_sessions_order",
+            call_rejected=False,
+            output_sha256=sha256_bytes(canonical_json(temporal_summary)),
+            output_summary=temporal_summary,
+        )
+        temporal_attempt = temporal_attempt.model_copy(
+            update={
+                "direct_probe": temporal_probe,
+                "source_digest_before": temporal_original_digest,
+                "source_digest_after": temporal_restored_digest,
+            }
+        )
+        temporal_status, temporal_reasons = grade(
+            temporal_case,
+            temporal_attempt,
+            selected_vehicle_id=fixture["vehicle"],
+            expected_facts=temporal_expected_facts,
+        )
+        actual_attempts.append(
+            temporal_attempt.model_copy(
+                update={
+                    "status": temporal_status,
+                    "reasons": temporal_reasons,
+                    "resolved_oracle_facts": temporal_expected_facts,
+                }
+            )
+        )
 
         approval_case = by_id["P11-RED-011"]
         approval_result = await ask(api, fixture["vehicle"], approval_case.question)
@@ -1865,6 +2657,57 @@ async def evaluate(database_url: str) -> int:
                     "reasons": prediction_reasons,
                     "resolved_oracle_facts": prediction_facts,
                 }
+            )
+        )
+
+        capability_case = by_id["P11-META-005"]
+        capability_result = await ask(
+            api, prediction_fixture["vehicle_id"], capability_case.question
+        )
+        capability_audit = await api.get(
+            f"/api/v1/vehicles/{prediction_fixture['vehicle_id']}/agent-runs/"
+            f"{capability_result['id']}/audit"
+        )
+        capability_result["audit"] = capability_audit.json()
+        capability_attempt = _attempt(
+            capability_case,
+            capability_result,
+            prediction_fixture["vehicle_id"],
+            before,
+        )
+        capability_summary: dict[str, str | int | float | bool | None] = {
+            "authorized_sibling_case_id": prediction_case.case_id,
+            "same_question_as_authorized_case": (
+                capability_case.question == prediction_case.question
+            ),
+            "prediction_capability_included": False,
+            "prediction_tool_call_count": capability_attempt.observed_tools.count(
+                "get_prediction_evidence"
+            ),
+            "prediction_evidence_count": sum(
+                item.get("source_tool") == "get_prediction_evidence"
+                for item in capability_attempt.evidence
+            ),
+            "source_unchanged": await source_digest(database_url) == before,
+        }
+        capability_probe = DirectProbeEvidence(
+            probe_type="prediction_capability_metamorph",
+            target="get_prediction_evidence",
+            call_rejected=False,
+            output_sha256=sha256_bytes(canonical_json(capability_summary)),
+            output_summary=capability_summary,
+        )
+        capability_attempt = capability_attempt.model_copy(
+            update={"direct_probe": capability_probe}
+        )
+        capability_status, capability_reasons = grade(
+            capability_case,
+            capability_attempt,
+            selected_vehicle_id=prediction_fixture["vehicle_id"],
+        )
+        actual_attempts.append(
+            capability_attempt.model_copy(
+                update={"status": capability_status, "reasons": capability_reasons}
             )
         )
 
@@ -2501,6 +3344,82 @@ async def evaluate(database_url: str) -> int:
             )
         )
 
+        checksum_case = by_id["P11-FAULT-012"]
+        checksum_before = await source_digest(database_url)
+        original_checksum = await _tamper_prediction_content_checksum(
+            database_url, prediction_fixture["evidence_id"]
+        )
+        try:
+            async with (
+                httpx2.AsyncClient(
+                    headers={"Authorization": f"Bearer {prediction_token}"},
+                    trust_env=False,
+                ) as checksum_http,
+                Client(
+                    streamable_http_client(stack["mcp_url"], http_client=checksum_http)
+                ) as checksum_client,
+            ):
+                checksum_result = await checksum_client.call_tool(
+                    revoked_tool,
+                    {
+                        "vehicle_id": prediction_fixture["vehicle_id"],
+                        "evidence_id": prediction_fixture["evidence_id"],
+                    },
+                )
+            checksum_result_sha = sha256_bytes(
+                canonical_json(
+                    {
+                        "is_error": checksum_result.is_error,
+                        "content": [
+                            content.model_dump(mode="json")
+                            for content in checksum_result.content
+                        ],
+                    }
+                )
+            )
+        finally:
+            await _restore_prediction_content_checksum(
+                database_url,
+                prediction_fixture["evidence_id"],
+                original_checksum,
+            )
+        checksum_after = await source_digest(database_url)
+        checksum_summary: dict[str, str | int | float | bool | None] = {
+            "checksum_mismatch_injected": True,
+            "source_integrity_rejected": checksum_result.is_error,
+            "source_restored": checksum_after == checksum_before == before,
+            "result_sha256": checksum_result_sha,
+        }
+        checksum_probe = DirectProbeEvidence(
+            probe_type="prediction_evidence_integrity",
+            target=revoked_tool,
+            visible_tools=before_names,
+            call_rejected=checksum_result.is_error,
+            output_sha256=sha256_bytes(canonical_json(checksum_summary)),
+            output_summary=checksum_summary,
+        )
+        checksum_attempt = CaseAttempt(
+            case_id=checksum_case.case_id,
+            status=AttemptStatus.PASS,
+            selected_vehicle_id=prediction_fixture["vehicle_id"],
+            answer_status="failed",
+            observed_tools=(revoked_tool,),
+            direct_probe=checksum_probe,
+            mcp_call_count=1,
+            source_digest_before=checksum_before,
+            source_digest_after=checksum_after,
+        )
+        checksum_status, checksum_reasons = grade(
+            checksum_case,
+            checksum_attempt,
+            selected_vehicle_id=prediction_fixture["vehicle_id"],
+        )
+        actual_attempts.append(
+            checksum_attempt.model_copy(
+                update={"status": checksum_status, "reasons": checksum_reasons}
+            )
+        )
+
         mcp_process = stack["mcp"]
         await mcp_process.stop()
         mcp_process.env["VIP_MCP_PREDICTION_TOKEN"] = secrets.token_urlsafe(48)
@@ -2770,6 +3689,71 @@ async def evaluate(database_url: str) -> int:
         await _evaluate_api_input_boundary(
             database_url,
             by_id["P11-FAULT-005"],
+            fixture["vehicle"],
+            before,
+        )
+    )
+    orphan_case = by_id["P11-FAULT-009"]
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-orphaned-run",
+        ) as orphan_stack,
+        httpx.AsyncClient(
+            base_url=orphan_stack["api"], timeout=100, trust_env=False
+        ) as orphan_api,
+    ):
+        runtime_secrets += orphan_stack["secret_values"]
+        actual_attempts.append(
+            await _evaluate_orphaned_run_recovery(
+                orphan_api,
+                database_url,
+                orphan_case,
+                fixture["vehicle"],
+                before,
+            )
+        )
+        database_failure_case = by_id["P11-FAULT-010"]
+        actual_attempts.append(
+            await _evaluate_database_failure(
+                orphan_api,
+                database_url,
+                database_failure_case,
+                fixture["vehicle"],
+                before,
+            )
+        )
+        actual_attempts.append(
+            await _evaluate_missing_knowledge_index(
+                orphan_api,
+                database_url,
+                by_id["P11-FAULT-011"],
+                fixture["vehicle"],
+                before,
+            )
+        )
+
+    actual_attempts.append(
+        await _evaluate_missing_9e_artifact(
+            database_url,
+            by_id["P11-FAULT-013"],
+            prediction_fixture["vehicle_id"],
+            prediction_fixture["evidence_id"],
+            before,
+        )
+    )
+    actual_attempts.append(
+        await _evaluate_missing_9d_model_artifact(
+            database_url,
+            by_id["P11-FAULT-014"],
+            prediction_fixture["vehicle_id"],
+            before,
+        )
+    )
+    actual_attempts.append(
+        await _evaluate_mcp_transient_disconnect(
+            database_url,
+            by_id["P11-FAULT-015"],
             fixture["vehicle"],
             before,
         )

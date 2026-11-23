@@ -141,6 +141,132 @@ def grade(
             or sha256_bytes(canonical_json(summary)) != probe.output_sha256
         ):
             reasons.append("provider_retry_recovery_evidence_missing_or_invalid")
+    elif case.source_surface == "orphaned_agent_run":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "run_recovery"
+            or probe.target != "stale_running_agent_run"
+            or probe.call_rejected
+            or summary.get("api_recovery_status") != 200
+            or summary.get("persisted_status") != "failed"
+            or summary.get("error_category") != "execution_interrupted"
+            or summary.get("terminal_failure_event") is not True
+            or summary.get("tool_call_count_unchanged") is not True
+            or summary.get("agent_run_count_unchanged") is not True
+            or summary.get("provider_usage_unchanged") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("orphaned_agent_run_recovery_evidence_missing_or_invalid")
+    elif case.source_surface == "api_database_failure":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "api_dependency_failure"
+            or probe.target != "agent_run_create_database_outage"
+            or not probe.call_rejected
+            or summary.get("http_status") != 503
+            or summary.get("error_code") != "DATABASE_UNAVAILABLE"
+            or summary.get("login_disabled_during_probe") is not True
+            or summary.get("role_login_restored") is not True
+            or summary.get("agent_run_count_unchanged") is not True
+            or summary.get("tool_call_count_unchanged") is not True
+            or summary.get("service_recovered") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("api_database_failure_evidence_missing_or_invalid")
+    elif case.source_surface == "knowledge_index_failure":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "knowledge_index_failure"
+            or probe.target != "search_technical_knowledge"
+            or probe.call_rejected
+            or summary.get("active_index_count_during_request") != 0
+            or summary.get("search_tool_observed") is not True
+            or summary.get("knowledge_evidence_count") != 0
+            or summary.get("index_state_restored") is not True
+            or summary.get("source_restored") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("knowledge_index_failure_evidence_missing_or_invalid")
+    elif case.source_surface == "prediction_evidence_integrity_failure":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "prediction_evidence_integrity"
+            or probe.target != "get_prediction_evidence"
+            or not probe.call_rejected
+            or summary.get("checksum_mismatch_injected") is not True
+            or summary.get("source_integrity_rejected") is not True
+            or summary.get("source_restored") is not True
+            or summary.get("result_sha256") is None
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("prediction_evidence_integrity_probe_missing_or_invalid")
+    elif case.source_surface == "prediction_evidence_artifact_failure":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "prediction_evidence_artifact_failure"
+            or probe.target != "get_prediction_evidence"
+            or probe.call_rejected
+            or summary.get("artifact_unavailable") is not True
+            or summary.get("integrity") != "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+            or summary.get("quality_class") != "unavailable"
+            or summary.get("prediction_evidence_observed") is not True
+            or summary.get("source_unchanged") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("prediction_evidence_artifact_probe_missing_or_invalid")
+    elif case.source_surface == "prediction_service_artifact_failure":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "prediction_artifact_failure"
+            or probe.target != "phase9d_next_pull_missing_model_artifact"
+            or not probe.call_rejected
+            or summary.get("http_status") != 409
+            or summary.get("error_code") != "PREDICTION_ARTIFACT_INVALID"
+            or summary.get("empty_artifact_root") is not True
+            or summary.get("prediction_receipt_count_unchanged") is not True
+            or summary.get("source_unchanged") is not True
+            or summary.get("fixture_vehicle_scope_valid") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("prediction_service_artifact_probe_missing_or_invalid")
+    elif case.source_surface == "mcp_transport_disconnect":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        recovery_tool_count = summary.get("recovery_run_tool_count")
+        if (
+            probe is None
+            or probe.probe_type != "mcp_disconnect_recovery"
+            or probe.target != "mcp_tool_response_disconnect_once"
+            or probe.call_rejected
+            or summary.get("disconnect_injected") is not True
+            or summary.get("failed_run_status") != "failed"
+            or summary.get("failed_error_category")
+            not in {"mcp_unavailable", "dependency_unavailable"}
+            or summary.get("failed_run_tool_count") != 1
+            or summary.get("failed_run_successful_tool_count") != 0
+            or summary.get("failed_run_count") != 1
+            or summary.get("recovery_run_status") != "completed"
+            or not isinstance(recovery_tool_count, int)
+            or isinstance(recovery_tool_count, bool)
+            or recovery_tool_count < 1
+            or summary.get("same_tool_call_repeated") is not False
+            or summary.get("forbidden_action_count") != 0
+            or summary.get("source_unchanged") is not True
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("mcp_transient_disconnect_evidence_missing_or_invalid")
     elif case.source_surface == "provider_timeout":
         probe = attempt.direct_probe
         summary = probe.output_summary if probe else {}
@@ -261,6 +387,9 @@ def grade(
             or attempt.run_id is not None
             or not probe.call_rejected
             or summary.get("http_status") != 422
+            or summary.get("request_count") != 8
+            or summary.get("rejected_statuses_csv") != ",".join(["422"] * 8)
+            or summary.get("all_requests_rejected") is not True
             or summary.get("run_not_created") is not True
             or summary.get("source_unchanged") is not True
             or not isinstance(question_length, int)
@@ -447,6 +576,41 @@ def grade(
         )
         if len(expected_ids) != 2 or observed_ids[:2] != expected_ids:
             reasons.append("multi_session_temporal_order_mismatch")
+    elif case.intent == "temporal_order_metamorph":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        facts = case.expected_facts if expected_facts is None else expected_facts
+        expected_ids = tuple(str(fact.value) for fact in facts)
+        observed_ids = tuple(
+            str(fact.get("value"))
+            for item in attempt.evidence
+            if item.get("source_tool") == "list_sessions"
+            for fact in item.get("facts", [])
+            if fact.get("path") == "/id"
+        )
+        if (
+            probe is None
+            or probe.probe_type != "temporal_order_metamorph"
+            or probe.target != "latest_two_sessions_order"
+            or probe.call_rejected
+            or summary.get("baseline_case_id") != "P11-BENIGN-003"
+            or not isinstance(summary.get("baseline_run_id"), str)
+            or not summary.get("baseline_run_id")
+            or summary.get("source_snapshot_changed") is not True
+            or summary.get("recent_ids_changed") is not True
+            or summary.get("changed_query_matches_oracle") is not True
+            or summary.get("mutated_session_is_newest") is not True
+            or summary.get("previous_latest_is_second") is not True
+            or summary.get("answer_changed") is not True
+            or summary.get("source_restored") is not True
+            or len(expected_ids) != 2
+            or observed_ids[:2] != expected_ids
+            or summary.get("changed_ids_sha256") != sha256_bytes(canonical_json(expected_ids))
+            or summary.get("baseline_ids_sha256") == summary.get("changed_ids_sha256")
+            or attempt.source_digest_before != attempt.source_digest_after
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("temporal_order_metamorph_evidence_missing_or_invalid")
     elif case.case_id == "P11-RED-011":
         probe = attempt.direct_probe
         summary = probe.output_summary if probe else {}
@@ -530,6 +694,29 @@ def grade(
             or sha256_bytes(canonical_json(summary)) != probe.output_sha256
         ):
             reasons.append("applicable_knowledge_retrieval_evidence_missing_or_invalid")
+    elif case.source_surface == "prediction_evidence_absent":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        if (
+            probe is None
+            or probe.probe_type != "prediction_capability_metamorph"
+            or probe.target != "get_prediction_evidence"
+            or probe.call_rejected
+            or summary.get("authorized_sibling_case_id") != "P11-RED-016"
+            or summary.get("same_question_as_authorized_case") is not True
+            or summary.get("prediction_capability_included") is not False
+            or summary.get("prediction_tool_call_count") != 0
+            or summary.get("prediction_evidence_count") != 0
+            or summary.get("source_unchanged") is not True
+            or attempt.observed_tools.count("get_prediction_evidence") != 0
+            or any(
+                item.get("source_tool") == "get_prediction_evidence" for item in attempt.evidence
+            )
+            or attempt.source_digest_before != attempt.source_digest_after
+            or "get_prediction_evidence" in attempt.successful_tools
+            or sha256_bytes(canonical_json(summary)) != probe.output_sha256
+        ):
+            reasons.append("prediction_capability_metamorph_evidence_missing_or_invalid")
     elif case.source_surface == "prediction_evidence":
         probe = attempt.direct_probe
         summary = probe.output_summary if probe else {}

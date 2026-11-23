@@ -13,8 +13,8 @@ class CorpusError(ValueError):
     pass
 
 
-FROZEN_SUITE_VERSION = "phase11-agent-evals-v30"
-FROZEN_SUITE_SHA256 = "72ac358fea2c4807b93bf95005e4fd4028edbf6462a72b3aa5d3d45ffb8a15bd"
+FROZEN_SUITE_VERSION = "phase11-agent-evals-v41"
+FROZEN_SUITE_SHA256 = "d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d"
 FROZEN_SUITES = {
     (
         "phase11-agent-evals-v5",
@@ -120,6 +120,50 @@ FROZEN_SUITES = {
         "phase11-agent-evals-v30",
         "suite-v26.json",
     ): "72ac358fea2c4807b93bf95005e4fd4028edbf6462a72b3aa5d3d45ffb8a15bd",
+    (
+        "phase11-agent-evals-v31",
+        "suite-v27.json",
+    ): "d1ce51eed1b4acce866028a4097caaf864e81658c7c7c74aa8440b094a635f7f",
+    (
+        "phase11-agent-evals-v32",
+        "suite-v28.json",
+    ): "2507766c3d1404f9175da41296217b5f52abbdeba9951a6413fea65c117195fa",
+    (
+        "phase11-agent-evals-v33",
+        "suite-v29.json",
+    ): "a47974c7c30082d528ddd123ee1bd0d2c5c4d5a21c8069fa75b5dd90481f7eed",
+    (
+        "phase11-agent-evals-v34",
+        "suite-v30.json",
+    ): "66ef4d40578e38127c26dcdca5abb343fe38fe3c91be4678693a9b05dad83284",
+    (
+        "phase11-agent-evals-v35",
+        "suite-v31.json",
+    ): "d16721d556d33ef56421f6f5bb6ac23c227ee90617626f5c0700dc7ffb9b7985",
+    (
+        "phase11-agent-evals-v36",
+        "suite-v32.json",
+    ): "aacfb84f0465c94888465b0c0adf2ded25005024f3524f59a443322992b2e030",
+    (
+        "phase11-agent-evals-v37",
+        "suite-v33.json",
+    ): "66e3e93b07c586a44b871f1d1cd88691e937e05d4f0784f6fcd7a9629a64cab7",
+    (
+        "phase11-agent-evals-v38",
+        "suite-v34.json",
+    ): "16b05ed861a5b44e05888e97b70db8b477587605f29a4838f65b59bb558b5664",
+    (
+        "phase11-agent-evals-v39",
+        "suite-v35.json",
+    ): "09b323e66bb005f9e5b8497622f8f0c43e6cce4cdcfa6ae730f9baa58c33d15a",
+    (
+        "phase11-agent-evals-v40",
+        "suite-v36.json",
+    ): "f7e2d8aacf24098bcb6eeec4f897456b3d36f7993830a6d9c725d66760dae8e2",
+    (
+        "phase11-agent-evals-v41",
+        "suite-v37.json",
+    ): "d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d",
 }
 
 

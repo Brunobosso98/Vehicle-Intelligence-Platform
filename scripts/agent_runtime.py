@@ -140,7 +140,9 @@ async def runtime(
     worker: bool = False,
     failure_log_directory: str | Path = ".validation/agent",
     enable_prediction_evidence: bool = False,
+    prediction_artifacts_unavailable: bool = False,
     prediction_vehicle_id: str | None = None,
+    mcp_disconnect_once: bool = False,
     provider_fault: str | None = None,
     agent_max_concurrent_runs: int | None = None,
     model_timeout_seconds: float | None = None,
@@ -179,6 +181,20 @@ async def runtime(
         "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
     }
+    if mcp_disconnect_once:
+        env["PHASE11_MCP_TRANSPORT_FAULT"] = "disconnect_once"
+    artifact_root_temp: tempfile.TemporaryDirectory[str] | None = None
+    if prediction_artifacts_unavailable:
+        if not enable_prediction_evidence:
+            raise ValueError(
+                "missing-artifact fixture requires prediction evidence capability"
+            )
+        artifact_root_temp = tempfile.TemporaryDirectory(
+            prefix="phase11-empty-artifacts-"
+        )
+        artifact_root = Path(artifact_root_temp.name)
+        env["PREDICTION_MODEL_ARTIFACT_ROOT"] = str(artifact_root / "phase9b")
+        env["PREDICTION_ANOMALY_ARTIFACT_ROOT"] = str(artifact_root / "phase9c")
     if agent_max_concurrent_runs is not None:
         if not 1 <= agent_max_concurrent_runs <= 8:
             raise ValueError("agent concurrency fixture must be between 1 and 8")
@@ -326,6 +342,8 @@ async def runtime(
         for process in reversed(processes):
             await process.stop()
             process.close()
+        if artifact_root_temp is not None:
+            artifact_root_temp.cleanup()
 
 
 async def ask(

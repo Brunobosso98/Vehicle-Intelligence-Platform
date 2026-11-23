@@ -105,7 +105,7 @@
 - `scripts/evaluate_mlops.py`, `scripts/check_mlops.py`, `scripts/phase10-validation.sh`:
   Phase 10 real 9A/9B/9C/9G lifecycle evaluator, independent persisted-receipt/artifact checker,
   and migration/database acceptance runner.
-- `evals/phase11/suite-v26.json` (current suite v30; v1–v30 retained for historical receipts), `scripts/evaluate_agent_red_team.py`,
+- `evals/phase11/suite-v37.json` (current suite v41; v1–v41 retained for historical receipts), `scripts/evaluate_agent_red_team.py`,
   `scripts/vehicle_agent_evals.py`: Phase 11 frozen deterministic evaluation scenarios,
   actual API/MCP HTTP acceptance runner and operator list/inspect/plan/verify CLI. The
   `vehicle-agent-evals history-7d` command verifies the immutable Phase 7D ID mapping and
@@ -252,6 +252,6 @@ scanner/full-stack gates remain CI REQUIRED.
   reviewed head passed exact-SHA gates. Real-world mechanical failure predictive reliability
   remains NOT_ESTABLISHED.
 - Phase 11 is NOT VERIFIED on `codex/phase-11-agent-evals-red-team`. Its open deterministic corpus
-  currently has 36 cases; the independent grader, CLI and API/MCP HTTP runner have unit coverage.
+  currently has 47 cases; the independent grader, CLI and API/MCP HTTP runner have unit coverage.
   The separate independent holdout is absent, and disposable acceptance, full attack coverage and
   exact-head CI remain unverified; see the acceptance report and 155-requirement traceability ledger.

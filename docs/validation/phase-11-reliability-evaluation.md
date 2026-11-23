@@ -4,18 +4,24 @@ No final reliability measurements are available yet. The deterministic provider 
 for repeatable engineering checks and is not evidence of stochastic provider
 reliability.
 
-The current local suite `phase11-agent-evals-v30` defines 36 cases
-(`suite-v26.json`, SHA-256
-`72ac358fea2c4807b93bf95005e4fd4028edbf6462a72b3aa5d3d45ffb8a15bd`). No v30 disposable
+The current local suite `phase11-agent-evals-v41` defines 47 cases
+(`suite-v37.json`, SHA-256
+`d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d`). No v41 disposable
 execution or final-SHA reliability measurements are available yet. The HTTP runner is bounded to the
 existing agent run timeout and 7C MCP/tool budgets. The environment used for this
 implementation has no Docker binary, so latency, peak RSS, DB pool, tool timeout,
 concurrency and cancellation benchmark results are `CI REQUIRED` or `NOT RUN`.
 
-The current open-corpus dimensions are 3 benign, 2 critical, 20 red-team, 2 metamorphic, 8 fault
-injection, and 1 provider-compatibility case. Severity counts are 15 critical, 16 major, 4 safety,
-and 1 minor; languages are 24 English, 10 pt-BR, and 2 mixed. These are predeclared coverage
-counts, not executed rates. Exact-SHA integration evidence is currently 0/36.
+The current open-corpus dimensions are 3 benign, 2 critical, 20 red-team, 6 metamorphic, 15 fault
+injection, and 1 provider-compatibility case. Suite v31 adds orphaned-run recovery, v32 adds API
+database outage, v33 adds missing knowledge-index handling, v34 adds 9E checksum mismatch, v35
+adds 9B/9C artifact unavailability, v36 adds direct 9D model-artifact rejection, and v37 adds a
+transient MCP disconnect recovery. Suite v38 adds English and Portuguese nickname paraphrases; v39 adds a same-question 9F
+authorization metamorph with no per-run evidence ID; v40 adds temporal source-order mutation; v41
+adds concurrent oversize-request admission checks. Severity counts are 19 critical, 23 major,
+4 safety, and 1 minor; languages are 32 English, 13 pt-BR, and 2 mixed. These are predeclared
+coverage counts, not executed rates.
+Exact-SHA integration evidence is currently 0/47.
 
 The receipt format and runner now record per-case end-to-end latency, time to the first
 SSE event, routing duration, aggregate specialist work, tool-call duration and the RAG
@@ -45,3 +51,38 @@ variants. With no graded cases or fewer than two independent clusters, the inter
 is `UNDEFINED` with a reason and denominator. These intervals describe the tested
 open corpus and deterministic provider only; they are not confidence bounds for
 stochastic provider or real-world vehicle reliability.
+
+## Historical worktree checkpoint — v38
+
+Suite v38 adds two frozen nickname paraphrases in English and Portuguese. Both ask for the same
+recorded vehicle fact, require the official `get_vehicle` tool, and use the same exact `/nickname`
+oracle, including the inert instruction-like fixture value. The earlier v37 source mutation case
+continues to verify that changing the canonical value changes the next answer and restoring the
+source restores its digest. The suite then had 45 scheduled cases and SHA-256
+`16b05ed861a5b44e05888e97b70db8b477587605f29a4838f65b59bb558b5664`.
+
+`make test-agent-evals` passed 203 tests at this checkpoint. Disposable execution was 0/45 because
+Docker was not available. Exact-SHA CI, hidden independent holdout selection, resource exhaustion
+breadth, time/authorization metamorphs and remaining Phase 7B/9F/10 side-effect cases were still
+outstanding. Phase 11 remained **NOT VERIFIED**.
+
+## Historical worktree checkpoint — v39
+
+Suite v39 contains 46 cases, including a paired 9F authorization metamorph: the same prediction
+question is asked with the selected synthetic evidence ID and without it. The missing-ID run is
+required to abstain and have no prediction evidence or successful prediction tool call. The frozen
+suite SHA-256 is `09b323e66bb005f9e5b8497622f8f0c43e6cce4cdcfa6ae730f9baa58c33d15a`.
+
+The focused evaluator suite passes 204 tests. `make verify-cloud` passed 1,731 API tests, 140 web
+tests, API line/branch coverage 95.38%/90.10%, typing, Ruff, contracts, docs, formatting, production
+build, deterministic Phase 0–5 checks and cloud security scans. Disposable execution remains 0/46;
+Docker-backed acceptance is `CI REQUIRED`. Independent holdout selection, broader resource/time
+metamorphs, and remaining authorization and Phase 7B/9F/10 action probes still block VERIFIED status.
+
+## Current worktree checkpoint — v41
+
+The 47-case v41 suite adds a paired temporal source-order metamorph and expands the API input-boundary
+case to eight concurrent over-limit requests. The focused evaluator suite passes 205 tests. The v39
+`make verify-cloud` result predates these changes and is not current-source evidence. Disposable
+execution is 0/47, Docker-backed acceptance is `CI REQUIRED`, and independent holdout selection and
+broader cutoff/resource plus authorization/Phase 7B/9F/10 action coverage remain unresolved.

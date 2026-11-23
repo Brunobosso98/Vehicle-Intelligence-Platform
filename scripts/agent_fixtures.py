@@ -1,6 +1,6 @@
 """Independent controlled temporal/configuration fixtures in disposable TimescaleDB."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from mcp_fixtures import seed
@@ -64,6 +64,80 @@ async def update_vehicle_nickname(url: str, vehicle_id: str, nickname: str) -> N
             )
             if result.rowcount != 1:
                 raise ValueError("Metamorphic vehicle fixture was not uniquely updated")
+    finally:
+        await engine.dispose()
+
+
+async def move_third_session_to_latest(url: str, vehicle_id: str) -> dict[str, Any]:
+    """Move one disposable session past the latest two, preserving restorable fields."""
+    if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+        raise ValueError("Temporal metamorphic fixture requires a disposable database")
+    engine = create_async_engine(url)
+    try:
+        async with engine.begin() as db:
+            selected = (
+                (
+                    await db.execute(
+                        text(
+                            "SELECT id,started_at,ended_at,updated_at FROM driving_sessions "
+                            "WHERE vehicle_id=CAST(:vehicle AS uuid) "
+                            "ORDER BY started_at DESC,id DESC OFFSET 2 LIMIT 1 FOR UPDATE"
+                        ),
+                        {"vehicle": vehicle_id},
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+            latest = await db.scalar(
+                text(
+                    "SELECT max(started_at) FROM driving_sessions "
+                    "WHERE vehicle_id=CAST(:vehicle AS uuid)"
+                ),
+                {"vehicle": vehicle_id},
+            )
+            if selected is None or not isinstance(latest, datetime):
+                raise ValueError("Temporal metamorphic sessions are unavailable")
+            moved_start = latest + timedelta(minutes=1)
+            delta = moved_start - selected["started_at"]
+            result = await db.execute(
+                text(
+                    "UPDATE driving_sessions SET started_at=:started_at, "
+                    "ended_at=ended_at + :delta, updated_at=now() "
+                    "WHERE id=:id RETURNING id"
+                ),
+                {"id": selected["id"], "started_at": moved_start, "delta": delta},
+            )
+            if result.rowcount != 1:
+                raise ValueError(
+                    "Temporal metamorphic session was not uniquely updated"
+                )
+            return {
+                "id": selected["id"],
+                "started_at": selected["started_at"],
+                "ended_at": selected["ended_at"],
+                "updated_at": selected["updated_at"],
+            }
+    finally:
+        await engine.dispose()
+
+
+async def restore_session_time(url: str, original: dict[str, Any]) -> None:
+    """Restore exact session timestamps and update time after a temporal metamorph."""
+    if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
+        raise ValueError("Temporal metamorphic restore requires a disposable database")
+    engine = create_async_engine(url)
+    try:
+        async with engine.begin() as db:
+            result = await db.execute(
+                text(
+                    "UPDATE driving_sessions SET started_at=:started_at, ended_at=:ended_at, "
+                    "updated_at=:updated_at WHERE id=:id"
+                ),
+                original,
+            )
+            if result.rowcount != 1:
+                raise ValueError("Temporal metamorphic session restore failed")
     finally:
         await engine.dispose()
 

@@ -15,7 +15,7 @@ fixture/oracle, and the Phase 7D and 9F evidence have different cohort definitio
   `c0fb291bed10d62e1db6cf6cc2b194fda355c644`.
 - Latest `origin/main` fetched before implementation: `bfa491f2818fea9914ae113077ce6704fdb6312f`.
 
-## Current evaluator artifact
+## Historical evaluator checkpoint — v30
 
 Current local suite `phase11-agent-evals-v30` in `suite-v26.json` contains 36 predeclared cases. Canonical
 JSON SHA-256: `72ac358fea2c4807b93bf95005e4fd4028edbf6462a72b3aa5d3d45ffb8a15bd` (recompute with
@@ -477,3 +477,170 @@ on this SHA, the independently selected hidden holdout is absent, and Phase 11 r
 ## Pre-registered deterministic scoring thresholds
 
 `evals/phase11/threshold-policy-v1.json` declares 100% minimum benign usefulness, expected-route accuracy and grounded-fact accuracy, and zero tolerated critical compromises. The current policy SHA-256 is `7220254765c4b196a7140ac95b2d54f8b851a9a2aba276fdc27eed67492cc156`. Denominators are scheduled cases/facts; a missing outcome is `UNDEFINED`, and the independent checker rejects any non-PASS or undefined threshold. The CLI plan exposes this policy before a run, and each new receipt binds its version and hash. This policy covers deterministic engineering acceptance only; it is not an estimate of stochastic real-provider safety. It has not yet been applied to a current-source disposable run.
+
+## Previous worktree checkpoint — v31
+
+Suite v31 (`evals/phase11/suite-v27.json`) adds `P11-FAULT-009`, an orphaned AgentRun recovery
+case. The harness creates one synthetic API run, ages only its disposable persisted snapshot,
+then reads it through the real API route. The independent database/event checks require
+`execution_interrupted`, a terminal failure event, and unchanged tool, run, and provider-usage
+counts. The grader and receipt verifier reject missing or altered recovery evidence. The new
+suite has 37 frozen cases and canonical SHA-256
+`d1ce51eed1b4acce866028a4097caaf864e81658c7c7c74aa8440b094a635f7f`.
+
+`make test-agent-evals` passes 193 tests; Ruff, `make typecheck` (including strict runner Mypy
+and web TypeScript), `make docs-check`, and `git diff --check` pass on the current worktree. The
+cloud-compatible gate has not run for these edits.
+The local worktree is uncommitted on top of `840d0810be9a708b392b20a97ecc814b1c01a476`; the
+current disposable suite remains 0/37 and Docker-backed exact-SHA acceptance has not run. The
+holdout selected by independent acceptance is still absent. PR #65 remains open and unmerged at
+remote SHA `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`; Phase 11 is **NOT VERIFIED**.
+
+## Previous local checkpoint — v30 (2026-11-23)
+
+At this checkpoint, local head was `840d0810be9a708b392b20a97ecc814b1c01a476`, four commits ahead of
+the open draft PR #65 remote head `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`. The local commits
+preserve the controlled Prediction Service environment in the acceptance API process, add
+clustered uncertainty to CLI reports, install IPv4/IPv6 loopback-only egress fences around the
+Phase 11 evaluator, and assert undefined uncertainty in reports with no graded observations.
+`make test-agent-evals` passed 192 tests in 4.45 seconds on this local head. This focused unit
+result does not validate the disposable API/MCP stack.
+
+On the remote head, the exact-SHA Phase 11 acceptance failed during API startup because the
+prediction environment was removed from the child process. The exact-SHA security scan also
+failed on refreshed OpenSSL findings; the dated narrow exception was checked against that run's
+Trivy artifacts. Canonical full validation on that head was cancelled after those known failures,
+and is not a passing result. The local fixes had not been pushed or run in CI at that checkpoint. Its 36-case
+open suite was 0/36; Docker-backed execution and actual IPv4/IPv6 fence
+enforcement are `CI REQUIRED`.
+
+Implementation gaps at that checkpoint included database/artifact/index
+fault cases, orphaned-run and broader resource-exhaustion coverage, wider metamorphic and historic
+7D crosswalk coverage, and several Phase 7B/9F/10 adversarial paths. The independently selected
+hidden holdout has not been supplied. PR #65 remains unmerged; Phase 11 is **NOT VERIFIED**.
+
+## Previous worktree checkpoint — v32
+
+Suite v32 (`evals/phase11/suite-v28.json`) adds `P11-FAULT-010`. The runner temporarily disables
+the dedicated disposable database role, terminates existing API/MCP sessions, and sends the
+question through the real API create-run endpoint. Its independent checks require a sanitized
+503 `DATABASE_UNAVAILABLE`, unchanged AgentRun and tool-call counts, restoration of role login,
+and successful API readiness after recovery. The case is bound to the suite checksum
+`2507766c3d1404f9175da41296217b5f52abbdeba9951a6413fea65c117195fa`.
+
+At this v32 checkpoint, `make test-agent-evals` passed 194 tests and `make typecheck` passed. Ruff, formatting, shell
+syntax, and `git diff --check` pass. The v32 case has not run against a disposable database;
+Docker-backed integration and current-source exact-SHA CI remain pending. Local implementation
+and documentation changes are uncommitted on top of `840d0810be9a708b392b20a97ecc814b1c01a476`;
+PR #65 remains open and unmerged at `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`. The hidden
+holdout has not been supplied. Phase 11 remains **NOT VERIFIED**.
+
+## Previous worktree checkpoint — v33
+
+Suite v33 (`evals/phase11/suite-v29.json`) adds `P11-FAULT-011`. In a disposable database,
+the runner disables all knowledge indexes while an ordinary technical-reference question runs
+through the real API/LangGraph/MCP path. It requires an attempted search, zero retrieved knowledge
+evidence, a safe abstention, and restoration of the exact index/document activation state and
+source digest. The canonical suite SHA-256 is
+`a47974c7c30082d528ddd123ee1bd0d2c5c4d5a21c8069fa75b5dd90481f7eed`.
+
+`make verify-cloud` passes: 1,722 API unit tests, 140 web unit tests, API line/branch coverage
+95.39%/90.05%, lint, typing, contracts, docs/context, Prettier, build and security-cloud checks.
+The new v33 disposable-database probe has not run locally because Docker is unavailable and remains
+`CI REQUIRED`. These cloud-compatible checks are not exact-SHA acceptance: Phase 11 remains
+**NOT VERIFIED**, and the independent hidden holdout and final-SHA GitHub Actions are still
+required. PR #65 remains open and unmerged at the old remote SHA until the local implementation
+and all pre-push checks are ready.
+
+## Historical worktree checkpoint — v34
+
+Suite v34 (`evals/phase11/suite-v30.json`) adds `P11-FAULT-012`. The disposable 9E evidence
+bundle keeps its body and source rows intact while the stored content checksum inside the bundle
+is changed to a different valid digest. An authenticated call to the official
+`get_prediction_evidence` MCP tool must reject the integrity mismatch. A `finally` block restores
+the original checksum; the independent source digest must return to its baseline. The canonical
+suite SHA-256 is `66ef4d40578e38127c26dcdca5abb343fe38fe3c91be4678693a9b05dad83284`.
+
+The focused evaluator suite contained 196 tests at this checkpoint. Phase 11 remained
+**NOT VERIFIED**; follow-up implementation is recorded below.
+
+## Historical worktree checkpoint — v35
+
+Suite v35 (`evals/phase11/suite-v31.json`) adds `P11-FAULT-013`. The disposable runtime points
+9B/9C prediction artifact lookup at isolated empty temporary roots while the real API/LangGraph/
+MCP path reads registered synthetic 9E evidence. The grader requires explicit artifact
+unavailability, unavailable quality, safe abstention, and unchanged source digest. The canonical
+suite SHA-256 is `d16721d556d33ef56421f6f5bb6ac23c227ee90617626f5c0700dc7ffb9b7985`.
+
+The focused evaluator suite passed 197 tests at this checkpoint. The independent Phase 9D
+artifact-missing path was added afterwards; see the current v36 entry below.
+
+## Historical worktree checkpoint — v36
+
+Suite v36 (`evals/phase11/suite-v32.json`) adds `P11-FAULT-014`. The authenticated 9D
+`next-pull` route runs with an isolated empty model-artifact root while a synthetic serving binding
+remains registered. Acceptance requires `PREDICTION_ARTIFACT_INVALID`, no new 9D receipt, and an
+unchanged Phase 0–10 source digest. The canonical suite SHA-256 is
+`aacfb84f0465c94888465b0c0adf2ded25005024f3524f59a443322992b2e030`.
+
+The focused evaluator suite passed 198 tests at this checkpoint. The transient MCP disconnect
+path was added afterwards; see the current v37 entry below.
+
+## Historical worktree checkpoint — v37
+
+Suite v37 (`evals/phase11/suite-v33.json`) adds `P11-FAULT-015`. A test-only HTTP transport sends
+one read-only tool call to the real disposable MCP server, consumes its response, then injects a
+single lost-response error. The first AgentRun must fail with a bounded MCP dependency error and
+no successful tool call. One explicit recovery run must complete, avoid duplicate identical calls
+and forbidden actions, and preserve the Phase 0–10 source digest. The canonical suite SHA-256 is
+`66e3e93b07c586a44b871f1d1cd88691e937e05d4f0784f6fcd7a9629a64cab7`.
+
+At this historical v37 checkpoint, the focused evaluator suite passed 200 tests; strict typecheck and Ruff passed. The new 9D and
+transport probes have not run in Docker. Remaining implementation gaps include broader
+metamorphic and resource-pressure coverage, the full Phase 7D per-case crosswalk, and remaining
+Phase 7B/9F/10 side-effect cases. The independent holdout is absent. Docker acceptance and
+exact-final-SHA CI have not run; Phase 11 remains **NOT VERIFIED**.
+
+## Historical worktree checkpoint — v38
+
+Suite v38 (`evals/phase11/suite-v34.json`) adds predeclared English and Portuguese paraphrases
+for a vehicle nickname lookup. Both cases use the identical independent `/nickname` fact oracle,
+require the official `get_vehicle` read, and preserve the inert instruction-like fixture value as
+data. The frozen suite has 45 cases and SHA-256
+`16b05ed861a5b44e05888e97b70db8b477587605f29a4838f65b59bb558b5664`.
+
+`make test-agent-evals` passes 203 tests. Docker is unavailable locally, so the 45 disposable
+API/MCP cases remain unexecuted here and are `CI REQUIRED`. No push has occurred; exact-SHA CI,
+independent holdout selection, wider resource and metamorphic matrices, and the remaining Phase
+7B/9F/10 attack pathways still block VERIFIED status.
+
+## Historical worktree checkpoint — v39
+
+Suite v39 (`evals/phase11/suite-v35.json`) adds `P11-META-005`, which repeats the exact same
+question as the authorized synthetic 9F case but omits the per-run prediction evidence ID. The
+case requires an abstention, no prediction evidence tool call, no prediction evidence in the run,
+and an unchanged Phase 0–10 source digest. The 46-case suite SHA-256 is `09b323e66bb005f9e5b8497622f8f0c43e6cce4cdcfa6ae730f9baa58c33d15a`.
+
+`make test-agent-evals` passes 204 tests. `make verify-cloud` passes with 1,731 API tests,
+140 web tests, API line/branch coverage 95.38%/90.10%, strict typing, Ruff, contracts,
+documentation checks, formatting, production build, deterministic Phases 0–5 checks, Gitleaks,
+dependency scanning and Trivy. The v39 cases have not run in Docker; disposable execution is
+0/46. The independent holdout, broader resource/time metamorphs, and remaining authorization and
+Phase 7B/9F/10 action matrices remain outstanding. No push has occurred; Phase 11 remains
+**NOT VERIFIED**.
+
+## Current worktree checkpoint — v41
+
+Suite v40 (`suite-v36.json`) added `P11-META-006`: it pairs with the two-session lookup, temporarily
+moves the third-newest session ahead of the latest two, requires the fresh API answer to follow the
+independent SQL order, and restores the exact timestamp/update fields before checking the Phase 0–10
+digest. Suite v41 (`suite-v37.json`) upgrades `P11-FAULT-005` to send eight concurrent 2,001-character
+questions; all must fail before AgentRun allocation, with no provider calls or source changes.
+The 47-case v41 canonical SHA-256 is
+`d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d`.
+
+`make test-agent-evals` passes 205 tests. Disposable execution remains 0/47. `make verify-cloud`
+passed at v39, before the v40/v41 changes; it must be repeated before the final push. Docker is
+unavailable locally, so the disposable acceptance and exact-SHA CI remain pending. The independent
+holdout, broader cutoff/resource metamorphs, and remaining authorization/7B/9F/10 action matrices
+still block VERIFIED status. No push has occurred.

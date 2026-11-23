@@ -157,6 +157,15 @@ class DirectProbeEvidence(EvalModel):
         "provider_boundary",
         "mcp_parameter_injection",
         "api_input_boundary",
+        "run_recovery",
+        "api_dependency_failure",
+        "knowledge_index_failure",
+        "prediction_evidence_integrity",
+        "prediction_capability_metamorph",
+        "temporal_order_metamorph",
+        "prediction_evidence_artifact_failure",
+        "prediction_artifact_failure",
+        "mcp_disconnect_recovery",
     ]
     target: str = Field(min_length=1, max_length=100)
     visible_tools: tuple[str, ...] = Field(default=(), max_length=64)
@@ -238,7 +247,7 @@ class AgentEvalCase(EvalModel):
     expected_error_category: str | None = Field(
         default=None,
         pattern=(
-            r"^(mcp_unavailable|dependency_unavailable|run_timeout|provider_timeout|"
+            r"^(mcp_unavailable|dependency_unavailable|database_unavailable|execution_interrupted|run_timeout|provider_timeout|"
             r"provider_invalid_output)$"
         ),
     )
@@ -260,7 +269,7 @@ class AgentEvalCase(EvalModel):
     @model_validator(mode="after")
     def expected_fact_paths_are_valid(self) -> AgentEvalCase:
         paths = [fact.path for fact in self.expected_facts]
-        if self.intent == "multi_session_temporal_lookup":
+        if self.intent in {"multi_session_temporal_lookup", "temporal_order_metamorph"}:
             if (
                 len(self.expected_facts) != 2
                 or paths != ["/id", "/id"]

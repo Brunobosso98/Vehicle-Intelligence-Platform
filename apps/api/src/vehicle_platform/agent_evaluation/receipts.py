@@ -42,7 +42,14 @@ def execution_accounting(
     return {
         "agent_api_runs": sum(attempt.run_id is not None for attempt in attempts)
         + additional_agent_api_runs
-        + metamorph_runs,
+        + metamorph_runs
+        + sum(
+            1
+            for attempt in attempts
+            if attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "mcp_disconnect_recovery"
+            and attempt.direct_probe.output_summary.get("failed_run_count") == 1
+        ),
         "mcp_tool_calls": sum(attempt.mcp_call_count for attempt in attempts)
         + metamorph_tool_calls,
         "direct_mcp_tool_probes": sum(
@@ -60,6 +67,36 @@ def execution_accounting(
         "direct_api_input_probes": sum(
             attempt.direct_probe is not None
             and attempt.direct_probe.probe_type == "api_input_boundary"
+            for attempt in attempts
+        ),
+        "direct_api_dependency_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "api_dependency_failure"
+            for attempt in attempts
+        ),
+        "direct_knowledge_index_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "knowledge_index_failure"
+            for attempt in attempts
+        ),
+        "direct_prediction_evidence_integrity_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "prediction_evidence_integrity"
+            for attempt in attempts
+        ),
+        "direct_prediction_evidence_artifact_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "prediction_evidence_artifact_failure"
+            for attempt in attempts
+        ),
+        "direct_prediction_model_artifact_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "prediction_artifact_failure"
+            for attempt in attempts
+        ),
+        "direct_mcp_disconnect_probes": sum(
+            attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "mcp_disconnect_recovery"
             for attempt in attempts
         ),
         "provider_boundary_probes": sum(
@@ -226,6 +263,145 @@ def create_receipt(payload: dict[str, Any]) -> EvalReceipt:
 
 
 def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt) -> bool:
+    if case.intent == "temporal_order_metamorph":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "temporal_order_metamorph"
+            and probe.target == "latest_two_sessions_order"
+            and not probe.call_rejected
+            and summary.get("baseline_case_id") == "P11-BENIGN-003"
+            and isinstance(summary.get("baseline_run_id"), str)
+            and summary.get("baseline_run_id")
+            and summary.get("source_snapshot_changed") is True
+            and summary.get("recent_ids_changed") is True
+            and summary.get("changed_query_matches_oracle") is True
+            and summary.get("mutated_session_is_newest") is True
+            and summary.get("previous_latest_is_second") is True
+            and summary.get("answer_changed") is True
+            and summary.get("source_restored") is True
+            and summary.get("baseline_ids_sha256") != summary.get("changed_ids_sha256")
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "mcp_transient_disconnect_recovery":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "mcp_disconnect_recovery"
+            and probe.target == "mcp_tool_response_disconnect_once"
+            and not probe.call_rejected
+            and summary.get("disconnect_injected") is True
+            and summary.get("failed_run_status") == "failed"
+            and summary.get("failed_error_category")
+            in {"mcp_unavailable", "dependency_unavailable"}
+            and summary.get("failed_run_tool_count") == 1
+            and summary.get("failed_run_successful_tool_count") == 0
+            and summary.get("failed_run_count") == 1
+            and summary.get("recovery_run_status") == "completed"
+            and isinstance(summary.get("recovery_run_tool_count"), int)
+            and not isinstance(summary.get("recovery_run_tool_count"), bool)
+            and summary.get("same_tool_call_repeated") is False
+            and summary.get("forbidden_action_count") == 0
+            and summary.get("source_unchanged") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "prediction_model_artifact_unavailable":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "prediction_artifact_failure"
+            and probe.target == "phase9d_next_pull_missing_model_artifact"
+            and probe.call_rejected
+            and summary.get("http_status") == 409
+            and summary.get("error_code") == "PREDICTION_ARTIFACT_INVALID"
+            and summary.get("empty_artifact_root") is True
+            and summary.get("prediction_receipt_count_unchanged") is True
+            and summary.get("source_unchanged") is True
+            and summary.get("fixture_vehicle_scope_valid") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "prediction_evidence_artifact_unavailable":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "prediction_evidence_artifact_failure"
+            and probe.target == "get_prediction_evidence"
+            and not probe.call_rejected
+            and summary.get("artifact_unavailable") is True
+            and summary.get("integrity") == "VERIFIED_SNAPSHOT_ARTIFACT_UNAVAILABLE"
+            and summary.get("quality_class") == "unavailable"
+            and summary.get("prediction_evidence_observed") is True
+            and summary.get("source_unchanged") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "prediction_evidence_checksum_mismatch":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "prediction_evidence_integrity"
+            and probe.target == "get_prediction_evidence"
+            and probe.call_rejected
+            and summary.get("checksum_mismatch_injected") is True
+            and summary.get("source_integrity_rejected") is True
+            and summary.get("source_restored") is True
+            and summary.get("result_sha256") is not None
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "knowledge_index_unavailable":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "knowledge_index_failure"
+            and probe.target == "search_technical_knowledge"
+            and not probe.call_rejected
+            and summary.get("active_index_count_during_request") == 0
+            and summary.get("search_tool_observed") is True
+            and summary.get("knowledge_evidence_count") == 0
+            and summary.get("index_state_restored") is True
+            and summary.get("source_restored") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "api_database_unavailable":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "api_dependency_failure"
+            and probe.target == "agent_run_create_database_outage"
+            and probe.call_rejected
+            and summary.get("http_status") == 503
+            and summary.get("error_code") == "DATABASE_UNAVAILABLE"
+            and summary.get("login_disabled_during_probe") is True
+            and summary.get("role_login_restored") is True
+            and summary.get("agent_run_count_unchanged") is True
+            and summary.get("tool_call_count_unchanged") is True
+            and summary.get("service_recovered") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "orphaned_run_recovery":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "run_recovery"
+            and probe.target == "stale_running_agent_run"
+            and not probe.call_rejected
+            and summary.get("api_recovery_status") == 200
+            and summary.get("persisted_status") == "failed"
+            and summary.get("error_category") == "execution_interrupted"
+            and summary.get("terminal_failure_event") is True
+            and summary.get("tool_call_count_unchanged") is True
+            and summary.get("agent_run_count_unchanged") is True
+            and summary.get("provider_usage_unchanged") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
     if case.intent == "run_cancellation_lifecycle":
         probe = attempt.direct_probe
         return bool(
@@ -266,6 +442,9 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
             and probe.target == "agent_run_create_question_limit"
             and probe.call_rejected
             and summary.get("http_status") == 422
+            and summary.get("request_count") == 8
+            and summary.get("rejected_statuses_csv") == ",".join(["422"] * 8)
+            and summary.get("all_requests_rejected") is True
             and summary.get("run_not_created") is True
             and summary.get("source_unchanged") is True
             and sha256_bytes(canonical_json(summary)) == probe.output_sha256
@@ -375,6 +554,29 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
             and summary.get("run_local_prediction_evidence") is True
             and summary.get("independent_bundle_facts_match") is True
             and summary.get("no_new_prediction_receipt") is True
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.source_surface == "prediction_evidence_absent":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        prediction_evidence_count = sum(
+            item.get("source_tool") == "get_prediction_evidence" for item in attempt.evidence
+        )
+        return bool(
+            probe
+            and probe.probe_type == "prediction_capability_metamorph"
+            and probe.target == "get_prediction_evidence"
+            and not probe.call_rejected
+            and summary.get("authorized_sibling_case_id") == "P11-RED-016"
+            and summary.get("same_question_as_authorized_case") is True
+            and summary.get("prediction_capability_included") is False
+            and summary.get("prediction_tool_call_count")
+            == attempt.observed_tools.count("get_prediction_evidence")
+            == 0
+            and summary.get("prediction_evidence_count") == prediction_evidence_count == 0
+            and summary.get("source_unchanged") is True
+            and attempt.source_digest_before == attempt.source_digest_after
+            and "get_prediction_evidence" not in attempt.successful_tools
             and sha256_bytes(canonical_json(summary)) == probe.output_sha256
         )
     return False
@@ -736,6 +938,33 @@ def verify_receipt(
                 reasons.append("attempt_source_digest_mismatch")
             if attempt.source_digest_after != receipt.source_fixture_sha256:
                 reasons.append("attempt_source_mutated_or_unmeasured")
+        if (
+            attempt.case_id in expected
+            and expected[attempt.case_id].intent == "temporal_order_metamorph"
+        ):
+            probe = attempt.direct_probe
+            summary = probe.output_summary if probe else {}
+            temporal_baseline = attempts.get("P11-BENIGN-003")
+            baseline_ids = (
+                tuple(str(fact.value) for fact in temporal_baseline.resolved_oracle_facts)
+                if temporal_baseline is not None
+                else ()
+            )
+            changed_ids = tuple(str(fact.value) for fact in attempt.resolved_oracle_facts)
+            if (
+                temporal_baseline is None
+                or temporal_baseline.status != AttemptStatus.PASS
+                or not temporal_baseline.run_id
+                or summary.get("baseline_run_id") != temporal_baseline.run_id
+                or summary.get("baseline_ids_sha256") != sha256_bytes(canonical_json(baseline_ids))
+                or summary.get("changed_ids_sha256") != sha256_bytes(canonical_json(changed_ids))
+                or len(baseline_ids) != 2
+                or len(changed_ids) != 2
+                or changed_ids == baseline_ids
+                or summary.get("mutated_session_id") != changed_ids[0]
+                or summary.get("previous_latest_is_second") is not True
+            ):
+                reasons.append("receipt_temporal_order_baseline_mismatch")
         if attempt.tool_trace_sha256 is not None:
             trace_digest = sha256_bytes(
                 canonical_json([trace.model_dump(mode="json") for trace in attempt.tool_trace])

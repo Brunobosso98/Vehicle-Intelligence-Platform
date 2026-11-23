@@ -306,7 +306,16 @@ class DeterministicProvider:
                 "vehicle nickname",
                 "nickname recorded",
                 "nickname is recorded",
+                "nickname is saved",
+                "nickname saved",
+                "vehicle's nickname",
+                "vehicle’s nickname",
                 "nickname está registrado",
+                "qual apelido está registrado",
+                "apelido está registrado",
+                "apelido cadastrado",
+                "nome registrado no veículo",
+                "nome registrado no veiculo",
             )
         )
         if (
