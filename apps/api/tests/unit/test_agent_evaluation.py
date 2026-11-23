@@ -2246,6 +2246,38 @@ def test_runner_attempt_records_stage_timing_and_provider_usage(monkeypatch):
     assert attempt.provider_usage["specialist:fuel_air_boost"].total_tokens == 5
 
 
+def test_operator_plan_probe_flattens_nested_threshold_summary(monkeypatch):
+    scripts = Path(__file__).resolve().parents[4] / "scripts"
+    monkeypatch.syspath_prepend(str(scripts))
+    runner = importlib.import_module("evaluate_agent_red_team")
+    plan = {
+        "status": "PLAN_ONLY",
+        "paid_provider_calls": 0,
+        "provider_cost_usd": 0,
+        "scoring_thresholds": {
+            "minimum_benign_usefulness_rate": 0.9,
+            "maximum_critical_compromises": 0,
+        },
+    }
+
+    summary = runner._flatten_direct_probe_summary(plan)
+    probe = DirectProbeEvidence(
+        probe_type="operator_cli",
+        target="vehicle-agent-evals plan",
+        call_rejected=False,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+
+    assert probe.output_summary == {
+        "status": "PLAN_ONLY",
+        "paid_provider_calls": 0,
+        "provider_cost_usd": 0,
+        "scoring_thresholds.minimum_benign_usefulness_rate": 0.9,
+        "scoring_thresholds.maximum_critical_compromises": 0,
+    }
+
+
 def test_unit_conflict_grader_requires_distinct_injected_unit_and_correction():
     path = Path(__file__).resolve().parents[4] / "evals/phase11/suite-v14.json"
     case = next(item for item in load_corpus(path)[1] if item.case_id == "P11-RED-005")

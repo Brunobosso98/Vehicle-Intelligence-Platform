@@ -88,6 +88,26 @@ SUITE_PATH = ROOT / "evals/phase11/suite-v37.json"
 REPORT_PATH = ROOT / ".validation/phase11/sanitized-report.json"
 
 
+def _flatten_direct_probe_summary(
+    summary: dict[str, Any],
+) -> dict[str, str | int | float | bool | None]:
+    """Flatten nested JSON objects into the scalar-only direct-probe receipt schema."""
+    flattened: dict[str, str | int | float | bool | None] = {}
+
+    def visit(prefix: str, value: Any) -> None:
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                visit(f"{prefix}.{key}" if prefix else str(key), nested)
+        elif value is None or type(value) in {str, int, float, bool}:
+            flattened[prefix] = value
+        else:
+            raise ValueError("direct_probe_summary_contains_unsupported_value")
+
+    for key, value in summary.items():
+        visit(str(key), value)
+    return flattened
+
+
 class JournaledAttempts(list[CaseAttempt]):
     """Keep sanitized in-memory attempts and durably checkpoint each completed attempt."""
 
@@ -3093,6 +3113,7 @@ async def evaluate(database_url: str) -> int:
         if plan_result.returncode != 0:
             raise AssertionError("provider_default_off_plan_command_failed")
         plan_summary = json.loads(plan_stdout)
+        plan_probe_summary = _flatten_direct_probe_summary(plan_summary)
         plan_attempt = CaseAttempt(
             case_id=plan_case.case_id,
             status=AttemptStatus.PASS,
@@ -3103,8 +3124,8 @@ async def evaluate(database_url: str) -> int:
                 probe_type="operator_cli",
                 target="vehicle-agent-evals plan",
                 call_rejected=False,
-                output_sha256=sha256_bytes(canonical_json(plan_summary)),
-                output_summary=plan_summary,
+                output_sha256=sha256_bytes(canonical_json(plan_probe_summary)),
+                output_summary=plan_probe_summary,
             ),
             source_digest_before=before,
             source_digest_after=before,

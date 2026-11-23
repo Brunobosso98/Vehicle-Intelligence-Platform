@@ -99,9 +99,12 @@ Security, Phase 9G, Phase 9H, and Phase 10, then reached the same authorized 9E 
 because the independent source oracle expected projected `path` entries inside the immutable bundle;
 the persisted 9E schema stores those outputs in typed bundle fields and model-version lineage. The
 oracle now derives its eight expected facts from the accepted immutable bundle and its receipt-bound
-model version. Local `make test-agent-evals` passes 207 tests, and the changed oracle passes Ruff,
-format checking, and mypy. The Phase 11 disposable integration and final-SHA gates remain pending;
-the current branch is **NOT VERIFIED**. On `54076e7`, CI, Security,
+model version. Exact-SHA run `5e049849f5778a872247631be5a2e0aed8347d34` passed that case and journaled
+27 attempts, then failed while serializing `P11-PROVIDER-001`: the operator plan's nested scoring
+threshold object did not fit the scalar-only direct-probe schema. The runner now deterministically
+flattens nested scalar fields before recording and hashing the probe summary. `make test-agent-evals`
+passes 208 tests; the runner passes strict mypy, and Ruff/format checks pass. The disposable
+integration and final-SHA gates remain pending; the current branch is **NOT VERIFIED**. On `54076e7`, CI, Security,
 Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
 failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase 7B/9F/10
 action coverage remain unresolved.
