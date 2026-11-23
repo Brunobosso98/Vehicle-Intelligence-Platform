@@ -71,6 +71,11 @@ done
 "${firewall_privilege[@]}" iptables -N "$firewall_chain"
 firewall_v4_created=1
 "${firewall_privilege[@]}" iptables -A "$firewall_chain" -o lo -j ACCEPT
+# Docker DNATs the disposable PostgreSQL loopback-published port onto its bridge.
+# Match the original destination so the fence permits only this database socket.
+"${firewall_privilege[@]}" iptables -A "$firewall_chain" \
+  -p tcp -m conntrack --ctstate NEW,ESTABLISHED \
+  --ctorigdst 127.0.0.1/32 --ctorigdstport "$port" -j ACCEPT
 "${firewall_privilege[@]}" iptables -A "$firewall_chain" -j REJECT
 "${firewall_privilege[@]}" iptables -I OUTPUT 1 -j "$firewall_chain"
 "${firewall_privilege[@]}" ip6tables -N "$firewall_chain"

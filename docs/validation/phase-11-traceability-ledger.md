@@ -175,11 +175,14 @@ complete merely because a scenario is present in JSON.
   140 web unit tests, API line/branch coverage 95.38%/90.10%, typing, Ruff, contracts, docs,
   formatting, production build, deterministic Phase 0–5 checks and cloud security scans.
   Docker-backed integration remains `CI REQUIRED`.
-- Local source work remains uncommitted on top of local head
-  `840d0810be9a708b392b20a97ecc814b1c01a476`, four commits ahead of remote PR #65 head
-  `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`. No final-SHA workflow has run for the local
-  source. Current disposable execution is 0/47; Docker-backed acceptance and actual egress-fence
-  enforcement are `CI REQUIRED`.
+- Commit `54076e758928981404b495a7c67880f118a2af1c` is pushed to open draft PR #65. Current-source
+  `make verify-cloud` passes. Exact-SHA Phase 11 workflow 45273030474 failed before executing cases:
+  the host egress fence blocked the loopback-published disposable database after Docker DNAT. Its
+  sanitized artifact records `INFRA_FAILURE`, zero attempts and zero provider calls. The source
+  now contains the narrow original-loopback-destination/port firewall exception; shell syntax and
+  cloud-compatible checks pass, but final-SHA Docker confirmation must rerun. CI, Security, Phase
+  9G, Phase 9H and Phase 10 passed on `54076e7`; canonical full validation was cancelled after the
+  known Phase 11 failure.
 - On remote SHA `cbb3b39708be76c552bfdaca2659b34bbae8ab2e`, Phase 11 independent acceptance
   failed during API startup; the security workflow failed on refreshed OpenSSL findings, and
   canonical full validation was cancelled after those failures. Phase 9G, Phase 9H, Phase 10,
@@ -189,6 +192,6 @@ complete merely because a scenario is present in JSON.
   broader metamorphic and
   resource-exhaustion coverage, Phase 7D equivalent-oracle comparison (the 80-ID/120-slot identity mapping itself is verified), and several Phase 7B/9F/10
   adversarial paths. The deterministic paid-provider run is optional and remains disabled.
-- PR #65 is still an open draft to `main` and is unmerged. Phase 11 is **NOT VERIFIED**. Exact
-  final-SHA acceptance and all mandatory CI checks remain required after implementation is
-  complete.
+- PR #65 is an open draft to `main` and is unmerged. Phase 11 is **NOT VERIFIED**. The independent
+  holdout is absent; exact-SHA acceptance did not reach the cases; the corrected final SHA must pass
+  the complete mandatory CI suite.

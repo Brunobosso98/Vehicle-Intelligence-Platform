@@ -639,8 +639,15 @@ questions; all must fail before AgentRun allocation, with no provider calls or s
 The 47-case v41 canonical SHA-256 is
 `d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d`.
 
-`make test-agent-evals` passes 205 tests. Disposable execution remains 0/47. `make verify-cloud`
-passed at v39, before the v40/v41 changes; it must be repeated before the final push. Docker is
-unavailable locally, so the disposable acceptance and exact-SHA CI remain pending. The independent
-holdout, broader cutoff/resource metamorphs, and remaining authorization/7B/9F/10 action matrices
-still block VERIFIED status. No push has occurred.
+`make test-agent-evals` passes 205 tests and the current-source `make verify-cloud` gate passes
+(1,732 API tests, 140 web tests, API line/branch coverage 95.35%/90.07%, typing, lint, contracts,
+docs, formatting, build, deterministic Phase 0–5 checks and security scans). Commit
+`54076e758928981404b495a7c67880f118a2af1c` was pushed to PR #65. Exact-SHA run 45273030474
+failed before case execution: the host egress fence blocked the loopback-published disposable
+PostgreSQL connection after Docker DNAT, so `seed_agent` received a connection reset and the
+sanitized report recorded `INFRA_FAILURE`, zero attempts and zero provider calls. The source now
+permits only that original loopback destination and port through a conntrack match; shell syntax and
+the complete cloud-compatible gate pass after the correction. Docker confirmation is pending on a
+new final-SHA run. On `54076e7`, CI, Security, Phase 9G, Phase 9H and Phase 10 passed; Phase 0 full
+validation was cancelled after the known Phase 11 failure. Phase 11 remains **NOT VERIFIED**;
+independent holdout selection and the remaining acceptance gaps are still outstanding.

@@ -82,7 +82,13 @@ metamorphs, and remaining authorization and Phase 7B/9F/10 action probes still b
 ## Current worktree checkpoint — v41
 
 The 47-case v41 suite adds a paired temporal source-order metamorph and expands the API input-boundary
-case to eight concurrent over-limit requests. The focused evaluator suite passes 205 tests. The v39
-`make verify-cloud` result predates these changes and is not current-source evidence. Disposable
-execution is 0/47, Docker-backed acceptance is `CI REQUIRED`, and independent holdout selection and
-broader cutoff/resource plus authorization/Phase 7B/9F/10 action coverage remain unresolved.
+case to eight concurrent over-limit requests. The focused evaluator suite passes 205 tests.
+Current-source `make verify-cloud` passes with 1,732 API tests, 140 web tests, 95.35%/90.07% API
+line/branch coverage and all cloud-compatible checks. Exact-SHA CI run 45273030474 failed before
+case execution because the egress firewall blocked the loopback-published Docker database after
+DNAT; the report records zero attempts and zero provider calls. The source now permits only the
+original loopback destination and published port through a conntrack match; shell syntax and the
+cloud gate pass, but Docker confirmation awaits a new final-SHA run. On `54076e7`, CI, Security,
+Phase 9G, Phase 9H and Phase 10 passed; full validation was cancelled after the known Phase 11
+failure. Independent holdout selection and broader cutoff/resource plus authorization/Phase
+7B/9F/10 action coverage remain unresolved; Phase 11 is **NOT VERIFIED**.
