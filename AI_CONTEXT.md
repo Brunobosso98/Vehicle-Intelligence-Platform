@@ -252,6 +252,7 @@ scanner/full-stack gates remain CI REQUIRED.
   reviewed head passed exact-SHA gates. Real-world mechanical failure predictive reliability
   remains NOT_ESTABLISHED.
 - Phase 11 is NOT VERIFIED on `codex/phase-11-agent-evals-red-team`. Its open deterministic corpus
-  currently has 47 cases; the independent grader, CLI and API/MCP HTTP runner have unit coverage.
-  The separate independent holdout is absent, and disposable acceptance, full attack coverage and
-  exact-head CI remain unverified; see the acceptance report and 155-requirement traceability ledger.
+  currently has 54 cases (`suite-v45.json`); the independent grader, CLI and API/MCP HTTP runner
+  have unit coverage. Local API and web quality gates pass on the current worktree. The separate
+  independent holdout is absent, and disposable acceptance, full attack coverage and exact-head CI
+  remain unverified; see the acceptance report and 155-requirement traceability ledger.

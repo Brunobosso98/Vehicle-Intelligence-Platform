@@ -163,6 +163,13 @@ class DirectProbeEvidence(EvalModel):
         "prediction_evidence_integrity",
         "prediction_capability_metamorph",
         "temporal_order_metamorph",
+        "semantic_temporal_metamorph",
+        "vehicle_scope_metamorph",
+        "concurrent_run_isolation",
+        "repeated_tool_loop",
+        "tool_schema_rejection",
+        "knowledge_input_bound",
+        "evidence_budget_bound",
         "prediction_evidence_artifact_failure",
         "prediction_artifact_failure",
         "mcp_disconnect_recovery",
@@ -172,7 +179,7 @@ class DirectProbeEvidence(EvalModel):
     call_rejected: bool
     output_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     output_summary: dict[str, str | int | float | bool | None] = Field(
-        default_factory=dict, max_length=24
+        default_factory=dict, max_length=40
     )
 
 
@@ -248,7 +255,8 @@ class AgentEvalCase(EvalModel):
         default=None,
         pattern=(
             r"^(mcp_unavailable|dependency_unavailable|database_unavailable|execution_interrupted|run_timeout|provider_timeout|"
-            r"provider_invalid_output)$"
+            r"provider_invalid_output|invalid_tool_arguments|oversized_ingestion_rejected|"
+            r"evidence_budget_exhausted)$"
         ),
     )
     expected_route: str | None = Field(default=None, max_length=80)
@@ -269,7 +277,11 @@ class AgentEvalCase(EvalModel):
     @model_validator(mode="after")
     def expected_fact_paths_are_valid(self) -> AgentEvalCase:
         paths = [fact.path for fact in self.expected_facts]
-        if self.intent in {"multi_session_temporal_lookup", "temporal_order_metamorph"}:
+        if self.intent in {
+            "multi_session_temporal_lookup",
+            "temporal_order_metamorph",
+            "implicit_temporal_query_transform",
+        }:
             if (
                 len(self.expected_facts) != 2
                 or paths != ["/id", "/id"]

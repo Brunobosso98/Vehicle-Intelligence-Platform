@@ -50,7 +50,8 @@ def create_app(
     probe: DatabaseProbe | None = None,
     telemetry: Telemetry | None = None,
 ) -> FastAPI:
-    config = settings or Settings()
+    # BaseSettings resolves DATABASE_URL from the environment at runtime.
+    config = settings or Settings()  # type: ignore[call-arg]
     database = Database(config) if probe is None else None
     dependency = probe if probe is not None else database
     if dependency is None:
@@ -111,6 +112,14 @@ def create_app(
 
             timeout_provider_used = True
             return ProviderTimeoutProbe()
+        if config.environment == "test" and test_provider_fault == "repeated_tool_loop":
+            from vehicle_platform.agents.scripted_provider import RepeatedToolRequestProvider
+
+            return RepeatedToolRequestProvider()
+        if config.environment == "test" and test_provider_fault == "wrong_tool_schema":
+            from vehicle_platform.agents.scripted_provider import WrongToolSchemaProvider
+
+            return WrongToolSchemaProvider()
         if config.environment == "test" and test_provider_fault == "specialist_timeout":
             from vehicle_platform.agents.scripted_provider import SpecialistTimeoutProbe
 

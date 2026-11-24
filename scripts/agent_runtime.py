@@ -220,6 +220,8 @@ async def runtime(
             "provider_retry_once",
             "provider_retry_rate_limit_and_unavailable",
             "provider_timeout_once",
+            "repeated_tool_loop",
+            "wrong_tool_schema",
             "specialist_timeout",
         }:
             raise ValueError("Unsupported test provider fault")

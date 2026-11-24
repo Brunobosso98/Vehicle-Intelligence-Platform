@@ -629,7 +629,7 @@ dependency scanning and Trivy. The v39 cases have not run in Docker; disposable 
 Phase 7B/9F/10 action matrices remain outstanding. No push has occurred; Phase 11 remains
 **NOT VERIFIED**.
 
-## Current worktree checkpoint — v41
+## Historical worktree checkpoint — v41
 
 Suite v40 (`suite-v36.json`) added `P11-META-006`: it pairs with the two-session lookup, temporarily
 moves the third-newest session ahead of the latest two, requires the fresh API answer to follow the
@@ -657,3 +657,104 @@ has regression tests; the negative capability case still omits it. The current l
 tests and 140 web tests. On `54076e7`, CI, Security, Phase 9G, Phase 9H and Phase 10 passed;
 Phase 0 full validation was cancelled after the known Phase 11 failure. Phase 11 remains **NOT
 VERIFIED**; independent holdout selection and the remaining acceptance gaps are still outstanding.
+
+## Current worktree checkpoint — cancellation audit and runner controls
+
+Remote SHA `b15b6a4346856560d6ef20c12211dee1f130ca4f` remains the head of open draft PR #65.
+Phase 11 run `45285348334` ended as `cancelled` after 32 minutes while its disposable API/MCP
+acceptance step was still active. Codex requested that cancellation; it was not a test failure, and
+the run produced no artifact from which to infer a case result. The earlier description of this run
+as a failed acceptance was incorrect. The canonical full-validation run was also cancelled before
+completion, at Phase 7C, so it does not prove the required Phase 0–11 gate.
+
+At this checkpoint, `evals/phase11/suite-v37.json` is the current frozen 47-case suite. Older
+`0/36` statements below are historical checkpoints for earlier suite versions; they are not the
+result of run `45285348334`. That run has no case-level result for the current 47-case suite.
+
+The current local work adds a 180-second overall deadline to case-evaluation helpers, a 50-minute
+suite deadline beneath the workflow's 60-minute job limit, and an atomically written private
+progress file containing only repository/suite hashes, case IDs, statuses, and elapsed times. The
+acceptance workflow uploads that bounded progress file beside the sanitized final report. It also
+prints case start/completion markers so a live Actions log identifies the active case. The canonical
+full-validation workflow now runs the Phase 11 disposable acceptance before the long Phase 0–10
+matrix and runs Phase 11 benchmark/observability checks after that matrix. These local changes have
+not been pushed. A subsequent `make verify-cloud` run completed 1,740 API unit tests at 94.06%
+coverage, 140 web tests, typing/lint, contracts and cloud security checks; its final
+Prettier step caught formatting in this ledger, which was corrected and checked. After the final
+timeout-accounting adjustment, `make test-agent-evals` passes 216 tests, strict mypy passes for the
+runner and oracle, Ruff passes for the changed Python files, and `make docs-check` passes. A real Chromium XSS/rendering check passed 1/1 locally: the deep-linked AgentRun included hostile HTML/Markdown in the answer, finding, evidence and vehicle context; no executable DOM elements were created. Web typecheck, lint and Prettier pass. Docker is absent locally, so disposable API/MCP, database, firewall and exact-SHA checks remain `CI REQUIRED`.
+
+The hidden holdout is still absent. The traceability ledger also records incomplete metamorphic and
+resource-pressure matrices, specialist/concurrency coverage, some Phase 7B/9F/10 adversarial paths,
+and the Phase 7D equivalent-oracle crosswalk. Phase 11 remains **NOT VERIFIED**; no new push or
+final-SHA CI run has occurred for the local changes.
+
+After this checkpoint, `make test-agent-evals` passed 216 tests in 4.64 seconds. `make verify-cloud`
+passed on the current worktree: 1,743 API tests, 94.06% API line coverage and 90.05% branch
+coverage, 140 web tests, API/web lint and typecheck, contract/docs/format checks, production build,
+deterministic Phase 0–5 checks, analytics benchmark, Gitleaks, dependency audit and Trivy. This
+does not execute the disposable Phase 11 API/MCP acceptance: Docker is unavailable locally. The
+current 47-case suite has no valid current-SHA disposable result, the independent holdout remains
+absent, and exact-SHA CI has not run for these local changes.
+
+## Previous worktree update — suite v42 (superseded by v43)
+
+The current frozen suite is `evals/phase11/suite-v38.json` (`phase11-agent-evals-v42`), 48 cases,
+SHA-256 `512b04086e3e7a5fe6bdd497c82ea7bcd135cdb416de5ac848d84c93f8810e5f`. New case
+`P11-META-007` adds an implicit-time Portuguese paraphrase of the temporal lookup; it requires the
+same independent SQL IDs, route and tool scope as `P11-BENIGN-003`, with no Phase 0–10 source
+change. `make test-agent-evals` passes 217 tests on v42. The 1,743-test `make verify-cloud` result
+above was run on v41 before this corpus change and must be rerun on the final local source. Docker
+acceptance and exact-SHA CI have not run on v42; the independent holdout and wider coverage gaps
+listed above remain unresolved. Phase 11 is **NOT VERIFIED**.
+
+## Previous worktree update — suite v43 (superseded by v44)
+
+The current frozen suite is `evals/phase11/suite-v39.json` (`phase11-agent-evals-v43`), 49 cases,
+SHA-256 `68a1027fdd85a0cebcc6e8743f69535114e63cc10b976403c17a6357c6021862`. `P11-META-008`
+pairs the exact question from `P11-BENIGN-001` with a different selected vehicle while supplying
+the source vehicle's session ID. The runner requires API denial, no result/evidence/tool success,
+and unchanged source state; the SQL oracle independently verifies session ownership. Grader and
+receipt tests reject tampered ownership evidence. Three focused tests passed after this addition.
+The preceding `make verify-cloud` attempt stopped at Ruff formatting; after formatting, the final
+local run passed. `make test-agent-evals` passed 218 tests; strict Mypy passed for the runner and
+five evaluation modules. `make verify-cloud` passed with 1,745 API tests, API line/branch coverage
+95.35%/90.07%, 140 web tests, typing, lint, contracts, formatting, production build, deterministic
+Phase 0–5 checks, analytics benchmark, Gitleaks, dependency audit and Trivy. This does not execute
+the Docker-backed disposable Phase 11 matrix. No v43 Docker acceptance, hidden holdout, or
+exact-SHA CI run exists. The uncommitted branch remains at remote SHA
+`b15b6a4346856560d6ef20c12211dee1f130ca4f`; Phase 11 remains **NOT VERIFIED**.
+
+## Previous worktree update — suite v44 (superseded by v45)
+
+The current frozen suite is `evals/phase11/suite-v40.json` (`phase11-agent-evals-v44`), 49 cases,
+SHA-256 `8f878eddddba011afbce6eb810f0b0f63356946ef1b1ca95ed460db9610753e9`. `P11-FAULT-005`
+now sends eight concurrent 2,001-character questions and eight concurrent request bodies larger
+than 32 KiB through the real API. Its grader and independent receipt verifier require HTTP 422 for
+question-length violations, HTTP 413 for byte-limit violations, no AgentRun allocation, and an
+unchanged source digest. Execution accounting reports all 16 HTTP requests. `make test-agent-evals`
+passes 218 tests after this change. `make verify-cloud` passes on v44: 1,745 API tests, API
+line/branch coverage 95.35%/90.07%, 140 web tests, lint, type checks, contracts, formatting,
+production build, deterministic Phase 0–5 checks, analytics benchmark and cloud security scans.
+This does not execute Docker-backed Phase 11 acceptance. Docker acceptance, independent hidden
+holdout and exact-SHA CI remain pending; Phase 11 is **NOT VERIFIED**.
+
+## Previous worktree update — suite v45 (superseded by v46)
+
+The frozen current suite is `evals/phase11/suite-v41.json` (`phase11-agent-evals-v45`), 50 cases, SHA-256 `de4e1ebe5f073e906835fae74d545f1f34b25a07269350f5477683b68035658c`. New case `P11-META-009` concurrently runs the latest-session lookup for two distinct synthetic vehicles. Its direct API receipt requires overlapping persisted run timestamps, distinct run IDs, each run's SQL oracle result, per-run evidence/audit/specialist ownership, per-run supervisor and specialist budgets, zero cross-run evidence IDs, and an unchanged Phase 0–10 digest. Current local checks: `make test-agent-evals` passes 220 tests; `make check-api` passes 1,747 API tests with 95.36% line and 90.08% branch coverage, Ruff and mypy; `make check-web` passes lint, typecheck and 140 tests; `make docs-check`, `make contracts-check` and `pnpm format:check` pass. Docker receipt, independent hidden holdout, and exact-final-SHA CI are absent; Phase 11 remains **NOT VERIFIED**.
+
+## Previous worktree update — suite v46 (superseded by v47)
+
+The frozen current suite is `evals/phase11/suite-v42.json` (`phase11-agent-evals-v46`), 51 cases, SHA-256 `58a78e9014b6ed0dff3489ad40eae21eacd48533694f3d5d9014c4d5526188bd`. `P11-FAULT-016` sends repeated identical authorized `get_vehicle` requests from a test-only deterministic provider through the real API/LangGraph path. It requires the 16-turn model budget to terminate the run with `step_budget_exhausted`, the tool cache to keep MCP calls bounded at one, and the source digest to remain unchanged. The grader and receipt verifier independently enforce the direct probe. Local `make test-agent-evals` passes 223 tests; `make check-api` passes Ruff, format, mypy, and 1,750 tests with 95.34% line / 90.05% branch coverage; `make check-web` passes lint, typecheck, and 140 tests. Docs, contract and Prettier checks pass. Docker acceptance, independent holdout selection and exact-final-SHA CI remain absent; Phase 11 remains **NOT VERIFIED**.
+
+## Previous worktree update — suite v47 (superseded by v48)
+
+The frozen current suite is `evals/phase11/suite-v43.json` (`phase11-agent-evals-v47`), 52 cases, SHA-256 `18cd3bea4f6781918392cee37297a8f1c8e6d40f9d9d2276626f1a07baedc131`. `P11-FAULT-017` sends a valid `get_vehicle` request with an extra untrusted action field through a test-only provider. The API must reject the arguments with `invalid_tool_arguments` before MCP dispatch, persist the failed run, record exactly one model turn and zero MCP calls, and preserve source state. The grader and receipt verifier independently validate those counters. `make test-agent-evals` passes 225 tests. Full local quality gate results will be recorded after rerunning them on this source. Docker acceptance, independent holdout selection and exact-final-SHA CI remain absent; Phase 11 remains **NOT VERIFIED**.
+
+## Current worktree update — suite v48
+
+The frozen current suite is `evals/phase11/suite-v44.json` (`phase11-agent-evals-v48`), 53 cases, SHA-256 `7e49ca5de44686973bd2095a72d77561ef55c81b8847b693816da4ac8060845b`. `P11-FAULT-018` calls the production knowledge chunker with a synthetic table over 4,000 characters and validates a 12,001-character `DocumentChunk`; both must fail their fixed bounds before any database write, embedding or provider call. The direct grader and independent receipt verifier require both rejection categories and an unchanged source digest. `make test-agent-evals` passes 226 tests. `make check-api` passes Ruff, formatting, mypy and 1,753 unit tests with 95.31% line / 90.01% branch coverage. The current web check passes lint, typecheck and 140 tests; docs, contracts, Prettier and `git diff --check` pass. `make verify-cloud` has not been rerun on v48. Docker acceptance, independent holdout selection and exact-final-SHA CI remain absent; Phase 11 remains **NOT VERIFIED**.
+
+## Current worktree update — suite v49
+
+The current frozen suite is `evals/phase11/suite-v45.json` (`phase11-agent-evals-v49`), 54 cases, SHA-256 `7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1`. `P11-FAULT-019` sends 2,048 synthetic event candidates through the production `EvidenceRegistry` configured with an 80-item evidence limit, and submits `top_k=2,048` to the production `RetrievalIntent` contract capped at five. Both must reject before projection/retrieval, embedding or provider work, with zero accepted evidence and an unchanged disposable source digest. The grader and receipt verifier independently validate the probe. `make test-agent-evals` passes 227 tests. `make verify-cloud` passes on v49: 1,754 API tests, 95.32%/90.02% API line/branch coverage, 140 web tests, lint, typing, contracts, docs, formatting, production build, deterministic Phase 0–5 checks, analytics benchmark and cloud security scans. Docker acceptance, independent hidden holdout selection and exact-final-SHA CI remain outstanding. No v49 changes are pushed. Phase 11 remains **NOT VERIFIED**.

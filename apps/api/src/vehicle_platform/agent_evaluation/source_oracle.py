@@ -77,6 +77,7 @@ TABLES = (
     "mlops_run_events",
     "mlops_step_events",
 )
+MLOPS_TABLES = tuple(table for table in TABLES if table.startswith("mlops_"))
 
 
 def is_disposable_database_url(database_url: str) -> bool:
@@ -96,8 +97,9 @@ def _canonical(values: list[dict[str, Any]]) -> bytes:
     return json.dumps(values, sort_keys=True, separators=(",", ":"), default=str).encode()
 
 
-async def source_digest(database_url: str) -> str:
-    """Hash canonical Phase 1–10 rows directly, excluding append-only agent audit data."""
+async def _digest_tables(database_url: str, tables: tuple[str, ...]) -> str:
+    if not tables or any(table not in TABLES for table in tables):
+        raise ValueError("source_digest_table_allowlist_invalid")
     if not is_disposable_database_url(database_url):
         raise ValueError("Phase 11 source oracle requires a disposable vehicle_test database")
     engine = create_async_engine(
@@ -107,7 +109,7 @@ async def source_digest(database_url: str) -> str:
         parts: list[tuple[str, list[dict[str, Any]]]] = []
         async with engine.connect() as connection:
             await connection.execute(text("SET TRANSACTION READ ONLY"))
-            for table in TABLES:
+            for table in tables:
                 exists = await connection.scalar(text("SELECT to_regclass(:name)"), {"name": table})
                 if exists is None:
                     raise ValueError(f"fixture_source_table_missing:{table}")
@@ -129,6 +131,16 @@ async def source_digest(database_url: str) -> str:
         return hashlib.sha256(_canonical(snapshot)).hexdigest()
     finally:
         await engine.dispose()
+
+
+async def source_digest(database_url: str) -> str:
+    """Hash canonical Phase 1–10 rows directly, excluding append-only agent audit data."""
+    return await _digest_tables(database_url, TABLES)
+
+
+async def mlops_state_digest(database_url: str) -> str:
+    """Hash only Phase 10 governance rows for isolated governance attack probes."""
+    return await _digest_tables(database_url, MLOPS_TABLES)
 
 
 async def persisted_agent_run(database_url: str, run_id: str) -> dict[str, Any] | None:

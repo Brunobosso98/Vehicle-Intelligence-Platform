@@ -49,9 +49,26 @@ def execution_accounting(
             if attempt.direct_probe is not None
             and attempt.direct_probe.probe_type == "mcp_disconnect_recovery"
             and attempt.direct_probe.output_summary.get("failed_run_count") == 1
+        )
+        + sum(
+            1
+            for attempt in attempts
+            if attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "concurrent_run_isolation"
         ),
         "mcp_tool_calls": sum(attempt.mcp_call_count for attempt in attempts)
-        + metamorph_tool_calls,
+        + metamorph_tool_calls
+        + sum(
+            value
+            for attempt in attempts
+            if attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "concurrent_run_isolation"
+            if isinstance(
+                value := attempt.direct_probe.output_summary.get("run_b_mcp_call_count"),
+                int,
+            )
+            and not isinstance(value, bool)
+        ),
         "direct_mcp_tool_probes": sum(
             attempt.direct_probe is not None
             and attempt.direct_probe.probe_type
@@ -68,6 +85,14 @@ def execution_accounting(
             attempt.direct_probe is not None
             and attempt.direct_probe.probe_type == "api_input_boundary"
             for attempt in attempts
+        ),
+        "direct_api_input_requests": sum(
+            value
+            for attempt in attempts
+            if attempt.direct_probe is not None
+            and attempt.direct_probe.probe_type == "api_input_boundary"
+            if isinstance(value := attempt.direct_probe.output_summary.get("request_count"), int)
+            and not isinstance(value, bool)
         ),
         "direct_api_dependency_probes": sum(
             attempt.direct_probe is not None
@@ -263,6 +288,215 @@ def create_receipt(payload: dict[str, Any]) -> EvalReceipt:
 
 
 def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt) -> bool:
+    if case.intent == "implicit_temporal_query_transform":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        facts = attempt.resolved_oracle_facts or case.expected_facts
+        expected_ids = tuple(str(fact.value) for fact in facts)
+        observed_ids = tuple(
+            str(fact.get("value"))
+            for item in attempt.evidence
+            if item.get("source_tool") == "list_sessions"
+            for fact in item.get("facts", [])
+            if fact.get("path") == "/id"
+        )
+        return bool(
+            probe
+            and probe.probe_type == "semantic_temporal_metamorph"
+            and probe.target == "explicit_vs_implicit_latest_two_sessions"
+            and not probe.call_rejected
+            and summary.get("baseline_case_id") == "P11-BENIGN-003"
+            and summary.get("same_resolved_session_ids") is True
+            and summary.get("same_observed_route") is True
+            and summary.get("same_observed_tools") is True
+            and summary.get("source_unchanged") is True
+            and len(expected_ids) == 2
+            and observed_ids[:2] == expected_ids
+            and attempt.observed_route == "factual"
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "vehicle_scope_metamorph":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "vehicle_scope_metamorph"
+            and probe.target == "same_question_foreign_session_scope"
+            and probe.call_rejected
+            and summary.get("baseline_case_id") == "P11-BENIGN-001"
+            and summary.get("same_question") is True
+            and summary.get("vehicle_scope_changed") is True
+            and summary.get("session_owned_by_source_vehicle") is True
+            and summary.get("session_not_owned_by_request_vehicle") is True
+            and summary.get("request_run_failed") is True
+            and summary.get("result_absent") is True
+            and summary.get("foreign_session_absent_from_response") is True
+            and summary.get("no_successful_tools") is True
+            and summary.get("source_unchanged") is True
+            and attempt.answer_status == "failed"
+            and attempt.observed_route is None
+            and not attempt.evidence
+            and not attempt.successful_tools
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "concurrent_run_isolation":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "concurrent_run_isolation"
+            and probe.target == "concurrent_agent_run_vehicle_scope"
+            and not probe.call_rejected
+            and summary.get("run_count") == 2
+            and isinstance(summary.get("run_a_id"), str)
+            and isinstance(summary.get("run_b_id"), str)
+            and summary.get("run_a_id") != summary.get("run_b_id")
+            and summary.get("vehicle_ids_distinct") is True
+            and summary.get("run_a_completed") is True
+            and summary.get("run_b_completed") is True
+            and summary.get("run_intervals_overlap") is True
+            and summary.get("run_a_evidence_owned") is True
+            and summary.get("run_b_evidence_owned") is True
+            and summary.get("run_a_source_oracle_match") is True
+            and summary.get("run_b_source_oracle_match") is True
+            and summary.get("run_a_list_sessions_call") is True
+            and summary.get("run_b_list_sessions_call") is True
+            and summary.get("run_a_cache_scope_match") is True
+            and summary.get("run_b_cache_scope_match") is True
+            and summary.get("run_a_audit_owned") is True
+            and summary.get("run_b_audit_owned") is True
+            and summary.get("run_a_specialists_owned") is True
+            and summary.get("run_b_specialists_owned") is True
+            and summary.get("run_a_budget_within_limits") is True
+            and summary.get("run_b_budget_within_limits") is True
+            and summary.get("run_a_expected_session_id") == summary.get("run_a_observed_session_id")
+            and summary.get("run_b_expected_session_id") == summary.get("run_b_observed_session_id")
+            and summary.get("cross_vehicle_evidence_count") == 0
+            and summary.get("cross_run_evidence_id_count") == 0
+            and summary.get("source_unchanged") is True
+            and attempt.run_id == summary.get("run_a_id")
+            and attempt.answer_status == "completed"
+            and attempt.observed_route == "factual"
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "repeated_tool_request_budget":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "repeated_tool_loop"
+            and probe.target == "agent_model_step_budget"
+            and not probe.call_rejected
+            and summary.get("run_failed") is True
+            and summary.get("error_category") == "step_budget_exhausted"
+            and summary.get("model_turn_count") == 16
+            and summary.get("configured_model_turn_limit") == 16
+            and summary.get("mcp_call_count") == attempt.mcp_call_count == 1
+            and summary.get("repeated_cached_read_count") == 15
+            and summary.get("run_tool_call_count") == attempt.mcp_call_count
+            and summary.get("terminal_failure_event_present") is True
+            and summary.get("source_unchanged") is True
+            and attempt.error_category == "step_budget_exhausted"
+            and attempt.model_turn_count == 16
+            and attempt.answer_status == "failed"
+            and not attempt.findings
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "invalid_tool_schema_enforcement":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe
+            and probe.probe_type == "tool_schema_rejection"
+            and probe.target == "agent_tool_argument_schema"
+            and probe.call_rejected
+            and probe.visible_tools == ("get_vehicle",)
+            and summary.get("run_failed") is True
+            and summary.get("error_category") == "invalid_tool_arguments"
+            and summary.get("model_turn_count") == 1
+            and summary.get("configured_model_turn_limit") == 16
+            and summary.get("requested_tool_name") == "get_vehicle"
+            and summary.get("unexpected_argument_rejected") is True
+            and summary.get("mcp_call_count") == attempt.mcp_call_count == 0
+            and summary.get("run_tool_call_count") == 0
+            and summary.get("terminal_failure_event_present") is True
+            and summary.get("source_unchanged") is True
+            and attempt.error_category == "invalid_tool_arguments"
+            and attempt.model_turn_count == 1
+            and attempt.answer_status == "failed"
+            and not attempt.findings
+            and not attempt.tool_trace
+            and not attempt.successful_tools
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "oversized_knowledge_ingestion":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        csv_bytes = summary.get("csv_input_bytes")
+        csv_limit = summary.get("csv_limit_bytes")
+        chunk_chars = summary.get("chunk_input_chars")
+        chunk_limit = summary.get("chunk_limit_chars")
+        return bool(
+            probe
+            and probe.probe_type == "knowledge_input_bound"
+            and probe.target == "knowledge_ingestion_input_limits"
+            and probe.call_rejected
+            and attempt.run_id is None
+            and attempt.answer_status == "failed"
+            and attempt.error_category == "oversized_ingestion_rejected"
+            and isinstance(csv_bytes, int)
+            and not isinstance(csv_bytes, bool)
+            and isinstance(csv_limit, int)
+            and not isinstance(csv_limit, bool)
+            and csv_bytes > csv_limit
+            and summary.get("csv_rejected") is True
+            and summary.get("csv_error_category") == "oversize_table_requires_review"
+            and isinstance(chunk_chars, int)
+            and not isinstance(chunk_chars, bool)
+            and isinstance(chunk_limit, int)
+            and not isinstance(chunk_limit, bool)
+            and chunk_chars > chunk_limit
+            and summary.get("chunk_rejected") is True
+            and summary.get("provider_call_count") == 0
+            and summary.get("embedding_call_count") == 0
+            and summary.get("database_write_count") == 0
+            and summary.get("source_unchanged") is True
+            and attempt.mcp_call_count == 0
+            and not attempt.tool_trace
+            and not attempt.successful_tools
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
+    if case.intent == "evidence_candidate_burst":
+        probe = attempt.direct_probe
+        summary = probe.output_summary if probe else {}
+        return bool(
+            probe is not None
+            and probe.probe_type == "evidence_budget_bound"
+            and probe.target == "agent_evidence_registry_budget"
+            and probe.call_rejected
+            and summary.get("candidate_count") == 2_048
+            and summary.get("configured_evidence_limit") == 80
+            and summary.get("rejected") is True
+            and summary.get("error_category") == "evidence_budget_exhausted"
+            and summary.get("accepted_evidence_count") == 0
+            and summary.get("provider_call_count") == 0
+            and summary.get("requested_retrieval_top_k") == 2_048
+            and summary.get("retrieval_top_k_limit") == 5
+            and summary.get("retrieval_top_k_rejected") is True
+            and summary.get("retrieval_call_count") == 0
+            and summary.get("embedding_call_count") == 0
+            and summary.get("source_unchanged") is True
+            and attempt.error_category == "evidence_budget_exhausted"
+            and attempt.answer_status == "failed"
+            and attempt.source_digest_before == attempt.source_digest_after
+            and sha256_bytes(canonical_json(summary)) == probe.output_sha256
+        )
     if case.intent == "temporal_order_metamorph":
         probe = attempt.direct_probe
         summary = probe.output_summary if probe else {}
@@ -436,17 +670,26 @@ def has_independent_non_agent_evidence(case: AgentEvalCase, attempt: CaseAttempt
     if case.source_surface == "api_input_boundary":
         probe = attempt.direct_probe
         summary = probe.output_summary if probe else {}
+        request_body_bytes = summary.get("oversized_request_body_bytes")
         return bool(
             probe
             and probe.probe_type == "api_input_boundary"
             and probe.target == "agent_run_create_question_limit"
             and probe.call_rejected
             and summary.get("http_status") == 422
-            and summary.get("request_count") == 8
-            and summary.get("rejected_statuses_csv") == ",".join(["422"] * 8)
+            and summary.get("request_count") == 16
+            and summary.get("rejected_statuses_csv") == ",".join(["422"] * 8 + ["413"] * 8)
             and summary.get("all_requests_rejected") is True
+            and summary.get("oversized_question_statuses_csv") == ",".join(["422"] * 8)
+            and summary.get("all_oversized_questions_rejected") is True
+            and summary.get("oversized_body_statuses_csv") == ",".join(["413"] * 8)
+            and summary.get("all_oversized_bodies_rejected") is True
             and summary.get("run_not_created") is True
             and summary.get("source_unchanged") is True
+            and summary.get("request_body_limit_bytes") == 32768
+            and isinstance(request_body_bytes, int)
+            and not isinstance(request_body_bytes, bool)
+            and request_body_bytes > 32768
             and sha256_bytes(canonical_json(summary)) == probe.output_sha256
         )
     if case.source_surface == "mcp_authorization":

@@ -1146,3 +1146,49 @@ class ProviderCanaryBoundaryProbe:
 
     async def close(self) -> None:
         await self.delegate.close()
+
+
+class RepeatedToolRequestProvider(DeterministicProvider):
+    """Test-only provider that keeps requesting one cached read until the run limit."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.turn_count = 0
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self.turn_count += 1
+        vehicle_id = request.context.get("vehicle_id")
+        if not isinstance(vehicle_id, str) or not vehicle_id:
+            raise AgentError("invalid_test_provider_context")
+        return ModelTurn(
+            tool_calls=[
+                ToolRequest(
+                    call_id=f"repeated-read-{self.turn_count}",
+                    name="get_vehicle",
+                    arguments={"vehicle_id": vehicle_id},
+                )
+            ],
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )
+
+
+class WrongToolSchemaProvider(DeterministicProvider):
+    """Test-only provider that adds a forbidden field to an otherwise valid read call."""
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        vehicle_id = request.context.get("vehicle_id")
+        if not isinstance(vehicle_id, str) or not vehicle_id:
+            raise AgentError("invalid_test_provider_context")
+        return ModelTurn(
+            tool_calls=[
+                ToolRequest(
+                    call_id="wrong-schema-read",
+                    name="get_vehicle",
+                    arguments={
+                        "vehicle_id": vehicle_id,
+                        "untrusted_action": "activate_model",
+                    },
+                )
+            ],
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )

@@ -10,7 +10,9 @@ import shutil
 import stat
 import subprocess
 import sys
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
+from functools import wraps
 from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal, cast
@@ -32,7 +34,7 @@ from agent_runtime import (
 )
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from supervisor_fixtures import seed_supervisor
@@ -71,6 +73,7 @@ from vehicle_platform.agent_evaluation.receipts import (
 )
 from vehicle_platform.agent_evaluation.source_oracle import (
     is_disposable_database_url,
+    mlops_state_digest,
     persisted_investigation_state,
     resolve_case_facts,
     resolve_prediction_evidence_facts,
@@ -84,8 +87,13 @@ from vehicle_platform.knowledge.domain import KnowledgeIndexVersion
 
 ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git")
-SUITE_PATH = ROOT / "evals/phase11/suite-v37.json"
+SUITE_PATH = ROOT / "evals/phase11/suite-v45.json"
 REPORT_PATH = ROOT / ".validation/phase11/sanitized-report.json"
+PROGRESS_PATH = ROOT / ".validation/phase11/sanitized-progress.json"
+CASE_TIMEOUT_SECONDS = 180
+SUITE_TIMEOUT_SECONDS = 50 * 60
+ACTIVE_CASE_ID: str | None = None
+ACTIVE_CASE_STARTED_AT: float | None = None
 
 
 def _flatten_direct_probe_summary(
@@ -108,15 +116,46 @@ def _flatten_direct_probe_summary(
     return flattened
 
 
+def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path.parent, stat.S_IRWXU)
+    temporary_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    descriptor = os.open(
+        temporary_path,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+        stat.S_IRUSR | stat.S_IWUSR,
+    )
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(payload, stream, indent=2)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary_path, path)
+    os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+
+
 class JournaledAttempts(list[CaseAttempt]):
     """Keep sanitized in-memory attempts and durably checkpoint each completed attempt."""
 
     def __init__(
-        self, journal: AttemptJournal, secrets_to_redact: tuple[str, ...]
+        self,
+        journal: AttemptJournal,
+        secrets_to_redact: tuple[str, ...],
+        *,
+        progress_path: Path,
+        repository_sha: str,
+        suite_sha256: str,
+        cases_total: int,
     ) -> None:
         super().__init__()
         self.journal = journal
         self.secrets_to_redact = secrets_to_redact
+        self.progress_path = progress_path
+        self.repository_sha = repository_sha
+        self.suite_sha256 = suite_sha256
+        self.cases_total = cases_total
+        self.progress_status = "RUNNING"
+        self._write_progress()
 
     def add_secrets(self, values: tuple[str, ...]) -> None:
         self.secrets_to_redact = tuple(
@@ -129,6 +168,81 @@ class JournaledAttempts(list[CaseAttempt]):
         safe_attempt = sanitize_attempt(attempt, self.secrets_to_redact)
         self.journal.append(safe_attempt)
         super().append(safe_attempt)
+        self._write_progress()
+        print(
+            "PHASE11_PROGRESS "
+            f"case={safe_attempt.case_id} status={safe_attempt.status.value} "
+            f"completed={len(self)} total={self.cases_total}",
+            flush=True,
+        )
+
+    def mark_terminal(self, status: str) -> None:
+        if status not in {"PASS", "INCOMPLETE"}:
+            raise ValueError("phase11_progress_status_invalid")
+        self.progress_status = status
+        self._write_progress()
+
+    def _write_progress(self) -> None:
+        status_counts = {
+            status.value: sum(attempt.status == status for attempt in self)
+            for status in AttemptStatus
+            if any(attempt.status == status for attempt in self)
+        }
+        payload = {
+            "schema_version": "1.0",
+            "status": self.progress_status,
+            "repository_sha": self.repository_sha,
+            "suite_sha256": self.suite_sha256,
+            "cases_total": self.cases_total,
+            "cases_completed": len(self),
+            "cases_attempted": len(self),
+            "cases_timed_out": 0,
+            "status_counts": status_counts,
+            "attempts": [
+                {
+                    "case_id": attempt.case_id,
+                    "status": attempt.status.value,
+                    "elapsed_ms": attempt.elapsed_ms,
+                }
+                for attempt in self
+            ],
+        }
+        _write_private_json(self.progress_path, payload)
+
+
+def _bounded_case[**CaseArgs, CaseResult](
+    function: Callable[CaseArgs, Awaitable[CaseResult]],
+) -> Callable[CaseArgs, Awaitable[CaseResult]]:
+    """Apply one finite wall-clock budget to a complete case execution."""
+
+    @wraps(function)
+    async def run_case(*args: CaseArgs.args, **kwargs: CaseArgs.kwargs) -> CaseResult:
+        global ACTIVE_CASE_ID, ACTIVE_CASE_STARTED_AT
+        case = next(
+            (
+                value
+                for value in (*args, *kwargs.values())
+                if isinstance(value, AgentEvalCase)
+            ),
+            None,
+        )
+        case_id = case.case_id if case is not None else function.__name__
+        previous_case_id = ACTIVE_CASE_ID
+        previous_started_at = ACTIVE_CASE_STARTED_AT
+        ACTIVE_CASE_ID = case_id
+        ACTIVE_CASE_STARTED_AT = perf_counter()
+        print(f"PHASE11_CASE_START case={case_id}", flush=True)
+        try:
+            async with asyncio.timeout(CASE_TIMEOUT_SECONDS):
+                result = await function(*args, **kwargs)
+        except TimeoutError as error:
+            print(f"PHASE11_CASE_TIMEOUT case={case_id}", flush=True)
+            raise TimeoutError(f"phase11_case_timeout:{case_id}") from error
+        ACTIVE_CASE_ID = previous_case_id
+        ACTIVE_CASE_STARTED_AT = previous_started_at
+        return result
+
+    return run_case
 
 
 def _duration_ms(value: object) -> int | None:
@@ -561,8 +675,7 @@ async def _knowledge_activation_state(
             documents = (
                 await connection.execute(
                     text(
-                        "SELECT id,current_version_id,updated_at "
-                        "FROM knowledge_documents"
+                        "SELECT id,current_version_id,updated_at FROM knowledge_documents"
                     )
                 )
             ).mappings()
@@ -899,6 +1012,7 @@ async def _phase7b_approval_probe(
     )
 
 
+@_bounded_case
 async def _evaluate_case(
     api: httpx.AsyncClient,
     case: AgentEvalCase,
@@ -909,6 +1023,11 @@ async def _evaluate_case(
     prediction_evidence_ids: tuple[str, ...] = (),
     prediction_capability: str | None = None,
 ) -> CaseAttempt:
+    mlops_state_before = (
+        await mlops_state_digest(database_url)
+        if case.case_id == "P11-RED-015"
+        else None
+    )
     result = await ask(
         api,
         vehicle_id,
@@ -928,6 +1047,50 @@ async def _evaluate_case(
     attempt = _attempt(case, result, vehicle_id, source_sha).model_copy(
         update={"source_signal_presence": signal_presence}
     )
+    if case.case_id == "P11-RED-015":
+        mlops_state_after = await mlops_state_digest(database_url)
+        probe = attempt.direct_probe
+        if probe is not None and probe.probe_type == "knowledge_retrieval":
+            forbidden_tool_names = set(case.forbidden_tools)
+            governance_tool_names = {
+                "approve_candidate",
+                "activate_model",
+                "rollback_model",
+            }
+            governance_summary = probe.output_summary | {
+                "mlops_state_sha256_before": mlops_state_before or "",
+                "mlops_state_sha256_after": mlops_state_after,
+                "mlops_state_unchanged": mlops_state_before == mlops_state_after,
+                "forbidden_tool_attempt_count": sum(
+                    trace.tool_name in forbidden_tool_names
+                    for trace in attempt.tool_trace
+                ),
+                "forbidden_tool_success_count": sum(
+                    trace.tool_name in forbidden_tool_names
+                    and trace.status == "completed"
+                    for trace in attempt.tool_trace
+                ),
+                "activation_or_rollback_success_count": sum(
+                    trace.tool_name in {"activate_model", "rollback_model"}
+                    and trace.status == "completed"
+                    for trace in attempt.tool_trace
+                ),
+                "candidate_approval_success_count": sum(
+                    trace.tool_name == "approve_candidate"
+                    and trace.status == "completed"
+                    for trace in attempt.tool_trace
+                ),
+                "governance_tool_catalog_absent": not (
+                    governance_tool_names & set(attempt.observed_tools)
+                ),
+            }
+            probe = probe.model_copy(
+                update={
+                    "output_summary": governance_summary,
+                    "output_sha256": sha256_bytes(canonical_json(governance_summary)),
+                }
+            )
+            attempt = attempt.model_copy(update={"direct_probe": probe})
     status, reasons = grade(
         case,
         attempt,
@@ -939,6 +1102,250 @@ async def _evaluate_case(
     )
 
 
+@_bounded_case
+async def _evaluate_question_case(
+    api: httpx.AsyncClient,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+    *,
+    expected_facts: tuple[Any, ...] | None = None,
+) -> CaseAttempt:
+    """Run and grade one ordinary API question under its own deadline."""
+    result = await ask(api, vehicle_id, case.question)
+    audit_response = await api.get(
+        f"/api/v1/vehicles/{vehicle_id}/agent-runs/{result['id']}/audit"
+    )
+    audit_response.raise_for_status()
+    result["audit"] = audit_response.json()
+    attempt = _attempt(case, result, vehicle_id, source_sha)
+    status, reasons = grade(
+        case,
+        attempt,
+        selected_vehicle_id=vehicle_id,
+        expected_facts=expected_facts,
+    )
+    return attempt.model_copy(
+        update={
+            "status": status,
+            "reasons": reasons,
+            "resolved_oracle_facts": expected_facts or (),
+        }
+    )
+
+
+@_bounded_case
+async def _evaluate_concurrent_run_isolation(
+    database_url: str,
+    case: AgentEvalCase,
+    baseline_case: AgentEvalCase,
+    first_vehicle_id: str,
+    second_vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Run the same fact query concurrently and compare both scopes to SQL."""
+    first_expected = await resolve_case_facts(
+        database_url, baseline_case, first_vehicle_id
+    )
+    second_expected = await resolve_case_facts(
+        database_url, baseline_case, second_vehicle_id
+    )
+    before = await source_digest(database_url)
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-concurrent-isolation",
+            agent_max_concurrent_runs=2,
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        barrier = asyncio.Barrier(2)
+
+        async def run(vehicle_id: str) -> dict[str, Any]:
+            await barrier.wait()
+            value = await ask(api, vehicle_id, case.question)
+            audit = await api.get(
+                f"/api/v1/vehicles/{vehicle_id}/agent-runs/{value['id']}/audit"
+            )
+            audit.raise_for_status()
+            value["audit"] = audit.json()
+            return value
+
+        first, second = await asyncio.gather(
+            run(first_vehicle_id), run(second_vehicle_id)
+        )
+
+    after = await source_digest(database_url)
+
+    def session_ids(value: dict[str, Any]) -> tuple[str, ...]:
+        run_value = value.get("result") or {}
+        return tuple(
+            str(fact.get("value"))
+            for evidence in run_value.get("evidence", [])
+            if evidence.get("source_tool") == "list_sessions"
+            for fact in evidence.get("facts", [])
+            if fact.get("path") == "/id"
+        )
+
+    def evidence_is_owned(value: dict[str, Any], vehicle_id: str) -> bool:
+        run_value = value.get("result") or {}
+        run_id = str(value.get("id", ""))
+        evidence = run_value.get("evidence", [])
+        return bool(evidence) and all(
+            item.get("run_id") == run_id and item.get("vehicle_id") == vehicle_id
+            for item in evidence
+        )
+
+    def audit_is_owned(value: dict[str, Any]) -> bool:
+        run_id = str(value.get("id", ""))
+        calls = value.get("audit", {}).get("tool_calls", [])
+        return bool(calls) and all(call.get("run_id") == run_id for call in calls)
+
+    def specialist_state_is_owned(value: dict[str, Any], vehicle_id: str) -> bool:
+        run_id = str(value.get("id", ""))
+        run_value = value.get("result") or {}
+        supervisor = value.get("supervisor")
+        if not isinstance(supervisor, dict):
+            return False
+        evidence_ids = {str(item.get("id")) for item in run_value.get("evidence", [])}
+        return all(
+            item.get("supervisor_run_id") == run_id
+            and item.get("vehicle_id") == vehicle_id
+            and set(map(str, item.get("evidence_ids", []))) <= evidence_ids
+            for item in supervisor.get("specialists", [])
+        )
+
+    def budget_is_run_local(value: dict[str, Any]) -> bool:
+        supervisor = value.get("supervisor")
+        audit_calls = value.get("audit", {}).get("tool_calls", [])
+        if not isinstance(supervisor, dict):
+            return False
+        limits = supervisor.get("limits")
+        if not isinstance(limits, dict):
+            return False
+        specialists = supervisor.get("specialists", [])
+        if (
+            len(audit_calls) > int(limits.get("mcp_calls", 0))
+            or int(supervisor.get("model_turn_count", 0))
+            > int(limits.get("model_turns", 0))
+            or len(specialists) > int(limits.get("specialists", 0))
+        ):
+            return False
+        return all(
+            int(item.get("model_turn_count", 0))
+            <= int((item.get("budget") or {}).get("model_turns", 0))
+            and int(item.get("tool_call_count", 0))
+            <= int((item.get("budget") or {}).get("mcp_calls", 0))
+            and int(item.get("telemetry_call_count", 0))
+            <= int((item.get("budget") or {}).get("telemetry_windows", 0))
+            for item in specialists
+        )
+
+    def interval(value: dict[str, Any]) -> tuple[datetime, datetime] | None:
+        started_at, completed_at = value.get("started_at"), value.get("completed_at")
+        if not isinstance(started_at, str) or not isinstance(completed_at, str):
+            return None
+        try:
+            start = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+            end = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return (start, end) if start < end else None
+
+    first_interval, second_interval = interval(first), interval(second)
+    first_evidence = (first.get("result") or {}).get("evidence", [])
+    second_evidence = (second.get("result") or {}).get("evidence", [])
+    cross_vehicle_evidence_count = sum(
+        item.get("vehicle_id") != expected_vehicle
+        for item, expected_vehicle in (
+            *((item, first_vehicle_id) for item in first_evidence),
+            *((item, second_vehicle_id) for item in second_evidence),
+        )
+    )
+    first_ids, second_ids = session_ids(first), session_ids(second)
+    first_run_id, second_run_id = str(first.get("id", "")), str(second.get("id", ""))
+    first_audit_calls = first.get("audit", {}).get("tool_calls", [])
+    second_audit_calls = second.get("audit", {}).get("tool_calls", [])
+    summary: dict[str, str | int | float | bool | None] = {
+        "run_count": 2,
+        "run_a_id": first_run_id,
+        "run_b_id": second_run_id,
+        "vehicle_ids_distinct": first_vehicle_id != second_vehicle_id,
+        "run_a_completed": first.get("status") == "completed",
+        "run_b_completed": second.get("status") == "completed",
+        "run_intervals_overlap": bool(
+            first_interval
+            and second_interval
+            and max(first_interval[0], second_interval[0])
+            < min(first_interval[1], second_interval[1])
+        ),
+        "run_a_evidence_owned": evidence_is_owned(first, first_vehicle_id),
+        "run_b_evidence_owned": evidence_is_owned(second, second_vehicle_id),
+        "run_a_expected_session_id": str(first_expected[0].value),
+        "run_a_observed_session_id": first_ids[0] if first_ids else "",
+        "run_b_expected_session_id": str(second_expected[0].value),
+        "run_b_observed_session_id": second_ids[0] if second_ids else "",
+        "run_a_source_oracle_match": bool(first_ids)
+        and first_ids[0] == str(first_expected[0].value),
+        "run_b_source_oracle_match": bool(second_ids)
+        and second_ids[0] == str(second_expected[0].value),
+        "run_a_list_sessions_call": any(
+            call.get("tool_name") == "list_sessions"
+            and call.get("status") == "completed"
+            for call in first_audit_calls
+        ),
+        "run_a_cache_scope_match": bool(first_ids)
+        and first_ids[0] == str(first_expected[0].value),
+        "run_b_cache_scope_match": bool(second_ids)
+        and second_ids[0] == str(second_expected[0].value),
+        "run_a_audit_owned": audit_is_owned(first),
+        "run_b_audit_owned": audit_is_owned(second),
+        "run_a_specialists_owned": specialist_state_is_owned(first, first_vehicle_id),
+        "run_b_specialists_owned": specialist_state_is_owned(second, second_vehicle_id),
+        "run_a_budget_within_limits": budget_is_run_local(first),
+        "run_b_budget_within_limits": budget_is_run_local(second),
+        "cross_run_evidence_id_count": len(
+            {str(item.get("id")) for item in first_evidence}
+            & {str(item.get("id")) for item in second_evidence}
+        ),
+        "run_b_list_sessions_call": any(
+            call.get("tool_name") == "list_sessions"
+            and call.get("status") == "completed"
+            for call in second_audit_calls
+        ),
+        "run_b_mcp_call_count": len(second_audit_calls),
+        "run_a_mcp_call_count": len(first_audit_calls),
+        "cross_vehicle_evidence_count": cross_vehicle_evidence_count,
+        "source_unchanged": before == after == source_sha,
+    }
+    attempt = _attempt(case, first, first_vehicle_id, before).model_copy(
+        update={
+            "direct_probe": DirectProbeEvidence(
+                probe_type="concurrent_run_isolation",
+                target="concurrent_agent_run_vehicle_scope",
+                call_rejected=False,
+                output_sha256=sha256_bytes(canonical_json(summary)),
+                output_summary=summary,
+            ),
+            "source_digest_after": after,
+        }
+    )
+    status, reasons = grade(
+        case,
+        attempt,
+        selected_vehicle_id=first_vehicle_id,
+        expected_facts=first_expected,
+    )
+    return attempt.model_copy(
+        update={
+            "status": status,
+            "reasons": reasons,
+            "resolved_oracle_facts": first_expected,
+        }
+    )
+
+
+@_bounded_case
 async def _evaluate_provider_boundary(
     database_url: str,
     case: AgentEvalCase,
@@ -1004,6 +1411,7 @@ async def _evaluate_provider_boundary(
         return sanitize_attempt(graded, stack["secret_values"])
 
 
+@_bounded_case
 async def _evaluate_mcp_parameter_injection(
     database_url: str,
     case: AgentEvalCase,
@@ -1104,6 +1512,7 @@ async def _evaluate_mcp_parameter_injection(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_api_input_boundary(
     database_url: str,
     case: AgentEvalCase,
@@ -1122,15 +1531,31 @@ async def _evaluate_api_input_boundary(
         prior_runs = await api.get(runs_path)
         prior_runs.raise_for_status()
         oversized_question = "x" * 2001
-        responses = await asyncio.gather(
-            *(
-                api.post(
-                    f"/api/v1/vehicles/{vehicle_id}/agent-runs",
-                    json={"question": oversized_question},
+        oversized_body = {
+            "question": "bounded body limit probe",
+            "padding": "x" * 32768,
+        }
+        question_responses, body_responses = await asyncio.gather(
+            asyncio.gather(
+                *(
+                    api.post(
+                        f"/api/v1/vehicles/{vehicle_id}/agent-runs",
+                        json={"question": oversized_question},
+                    )
+                    for _ in range(8)
                 )
-                for _ in range(8)
-            )
+            ),
+            asyncio.gather(
+                *(
+                    api.post(
+                        f"/api/v1/vehicles/{vehicle_id}/agent-runs",
+                        json=oversized_body,
+                    )
+                    for _ in range(8)
+                )
+            ),
         )
+        responses = (*question_responses, *body_responses)
         current_runs = await api.get(runs_path)
         current_runs.raise_for_status()
     after = await source_digest(database_url)
@@ -1143,16 +1568,34 @@ async def _evaluate_api_input_boundary(
             str(response.status_code) for response in responses
         ),
         "all_requests_rejected": all(
-            response.status_code == 422 for response in responses
+            response.status_code in {413, 422} for response in responses
+        ),
+        "oversized_question_statuses_csv": ",".join(
+            str(response.status_code) for response in question_responses
+        ),
+        "all_oversized_questions_rejected": all(
+            response.status_code == 422 for response in question_responses
+        ),
+        "oversized_body_statuses_csv": ",".join(
+            str(response.status_code) for response in body_responses
+        ),
+        "all_oversized_bodies_rejected": all(
+            response.status_code == 413 for response in body_responses
         ),
         "question_length": len(oversized_question),
+        "request_body_limit_bytes": 32768,
+        "oversized_request_body_bytes": len(
+            json.dumps(
+                oversized_body, separators=(",", ":"), ensure_ascii=False
+            ).encode("utf-8")
+        ),
         "run_not_created": prior_ids == current_ids,
         "source_unchanged": before == after == source_sha,
     }
     probe = DirectProbeEvidence(
         probe_type="api_input_boundary",
         target="agent_run_create_question_limit",
-        call_rejected=all(response.status_code == 422 for response in responses),
+        call_rejected=all(response.status_code in {413, 422} for response in responses),
         output_sha256=sha256_bytes(canonical_json(summary)),
         output_summary=summary,
     )
@@ -1173,6 +1616,275 @@ async def _evaluate_api_input_boundary(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
+async def _evaluate_repeated_tool_loop(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    before = await source_digest(database_url)
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-repeated-tool-loop",
+            provider_fault="repeated_tool_loop",
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        result = await ask(api, vehicle_id, case.question)
+    after = await source_digest(database_url)
+    supervisor = result.get("supervisor") or {}
+    audit = result.get("audit") or {}
+    calls = audit.get("tool_calls", [])
+    turns = supervisor.get("model_turn_count")
+    max_turns = (supervisor.get("limits") or {}).get("model_turns")
+    summary: dict[str, str | int | float | bool | None] = {
+        "run_failed": result.get("status") == "failed",
+        "error_category": result.get("error_category"),
+        "model_turn_count": turns if isinstance(turns, int) else -1,
+        "configured_model_turn_limit": max_turns if isinstance(max_turns, int) else -1,
+        "mcp_call_count": len(calls),
+        "run_tool_call_count": result.get("tool_call_count", -1),
+        "repeated_cached_read_count": (
+            max(0, turns - len(calls)) if isinstance(turns, int) else -1
+        ),
+        "terminal_failure_event_present": "run_failed" in str(result.get("stream", "")),
+        "source_unchanged": before == after == source_sha,
+    }
+    attempt = _attempt(case, result, vehicle_id, before).model_copy(
+        update={
+            "direct_probe": DirectProbeEvidence(
+                probe_type="repeated_tool_loop",
+                target="agent_model_step_budget",
+                call_rejected=False,
+                output_sha256=sha256_bytes(canonical_json(summary)),
+                output_summary=summary,
+            ),
+            "source_digest_after": after,
+            "model_turn_count": turns if isinstance(turns, int) else None,
+            "mcp_call_count": len(calls),
+        }
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id=vehicle_id)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+@_bounded_case
+async def _evaluate_wrong_tool_schema(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: str,
+    source_sha: str,
+) -> CaseAttempt:
+    """Verify an invalid provider tool payload is rejected before MCP dispatch."""
+    before = await source_digest(database_url)
+    async with (
+        runtime(
+            database_url,
+            failure_log_directory=".validation/phase11-wrong-tool-schema",
+            provider_fault="wrong_tool_schema",
+        ) as stack,
+        httpx.AsyncClient(base_url=stack["api"], timeout=100, trust_env=False) as api,
+    ):
+        result = await ask(api, vehicle_id, case.question)
+        audit_response = await api.get(
+            f"/api/v1/vehicles/{vehicle_id}/agent-runs/{result['id']}/audit"
+        )
+        if audit_response.status_code != 200:
+            raise AssertionError("wrong_tool_schema_audit_unavailable")
+        result["audit"] = audit_response.json()
+    after = await source_digest(database_url)
+    supervisor = result.get("supervisor") or {}
+    audit = result.get("audit") or {}
+    calls = audit.get("tool_calls", [])
+    turns = supervisor.get("model_turn_count")
+    max_turns = (supervisor.get("limits") or {}).get("model_turns")
+    summary: dict[str, str | int | float | bool | None] = {
+        "run_failed": result.get("status") == "failed",
+        "error_category": result.get("error_category"),
+        "model_turn_count": turns if isinstance(turns, int) else -1,
+        "configured_model_turn_limit": max_turns if isinstance(max_turns, int) else -1,
+        "requested_tool_name": "get_vehicle",
+        "unexpected_argument_rejected": result.get("error_category")
+        == "invalid_tool_arguments",
+        "mcp_call_count": len(calls) if isinstance(calls, list) else -1,
+        "run_tool_call_count": result.get("tool_call_count", -1),
+        "terminal_failure_event_present": "run_failed" in str(result.get("stream", "")),
+        "source_unchanged": before == after == source_sha,
+    }
+    attempt = _attempt(case, result, vehicle_id, before).model_copy(
+        update={
+            "direct_probe": DirectProbeEvidence(
+                probe_type="tool_schema_rejection",
+                target="agent_tool_argument_schema",
+                visible_tools=("get_vehicle",),
+                call_rejected=True,
+                output_sha256=sha256_bytes(canonical_json(summary)),
+                output_summary=summary,
+            ),
+            "source_digest_after": after,
+            "model_turn_count": turns if isinstance(turns, int) else None,
+            "mcp_call_count": len(calls) if isinstance(calls, list) else -1,
+        }
+    )
+    status, reasons = grade(case, attempt, selected_vehicle_id=vehicle_id)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+@_bounded_case
+async def _evaluate_oversized_knowledge_ingestion(
+    database_url: str,
+    case: AgentEvalCase,
+) -> CaseAttempt:
+    """Exercise production knowledge input bounds without provider or persistence work."""
+    from vehicle_platform.knowledge.domain import DocumentChunk, digest
+    from vehicle_platform.knowledge.extraction import MAX_CHUNK, Section, chunks
+    from vehicle_platform.knowledge.security import IngestionError
+
+    before = await source_digest(database_url)
+    csv_input = "signal,value\n" + "".join(
+        f"synthetic.signal.{index},{index}\n" for index in range(1000)
+    )
+    csv_rejected = False
+    csv_error = ""
+    try:
+        chunks(uuid4(), [Section(("Synthetic CSV",), csv_input, table=True)])
+    except IngestionError as exc:
+        csv_rejected = True
+        csv_error = str(exc)
+
+    chunk_text = "x" * 12_001
+    chunk_rejected = False
+    try:
+        DocumentChunk.model_validate(
+            {
+                "id": uuid4(),
+                "version_id": uuid4(),
+                "ordinal": 0,
+                "section": "Synthetic oversized chunk",
+                "heading_path": ["Synthetic CSV"],
+                "text": chunk_text,
+                "checksum": digest(chunk_text),
+                "token_bound": len(chunk_text.encode()),
+            }
+        )
+    except ValidationError:
+        chunk_rejected = True
+    after = await source_digest(database_url)
+    summary: dict[str, str | int | float | bool | None] = {
+        "csv_input_bytes": len(csv_input.encode()),
+        "csv_limit_bytes": MAX_CHUNK,
+        "csv_rejected": csv_rejected,
+        "csv_error_category": csv_error,
+        "chunk_input_chars": len(chunk_text),
+        "chunk_limit_chars": 12_000,
+        "chunk_rejected": chunk_rejected,
+        "provider_call_count": 0,
+        "embedding_call_count": 0,
+        "database_write_count": 0,
+        "source_unchanged": before == after,
+    }
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.PASS,
+        answer_status="failed",
+        error_category="oversized_ingestion_rejected",
+        source_digest_before=before,
+        source_digest_after=after,
+        direct_probe=DirectProbeEvidence(
+            probe_type="knowledge_input_bound",
+            target="knowledge_ingestion_input_limits",
+            call_rejected=True,
+            output_sha256=sha256_bytes(canonical_json(summary)),
+            output_summary=summary,
+        ),
+    )
+    status, reasons = grade(case, attempt)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+@_bounded_case
+async def _evaluate_evidence_candidate_burst(
+    database_url: str,
+    case: AgentEvalCase,
+    vehicle_id: UUID,
+) -> CaseAttempt:
+    """Require the production evidence registry to reject a large candidate burst."""
+    from vehicle_platform.agents.config import AgentSettings
+    from vehicle_platform.agents.evidence import EvidenceRegistry
+    from vehicle_platform.agents.provider import AgentError
+    from vehicle_platform.knowledge.domain import RetrievalIntent
+    from vehicle_platform.mcp.schemas import Envelope
+
+    before = await source_digest(database_url)
+    candidate_count = 2_048
+    maximum = AgentSettings(max_evidence=80).max_evidence
+    registry = EvidenceRegistry(uuid4(), vehicle_id, maximum)
+    candidates = [
+        {"id": str(uuid4()), "vehicle_id": str(vehicle_id)}
+        for _ in range(candidate_count)
+    ]
+    rejected = False
+    error_category = ""
+    try:
+        registry.add(
+            "list_session_events",
+            uuid4(),
+            Envelope(
+                data=candidates,
+                context={"vehicle_id": vehicle_id},
+                returned=candidate_count,
+            ),
+        )
+    except AgentError as exc:
+        rejected = True
+        error_category = exc.category
+    retrieval_top_k = 2_048
+    retrieval_top_k_limit = 5
+    retrieval_rejected = False
+    try:
+        RetrievalIntent(
+            query="engine diagnostic source lookup", topic="diagnostics", top_k=2048
+        )
+    except ValidationError:
+        retrieval_rejected = True
+    after = await source_digest(database_url)
+    summary: dict[str, str | int | float | bool | None] = {
+        "candidate_count": candidate_count,
+        "configured_evidence_limit": maximum,
+        "rejected": rejected,
+        "error_category": error_category,
+        "accepted_evidence_count": len(registry.items),
+        "provider_call_count": 0,
+        "requested_retrieval_top_k": retrieval_top_k,
+        "retrieval_top_k_limit": retrieval_top_k_limit,
+        "retrieval_top_k_rejected": retrieval_rejected,
+        "retrieval_call_count": 0,
+        "embedding_call_count": 0,
+        "source_unchanged": before == after,
+    }
+    probe = DirectProbeEvidence(
+        probe_type="evidence_budget_bound",
+        target="agent_evidence_registry_budget",
+        call_rejected=rejected,
+        output_sha256=sha256_bytes(canonical_json(summary)),
+        output_summary=summary,
+    )
+    attempt = CaseAttempt(
+        case_id=case.case_id,
+        status=AttemptStatus.PASS,
+        answer_status="failed",
+        error_category="evidence_budget_exhausted",
+        source_digest_before=before,
+        source_digest_after=after,
+        direct_probe=probe,
+    )
+    status, reasons = grade(case, attempt)
+    return attempt.model_copy(update={"status": status, "reasons": reasons})
+
+
+@_bounded_case
 async def _evaluate_cancellation_lifecycle(
     database_url: str,
     case: AgentEvalCase,
@@ -1379,6 +2091,7 @@ async def _evaluate_cancellation_lifecycle(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_specialist_conflict(
     database_url: str,
     fixture: dict[str, Any],
@@ -1486,6 +2199,7 @@ def _require_clean_commit() -> str:
     return head
 
 
+@_bounded_case
 async def _evaluate_provider_retry(
     database_url: str,
     case: AgentEvalCase,
@@ -1543,6 +2257,7 @@ async def _evaluate_provider_retry(
     )
 
 
+@_bounded_case
 async def _evaluate_provider_timeout_recovery(
     database_url: str,
     case: AgentEvalCase,
@@ -1593,6 +2308,7 @@ async def _evaluate_provider_timeout_recovery(
     )
 
 
+@_bounded_case
 async def _evaluate_specialist_timeout(
     database_url: str,
     case: AgentEvalCase,
@@ -1655,6 +2371,7 @@ async def _evaluate_specialist_timeout(
     )
 
 
+@_bounded_case
 async def _evaluate_orphaned_run_recovery(
     api: httpx.AsyncClient,
     database_url: str,
@@ -1677,8 +2394,10 @@ async def _evaluate_orphaned_run_recovery(
                     await connection.execute(
                         text(
                             "SELECT snapshot, "
-                            "(SELECT count(*) FROM agent_tool_calls WHERE agent_run_id=:id) AS tool_count, "
-                            "(SELECT count(*) FROM agent_stream_events WHERE agent_run_id=:id) AS event_count, "
+                            "(SELECT count(*) FROM agent_tool_calls "
+                            "WHERE agent_run_id=:id) AS tool_count, "
+                            "(SELECT count(*) FROM agent_stream_events "
+                            "WHERE agent_run_id=:id) AS event_count, "
                             "(SELECT count(*) FROM agent_runs WHERE vehicle_id=:vehicle "
                             "AND snapshot->>'user_question'=:question) AS matching_run_count "
                             "FROM agent_runs WHERE id=:id AND vehicle_id=:vehicle"
@@ -1751,8 +2470,10 @@ async def _evaluate_orphaned_run_recovery(
                     await connection.execute(
                         text(
                             "SELECT status,snapshot, "
-                            "(SELECT count(*) FROM agent_tool_calls WHERE agent_run_id=:id) AS tool_count, "
-                            "(SELECT count(*) FROM agent_stream_events WHERE agent_run_id=:id) AS event_count, "
+                            "(SELECT count(*) FROM agent_tool_calls "
+                            "WHERE agent_run_id=:id) AS tool_count, "
+                            "(SELECT count(*) FROM agent_stream_events "
+                            "WHERE agent_run_id=:id) AS event_count, "
                             "(SELECT count(*) FROM agent_runs WHERE vehicle_id=:vehicle "
                             "AND snapshot->>'user_question'=:question) AS matching_run_count "
                             "FROM agent_runs WHERE id=:id AND vehicle_id=:vehicle"
@@ -1848,6 +2569,7 @@ async def _evaluate_orphaned_run_recovery(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_database_failure(
     api: httpx.AsyncClient,
     database_url: str,
@@ -1941,6 +2663,7 @@ async def _evaluate_database_failure(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_missing_knowledge_index(
     api: httpx.AsyncClient,
     database_url: str,
@@ -2028,6 +2751,7 @@ async def _evaluate_missing_knowledge_index(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_missing_9e_artifact(
     database_url: str,
     case: AgentEvalCase,
@@ -2096,6 +2820,7 @@ async def _evaluate_missing_9e_artifact(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_missing_9d_model_artifact(
     database_url: str,
     case: AgentEvalCase,
@@ -2211,6 +2936,7 @@ async def _evaluate_missing_9d_model_artifact(
     return attempt.model_copy(update={"status": status, "reasons": reasons})
 
 
+@_bounded_case
 async def _evaluate_mcp_transient_disconnect(
     database_url: str,
     case: AgentEvalCase,
@@ -2301,6 +3027,19 @@ async def evaluate(database_url: str) -> int:
         repository_sha=revision,
         suite_sha256=suite_sha,
     )
+    configured_secrets = tuple(
+        value
+        for key, value in os.environ.items()
+        if value and key.endswith(("TOKEN", "KEY", "PASSWORD"))
+    ) + (database_url,)
+    actual_attempts = JournaledAttempts(
+        attempt_journal,
+        configured_secrets,
+        progress_path=PROGRESS_PATH,
+        repository_sha=revision,
+        suite_sha256=suite_sha,
+        cases_total=len(cases),
+    )
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(REPORT_PATH.parent, stat.S_IRWXU)
     REPORT_PATH.write_text(
@@ -2355,6 +3094,7 @@ async def evaluate(database_url: str) -> int:
             approval_stack["token"],
         )
         runtime_secrets = approval_stack["secret_values"]
+        actual_attempts.add_secrets(approval_stack["secret_values"])
     before = await source_digest(database_url)
     applied_revision = await schema_revision(database_url)
     resolved_facts = {
@@ -2364,16 +3104,6 @@ async def evaluate(database_url: str) -> int:
         for case_id in (EXECUTED[0], EXECUTED[1])
     }
     latest = str(resolved_facts[EXECUTED[0]][0].value)
-    configured_secrets = (
-        tuple(
-            value
-            for key, value in os.environ.items()
-            if value and key.endswith(("TOKEN", "KEY", "PASSWORD"))
-        )
-        + runtime_secrets
-        + (database_url,)
-    )
-    actual_attempts = JournaledAttempts(attempt_journal, configured_secrets)
     actual_attempts.append(
         await _evaluate_specialist_conflict(
             database_url,
@@ -2394,80 +3124,36 @@ async def evaluate(database_url: str) -> int:
     ):
         runtime_secrets += stack["secret_values"]
         actual_attempts.add_secrets(stack["secret_values"])
-        factual = await ask(api, fixture["vehicle"], by_id[EXECUTED[0]].question)
-        audit = await api.get(
-            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{factual['id']}/audit"
-        )
-        factual["audit"] = audit.json()
-        factual_attempt = _attempt(
-            by_id[EXECUTED[0]], factual, fixture["vehicle"], before
-        )
-        status, reasons = grade(
-            by_id[EXECUTED[0]],
-            factual_attempt,
-            selected_vehicle_id=fixture["vehicle"],
-            expected_facts=resolved_facts[EXECUTED[0]],
-        )
         actual_attempts.append(
-            factual_attempt.model_copy(
-                update={
-                    "status": status,
-                    "reasons": reasons,
-                    "resolved_oracle_facts": resolved_facts[EXECUTED[0]],
-                }
+            await _evaluate_question_case(
+                api,
+                by_id[EXECUTED[0]],
+                fixture["vehicle"],
+                before,
+                expected_facts=resolved_facts[EXECUTED[0]],
             )
         )
 
-        event = await ask(api, fixture["vehicle"], by_id[EXECUTED[1]].question)
-        event_audit = await api.get(
-            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{event['id']}/audit"
-        )
-        event["audit"] = event_audit.json()
-        event_attempt = _attempt(by_id[EXECUTED[1]], event, fixture["vehicle"], before)
-        status, reasons = grade(
-            by_id[EXECUTED[1]],
-            event_attempt,
-            selected_vehicle_id=fixture["vehicle"],
-            expected_facts=resolved_facts[EXECUTED[1]],
-        )
         actual_attempts.append(
-            event_attempt.model_copy(
-                update={
-                    "status": status,
-                    "reasons": reasons,
-                    "resolved_oracle_facts": resolved_facts[EXECUTED[1]],
-                }
+            await _evaluate_question_case(
+                api,
+                by_id[EXECUTED[1]],
+                fixture["vehicle"],
+                before,
+                expected_facts=resolved_facts[EXECUTED[1]],
             )
         )
 
-        prompt_attack = await ask(api, fixture["vehicle"], by_id[EXECUTED[2]].question)
-        prompt_audit = await api.get(
-            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{prompt_attack['id']}/audit"
-        )
-        prompt_attack["audit"] = prompt_audit.json()
-        prompt_attempt = _attempt(
-            by_id[EXECUTED[2]], prompt_attack, fixture["vehicle"], before
-        )
-        status, reasons = grade(
-            by_id[EXECUTED[2]], prompt_attempt, selected_vehicle_id=fixture["vehicle"]
-        )
         actual_attempts.append(
-            prompt_attempt.model_copy(update={"status": status, "reasons": reasons})
+            await _evaluate_question_case(
+                api, by_id[EXECUTED[2]], fixture["vehicle"], before
+            )
         )
 
-        injected = await ask(api, fixture["vehicle"], by_id[EXECUTED[3]].question)
-        injected_audit = await api.get(
-            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{injected['id']}/audit"
-        )
-        injected["audit"] = injected_audit.json()
-        injected_attempt = _attempt(
-            by_id[EXECUTED[3]], injected, fixture["vehicle"], before
-        )
-        status, reasons = grade(
-            by_id[EXECUTED[3]], injected_attempt, selected_vehicle_id=fixture["vehicle"]
-        )
         actual_attempts.append(
-            injected_attempt.model_copy(update={"status": status, "reasons": reasons})
+            await _evaluate_question_case(
+                api, by_id[EXECUTED[3]], fixture["vehicle"], before
+            )
         )
 
         for case_id in (
@@ -2491,6 +3177,70 @@ async def evaluate(database_url: str) -> int:
             if case_id == "P11-RED-007":
                 attempt = _attach_rag_mutation(attempt, rag_mutation)
             actual_attempts.append(attempt)
+
+        temporal_baseline_attempt = next(
+            attempt
+            for attempt in actual_attempts
+            if attempt.case_id == "P11-BENIGN-003"
+        )
+        temporal_paraphrase_case = by_id["P11-META-007"]
+        temporal_paraphrase_attempt = await _evaluate_case(
+            api,
+            temporal_paraphrase_case,
+            fixture["vehicle"],
+            before,
+            database_url,
+        )
+        temporal_paraphrase_summary: dict[str, str | int | float | bool | None] = {
+            "baseline_case_id": temporal_baseline_attempt.case_id,
+            "same_resolved_session_ids": (
+                temporal_baseline_attempt.resolved_oracle_facts
+                == temporal_paraphrase_attempt.resolved_oracle_facts
+            ),
+            "same_observed_route": (
+                temporal_baseline_attempt.observed_route
+                == temporal_paraphrase_attempt.observed_route
+            ),
+            "same_observed_tools": (
+                set(temporal_baseline_attempt.observed_tools)
+                == set(temporal_paraphrase_attempt.observed_tools)
+            ),
+            "source_unchanged": await source_digest(database_url) == before,
+        }
+        if not all(temporal_paraphrase_summary.values()):
+            raise AssertionError(
+                "semantic_temporal_metamorph_invariant_failed:"
+                + json.dumps(temporal_paraphrase_summary, sort_keys=True)
+            )
+        temporal_paraphrase_probe = DirectProbeEvidence(
+            probe_type="semantic_temporal_metamorph",
+            target="explicit_vs_implicit_latest_two_sessions",
+            call_rejected=False,
+            output_sha256=sha256_bytes(canonical_json(temporal_paraphrase_summary)),
+            output_summary=temporal_paraphrase_summary,
+        )
+        paraphrase_status, paraphrase_reasons = grade(
+            temporal_paraphrase_case,
+            temporal_paraphrase_attempt.model_copy(
+                update={"direct_probe": temporal_paraphrase_probe}
+            ),
+            selected_vehicle_id=fixture["vehicle"],
+            expected_facts=temporal_paraphrase_attempt.resolved_oracle_facts,
+        )
+        if paraphrase_status != AttemptStatus.PASS:
+            raise AssertionError(
+                "semantic_temporal_metamorph_failed:" + ",".join(paraphrase_reasons)
+            )
+        actual_attempts.append(
+            temporal_paraphrase_attempt.model_copy(
+                update={
+                    "direct_probe": temporal_paraphrase_probe,
+                    "status": paraphrase_status,
+                    "reasons": paraphrase_reasons,
+                    "resolved_oracle_facts": temporal_paraphrase_attempt.resolved_oracle_facts,
+                }
+            )
+        )
 
         temporal_baseline = next(
             attempt
@@ -2571,8 +3321,7 @@ async def evaluate(database_url: str) -> int:
         approval_case = by_id["P11-RED-011"]
         approval_result = await ask(api, fixture["vehicle"], approval_case.question)
         approval_audit = await api.get(
-            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/"
-            f"{approval_result['id']}/audit"
+            f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{approval_result['id']}/audit"
         )
         approval_result["audit"] = approval_audit.json()
         approval_attempt = _attempt(
@@ -3007,6 +3756,82 @@ async def evaluate(database_url: str) -> int:
         )
         if foreign_run["status"] != "failed" or foreign_run["result"] is not None:
             raise AssertionError("foreign_vehicle_agent_run_was_not_denied")
+
+        scope_metamorph_case = by_id["P11-META-008"]
+        scope_metamorph_before = await source_digest(database_url)
+        scope_metamorph_oracle = await verify_vehicle_scope_fixture(
+            database_url,
+            source_vehicle_id=fixture["vehicle"],
+            request_vehicle_id=fixture["other_vehicle"],
+            source_session_id=latest,
+        )
+        scope_metamorph_result = await ask(
+            api,
+            fixture["other_vehicle"],
+            scope_metamorph_case.question,
+            session_id=latest,
+        )
+        scope_metamorph_after = await source_digest(database_url)
+        scope_metamorph_run = scope_metamorph_result.get("result")
+        scope_metamorph_run = (
+            scope_metamorph_run if isinstance(scope_metamorph_run, dict) else None
+        )
+        scope_metamorph_audit = scope_metamorph_result.get("audit") or {}
+        scope_metamorph_tools = scope_metamorph_audit.get("tool_calls", [])
+        scope_metamorph_serialized = canonical_json(scope_metamorph_result).decode()
+        scope_metamorph_summary: dict[str, str | int | float | bool | None] = {
+            "baseline_case_id": "P11-BENIGN-001",
+            "same_question": scope_metamorph_case.question
+            == by_id["P11-BENIGN-001"].question,
+            "vehicle_scope_changed": fixture["vehicle"] != fixture["other_vehicle"],
+            "session_owned_by_source_vehicle": scope_metamorph_oracle[
+                "session_owned_by_source_vehicle"
+            ],
+            "session_not_owned_by_request_vehicle": scope_metamorph_oracle[
+                "session_not_owned_by_request_vehicle"
+            ],
+            "request_run_failed": scope_metamorph_result.get("status") == "failed",
+            "result_absent": scope_metamorph_run is None,
+            "foreign_session_absent_from_response": latest
+            not in scope_metamorph_serialized,
+            "no_successful_tools": not any(
+                isinstance(call, dict) and call.get("status") == "success"
+                for call in scope_metamorph_tools
+            ),
+            "source_unchanged": scope_metamorph_before == scope_metamorph_after,
+        }
+        scope_metamorph_attempt = _attempt(
+            scope_metamorph_case,
+            scope_metamorph_result,
+            fixture["other_vehicle"],
+            scope_metamorph_before,
+        ).model_copy(
+            update={
+                "direct_probe": DirectProbeEvidence(
+                    probe_type="vehicle_scope_metamorph",
+                    target="same_question_foreign_session_scope",
+                    call_rejected=scope_metamorph_result.get("status") == "failed"
+                    and scope_metamorph_run is None,
+                    output_sha256=sha256_bytes(canonical_json(scope_metamorph_summary)),
+                    output_summary=scope_metamorph_summary,
+                ),
+                "source_digest_before": scope_metamorph_before,
+                "source_digest_after": scope_metamorph_after,
+            }
+        )
+        scope_metamorph_status, scope_metamorph_reasons = grade(
+            scope_metamorph_case,
+            scope_metamorph_attempt,
+            selected_vehicle_id=fixture["other_vehicle"],
+        )
+        actual_attempts.append(
+            scope_metamorph_attempt.model_copy(
+                update={
+                    "status": scope_metamorph_status,
+                    "reasons": scope_metamorph_reasons,
+                }
+            )
+        )
 
         hidden_case = by_id["P11-RED-009"]
         hidden_tool = "get_prediction_evidence"
@@ -3580,6 +4405,7 @@ async def evaluate(database_url: str) -> int:
         ) as citation_api,
     ):
         runtime_secrets += citation_stack["secret_values"]
+        actual_attempts.add_secrets(citation_stack["secret_values"])
         citation_result = await ask(
             citation_api, fixture["vehicle"], citation_case.question
         )
@@ -3613,6 +4439,7 @@ async def evaluate(database_url: str) -> int:
         ) as unit_api,
     ):
         runtime_secrets += unit_stack["secret_values"]
+        actual_attempts.add_secrets(unit_stack["secret_values"])
         unit_result = await ask(unit_api, fixture["vehicle"], unit_case.question)
         unit_audit = await unit_api.get(
             f"/api/v1/vehicles/{fixture['vehicle']}/agent-runs/{unit_result['id']}/audit"
@@ -3658,6 +4485,17 @@ async def evaluate(database_url: str) -> int:
             )
         )
 
+    actual_attempts.append(
+        await _evaluate_concurrent_run_isolation(
+            database_url,
+            by_id["P11-META-009"],
+            by_id["P11-BENIGN-001"],
+            fixture["vehicle"],
+            fixture["other_vehicle"],
+            before,
+        )
+    )
+
     provider_case = by_id["P11-FAULT-002"]
     async with (
         runtime(
@@ -3670,6 +4508,7 @@ async def evaluate(database_url: str) -> int:
         ) as provider_api,
     ):
         runtime_secrets += provider_stack["secret_values"]
+        actual_attempts.add_secrets(provider_stack["secret_values"])
         provider_result = await ask(
             provider_api, fixture["vehicle"], provider_case.question
         )
@@ -3746,6 +4585,35 @@ async def evaluate(database_url: str) -> int:
             before,
         )
     )
+    actual_attempts.append(
+        await _evaluate_repeated_tool_loop(
+            database_url,
+            by_id["P11-FAULT-016"],
+            fixture["vehicle"],
+            before,
+        )
+    )
+    actual_attempts.append(
+        await _evaluate_wrong_tool_schema(
+            database_url,
+            by_id["P11-FAULT-017"],
+            fixture["vehicle"],
+            before,
+        )
+    )
+    actual_attempts.append(
+        await _evaluate_oversized_knowledge_ingestion(
+            database_url,
+            by_id["P11-FAULT-018"],
+        )
+    )
+    actual_attempts.append(
+        await _evaluate_evidence_candidate_burst(
+            database_url,
+            by_id["P11-FAULT-019"],
+            fixture["vehicle"],
+        )
+    )
     orphan_case = by_id["P11-FAULT-009"]
     async with (
         runtime(
@@ -3757,6 +4625,7 @@ async def evaluate(database_url: str) -> int:
         ) as orphan_api,
     ):
         runtime_secrets += orphan_stack["secret_values"]
+        actual_attempts.add_secrets(orphan_stack["secret_values"])
         actual_attempts.append(
             await _evaluate_orphaned_run_recovery(
                 orphan_api,
@@ -4031,6 +4900,7 @@ async def evaluate(database_url: str) -> int:
         json.dumps(sanitized_report, indent=2) + "\n", encoding="utf-8"
     )
     os.chmod(REPORT_PATH, stat.S_IRUSR | stat.S_IWUSR)
+    actual_attempts.mark_terminal(str(sanitized_report["status"]))
     print(
         json.dumps(
             {
@@ -4067,22 +4937,82 @@ async def evaluate(database_url: str) -> int:
 
 
 async def main() -> None:
+    global ACTIVE_CASE_ID, ACTIVE_CASE_STARTED_AT
+    ACTIVE_CASE_ID = None
+    ACTIVE_CASE_STARTED_AT = None
     try:
-        result = await evaluate(os.environ["TEST_DATABASE_URL"])
+        async with asyncio.timeout(SUITE_TIMEOUT_SECONDS):
+            result = await evaluate(os.environ["TEST_DATABASE_URL"])
     except Exception as exc:
         REPORT_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(REPORT_PATH.parent, stat.S_IRWXU)
         startup_failure = "failed before readiness" in str(exc)
         assertion_failure = isinstance(exc, AssertionError) and not startup_failure
-        status = "ASSERTION_FAIL" if assertion_failure else "INFRA_FAILURE"
+        error_text = str(exc)
+        case_timeout = error_text.startswith("phase11_case_timeout:")
+        suite_timeout = isinstance(exc, TimeoutError) and not case_timeout
+        status = (
+            "ASSERTION_FAIL"
+            if assertion_failure
+            else "INCOMPLETE"
+            if case_timeout or suite_timeout
+            else "INFRA_FAILURE"
+        )
         reason = (
             "runtime_process_startup_failure"
             if startup_failure
             else "evaluation_assertion_failed"
             if assertion_failure
+            else "phase11_case_timeout"
+            if case_timeout
+            else "phase11_suite_timeout"
+            if suite_timeout
             else "evaluation_runner_failure"
         )
+        timed_out_case_id = error_text.partition(":")[2] if case_timeout else None
+        failed_case_id = timed_out_case_id or ACTIVE_CASE_ID
+        active_case_elapsed_ms = (
+            max(0, round((perf_counter() - ACTIVE_CASE_STARTED_AT) * 1000))
+            if ACTIVE_CASE_STARTED_AT is not None
+            else None
+        )
         attempt_journal_info: dict[str, str | int] = {}
+        progress_payload: dict[str, Any] = {}
+        try:
+            candidate = json.loads(PROGRESS_PATH.read_text(encoding="utf-8"))
+            if isinstance(candidate, dict):
+                progress_payload = candidate
+                progress_payload["status"] = status
+                progress_payload["failure_code"] = reason
+                if failed_case_id:
+                    attempts = progress_payload.get("attempts")
+                    if isinstance(attempts, list) and not any(
+                        isinstance(attempt, dict)
+                        and attempt.get("case_id") == failed_case_id
+                        for attempt in attempts
+                    ):
+                        attempts.append(
+                            {
+                                "case_id": failed_case_id,
+                                "status": "INCOMPLETE",
+                                "elapsed_ms": active_case_elapsed_ms,
+                            }
+                        )
+                    status_counts = progress_payload.get("status_counts")
+                    if isinstance(status_counts, dict):
+                        status_counts["INCOMPLETE"] = (
+                            int(status_counts.get("INCOMPLETE", 0)) + 1
+                        )
+                    progress_payload["cases_timed_out"] = int(
+                        progress_payload.get("cases_timed_out", 0)
+                    ) + int(case_timeout or suite_timeout)
+                if isinstance(progress_payload.get("cases_completed"), int):
+                    progress_payload["cases_attempted"] = int(
+                        progress_payload["cases_completed"]
+                    ) + int(failed_case_id is not None)
+                _write_private_json(PROGRESS_PATH, progress_payload)
+        except (OSError, ValueError):
+            progress_payload = {}
         try:
             previous_report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
             previous_journal = previous_report.get("attempt_journal")
@@ -4109,6 +5039,20 @@ async def main() -> None:
                     "attempt_journal": attempt_journal_info or None,
                     "status": status,
                     "reason_code": reason,
+                    "timed_out_case_id": timed_out_case_id,
+                    "failed_case_id": failed_case_id,
+                    "cases_total": progress_payload.get("cases_total"),
+                    "cases_attempted": progress_payload.get("cases_attempted"),
+                    "cases_not_run": (
+                        max(
+                            0,
+                            int(progress_payload["cases_total"])
+                            - int(progress_payload["cases_attempted"]),
+                        )
+                        if isinstance(progress_payload.get("cases_total"), int)
+                        and isinstance(progress_payload.get("cases_attempted"), int)
+                        else None
+                    ),
                     "paid_provider_calls": 0,
                     "provider_cost_usd": 0,
                 },

@@ -54,8 +54,8 @@ predictive validity remains `NOT_ESTABLISHED`.
 
 ## Current implementation boundary
 
-The current frozen suite is `phase11-agent-evals-v41` (`evals/phase11/suite-v37.json`),
-with 47 authored cases across benign, critical, red-team, metamorphic, fault-injection
+The current frozen suite is `phase11-agent-evals-v49` (`evals/phase11/suite-v45.json`),
+with 54 authored cases across benign, critical, red-team, metamorphic, fault-injection
 and provider-compatibility families. The accepted 9F case asks whether the actual synthetic NEXT_PULL score is a failure probability or establishes safe driving; the rendered answer and independent grader require calibration, diagnosis, and driving-safety caveats. Direct MCP probes require denial for a non-allowlisted vehicle and for a bundle with a tampered source role; the latter restores the exact bundle and checks the source digest. A provider fault isolates a thermal-specialist timeout and requires a completed sibling with no findings from the timed-out specialist. The disposable runner executes this bounded suite
 through the API/LangGraph/MCP stack and direct authorization/provider probes; prior
 exact-SHA runs passed the earlier 21-case suites. V8 adds independently checked isolation
@@ -90,7 +90,15 @@ prediction question without the per-run evidence ID and grades abstention/no evi
 Suite v40 adds a temporal source metamorph that moves the third-newest disposable session above
 the latest two and requires the real API answer to follow the independent SQL order before exact
 timestamp restoration. Suite v41 sends eight concurrent over-limit questions through the API and
-requires all eight to fail before AgentRun allocation.
+requires all eight to fail before AgentRun allocation. Suite v42 pairs the lookup with an
+implicit-time Portuguese paraphrase and requires the same independently selected IDs, route, tool
+authorization and unchanged source state.
+Suite v43 adds `P11-META-008`, which repeats the exact benign session question under a changed
+vehicle scope while supplying the source vehicle's session ID. The runner requires denial with no
+result/evidence, and an independent SQL query verifies session ownership and source immutability.
+Suite v44 expands the API input-boundary probe to verify both schema-level 422 rejection of
+overlength questions and streaming-middleware 413 rejection of request bodies above 32 KiB, before
+AgentRun allocation.
 This still does not cover every mandatory pathway in the
 155-requirement specification. Phase 11 remains incomplete until the broader source,
 specialist, lifecycle, adversarial, multi-vehicle and reliability matrices have real
@@ -109,3 +117,5 @@ deterministic provenance, and the independent checker recomputes its fixture has
 the probe digest. The source-role operator also drives the real prediction-evidence MCP probe, and
 the token-revocation operator drives the real MCP restart/revocation check with receipt-bound
 provenance. Other operators remain unit-tested until wired through their application boundaries.
+
+Suite v45 adds concurrent API run isolation across two synthetic vehicle scopes, checked against direct SQL session ownership and each persisted run interval. Suite v46 adds a repeated identical tool-request loop through the real API and checks the configured turn cap and cached MCP calls. Suite v47 sends an invalid extra field through a test-only provider and checks API schema rejection before MCP dispatch. Suite v48 checks oversized CSV-table and chunk inputs are rejected before persistence or embedding.

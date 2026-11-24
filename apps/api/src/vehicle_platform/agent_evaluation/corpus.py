@@ -13,8 +13,8 @@ class CorpusError(ValueError):
     pass
 
 
-FROZEN_SUITE_VERSION = "phase11-agent-evals-v41"
-FROZEN_SUITE_SHA256 = "d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d"
+FROZEN_SUITE_VERSION = "phase11-agent-evals-v49"
+FROZEN_SUITE_SHA256 = "7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1"
 FROZEN_SUITES = {
     (
         "phase11-agent-evals-v5",
@@ -164,6 +164,38 @@ FROZEN_SUITES = {
         "phase11-agent-evals-v41",
         "suite-v37.json",
     ): "d6ea1fe84fab05705a7577c1db2c375d11bf3a6bdc1f463c1fc5b7e4fb7eff0d",
+    (
+        "phase11-agent-evals-v42",
+        "suite-v38.json",
+    ): "512b04086e3e7a5fe6bdd497c82ea7bcd135cdb416de5ac848d84c93f8810e5f",
+    (
+        "phase11-agent-evals-v43",
+        "suite-v39.json",
+    ): "68a1027fdd85a0cebcc6e8743f69535114e63cc10b976403c17a6357c6021862",
+    (
+        "phase11-agent-evals-v44",
+        "suite-v40.json",
+    ): "8f878eddddba011afbce6eb810f0b0f63356946ef1b1ca95ed460db9610753e9",
+    (
+        "phase11-agent-evals-v45",
+        "suite-v41.json",
+    ): "de4e1ebe5f073e906835fae74d545f1f34b25a07269350f5477683b68035658c",
+    (
+        "phase11-agent-evals-v46",
+        "suite-v42.json",
+    ): "58a78e9014b6ed0dff3489ad40eae21eacd48533694f3d5d9014c4d5526188bd",
+    (
+        "phase11-agent-evals-v47",
+        "suite-v43.json",
+    ): "18cd3bea4f6781918392cee37297a8f1c8e6d40f9d9d2276626f1a07baedc131",
+    (
+        "phase11-agent-evals-v48",
+        "suite-v44.json",
+    ): "7e49ca5de44686973bd2095a72d77561ef55c81b8847b693816da4ac8060845b",
+    (
+        "phase11-agent-evals-v49",
+        "suite-v45.json",
+    ): "7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1",
 }
 
 

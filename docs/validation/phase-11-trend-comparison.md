@@ -8,7 +8,7 @@ fixtures is a useful scenario relationship, but it does not establish an equival
 Do not calculate an improvement or regression percentage from these records.
 
 This is a comparison inventory, not a Phase 11 acceptance result. The current Phase 11 suite has
-47 scheduled cases in `evals/phase11/suite-v37.json`; none has been executed against the current
+54 scheduled cases in `evals/phase11/suite-v45.json`; none has been executed against the current
 uncommitted worktree's disposable API/MCP stack. The latest accepted historical Phase 11 receipt
 and current-worktree evidence are described separately in
 [`phase-11-acceptance.md`](phase-11-acceptance.md).
@@ -37,6 +37,6 @@ and current-worktree evidence are described separately in
 - [Phase 7D real-model evaluation](phase-7d-real-evaluation.md)
 - [Phase 7C acceptance](phase-7c-acceptance.md)
 - [Phase 9F agent evaluation](phase-9f-agent-evaluation.md)
-- [Phase 11 suite](../../evals/phase11/suite-v37.json)
+- [Phase 11 suite](../../evals/phase11/suite-v45.json)
 - [Phase 7D ID mapping](../../evals/phase11/phase7d-id-mapping-v1.json)
 - [Phase 11 requirement 122](../prompts/phase-11-agent-evals-red-team.md#122-coverage-and-regression-trends)
