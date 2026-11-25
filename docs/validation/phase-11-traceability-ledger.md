@@ -295,3 +295,8 @@ scans. The focused evaluator passes 228 tests. Docker acceptance is `CI REQUIRED
 CI has not run. The ledger still has 147 Partial, 5 Not achieved, 1 Specified and 1 Not run by design
 entries (one row has a compound state); the independently selected hidden holdout is absent. Phase 11
 remains **NOT VERIFIED**.
+
+The v50 exact-SHA attempt on `99283ba3bc09cdba364b588c7f275fdc4afcbfef` found one additional
+quality blocker: clean CI mypy rejects an obsolete ignore in `scripts/phase9h_acceptance.py:508`.
+Removing that ignore passes a local non-incremental strict mypy run. Other exact-SHA jobs were still
+in progress; do not count them as passing.

@@ -505,7 +505,7 @@ async def run() -> None:
         raise RuntimeError(f"Expected source SHA {args.expected_sha}, found {actual}.")
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     # BaseSettings resolves DATABASE_URL from the environment at runtime.
-    database = Database(Settings())  # type: ignore[call-arg]
+    database = Database(Settings())
     try:
         result = await (
             prepare(database, args.expected_sha)

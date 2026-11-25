@@ -800,3 +800,11 @@ docs, Prettier, production build, deterministic Phase 0–5 checks, analytics be
 security scans. `git diff --check` passes. Docker-backed acceptance is `CI REQUIRED`. The ledger
 still records broad requirements as partial; there is no independently selected hidden holdout.
 Phase 11 remains **NOT VERIFIED** pending the v50 exact-SHA runs and those requirement gaps.
+
+## Exact-SHA attempt — v50 on `99283ba3bc09cdba364b588c7f275fdc4afcbfef`
+
+The quality workflow failed at `scripts/phase9h_acceptance.py:508`: a stale `type: ignore[call-arg]`
+was reported as unused by a clean CI mypy run. A local `mypy --no-incremental --strict` reproduced
+the failure; the ignore has been removed and the isolated strict check now passes. Other exact-SHA
+workflows, including the Phase 11 disposable acceptance and canonical full validation, were still
+running when this note was written. This SHA is not a verified result.
