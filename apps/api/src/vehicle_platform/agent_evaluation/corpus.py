@@ -13,8 +13,8 @@ class CorpusError(ValueError):
     pass
 
 
-FROZEN_SUITE_VERSION = "phase11-agent-evals-v49"
-FROZEN_SUITE_SHA256 = "7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1"
+FROZEN_SUITE_VERSION = "phase11-agent-evals-v50"
+FROZEN_SUITE_SHA256 = "ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373"
 FROZEN_SUITES = {
     (
         "phase11-agent-evals-v5",
@@ -196,6 +196,10 @@ FROZEN_SUITES = {
         "phase11-agent-evals-v49",
         "suite-v45.json",
     ): "7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1",
+    (
+        "phase11-agent-evals-v50",
+        "suite-v46.json",
+    ): "ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373",
 }
 
 

@@ -278,3 +278,20 @@ by design` entry. The largest outstanding work is broader resource-pressure, spe
 
 - `evals/phase11/suite-v45.json` freezes 54 cases at canonical SHA-256 `7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1. `P11-FAULT-019`requires the production`EvidenceRegistry`to reject 2,048 event candidates at its 80-item cap and the production retrieval contract to reject`top_k=2,048` above its five-result cap. Both must stop before projection/retrieval, embeddings or provider calls; the independent grader and receipt verifier validate the counters and unchanged source digest.
 - `make test-agent-evals` passes 227 tests; Ruff and strict mypy pass on the changed evaluation modules and runner. `make verify-cloud` passes on v49 with 1,754 API tests, 95.32%/90.02% line/branch coverage, 140 web tests, build, deterministic Phase 0–5 checks, analytics benchmark and cloud security scans. Docker acceptance remains `CI REQUIRED`; independent holdout selection and exact-final-SHA CI are outstanding. No v49 changes are pushed. Phase 11 remains **NOT VERIFIED**.
+
+## Current worktree update — suite v50, after exact-SHA v49 failure
+
+The latest pushed SHA `6da8462d60e82772c2f070bb06d964937dc045c5` ran exact-SHA workflows. Phase 11
+acceptance failed after 14/54 cases (7 PASS, 7 ASSERTION_FAIL, 40 NOT RUN) on a runner assertion
+that compared incidental tool sets for a temporal metamorph. The canonical full-validation run also
+failed API typing, an overly exact Phase 7A refusal-text assertion, and Phase 7D unsafe-refusal claim
+handling; these have local fixes recorded in `phase-11-acceptance.md`.
+
+The current candidate is v50 (`suite-v46.json`, 54 cases, SHA-256
+`ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373`). Local `make verify-cloud`
+passes: 1,756 API tests, 95.32% line / 90.02% branch coverage, 140 web tests, production build,
+contracts, docs, formatting, deterministic Phase 0–5 checks, analytics benchmark and cloud security
+scans. The focused evaluator passes 228 tests. Docker acceptance is `CI REQUIRED`; v50 exact-SHA
+CI has not run. The ledger still has 147 Partial, 5 Not achieved, 1 Specified and 1 Not run by design
+entries (one row has a compound state); the independently selected hidden holdout is absent. Phase 11
+remains **NOT VERIFIED**.

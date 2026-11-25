@@ -7,10 +7,11 @@ corpora, source versions, and outcome oracles. The repeated question in the Phas
 fixtures is a useful scenario relationship, but it does not establish an equivalent scored case.
 Do not calculate an improvement or regression percentage from these records.
 
-This is a comparison inventory, not a Phase 11 acceptance result. The current Phase 11 suite has
-54 scheduled cases in `evals/phase11/suite-v45.json`; none has been executed against the current
-uncommitted worktree's disposable API/MCP stack. The latest accepted historical Phase 11 receipt
-and current-worktree evidence are described separately in
+This is a comparison inventory, not a Phase 11 acceptance result. Suite v49's 54 cases ran on
+exact SHA `6da8462d60e82772c2f070bb06d964937dc045c5`, but the runner stopped after 14 cases with
+7 PASS, 7 ASSERTION_FAIL and 40 NOT RUN. Current suite v50 is frozen in
+`evals/phase11/suite-v46.json`; it has no disposable API/MCP execution yet. The latest accepted
+historical Phase 11 receipt and current-worktree evidence are described separately in
 [`phase-11-acceptance.md`](phase-11-acceptance.md).
 
 ## Comparison inventory

@@ -22,7 +22,7 @@ the USD 5.00 authorization, including 67 unknown-usage reservations. A related P
 is marked non-equivalent; no historical outcomes are copied onto the Phase 11 receipt.
 The optional legacy ID prints its preserved case mapping; unknown IDs return `NOT_FOUND`.
 
-The current corpus is v49 (`suite-v45.json`), with 54 frozen cases. `P11-FAULT-005` exercises
+The current corpus is v50 (`suite-v46.json`), with 54 frozen cases. `P11-FAULT-005` exercises
 the actual API's question-length and 32 KiB streamed-body admission limits. `P11-META-008` repeats the
 benign session question under a different selected vehicle and requires denial of a source-owned
 session ID, checked by the independent SQL oracle. `P11-FAULT-009` injects an

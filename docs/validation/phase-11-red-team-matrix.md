@@ -30,8 +30,8 @@ control: `P11-PROVIDER-001`. Their results are reported separately from attack a
 
 ## Current suite status
 
-The current local suite is `phase11-agent-evals-v49` (`suite-v45.json`), canonical
-SHA-256 `7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1`. It includes
+The current candidate suite is `phase11-agent-evals-v50` (`suite-v46.json`), canonical
+SHA-256 `ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373`. It includes
 an encoded ECU control attack, a retrieved fake MLOps approval document, an actual accepted
 synthetic 9F prediction-evidence read, its calibration and safety caveat check, a direct wrong-vehicle denial using the scoped 9F capability, tampered-source-role denial with exact restoration, cancellation/replay, MCP extra-parameter rejection, provider-canary checks, and oversized API input rejection. The
 false-citation case now runs a test-only provider that emits a fabricated run-foreign
@@ -39,7 +39,11 @@ evidence UUID before the grounding correction. The table above records only the 
 historical run. V15 also injects a provider unit conflict against a typed numeric source fact.
 V27 adds one provider availability retry and a timed-out provider followed by a successful
 replacement run under the single-run concurrency cap. V28 adds an isolated specialist timeout and requires a completed sibling with zero findings from the timed-out specialist. V29 injects a rate-limit (429) followed by provider-unavailable (5xx/transport); recovery requires exactly two retries. V30 adds stale same-document-version exclusion to the RAG poisoning case. At the v30 checkpoint, no v31 disposable API/MCP execution or
-exact-SHA CI had run. V31 adds an orphaned AgentRun recovery case through the API read route;
+exact-SHA CI had run for v49. On v49, exact-SHA acceptance at
+`6da8462d60e82772c2f070bb06d964937dc045c5` graded 14/54 cases (7 PASS, 7 ASSERTION_FAIL,
+40 NOT RUN) before the temporal metamorphic runner assertion stopped execution. V50 corrects
+the route expectations for score laundering and benign quoted text, and records fixed safety
+routing for red-team grading; it has no disposable execution yet. V31 adds an orphaned AgentRun recovery case through the API read route;
 the grader checks its persisted failure event and unchanged tool/provider activity. V32 disables
 the disposable DB login and verifies API 503 behavior, role restoration and absence of new run or
 tool rows. V33 disables all disposable knowledge indexes, checks real API abstention and zero

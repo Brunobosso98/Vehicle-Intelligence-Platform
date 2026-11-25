@@ -1,5 +1,5 @@
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import cast
 
@@ -51,7 +51,8 @@ def create_app(
     telemetry: Telemetry | None = None,
 ) -> FastAPI:
     # BaseSettings resolves DATABASE_URL from the environment at runtime.
-    config = settings or Settings()  # type: ignore[call-arg]
+    config_factory = cast(Callable[[], Settings], Settings)
+    config = settings if settings is not None else config_factory()
     database = Database(config) if probe is None else None
     dependency = probe if probe is not None else database
     if dependency is None:

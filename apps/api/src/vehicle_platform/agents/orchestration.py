@@ -22,6 +22,10 @@ from vehicle_platform.agents.schemas import (
     Answer,
     Classification,
     Finding,
+    Intent,
+    RoutingDecision,
+    Sufficiency,
+    SupervisorReport,
     ToolCall,
     Usage,
     VehicleContext,
@@ -270,6 +274,7 @@ class Orchestrator:
             ):
                 if execution.context is None:
                     raise AgentError("invalid_agent_context")
+                execution.run.supervisor = self.safety_route_report()
                 execution.final = self.fixed_safety_answer(
                     execution.ask.question, execution.context
                 )
@@ -500,8 +505,25 @@ class Orchestrator:
             vehicle_id=state.run.vehicle_id,
             as_of=datetime.now(UTC),
         )
+        state.run.supervisor = self.safety_route_report()
         state.final = self.fixed_safety_answer(state.ask.question, state.context)
         return {}
+
+    @staticmethod
+    def safety_route_report() -> SupervisorReport:
+        """Record policy-selected safety routing even when the model is bypassed."""
+        return SupervisorReport(
+            routing=RoutingDecision(
+                intent=Intent.UNSAFE,
+                considered=[],
+                selected=[],
+                skipped=[],
+                data_quality_gate=False,
+                hints=["fixed_safety_policy"],
+                reason="The fixed safety policy handled this request before model routing.",
+            ),
+            sufficiency=Sufficiency.INSUFFICIENT,
+        )
 
     @staticmethod
     def fixed_safety_answer(question: str, context: VehicleContext) -> Answer:

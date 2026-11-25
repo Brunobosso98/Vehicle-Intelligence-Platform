@@ -605,6 +605,9 @@ class DeterministicProvider:
                         )
                     )
                     break
+        if unsafe:
+            # A refused operation must not carry factual claims inherited from context.
+            claims = []
         if insufficient or unsafe or not claims:
             claims.append(
                 Claim(

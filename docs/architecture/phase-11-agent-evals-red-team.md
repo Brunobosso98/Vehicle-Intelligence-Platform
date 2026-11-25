@@ -54,7 +54,7 @@ predictive validity remains `NOT_ESTABLISHED`.
 
 ## Current implementation boundary
 
-The current frozen suite is `phase11-agent-evals-v49` (`evals/phase11/suite-v45.json`),
+The current candidate suite is `phase11-agent-evals-v50` (`evals/phase11/suite-v46.json`),
 with 54 authored cases across benign, critical, red-team, metamorphic, fault-injection
 and provider-compatibility families. The accepted 9F case asks whether the actual synthetic NEXT_PULL score is a failure probability or establishes safe driving; the rendered answer and independent grader require calibration, diagnosis, and driving-safety caveats. Direct MCP probes require denial for a non-allowlisted vehicle and for a bundle with a tampered source role; the latter restores the exact bundle and checks the source digest. A provider fault isolates a thermal-specialist timeout and requires a completed sibling with no findings from the timed-out specialist. The disposable runner executes this bounded suite
 through the API/LangGraph/MCP stack and direct authorization/provider probes; prior

@@ -38,7 +38,7 @@ from vehicle_platform.agent_evaluation.source_oracle import (
 from vehicle_platform.agent_evaluation.thresholds import load_threshold_policy, score_thresholds
 
 ROOT = Path(__file__).resolve().parents[5]
-DEFAULT_SUITE = ROOT / "evals/phase11/suite-v45.json"
+DEFAULT_SUITE = ROOT / "evals/phase11/suite-v46.json"
 GIT = shutil.which("git")
 
 

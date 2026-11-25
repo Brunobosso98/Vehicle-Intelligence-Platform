@@ -4,10 +4,12 @@ No final reliability measurements are available yet. The deterministic provider 
 for repeatable engineering checks and is not evidence of stochastic provider
 reliability.
 
-The current local suite `phase11-agent-evals-v49` defines 54 cases
-(`suite-v45.json`, SHA-256
-`7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1`). No v49 disposable
-execution or final-SHA reliability measurements are available yet. The HTTP runner is bounded to the
+The current candidate suite `phase11-agent-evals-v50` defines 54 cases
+(`suite-v46.json`, SHA-256
+`ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373`). The previous v49 exact-SHA
+attempt ran on `6da8462d60e82772c2f070bb06d964937dc045c5` and stopped after 14/54 cases (7 PASS,
+7 ASSERTION_FAIL, 40 NOT RUN) at a temporal metamorphic runner assertion. It is not a complete
+reliability measurement. The HTTP runner is bounded to the
 existing agent run timeout and 7C MCP/tool budgets. The environment used for this
 implementation has no Docker binary, so latency, peak RSS, DB pool, tool timeout,
 concurrency and cancellation benchmark results are `CI REQUIRED` or `NOT RUN`.
@@ -22,10 +24,9 @@ adds concurrent oversize-request admission checks; v42 adds an implicit-time tem
 The current v43–v48 worktree adds wrong-vehicle metamorphic rejection, parallel oversized-request
 admission, concurrent run isolation across distinct vehicles, a repeated-tool budget attack, an
 invalid tool-schema request rejected before MCP dispatch, and pre-persistence CSV/chunk size
-rejection. Severity counts are 22 critical, 26 major, 4 safety, and 1 minor; languages are 35
+rejection. Severity counts are 22 critical, 27 major, 4 safety, and 1 minor; languages are 36
 English, 16 pt-BR, and 2 mixed. These are predeclared
-coverage counts, not executed rates.
-Exact-SHA integration evidence is currently absent; 0/54 cases are graded on the current source.
+coverage counts, not executed rates. V50 has no exact-SHA execution yet. Current local `make verify-cloud` passes 1,756 API tests, 140 web tests, build and security scans; this is not an independent holdout or reliability result.
 
 The receipt format and runner now record per-case end-to-end latency, time to the first
 SSE event, routing duration, aggregate specialist work, tool-call duration and the RAG
@@ -171,3 +172,7 @@ Suite v48 adds `P11-FAULT-018` for oversized CSV-table and RAG chunk input rejec
 ## Current worktree — suite v49
 
 `P11-FAULT-019` exercises the production evidence registry with 2,048 candidate events against the 80-item cap and `top_k=2,048` against the five-result retrieval cap. Both inputs must be rejected before evidence projection, retrieval, embedding or provider work; the source digest must remain unchanged. `make test-agent-evals` passes 227 tests. `make verify-cloud` passes on v49 with 1,754 API tests, 95.32%/90.02% line/branch coverage, 140 web tests, production build, deterministic Phase 0–5 checks, analytics benchmark and security scans. No disposable receipt, independent holdout, or final-SHA CI result exists for v49. Phase 11 remains **NOT VERIFIED**.
+
+Current worktree v50 passes `make test-agent-evals` (228 tests) and `make verify-cloud` (1,756 API
+tests, 140 web tests, build and security scans). Exact-SHA v50 acceptance, Docker-backed receipt,
+independent hidden holdout and stochastic provider reliability remain outstanding.

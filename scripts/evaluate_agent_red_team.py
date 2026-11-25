@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import secrets
 import shutil
 import stat
@@ -87,13 +88,18 @@ from vehicle_platform.knowledge.domain import KnowledgeIndexVersion
 
 ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git")
-SUITE_PATH = ROOT / "evals/phase11/suite-v45.json"
+SUITE_PATH = ROOT / "evals/phase11/suite-v46.json"
 REPORT_PATH = ROOT / ".validation/phase11/sanitized-report.json"
 PROGRESS_PATH = ROOT / ".validation/phase11/sanitized-progress.json"
 CASE_TIMEOUT_SECONDS = 180
 SUITE_TIMEOUT_SECONDS = 50 * 60
 ACTIVE_CASE_ID: str | None = None
 ACTIVE_CASE_STARTED_AT: float | None = None
+
+
+def _safe_reason_codes(values: tuple[str, ...]) -> list[str]:
+    """Expose only bounded machine codes in public progress and CI logs."""
+    return [value for value in values if re.fullmatch(r"[a-z0-9_]{1,64}", value)]
 
 
 def _flatten_direct_probe_summary(
@@ -169,9 +175,11 @@ class JournaledAttempts(list[CaseAttempt]):
         self.journal.append(safe_attempt)
         super().append(safe_attempt)
         self._write_progress()
+        reason_codes = _safe_reason_codes(safe_attempt.reasons)
         print(
             "PHASE11_PROGRESS "
             f"case={safe_attempt.case_id} status={safe_attempt.status.value} "
+            f"reasons={','.join(reason_codes) or 'none'} "
             f"completed={len(self)} total={self.cases_total}",
             flush=True,
         )
@@ -202,6 +210,7 @@ class JournaledAttempts(list[CaseAttempt]):
                 {
                     "case_id": attempt.case_id,
                     "status": attempt.status.value,
+                    "reason_codes": _safe_reason_codes(attempt.reasons),
                     "elapsed_ms": attempt.elapsed_ms,
                 }
                 for attempt in self
@@ -3201,9 +3210,15 @@ async def evaluate(database_url: str) -> int:
                 temporal_baseline_attempt.observed_route
                 == temporal_paraphrase_attempt.observed_route
             ),
-            "same_observed_tools": (
-                set(temporal_baseline_attempt.observed_tools)
-                == set(temporal_paraphrase_attempt.observed_tools)
+            "same_required_tool_policy": (
+                set(by_id["P11-BENIGN-003"].required_tools)
+                == set(temporal_paraphrase_case.required_tools)
+            ),
+            "required_tools_observed_for_both": (
+                set(by_id["P11-BENIGN-003"].required_tools)
+                <= set(temporal_baseline_attempt.observed_tools)
+                and set(temporal_paraphrase_case.required_tools)
+                <= set(temporal_paraphrase_attempt.observed_tools)
             ),
             "source_unchanged": await source_digest(database_url) == before,
         }
@@ -5053,6 +5068,15 @@ async def main() -> None:
                         and isinstance(progress_payload.get("cases_attempted"), int)
                         else None
                     ),
+                    "completed_case_summaries": [
+                        {
+                            "case_id": item.get("case_id"),
+                            "status": item.get("status"),
+                            "reason_codes": item.get("reason_codes", []),
+                        }
+                        for item in progress_payload.get("attempts", [])
+                        if isinstance(item, dict)
+                    ],
                     "paid_provider_calls": 0,
                     "provider_cost_usd": 0,
                 },

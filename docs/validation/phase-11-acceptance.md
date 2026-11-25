@@ -1,6 +1,6 @@
 # Phase 11 acceptance status
 
-**Status: NOT VERIFIED — implementation and acceptance are in progress.**
+**Status: NOT VERIFIED — v50 local gates pass; exact-SHA CI and independent holdout remain outstanding.**
 
 Historical trend eligibility is documented in
 [`phase-11-trend-comparison.md`](phase-11-trend-comparison.md). It finds no valid cross-phase
@@ -14,6 +14,33 @@ fixture/oracle, and the Phase 7D and 9F evidence have different cohort definitio
 - Phase 11 branch at start: `codex/phase-11-agent-evals-red-team`, specification SHA
   `c0fb291bed10d62e1db6cf6cc2b194fda355c644`.
 - Latest `origin/main` fetched before implementation: `bfa491f2818fea9914ae113077ce6704fdb6312f`.
+
+## Exact-SHA attempt — v49 on `6da8462d60e82772c2f070bb06d964937dc045c5`
+
+The Phase 11 workflow and canonical full-validation workflow both ran on this SHA. The
+independent Phase 11 acceptance stopped at a runner assertion after 14 of 54 cases: 7 PASS,
+7 ASSERTION_FAIL, 40 NOT RUN. It failed at `P11-META-007` because the runner incorrectly
+required the explicit and implicit temporal questions to invoke the exact same tool set. The
+recorded probe showed identical routes, SQL-resolved session IDs and unchanged source state, but
+different observed tool names. The canonical Phase 11 block also failed for this same assertion.
+
+The full-validation report additionally identified three unrelated compatibility failures:
+
+- API typing: `main.py`'s `type: ignore` was considered unused by CI. The default settings factory
+  now has an explicit callable type.
+- Phase 7A: its evaluator required one exact refusal sentence even though the structured refusal
+  was correct. It now checks the refusal template, classification, evidence and bindings.
+- Phase 7D H03: the deterministic provider could retain factual claims beside an ECU refusal.
+  Unsafe requests now discard those claims before producing the refusal.
+
+The separate CI integration image build hit HTTP 429 from Maven Central while downloading a pinned
+Kafka dependency. The canonical full-validation build completed the same image stage. Security,
+Phase 9G, Phase 9H and Phase 10 workflows passed on the attempted SHA.
+
+The current candidate preserves frozen suite v49 and adds suite v50 (`suite-v46.json`, 54 cases,
+SHA-256 `ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373`). It records policy
+selected unsafe routing in the run report and corrects two route expectations. No exact-SHA result
+exists for v50 yet; it remains **NOT VERIFIED**.
 
 ## Historical evaluator checkpoint — v30
 
@@ -758,3 +785,18 @@ The frozen current suite is `evals/phase11/suite-v44.json` (`phase11-agent-evals
 ## Current worktree update — suite v49
 
 The current frozen suite is `evals/phase11/suite-v45.json` (`phase11-agent-evals-v49`), 54 cases, SHA-256 `7177d97bc7313fa7dd9fb3191187c8515c20e69e1d231e99e64e095f5d9897b1`. `P11-FAULT-019` sends 2,048 synthetic event candidates through the production `EvidenceRegistry` configured with an 80-item evidence limit, and submits `top_k=2,048` to the production `RetrievalIntent` contract capped at five. Both must reject before projection/retrieval, embedding or provider work, with zero accepted evidence and an unchanged disposable source digest. The grader and receipt verifier independently validate the probe. `make test-agent-evals` passes 227 tests. `make verify-cloud` passes on v49: 1,754 API tests, 95.32%/90.02% API line/branch coverage, 140 web tests, lint, typing, contracts, docs, formatting, production build, deterministic Phase 0–5 checks, analytics benchmark and cloud security scans. Docker acceptance, independent hidden holdout selection and exact-final-SHA CI remain outstanding. No v49 changes are pushed. Phase 11 remains **NOT VERIFIED**.
+
+## Current worktree update — suite v50
+
+The v50 candidate (`evals/phase11/suite-v46.json`, 54 cases, SHA-256
+`ecae83c8c7752b42b098f91f92b0b0bf03fe6a96871386842465523d49fcd373`) preserves all v49 cases. It
+records fixed safety routing in the run report, aligns two expected routes with observed policy,
+and adds sanitized reason codes to make any future partial CI attempt diagnosable. The v49 exact-SHA
+failures are documented above; v50 has not run in Docker or on GitHub Actions.
+
+Local checks on the v50 worktree: `make test-agent-evals` passes 228 tests; `make verify-cloud`
+passes 1,756 API tests (95.32% line, 90.02% branch coverage), 140 web tests, lint, typing, contracts,
+docs, Prettier, production build, deterministic Phase 0–5 checks, analytics benchmark and cloud
+security scans. `git diff --check` passes. Docker-backed acceptance is `CI REQUIRED`. The ledger
+still records broad requirements as partial; there is no independently selected hidden holdout.
+Phase 11 remains **NOT VERIFIED** pending the v50 exact-SHA runs and those requirement gaps.
