@@ -39,12 +39,14 @@ format:
 	pnpm format
 typecheck:
 	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py scripts/evaluate_predictive_reliability.py scripts/check_predictive_reliability.py scripts/report_predictive_reliability.py
+	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/evaluate_agent_red_team.py scripts/mcp_fixtures.py scripts/agent_fixtures.py scripts/agent_runtime.py
 	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/phase9h_acceptance.py scripts/check_phase9h_research_summary.py scripts/check_mlops.py scripts/benchmark_mlops.py scripts/observability_mlops.py
 	pnpm --filter @vehicle-platform/web typecheck
 check-api:
 	$(API)/ruff check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/ruff format --check apps/api/src apps/api/tests apps/api/migrations scripts/*.py
 	$(API)/mypy --config-file apps/api/pyproject.toml apps/api/src scripts/benchmark_telemetry.py scripts/benchmark_stream_live.py scripts/generate_features.py scripts/build_feature_dataset.py scripts/evaluate_features.py scripts/benchmark_features.py scripts/observability_features.py scripts/train_predictive_models.py scripts/evaluate_predictive_models.py scripts/benchmark_predictive_models.py scripts/check_ml_observability.py scripts/evaluate_anomaly_detection.py scripts/evaluate_prediction_service.py scripts/evaluate_prediction_evidence.py scripts/evaluate_agent_prediction.py scripts/report_agent_prediction.py scripts/report_prediction_evidence.py scripts/evaluate_predictive_reliability.py scripts/check_predictive_reliability.py scripts/report_predictive_reliability.py
+	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/evaluate_agent_red_team.py scripts/mcp_fixtures.py scripts/agent_fixtures.py scripts/agent_runtime.py
 	MYPYPATH=apps/api/src $(API)/mypy --config-file apps/api/pyproject.toml --strict scripts/phase9h_acceptance.py scripts/check_phase9h_research_summary.py scripts/check_mlops.py scripts/benchmark_mlops.py scripts/observability_mlops.py
 	$(API)/pytest apps/api/tests/unit --cov=vehicle_platform --cov-config=apps/api/pyproject.toml --cov-branch --cov-report=term-missing --cov-report=xml:apps/api/coverage.xml
 	$(API)/python scripts/check_coverage.py
@@ -129,6 +131,8 @@ verify: verify-cloud containers test-integration up observability-up
 	$(MAKE) test-evaluation-calibration phase9g-acceptance benchmark-predictive-reliability predictive-reliability-observability
 	$(MAKE) phase9h-acceptance
 	$(MAKE) phase10-acceptance
+	$(MAKE) phase11-acceptance
+	$(MAKE) benchmark-agent-evals agent-evals-observability
 	$(MAKE) stack-check
 	$(MAKE) phase4-stack-acceptance
 	$(MAKE) stack-check
@@ -302,7 +306,7 @@ predictive-reliability-observability: phase9g-acceptance
 phase9h-acceptance:
 	bash scripts/phase9h-validation.sh
 
-.PHONY: test-mlops phase10-acceptance benchmark-mlops mlops-observability
+.PHONY: test-mlops phase10-acceptance benchmark-mlops mlops-observability test-agent-evals phase11-acceptance benchmark-agent-evals agent-evals-observability
 test-mlops:
 	$(API)/pytest apps/api/tests/unit/test_mlops.py
 phase10-acceptance:
@@ -311,3 +315,11 @@ benchmark-mlops:
 	$(API)/python scripts/benchmark_mlops.py
 mlops-observability:
 	$(API)/python scripts/observability_mlops.py
+test-agent-evals:
+	$(API)/pytest apps/api/tests/unit/test_agent_evaluation.py apps/api/tests/unit/test_agent_eval_attack_attribution.py apps/api/tests/unit/test_agent_eval_journal.py apps/api/tests/unit/test_agent_eval_mutations.py apps/api/tests/unit/test_agent_eval_runtime_resources.py apps/api/tests/unit/test_agent_eval_thresholds.py apps/api/tests/unit/test_agents.py::test_forged_run_foreign_citation_is_rejected_then_abstained
+phase11-acceptance: test-agent-evals
+	bash scripts/phase11-validation.sh
+benchmark-agent-evals:
+	$(API)/python scripts/vehicle_agent_evals.py benchmark
+agent-evals-observability:
+	$(API)/python scripts/vehicle_agent_evals.py observability

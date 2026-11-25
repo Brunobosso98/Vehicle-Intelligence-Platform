@@ -1,5 +1,6 @@
 """Deterministic provider adapter; the production orchestrator and grounding are unchanged."""
 
+import asyncio
 import re
 from collections.abc import Callable
 from dataclasses import replace
@@ -269,9 +270,53 @@ class DeterministicProvider:
                 "porque",
             )
         )
-        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql|ignore)\b", question))
+        unsupported_source_request = (
+            (
+                ("another run" in question or "from another run" in question)
+                and any(word in question for word in ("cite", "citation", "current"))
+            )
+            or (
+                any(word in question for word in ("future pull", "puxada futura"))
+                and any(word in question for word in ("cutoff", "original"))
+            )
+            or (
+                any(
+                    word in question for word in ("convert", "conversion", "converter", "conversão")
+                )
+                and any(word in question for word in ("without", "sem evidência", "sem evidencia"))
+            )
+        )
+        insufficient = insufficient or unsupported_source_request
+        benign_quoted_instruction = bool(
+            re.search(
+                r"\b(explain|describe|interpret|explique|descreva|interprete)\b"
+                r".{0,80}\b(quoted|quote|phrase|frase citada|citação)\b",
+                question,
+            )
+        )
+        unsafe = bool(re.search(r"\b(flash|ecu|shell|sql)\b", question)) or (
+            bool(re.search(r"\bignore\b", question)) and not benign_quoted_instruction
+        )
         comparison = any(
             word in question for word in ("configura", "intercooler", "peça", "antes", "depois")
+        )
+        vehicle_profile_lookup = any(
+            phrase in question
+            for phrase in (
+                "vehicle nickname",
+                "nickname recorded",
+                "nickname is recorded",
+                "nickname is saved",
+                "nickname saved",
+                "vehicle's nickname",
+                "vehicle’s nickname",
+                "nickname está registrado",
+                "qual apelido está registrado",
+                "apelido está registrado",
+                "apelido cadastrado",
+                "nome registrado no veículo",
+                "nome registrado no veiculo",
+            )
         )
         if (
             request.knowledge
@@ -295,7 +340,14 @@ class DeterministicProvider:
             comparison = False
         events = any(word in question for word in ("boost drop", "estranho", "evento"))
         repeated = any(word in question for word in ("puxada", "pull", "consecut", "iat"))
-        if sessions and not unsafe:
+        if (
+            vehicle_profile_lookup
+            and not unsafe
+            and not unsupported_source_request
+            and "get_vehicle" not in executed
+        ):
+            calls = [("get_vehicle", {})]
+        elif sessions and not unsafe and not unsupported_source_request:
             if investigation_follow_up and "list_session_events" not in executed:
                 calls = [("list_session_events", {"session_id": sessions[0]["id"], "limit": 20})]
             elif comparison and "compare_configurations" not in executed:
@@ -364,6 +416,7 @@ class DeterministicProvider:
                     ]
             elif (
                 not (comparison or events or repeated)
+                and not vehicle_profile_lookup
                 and "get_session_summary" not in executed
                 and "última sessão" not in question
             ):
@@ -388,6 +441,8 @@ class DeterministicProvider:
             if events
             else "get_repeated_pull_analysis"
             if repeated
+            else "get_vehicle"
+            if vehicle_profile_lookup
             else "list_sessions"
         )
         if (
@@ -397,10 +452,28 @@ class DeterministicProvider:
             and request.supervisor
             and request.supervisor.get("sufficiency") != "UNRELIABLE_DATA"
             and any(
-                word in question for word in ("hpfp", "fuel pressure", "rail pressure", "boost")
+                word in question
+                for word in (
+                    "hpfp",
+                    "fuel pressure",
+                    "rail pressure",
+                    "pressão de combustível",
+                    "pressao de combustivel",
+                    "boost",
+                )
             )
         ):
             preferred = "get_telemetry_window"
+        requested_fuel_pressure = any(
+            phrase in question
+            for phrase in (
+                "hpfp",
+                "fuel pressure",
+                "rail pressure",
+                "pressão de combustível",
+                "pressao de combustivel",
+            )
+        )
         sources = [e for e in request.evidence if e["source_tool"] == preferred]
         quality_insufficient = any(e["warnings"] or e["truncated"] for e in sources)
         insufficient = insufficient or quality_insufficient
@@ -410,6 +483,13 @@ class DeterministicProvider:
                 selected = []
                 signals = set()
                 by_path = {fact["path"]: fact for fact in candidates}
+                if requested_fuel_pressure and not any(
+                    fact.get("path", "").endswith("/signal")
+                    and fact.get("value") == "fuel.high_pressure"
+                    for fact in candidates
+                ):
+                    insufficient = True
+                    continue
                 for fact in candidates:
                     if not fact["path"].endswith("/signal") or fact["value"] in signals:
                         continue
@@ -427,6 +507,8 @@ class DeterministicProvider:
                     for f in candidates
                     if f["path"] in {"/id", "/started_at", "/configuration_id"}
                 ]
+            elif preferred == "get_vehicle":
+                selected = [f for f in candidates if f["path"] == "/nickname"]
             else:
                 selected = [
                     f
@@ -523,6 +605,9 @@ class DeterministicProvider:
                         )
                     )
                     break
+        if unsafe:
+            # A refused operation must not carry factual claims inherited from context.
+            claims = []
         if insufficient or unsafe or not claims:
             claims.append(
                 Claim(
@@ -778,5 +863,335 @@ class DeterministicProvider:
                 if missing
                 else [],
             ),
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )
+
+
+class ForgedCitationProvider:
+    """Test-only provider that first cites an evidence UUID from another run."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.injected = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if not self.injected and request.specialist is None:
+            self.injected = True
+            foreign_evidence_id = UUID("00000000-0000-0000-0000-000000000001")
+            return ModelTurn(
+                draft=Draft(
+                    confidence="high",
+                    claims=[
+                        Claim(
+                            classification=Classification.OBSERVATION,
+                            template="recorded_fact",
+                            evidence_ids=[foreign_evidence_id],
+                            bindings=[
+                                Binding(
+                                    evidence_id=foreign_evidence_id,
+                                    path="/id",
+                                    value="00000000-0000-0000-0000-000000000001",
+                                )
+                            ],
+                        )
+                    ],
+                    missing_evidence=[],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        if request.correction is not None:
+            return ModelTurn(
+                draft=Draft(
+                    confidence="low",
+                    claims=[
+                        Claim(
+                            classification=Classification.INSUFFICIENT_EVIDENCE,
+                            template="insufficient_evidence",
+                            evidence_ids=[],
+                            bindings=[],
+                        )
+                    ],
+                    missing_evidence=["signal_or_measurement"],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ConflictingUnitProvider:
+    """Test-only provider that submits a source value with a forged unit once."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.injected = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if request.correction is not None and self.injected:
+            return ModelTurn(
+                draft=Draft(
+                    confidence="low",
+                    claims=[
+                        Claim(
+                            classification=Classification.INSUFFICIENT_EVIDENCE,
+                            template="insufficient_evidence",
+                            evidence_ids=[],
+                            bindings=[],
+                        )
+                    ],
+                    missing_evidence=["signal_or_measurement"],
+                ),
+                usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+            )
+        if not self.injected:
+            for source in request.evidence:
+                for fact in source.get("facts", []):
+                    unit = fact.get("unit")
+                    value = fact.get("value")
+                    if unit is None or type(value) not in {int, float}:
+                        continue
+                    self.injected = True
+                    source_id = UUID(str(source["id"]))
+                    forged_unit = "bar" if unit != "bar" else "K"
+                    return ModelTurn(
+                        draft=Draft(
+                            confidence="high",
+                            claims=[
+                                Claim(
+                                    classification=Classification.OBSERVATION,
+                                    template="recorded_fact",
+                                    evidence_ids=[source_id],
+                                    bindings=[
+                                        Binding(
+                                            evidence_id=source_id,
+                                            path=str(fact["path"]),
+                                            value=value,
+                                            unit=forged_unit,
+                                        )
+                                    ],
+                                )
+                            ],
+                            missing_evidence=[],
+                        ),
+                        usage=Usage(
+                            input_tokens=0,
+                            output_tokens=0,
+                            total_tokens=0,
+                            cached_input_tokens=0,
+                        ),
+                    )
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class WaitAfterToolProvider:
+    """Test-only provider that blocks after its first tool request until cancelled."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.block_after_tool = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def _wait_if_blocked(self) -> None:
+        if self.block_after_tool:
+            await asyncio.Event().wait()
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        await self._wait_if_blocked()
+        turn = await self.delegate.turn(request)
+        self.block_after_tool = bool(turn.tool_calls)
+        return turn
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        await self._wait_if_blocked()
+        turn = await self.delegate.specialist_turn(request)
+        self.block_after_tool = bool(turn.tool_calls)
+        return turn
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class RetryOnceProvider:
+    """Test provider that returns a bounded transient error sequence, then recovers."""
+
+    def __init__(self, error_categories: tuple[str, ...] = ("provider_unavailable",)) -> None:
+        allowed = {"provider_rate_limit", "provider_unavailable"}
+        if not error_categories or set(error_categories) - allowed:
+            raise ValueError("Unsupported transient provider error sequence")
+        self.delegate = DeterministicProvider()
+        self.turn_count = 0
+        self.error_categories = error_categories
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self.turn_count += 1
+        if self.turn_count <= len(self.error_categories):
+            raise AgentError(self.error_categories[self.turn_count - 1])
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ProviderTimeoutProbe:
+    """Test provider that blocks until the configured model timeout cancels it."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        await asyncio.Event().wait()
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        await asyncio.Event().wait()
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class SpecialistTimeoutProbe:
+    """Test provider that times out one thermal specialist and leaves siblings runnable."""
+
+    def __init__(self) -> None:
+        self.delegate = DeterministicProvider()
+        self.timed_out = False
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        if (
+            request.specialist is not None
+            and request.specialist.specialist is Specialist.THERMAL
+            and not self.timed_out
+        ):
+            self.timed_out = True
+            await asyncio.Event().wait()
+        return await self.delegate.turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class ProviderCanaryBoundaryProbe:
+    """Test-only guard that fails if a secret canary enters any provider request."""
+
+    def __init__(self, canary: str) -> None:
+        self.canary = canary
+        self.delegate = DeterministicProvider()
+
+    def _check(self, request: object) -> None:
+        if self.canary in repr(request):
+            raise AgentError("provider_invalid_response")
+
+    async def route(self, request: RoutingInput) -> RoutingProposal:
+        self._check(request)
+        return await self.delegate.route(request)
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self._check(request)
+        return await self.delegate.turn(request)
+
+    async def specialist_turn(self, request: ModelInput) -> ModelTurn:
+        self._check(request)
+        return await self.delegate.specialist_turn(request)
+
+    async def propose(self, request: InvestigationInput) -> InvestigationProposal:
+        self._check(request)
+        return await self.delegate.propose(request)
+
+    async def close(self) -> None:
+        await self.delegate.close()
+
+
+class RepeatedToolRequestProvider(DeterministicProvider):
+    """Test-only provider that keeps requesting one cached read until the run limit."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.turn_count = 0
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        self.turn_count += 1
+        vehicle_id = request.context.get("vehicle_id")
+        if not isinstance(vehicle_id, str) or not vehicle_id:
+            raise AgentError("invalid_test_provider_context")
+        return ModelTurn(
+            tool_calls=[
+                ToolRequest(
+                    call_id=f"repeated-read-{self.turn_count}",
+                    name="get_vehicle",
+                    arguments={"vehicle_id": vehicle_id},
+                )
+            ],
+            usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
+        )
+
+
+class WrongToolSchemaProvider(DeterministicProvider):
+    """Test-only provider that adds a forbidden field to an otherwise valid read call."""
+
+    async def turn(self, request: ModelInput) -> ModelTurn:
+        vehicle_id = request.context.get("vehicle_id")
+        if not isinstance(vehicle_id, str) or not vehicle_id:
+            raise AgentError("invalid_test_provider_context")
+        return ModelTurn(
+            tool_calls=[
+                ToolRequest(
+                    call_id="wrong-schema-read",
+                    name="get_vehicle",
+                    arguments={
+                        "vehicle_id": vehicle_id,
+                        "untrusted_action": "activate_model",
+                    },
+                )
+            ],
             usage=Usage(input_tokens=0, output_tokens=0, total_tokens=0, cached_input_tokens=0),
         )

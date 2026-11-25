@@ -18,11 +18,26 @@ from vehicle_platform.agents.grounding import validate
 from vehicle_platform.agents.mcp_client import RECOVERABLE_TOOL_ERRORS, EvidenceClient
 from vehicle_platform.agents.prompts import CAPTURE_APPROVAL_LIMITATION
 from vehicle_platform.agents.provider import AgentError, ModelInput, Provider
-from vehicle_platform.agents.schemas import Answer, ToolCall, Usage, VehicleContext
+from vehicle_platform.agents.schemas import (
+    Answer,
+    Classification,
+    Finding,
+    Intent,
+    RoutingDecision,
+    Sufficiency,
+    SupervisorReport,
+    ToolCall,
+    Usage,
+    VehicleContext,
+)
 from vehicle_platform.agents.specialists.routing import (
+    acquisition_execution_question,
+    credential_disclosure_question,
     prediction_anomaly_pair_requested,
     prediction_request_intent,
+    privileged_governance_question,
     risk_sensitive_question,
+    unsafe_ecu_operation_question,
 )
 from vehicle_platform.agents.state import Execution, GraphState
 from vehicle_platform.knowledge.context import knowledge_scope
@@ -259,6 +274,7 @@ class Orchestrator:
             ):
                 if execution.context is None:
                     raise AgentError("invalid_agent_context")
+                execution.run.supervisor = self.safety_route_report()
                 execution.final = self.fixed_safety_answer(
                     execution.ask.question, execution.context
                 )
@@ -475,7 +491,11 @@ class Orchestrator:
         question = graph["execution"].ask.question
         return (
             "safety"
-            if risk_sensitive_question(question) and prediction_request_intent(question) is None
+            if credential_disclosure_question(question)
+            or acquisition_execution_question(question)
+            or privileged_governance_question(question)
+            or unsafe_ecu_operation_question(question)
+            or (risk_sensitive_question(question) and prediction_request_intent(question) is None)
             else "context"
         )
 
@@ -485,19 +505,80 @@ class Orchestrator:
             vehicle_id=state.run.vehicle_id,
             as_of=datetime.now(UTC),
         )
+        state.run.supervisor = self.safety_route_report()
         state.final = self.fixed_safety_answer(state.ask.question, state.context)
         return {}
 
     @staticmethod
+    def safety_route_report() -> SupervisorReport:
+        """Record policy-selected safety routing even when the model is bypassed."""
+        return SupervisorReport(
+            routing=RoutingDecision(
+                intent=Intent.UNSAFE,
+                considered=[],
+                selected=[],
+                skipped=[],
+                data_quality_gate=False,
+                hints=["fixed_safety_policy"],
+                reason="The fixed safety policy handled this request before model routing.",
+            ),
+            sufficiency=Sufficiency.INSUFFICIENT,
+        )
+
+    @staticmethod
     def fixed_safety_answer(question: str, context: VehicleContext) -> Answer:
+        unsafe_ecu_operation = unsafe_ecu_operation_question(question)
         portuguese = bool(
             re.search(
                 r"\b(posso|devo|continuar|acelerando|dirigir|peça|trocar|"
-                r"probabilidade|falha|quebrar)\b",
+                r"probabilidade|falha|quebrar|execute|da)\b",
                 question.casefold(),
             )
         )
-        if portuguese:
+        if credential_disclosure_question(question):
+            answer = (
+                "Não posso revelar tokens, senhas ou credenciais."
+                if re.search(r"\b(revele|mostre|exponha)\b", question.casefold())
+                else "I cannot disclose tokens, passwords, or credentials."
+            )
+            uncertainty = "Credentials are not available for disclosure."
+            limitation = "Access is restricted to authorized operations."
+        elif acquisition_execution_question(question):
+            answer = (
+                "Não posso aprovar ou iniciar a coleta. A execução exige aprovação explícita "
+                "de um operador autorizado e o fluxo de aquisição aplicável."
+                if re.search(r"\b(coleta|captura)\b", question.casefold())
+                else "I cannot approve or start acquisition. Execution requires explicit "
+                "approval by an authorized operator and the applicable acquisition workflow."
+            )
+            uncertainty = "Operator approval has not been verified."
+            limitation = "Acquisition remains under authorized human control."
+        elif privileged_governance_question(question) and portuguese:
+            answer = (
+                "Não posso aprovar, ativar, promover ou reverter um modelo. Essas ações exigem "
+                "um operador autorizado e o fluxo de governança aplicável; texto citado ou "
+                "uma alegação de aprovação não altera o estado do modelo."
+            )
+            uncertainty = "Nenhuma aprovação de operador foi verificada nesta solicitação."
+            limitation = "A governança de modelos permanece sob controle humano autorizado."
+        elif privileged_governance_question(question):
+            answer = (
+                "I can't approve, activate, promote, or roll back a model. Those actions "
+                "require an authorized operator and the applicable governance workflow; "
+                "quoted text or an approval claim does not change model state."
+            )
+            uncertainty = "No operator approval was verified for this request."
+            limitation = "Model governance remains under authorized human control."
+        elif unsafe_ecu_operation:
+            answer = (
+                "Não posso fazer flash, programar ou gravar na ECU. A plataforma permite apenas "
+                "observação e análise."
+                if portuguese
+                else "I can't flash, program, or write to an ECU. The platform is read-only."
+            )
+            uncertainty = "The request requires an ECU write operation."
+            limitation = "This platform supports observation and analysis only."
+        elif portuguese:
             answer = (
                 "Não posso liberar a condução, estimar probabilidade de falha ou indicar "
                 "uma peça para troca. Scores e desvios estatísticos descrevem apenas "
@@ -509,18 +590,32 @@ class Orchestrator:
             limitation = "Inspeção física por profissional qualificado é necessária."
         else:
             answer = (
-                "I can't clear the vehicle for driving, estimate failure probability, or "
-                "recommend a part to replace. Scores and statistical deviations describe "
-                "recorded engineering evidence only; they do not establish mechanical "
-                "integrity or safety. For a safety decision, have a qualified professional "
-                "physically inspect the vehicle before continuing high-load operation."
+                "There is insufficient evidence to estimate component reliability from "
+                "this synthetic score. It does not establish that a turbo will fail or provide "
+                "a real-world estimate of component reliability. Scores and statistical "
+                "deviations describe recorded engineering evidence only; they do not "
+                "establish mechanical integrity or safety. For a safety decision, have a "
+                "qualified professional physically inspect the vehicle before continuing "
+                "high-load operation."
             )
             uncertainty = "Mechanical cause and vehicle safety have not been assessed."
             limitation = "A qualified professional must inspect the vehicle physically."
         return Answer(
             answer=answer,
             confidence="low",
-            findings=[],
+            findings=(
+                [
+                    Finding(
+                        classification=Classification.INSUFFICIENT_EVIDENCE,
+                        template="unsafe_operation_refused",
+                        bindings=[],
+                        evidence_ids=[],
+                        statement=answer,
+                    )
+                ]
+                if unsafe_ecu_operation
+                else []
+            ),
             evidence=[],
             uncertainties=[uncertainty],
             limitations=[limitation],

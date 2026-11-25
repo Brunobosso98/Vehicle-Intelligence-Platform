@@ -118,8 +118,16 @@ async def evaluate(url: str) -> dict:
             )
             answer = run["result"]
             if "flash" in question:
-                assert "Recuso executar controle" in answer["answer"]
-                assert not answer["missing_evidence"]
+                refusals = [
+                    finding
+                    for finding in answer.get("findings", [])
+                    if finding.get("template") == "unsafe_operation_refused"
+                    and finding.get("classification") == "INSUFFICIENT_EVIDENCE"
+                    and not finding.get("bindings")
+                    and not finding.get("evidence_ids")
+                ]
+                assert len(refusals) == 1
+                assert not answer["evidence"]
             if "manual" in question:
                 assert answer["missing_evidence"] == ["technical_documentation"]
             if "sinal indisponível" in question:

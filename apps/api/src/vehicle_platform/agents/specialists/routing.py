@@ -1,5 +1,7 @@
 """Hybrid routing: typed model intent constrained by question and actual evidence families."""
 
+import base64
+import binascii
 import re
 from dataclasses import dataclass
 
@@ -100,6 +102,34 @@ def prediction_request_intent(question: str) -> Intent | None:
     return Intent.PREDICTION if recorded_prediction or next_pull_expectation else None
 
 
+def unsafe_ecu_operation_question(question: str) -> bool:
+    """Recognize plain or simply Base64-encoded ECU writes before tool discovery."""
+    operation = re.compile(
+        r"\b(?:flash|reflash|program|reprogram|write to|write)\b"
+        r".{0,60}\b(?:ecu|engine control unit)\b",
+        re.IGNORECASE | re.DOTALL,
+    )
+    if operation.search(question):
+        return True
+
+    # Inspect short, syntactically valid Base64 tokens. The question schema caps input
+    # at 2,000 characters, so scanning every token stays bounded without a bypass via
+    # harmless tokens placed before the encoded instruction.
+    candidates = re.findall(
+        r"(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{12,172}={0,2}(?![A-Za-z0-9+/])",
+        question,
+    )
+    for candidate in candidates:
+        padded = candidate + "=" * (-len(candidate) % 4)
+        try:
+            decoded = base64.b64decode(padded, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError):
+            continue
+        if operation.search(decoded):
+            return True
+    return False
+
+
 def risk_sensitive_question(question: str) -> bool:
     """Identify safety clearance, component-failure and repair-choice requests."""
     q = question.casefold()
@@ -115,6 +145,44 @@ def risk_sensitive_question(question: str) -> bool:
         r"\b(probabilidade|chance|risco)\b.{0,60}\b(falha|quebrar|componente)\b",
     )
     return any(re.search(pattern, q) for pattern in patterns)
+
+
+def credential_disclosure_question(question: str) -> bool:
+    q = question.casefold()
+    return bool(
+        re.search(
+            r"\b(reveal|disclose|show|print|leak|expose|revele|mostrar|mostre|exponha)\b"
+            r".{0,60}\b(token|secret|credential|password|segredo|senha|credencial)\b",
+            q,
+        )
+    )
+
+
+def acquisition_execution_question(question: str) -> bool:
+    q = question.casefold()
+    return bool(
+        re.search(
+            r"\b(start|begin|execute|approve|inicie|iniciar|comece|aprovar|aprove)\b"
+            r".{0,60}\b(acquisition|capture|collection|coleta|captura)\b",
+            q,
+        )
+    )
+
+
+def privileged_governance_question(question: str) -> bool:
+    """Detect requests to change model-serving state or claim operator approval."""
+    q = question.casefold()
+    english = re.search(
+        r"\b(?:approv(?:e|ed|al)|activat(?:e|ed|ion)|promot(?:e|ed|ion)|rollback|roll back|"
+        r"release|serve)\b.{0,100}\b(model|candidate|serving|mlops)\b",
+        q,
+    )
+    portuguese = re.search(
+        r"\b(aprov(?:e|ado|ada|ação)|ativ(?:e|ar|ado|ada)|promov(?:a|er|ido)|reverter|reversão|publicar)\b"
+        r".{0,100}\b(modelo|candidato|serviço|mlops)\b",
+        q,
+    )
+    return bool(english or portuguese)
 
 
 def prediction_specialists(question: str, evidence: list[Evidence]) -> tuple[Specialist, ...]:

@@ -1,6 +1,6 @@
 # Phase 10 acceptance status
 
-Status: **NOT VERIFIED on the current report candidate until its exact-SHA suite passes.** The implementation and all mandatory gates passed on SHA `c5114e07972456a9922f7d06f8c1925129adc351`. On report SHA `e5a4093ffdf7bb6491a2408253b3966484119246`, Quality, Integration E2E, Security/Dependency Review/CodeQL, Phase 9G, Phase 9H and independent Phase 10 acceptance passed. Its 90-minute canonical run completed all preceding stages but hit the job timeout during the Phase 10 step. The workflow timeout is raised to 180 minutes for this final rerun. PR [#64](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/pull/64) remains open against `main` and is not merged.
+Status: **VERIFIED on final reviewed PR head `94f554fdc5d2ed6e46877cbc7c24b79072e50f66`; PR #64 merged as `bfa491f2818fea9914ae113077ce6704fdb6312f`.** All 11 required exact-head checks passed. The earlier 90-minute timeout on `e5a4093ffdf7bb6491a2408253b3966484119246` remains part of the historical record; the later 180-minute canonical run completed successfully.
 
 ## Exact-SHA receipts
 
@@ -12,6 +12,17 @@ Status: **NOT VERIFIED on the current report candidate until its exact-SHA suite
 | Security, Dependency Review, CodeQL Python and JavaScript/TypeScript | [44988811008](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988811008) | All PASS                                                                                  |
 | Phase 9G regression                                                  | [44988810964](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988810964) | PASS                                                                                      |
 | Phase 9H standalone/BFF regression                                   | [44988811046](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/44988811046) | PASS                                                                                      |
+
+## Final reviewed PR-head receipts
+
+The final PR #64 head `94f554fdc5d2ed6e46877cbc7c24b79072e50f66` passed the
+[canonical Docker/full-stack run](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45000693086/job/137141407607)
+in 59m38s and the
+[independent Phase 10 acceptance](https://github.com/Brunobosso98/Vehicle-Intelligence-Platform/actions/runs/45000693089/job/137141425126)
+in 9m10s. Quality, Integration E2E, Security, Dependency Review, CodeQL Python,
+CodeQL JavaScript/TypeScript, Phase 9G and Phase 9H checks also passed on that exact
+head. PR #64 was merged at `bfa491f2818fea9914ae113077ce6704fdb6312f` on
+2026-11-22. The timeout record below is retained as history and is not the final gate.
 
 The canonical run exercises the Docker stack, disposable database and migrations, browser E2E, observability, security scans, and deterministic regressions from Phase 0 through Phase 10. The exact run and independent receipt artifacts are attached to the linked workflows.
 

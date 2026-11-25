@@ -1,5 +1,5 @@
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import cast
 
@@ -14,7 +14,7 @@ from vehicle_platform.agents.config import AgentSettings
 from vehicle_platform.agents.investigation.repository import InvestigationRepository
 from vehicle_platform.agents.investigation.routes import investigation_router
 from vehicle_platform.agents.investigation.service import InvestigationService
-from vehicle_platform.agents.provider import Provider
+from vehicle_platform.agents.provider import AgentError, Provider
 from vehicle_platform.agents.repository import AgentRepository
 from vehicle_platform.agents.routes import agent_router
 from vehicle_platform.agents.service import AgentService
@@ -50,7 +50,9 @@ def create_app(
     probe: DatabaseProbe | None = None,
     telemetry: Telemetry | None = None,
 ) -> FastAPI:
-    config = settings or Settings()
+    # BaseSettings resolves DATABASE_URL from the environment at runtime.
+    config_factory = cast(Callable[[], Settings], Settings)
+    config = settings if settings is not None else config_factory()
     database = Database(config) if probe is None else None
     dependency = probe if probe is not None else database
     if dependency is None:
@@ -75,7 +77,73 @@ def create_app(
     if config.environment == "production" and agent_config.provider == "deterministic":
         raise ValueError("Deterministic agent provider is restricted to development/test")
 
+    wait_provider_used = False
+    timeout_provider_used = False
+
     def provider_factory() -> Provider:
+        nonlocal timeout_provider_used, wait_provider_used
+        test_provider_fault = os.environ.get("VIP_AGENT_TEST_PROVIDER_FAULT")
+        if config.environment == "test" and test_provider_fault == "wait_after_tool":
+            if wait_provider_used:
+                from vehicle_platform.agents.scripted_provider import DeterministicProvider
+
+                return DeterministicProvider()
+            from vehicle_platform.agents.scripted_provider import WaitAfterToolProvider
+
+            wait_provider_used = True
+            return WaitAfterToolProvider()
+        if config.environment == "test" and test_provider_fault in {
+            "provider_retry_once",
+            "provider_retry_rate_limit_and_unavailable",
+        }:
+            from vehicle_platform.agents.scripted_provider import RetryOnceProvider
+
+            error_categories = (
+                ("provider_rate_limit", "provider_unavailable")
+                if test_provider_fault == "provider_retry_rate_limit_and_unavailable"
+                else ("provider_unavailable",)
+            )
+            return RetryOnceProvider(error_categories)
+        if config.environment == "test" and test_provider_fault == "provider_timeout_once":
+            if timeout_provider_used:
+                from vehicle_platform.agents.scripted_provider import DeterministicProvider
+
+                return DeterministicProvider()
+            from vehicle_platform.agents.scripted_provider import ProviderTimeoutProbe
+
+            timeout_provider_used = True
+            return ProviderTimeoutProbe()
+        if config.environment == "test" and test_provider_fault == "repeated_tool_loop":
+            from vehicle_platform.agents.scripted_provider import RepeatedToolRequestProvider
+
+            return RepeatedToolRequestProvider()
+        if config.environment == "test" and test_provider_fault == "wrong_tool_schema":
+            from vehicle_platform.agents.scripted_provider import WrongToolSchemaProvider
+
+            return WrongToolSchemaProvider()
+        if config.environment == "test" and test_provider_fault == "specialist_timeout":
+            from vehicle_platform.agents.scripted_provider import SpecialistTimeoutProbe
+
+            return SpecialistTimeoutProbe()
+        if config.environment == "test" and test_provider_fault == "provider_canary":
+            from vehicle_platform.agents.scripted_provider import ProviderCanaryBoundaryProbe
+
+            canary = os.environ.get("VIP_AGENT_TEST_SECRET_CANARY")
+            if not canary:
+                raise ValueError("provider boundary fixture requires a secret canary")
+            return ProviderCanaryBoundaryProbe(canary)
+        if config.environment == "test" and test_provider_fault == "forged_citation":
+            from vehicle_platform.agents.scripted_provider import ForgedCitationProvider
+
+            return ForgedCitationProvider()
+        if config.environment == "test" and test_provider_fault == "conflicting_unit":
+            from vehicle_platform.agents.scripted_provider import ConflictingUnitProvider
+
+            return ConflictingUnitProvider()
+        if config.environment == "test" and test_provider_fault == "malformed_json":
+            from vehicle_platform.agents.scripted_provider import ScriptedProvider
+
+            return ScriptedProvider([AgentError("provider_invalid_response")])
         if agent_config.provider == "deterministic":
             from vehicle_platform.agents.scripted_provider import DeterministicProvider
 

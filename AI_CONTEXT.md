@@ -27,6 +27,10 @@
   planner/runner, source-aware 9B/9C fitting, 9G evaluation, matched comparisons, retrospective
   monitoring, immutable candidate dossiers, authenticated review and rollback readiness plans.
   It has no HTTP route and cannot change 9D serving state.
+- `apps/api/src/vehicle_platform/agent_evaluation`: Phase 11 immutable case contracts,
+  independent source snapshot/oracle, exact binding grader and append-only receipt checker.
+  It evaluates the existing API/LangGraph/MCP path and does not add a public evaluation route
+  or grant agent privileges.
 - `apps/api/src/vehicle_platform/predictions/{domain,repository,service,routes}.py`: Phase 9H
   bounded, vehicle-scoped read-only history/detail/evidence and existing-AgentRun context queries.
   These routes do not invoke inference or mutate receipt/evidence records.
@@ -101,6 +105,11 @@
 - `scripts/evaluate_mlops.py`, `scripts/check_mlops.py`, `scripts/phase10-validation.sh`:
   Phase 10 real 9A/9B/9C/9G lifecycle evaluator, independent persisted-receipt/artifact checker,
   and migration/database acceptance runner.
+- `evals/phase11/suite-v37.json` (current suite v41; v1–v41 retained for historical receipts), `scripts/evaluate_agent_red_team.py`,
+  `scripts/vehicle_agent_evals.py`: Phase 11 frozen deterministic evaluation scenarios,
+  actual API/MCP HTTP acceptance runner and operator list/inspect/plan/verify CLI. The
+  `vehicle-agent-evals history-7d` command verifies the immutable Phase 7D ID mapping and
+  reports its mixed-round history without merging it into Phase 11 receipts.
 - `scripts/check_phase9h_research_summary.py`: checksum and source-SHA gate for the static 9G
   synthetic research summary.
 - `apps/web/tests/e2e/predictive.spec.ts`: synthetic UX and persisted-record browser acceptance,
@@ -239,4 +248,11 @@ scanner/full-stack gates remain CI REQUIRED.
   remains disabled and the BFF is not customer or vehicle-owner authorization.
 - Phase 10 adds a controlled offline MLOps CLI and durable migration 0020. Candidates use existing
   9B/9C registries and 9G protocols; proposals/dossiers are immutable review artifacts, not serving
-  permissions. Real-world mechanical failure predictive reliability remains NOT_ESTABLISHED.
+  permissions. PR #64 was merged as `bfa491f2818fea9914ae113077ce6704fdb6312f` after its final
+  reviewed head passed exact-SHA gates. Real-world mechanical failure predictive reliability
+  remains NOT_ESTABLISHED.
+- Phase 11 is NOT VERIFIED on `codex/phase-11-agent-evals-red-team`. Its open deterministic corpus
+  currently has 54 cases (`suite-v45.json`); the independent grader, CLI and API/MCP HTTP runner
+  have unit coverage. Local API and web quality gates pass on the current worktree. The separate
+  independent holdout is absent, and disposable acceptance, full attack coverage and exact-head CI
+  remain unverified; see the acceptance report and 155-requirement traceability ledger.

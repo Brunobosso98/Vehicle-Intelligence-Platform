@@ -1,16 +1,57 @@
 """Bounded local HTTP processes for disposable Phase 7A acceptance only."""
 
 import asyncio
+import hashlib
+import json
 import os
+import platform
+import resource
 import secrets
 import socket
 import sys
 import tempfile
+from collections.abc import AsyncIterator
 from contextlib import ExitStack, asynccontextmanager
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import httpx
+from vehicle_platform.agent_evaluation.privacy import redact_runtime_secrets
+
+_runtime_child_process_count = 0
+
+
+def begin_resource_measurement() -> resource.struct_rusage:
+    """Start a run-scoped measurement of direct child CPU and peak resident memory."""
+    global _runtime_child_process_count
+    _runtime_child_process_count = 0
+    return resource.getrusage(resource.RUSAGE_CHILDREN)
+
+
+def resource_measurement_since(
+    baseline: resource.struct_rusage,
+) -> dict[str, str | int]:
+    """Return bounded OS measurements for child processes started by this runner."""
+    current = resource.getrusage(resource.RUSAGE_CHILDREN)
+    system = platform.system().casefold()
+    if system not in {"linux", "darwin"}:
+        raise RuntimeError("phase11_resource_measurement_platform_unsupported")
+    rss_multiplier = 1024 if system == "linux" else 1
+    peak_rss = int(current.ru_maxrss * rss_multiplier)
+    if peak_rss <= 0 or _runtime_child_process_count <= 0:
+        raise RuntimeError("phase11_child_resource_measurement_missing")
+    return {
+        "platform": system,
+        "child_process_count": _runtime_child_process_count,
+        "peak_child_rss_bytes": peak_rss,
+        "child_cpu_user_ms": max(
+            0, round((current.ru_utime - baseline.ru_utime) * 1000)
+        ),
+        "child_cpu_system_ms": max(
+            0, round((current.ru_stime - baseline.ru_stime) * 1000)
+        ),
+    }
 
 
 def free_port() -> int:
@@ -28,12 +69,14 @@ class Process:
         self.child: asyncio.subprocess.Process | None = None
 
     async def start(self) -> None:
+        global _runtime_child_process_count
         self.child = await asyncio.create_subprocess_exec(
             *self.args,
             env=self.env,
             stdout=self.log,
             stderr=self.log,
         )
+        _runtime_child_process_count += 1
         try:
             async with (
                 asyncio.timeout(120),
@@ -47,8 +90,32 @@ class Process:
                         pass
                     await asyncio.sleep(0.2)
                 raise AssertionError("Acceptance process exited before readiness")
-        except BaseException:
+        except BaseException as exc:
             await self.stop()
+            self.log.flush()
+            self.log.seek(0)
+            diagnostic = redact_runtime_secrets(self.log.read(), self.env)
+            relevant = [
+                line
+                for line in diagnostic.splitlines()
+                if any(
+                    marker in line.casefold()
+                    for marker in (
+                        "traceback",
+                        "error",
+                        "critical",
+                        "exception",
+                    )
+                )
+            ]
+            excerpt = "\n".join(relevant[-12:])[-6000:]
+            if len(relevant) < 2:
+                excerpt = "\n".join(diagnostic.splitlines()[-24:])[-6000:]
+            if excerpt:
+                raise AssertionError(
+                    f"Acceptance process for {self.ready} failed before readiness; "
+                    f"sanitized diagnostics:\n{excerpt}"
+                ) from exc
             raise
 
     async def stop(self) -> None:
@@ -66,13 +133,37 @@ class Process:
 
 @asynccontextmanager
 async def runtime(
-    url: str, *, web: bool = False, real: bool = False, worker: bool = False
-):
+    url: str,
+    *,
+    web: bool = False,
+    real: bool = False,
+    worker: bool = False,
+    failure_log_directory: str | Path = ".validation/agent",
+    enable_prediction_evidence: bool = False,
+    prediction_artifacts_unavailable: bool = False,
+    prediction_vehicle_id: str | None = None,
+    mcp_disconnect_once: bool = False,
+    provider_fault: str | None = None,
+    agent_max_concurrent_runs: int | None = None,
+    model_timeout_seconds: float | None = None,
+    specialist_timeout_seconds: float | None = None,
+) -> AsyncIterator[dict[str, Any]]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise AssertionError(
             "Phase 7A acceptance requires disposable vehicle_test* database"
         )
     token = secrets.token_urlsafe(48)
+    provider_canary = (
+        secrets.token_urlsafe(32) if provider_fault == "provider_canary" else None
+    )
+    prediction_token = secrets.token_urlsafe(48) if enable_prediction_evidence else None
+    prediction_operator_token = (
+        secrets.token_urlsafe(48) if enable_prediction_evidence else None
+    )
+    if enable_prediction_evidence and prediction_vehicle_id is None:
+        raise ValueError(
+            "prediction capability fixture requires an explicit vehicle id"
+        )
     mcp_port, api_port, web_port = free_port(), free_port(), free_port()
     mcp_base, api_base = f"http://127.0.0.1:{mcp_port}", f"http://127.0.0.1:{api_port}"
     env = os.environ | {
@@ -90,9 +181,76 @@ async def runtime(
         "VIP_AGENT_INVESTIGATION_TOKEN": token,
         "API_BASE_URL": api_base,
     }
+    if mcp_disconnect_once:
+        env["PHASE11_MCP_TRANSPORT_FAULT"] = "disconnect_once"
+    artifact_root_temp: tempfile.TemporaryDirectory[str] | None = None
+    if prediction_artifacts_unavailable:
+        if not enable_prediction_evidence:
+            raise ValueError(
+                "missing-artifact fixture requires prediction evidence capability"
+            )
+        artifact_root_temp = tempfile.TemporaryDirectory(
+            prefix="phase11-empty-artifacts-"
+        )
+        artifact_root = Path(artifact_root_temp.name)
+        env["PREDICTION_MODEL_ARTIFACT_ROOT"] = str(artifact_root / "phase9b")
+        env["PREDICTION_ANOMALY_ARTIFACT_ROOT"] = str(artifact_root / "phase9c")
+    if agent_max_concurrent_runs is not None:
+        if not 1 <= agent_max_concurrent_runs <= 8:
+            raise ValueError("agent concurrency fixture must be between 1 and 8")
+        env["VIP_AGENT_MAX_CONCURRENT_RUNS"] = str(agent_max_concurrent_runs)
+    if model_timeout_seconds is not None:
+        if not 0 < model_timeout_seconds <= 60:
+            raise ValueError("model timeout fixture must be between 0 and 60 seconds")
+        env["VIP_AGENT_MODEL_TIMEOUT"] = str(model_timeout_seconds)
+    if specialist_timeout_seconds is not None:
+        if not 0 < specialist_timeout_seconds <= 45:
+            raise ValueError(
+                "specialist timeout fixture must be between 0 and 45 seconds"
+            )
+        env["VIP_AGENT_SPECIALIST_TIMEOUT"] = str(specialist_timeout_seconds)
+    env.pop("VIP_AGENT_TEST_PROVIDER_FAULT", None)
+    if provider_fault is not None:
+        if provider_fault not in {
+            "malformed_json",
+            "forged_citation",
+            "conflicting_unit",
+            "wait_after_tool",
+            "provider_canary",
+            "provider_retry_once",
+            "provider_retry_rate_limit_and_unavailable",
+            "provider_timeout_once",
+            "repeated_tool_loop",
+            "wrong_tool_schema",
+            "specialist_timeout",
+        }:
+            raise ValueError("Unsupported test provider fault")
+        env["VIP_AGENT_TEST_PROVIDER_FAULT"] = provider_fault
+    if provider_canary is not None:
+        env["VIP_AGENT_TEST_SECRET_CANARY"] = provider_canary
+    if prediction_token is not None and prediction_vehicle_id is not None:
+        env |= {
+            "PREDICTION_SERVICE_ENABLED": "true",
+            "PREDICTION_OPERATOR_TOKEN": prediction_operator_token or "",
+            "VIP_MCP_PREDICTION_EVIDENCE_ENABLED": "true",
+            "VIP_MCP_PREDICTION_TOKEN": prediction_token,
+            "VIP_MCP_PREDICTION_VEHICLE_IDS": json.dumps([prediction_vehicle_id]),
+            "VIP_AGENT_PREDICTION_SERVICE_ENABLED": "true",
+            "VIP_AGENT_PREDICTION_EVIDENCE_ENABLED": "true",
+            "VIP_AGENT_PREDICTION_CAPABILITY_TOKEN": prediction_operator_token or "",
+            "VIP_AGENT_PREDICTION_MCP_TOKEN": prediction_token,
+            "VIP_AGENT_PREDICTION_VEHICLE_IDS": json.dumps([prediction_vehicle_id]),
+        }
+    api_env = {
+        key: value for key, value in env.items() if not key.startswith("VIP_MCP_")
+    }
+    mcp_env = env.copy()
+    mcp_env.pop("VIP_AGENT_TEST_SECRET_CANARY", None)
     processes = [
         Process(
-            [sys.executable, "-m", "vehicle_platform.mcp.cli"], env, mcp_base + "/ready"
+            [sys.executable, "-m", "vehicle_platform.mcp.cli"],
+            mcp_env,
+            mcp_base + "/ready",
         ),
         Process(
             [
@@ -107,7 +265,7 @@ async def runtime(
                 str(api_port),
                 "--no-access-log",
             ],
-            env,
+            api_env,
             api_base + "/health/ready",
         ),
     ]
@@ -115,7 +273,7 @@ async def runtime(
         processes.append(
             Process(
                 [sys.executable, "-m", "vehicle_platform.acquisition.worker"],
-                env | {"WORKER_METRICS_HOST": "127.0.0.2"},
+                api_env | {"WORKER_METRICS_HOST": "127.0.0.2"},
                 "http://127.0.0.2:8001/metrics",
             )
         )
@@ -132,7 +290,7 @@ async def runtime(
                     "--port",
                     str(web_port),
                 ],
-                env,
+                api_env,
                 f"http://127.0.0.1:{web_port}",
             )
         )
@@ -142,8 +300,20 @@ async def runtime(
         yield {
             "api": api_base,
             "web": f"http://127.0.0.1:{web_port}",
+            "mcp_url": mcp_base + "/mcp",
             "mcp": processes[0],
             "token": token,
+            "prediction_capability": prediction_operator_token,
+            "secret_values": tuple(
+                value
+                for value in (
+                    token,
+                    prediction_token,
+                    prediction_operator_token,
+                    provider_canary,
+                )
+                if value is not None
+            ),
             "processes": processes,
         }
     except BaseException:
@@ -155,34 +325,119 @@ async def runtime(
                 if line.startswith('{"timestamp"')
             ]
             safe = "\n".join(operational).replace(token, "[redacted]")
-            if env.get("VIP_AGENT_API_KEY"):
-                safe = safe.replace(env["VIP_AGENT_API_KEY"], "[redacted]")
-            directory = Path(".validation/agent")
-            directory.mkdir(parents=True, exist_ok=True)
-            (directory / f"runtime-{index}-failure.log").write_text(safe)
+            safe = redact_runtime_secrets(safe, env)
+            directory = Path(failure_log_directory)
+            await asyncio.to_thread(
+                directory.mkdir, parents=True, exist_ok=True, mode=0o700
+            )
+            os.chmod(directory, 0o700)
+            failure_log = directory / f"runtime-{index}-failure.log"
+            failure_log.write_text(safe)
+            os.chmod(failure_log, 0o600)
             diagnostics = process.log
             diagnostics.seek(0)
-            diagnostic = diagnostics.read().replace(url, "[redacted-database]")
-            for key, value in env.items():
-                if value and key.endswith(("TOKEN", "KEY", "PASSWORD")):
-                    diagnostic = diagnostic.replace(value, "[redacted]")
-            (directory / f"runtime-{index}-diagnostic.log").write_text(
-                diagnostic[-20000:]
-            )
+            diagnostic = redact_runtime_secrets(diagnostics.read(), env)
+            diagnostic_path = directory / f"runtime-{index}-diagnostic.log"
+            diagnostic_path.write_text(diagnostic[-20000:])
+            os.chmod(diagnostic_path, 0o600)
         raise
     finally:
         for process in reversed(processes):
             await process.stop()
             process.close()
+        if artifact_root_temp is not None:
+            artifact_root_temp.cleanup()
 
 
-async def ask(api: httpx.AsyncClient, vehicle: str, question: str) -> dict[str, Any]:
+async def ask(
+    api: httpx.AsyncClient,
+    vehicle: str,
+    question: str,
+    *,
+    session_id: str | None = None,
+    prediction_evidence_ids: tuple[str, ...] = (),
+    prediction_capability: str | None = None,
+) -> dict[str, Any]:
+    started = perf_counter()
     path = f"/api/v1/vehicles/{vehicle}/agent-runs"
-    response = await api.post(path, json={"question": question})
+    request_body: dict[str, Any] = {"question": question}
+    if session_id is not None:
+        request_body["session_id"] = session_id
+    headers: dict[str, str] = {}
+    if prediction_evidence_ids:
+        if not prediction_capability:
+            raise ValueError("prediction evidence reads require a runtime capability")
+        request_body["include_prediction_evidence"] = True
+        request_body["prediction_evidence_ids"] = list(prediction_evidence_ids)
+        headers["X-VIP-Prediction-Agent-Capability"] = prediction_capability
+    response = await api.post(path, json=request_body, headers=headers)
     response.raise_for_status()
     identifier = response.json()["id"]
-    stream = await api.get(f"{path}/{identifier}/stream")
-    assert stream.status_code == 200, stream.text
+    stream_started = perf_counter()
+    stream_chunks: list[bytes] = []
+    first_event_ms: int | None = None
+    response_bytes = 0
+    event_marker_tail = b""
+    async with api.stream("GET", f"{path}/{identifier}/stream") as stream:
+        if stream.status_code != 200:
+            raise AssertionError(
+                f"agent_run_stream_request_failed:{stream.status_code}"
+            )
+        async for chunk in stream.aiter_bytes():
+            response_bytes += len(chunk)
+            if response_bytes > 1_048_576:
+                raise AssertionError("agent_run_stream_size_limit_exceeded")
+            stream_chunks.append(chunk)
+            if first_event_ms is None:
+                marker_window = event_marker_tail + chunk
+                if b"event: " in marker_window:
+                    first_event_ms = int((perf_counter() - stream_started) * 1000)
+                event_marker_tail = marker_window[-7:]
+    if first_event_ms is None:
+        raise AssertionError("agent_run_stream_has_no_first_sse_event")
+    stream_content = b"".join(stream_chunks)
+    stream_text = stream_content.decode("utf-8")
+    event_ids = [
+        int(line[4:])
+        for line in stream_text.splitlines()
+        if line.startswith("id: ") and line[4:].isdigit()
+    ]
+    if not event_ids:
+        raise AssertionError("agent_run_stream_has_no_persisted_event_ids")
+    replay = await api.get(f"{path}/{identifier}/stream?after=0")
+    terminal_tail = await api.get(f"{path}/{identifier}/stream?after={max(event_ids)}")
+    run_before_replay = await api.get(f"{path}/{identifier}")
+    run_after_replay = await api.get(f"{path}/{identifier}")
+    audit_before_replay = await api.get(f"{path}/{identifier}/audit")
+    audit_after_replay = await api.get(f"{path}/{identifier}/audit")
+    replay_state_unchanged = (
+        run_before_replay.status_code == run_after_replay.status_code == 200
+        and run_after_replay.json() == run_before_replay.json()
+        and audit_before_replay.status_code == audit_after_replay.status_code == 200
+        and audit_before_replay.json() == audit_after_replay.json()
+    )
+    replay_verified = (
+        replay.status_code == 200
+        and terminal_tail.status_code == 200
+        and replay.content == stream_content
+        and not terminal_tail.content
+        and replay_state_unchanged
+    )
     response = await api.get(f"{path}/{identifier}")
     response.raise_for_status()
-    return response.json() | {"stream": stream.text}
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise TypeError("agent run response must be a JSON object")
+    return payload | {
+        "stream": stream_text,
+        "first_sse_event_ms": first_event_ms,
+        "sse_replay": {
+            "verified": replay_verified,
+            "event_count": len(event_ids),
+            "stream_sha256": hashlib.sha256(stream_content).hexdigest(),
+            "repeat_sha256": hashlib.sha256(replay.content).hexdigest(),
+            "empty_after_terminal": not terminal_tail.content,
+            "tool_count_unchanged": replay_state_unchanged,
+        },
+        "elapsed_ms": int((perf_counter() - started) * 1000),
+    }

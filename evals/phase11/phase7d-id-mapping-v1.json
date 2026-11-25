@@ -1,0 +1,682 @@
+{
+  "schema_version": "1.0",
+  "mapping_version": "phase7d-id-map-v1",
+  "source_suite": "evals/phase7d/suite-v2.json",
+  "source_suite_sha256": "0fcadf5d7a04c4d715d9e2ea33d3bd2d7978c3c365914b048846ef48feddcbbb",
+  "case_mappings": [
+    {
+      "legacy_case_id": "A01",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": "P11-BENIGN-001",
+      "relationship": "similar_intent_not_equivalent"
+    },
+    {
+      "legacy_case_id": "A02",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A03",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A04",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A05",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A06",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A07",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A08",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A09",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "A10",
+      "category": "A",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B01",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B02",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B03",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B04",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B05",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B06",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B07",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B08",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B09",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "B10",
+      "category": "B",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C01",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C02",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C03",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C04",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C05",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C06",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C07",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C08",
+      "category": "C",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C09",
+      "category": "C",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "C10",
+      "category": "C",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D01",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D02",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D03",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D04",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D05",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D06",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D07",
+      "category": "D",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D08",
+      "category": "D",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D09",
+      "category": "D",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "D10",
+      "category": "D",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E01",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E02",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E03",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E04",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E05",
+      "category": "E",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E06",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E07",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E08",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E09",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "E10",
+      "category": "E",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F01",
+      "category": "F",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F02",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F03",
+      "category": "F",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F04",
+      "category": "F",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F05",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F06",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F07",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F08",
+      "category": "F",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F09",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "F10",
+      "category": "F",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G01",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G02",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G03",
+      "category": "G",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G04",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G05",
+      "category": "G",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G06",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G07",
+      "category": "G",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G08",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G09",
+      "category": "G",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "G10",
+      "category": "G",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H01",
+      "category": "H",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H02",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H03",
+      "category": "H",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H04",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H05",
+      "category": "H",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H06",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H07",
+      "category": "H",
+      "critical": true,
+      "scheduled_repeats": [0, 1, 2],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H08",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H09",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    },
+    {
+      "legacy_case_id": "H10",
+      "category": "H",
+      "critical": false,
+      "scheduled_repeats": [0],
+      "phase11_case_id": null,
+      "relationship": "legacy_identity_preserved"
+    }
+  ],
+  "historical_observations": {
+    "scheduled_slots": 120,
+    "unique_questions": 80,
+    "latest_pass_slots_across_rounds": 120,
+    "latest_observation_rounds": [15, 16, 17, 22],
+    "uniform_final_source_cohort": false,
+    "native_round_15": {
+      "round": 15,
+      "slot_count": 120,
+      "outcomes": {
+        "PASS": 93,
+        "SEMANTIC_FAILURE": 10,
+        "RUNTIME_FAILURE": 9,
+        "PROVIDER_FAILURE": 6,
+        "INTERRUPTED": 1,
+        "SKIPPED_BUDGET_LIMIT": 1
+      }
+    },
+    "latest_pass_observations_by_round": {
+      "15": 93,
+      "16": 24,
+      "17": 2,
+      "22": 1
+    },
+    "latest_g03_real_round": {
+      "round": 22,
+      "repository_sha": "b459c14626d04a1e829ae8b7dc3476311f6a470b"
+    },
+    "accumulated_estimated_spend_usd": 4.326918555,
+    "authorized_budget_usd": 5.0,
+    "unknown_usage_reservations": 67,
+    "remaining_budget_usd": 0.673081445
+  },
+  "comparison_policy": "Keep Phase 7D history separate; never combine rounds or infer final-source reliability."
+}

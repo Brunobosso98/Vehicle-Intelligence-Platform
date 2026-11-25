@@ -48,8 +48,8 @@ class Adapter:
         self.prediction_evidence = (
             PredictionEvidenceService(
                 database,
-                model_artifacts=ModelArtifactStore(),
-                anomaly_artifacts=AnomalyArtifactStore(),
+                model_artifacts=ModelArtifactStore(settings.prediction_model_artifact_root),
+                anomaly_artifacts=AnomalyArtifactStore(settings.prediction_anomaly_artifact_root),
                 telemetry=telemetry,
                 timeout_seconds=min(settings.prediction_request_timeout_seconds, 6.0),
             )

@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Any
 
 import httpx
+from pydantic import SecretStr
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 from vehicle_platform.core.config import Settings
@@ -11,12 +12,18 @@ from vehicle_platform.events.synthetic import AnomalyInjection, anomaly_scenario
 from vehicle_platform.main import create_app
 
 
-async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
+async def seed(
+    url: str,
+    *,
+    sample_hz: int = 5,
+    omit_signals: frozenset[str] = frozenset(),
+    include_other_vehicle_sessions: bool = False,
+) -> dict[str, Any]:
     if not url.rsplit("/", 1)[-1].startswith("vehicle_test"):
         raise ValueError("MCP validation requires a disposable vehicle_test* database")
     if sample_hz not in {5, 10}:
         raise ValueError("Fixture sampling must be 5 or 10 Hz")
-    app = create_app(Settings(database_url=url, environment="test"))
+    app = create_app(Settings(database_url=SecretStr(url), environment="test"))
     scenario = anomaly_scenario("phase6", (AnomalyInjection("boost_drop", 1),))
     fixture: dict[str, Any] = {"sessions": [], "pulls": [], "configurations": []}
     async with (
@@ -28,7 +35,8 @@ async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
 
         async def post(path: str, **kwargs: Any) -> Any:
             response = await client.post(path, **kwargs)
-            assert response.status_code in {200, 201}, (path, response.text)
+            if response.status_code not in {200, 201}:
+                raise AssertionError((path, response.text))
             return response.json()
 
         vehicle = await post(
@@ -80,7 +88,7 @@ async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
                         + timedelta(seconds=subdivision / sample_hz)
                     )
                     for signal, raw_value in frame.values.items():
-                        if raw_value is not None:
+                        if raw_value is not None and signal not in omit_signals:
                             value = raw_value
                             if sample_hz == 10 and signal in {
                                 "engine.boost_pressure",
@@ -108,7 +116,8 @@ async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
                 f"/api/v1/sessions/{session['id']}/analysis",
                 json={"profile": "generic-v1"},
             )
-            assert analyzed["pull_count"] == 3
+            if analyzed["pull_count"] != 3:
+                raise AssertionError("fixture_analysis_pull_count_mismatch")
             await post(f"/api/v1/sessions/{session['id']}/events/analyze", json={})
             pulls = (await client.get(f"/api/v1/sessions/{session['id']}/pulls")).json()
             fixture["sessions"].append(session["id"])
@@ -125,6 +134,29 @@ async def seed(url: str, *, sample_hz: int = 5) -> dict[str, Any]:
                 fixture["event"] = next(
                     e["id"] for e in events if e["event_type"] == "boost_drop"
                 )
+        if include_other_vehicle_sessions:
+            other_configuration = await post(
+                f"/api/v1/vehicles/{fixture['other_vehicle']}/configurations",
+                json={
+                    "effective_at": "2020-01-01T00:00:00Z",
+                    "description": "isolated concurrent B58 fixture",
+                    "provenance": "phase11-disposable-fixture",
+                },
+            )
+            fixture["other_configuration"] = other_configuration["id"]
+            for index in range(2):
+                session = await post(
+                    "/api/v1/sessions",
+                    json={
+                        "vehicle_id": fixture["other_vehicle"],
+                        "configuration_id": other_configuration["id"],
+                        "source_type": "csv",
+                        "started_at": (
+                            scenario.frames[0].observed_at + timedelta(days=20 + index)
+                        ).isoformat(),
+                    },
+                )
+                fixture.setdefault("other_sessions", []).append(session["id"])
     return fixture
 
 
@@ -143,7 +175,7 @@ async def fingerprint(url: str) -> dict[str, int]:
                 "dataset_capability_reports",
             ):
                 result[table] = int(
-                    await connection.scalar(text(f"SELECT count(*) FROM {table}")) or 0
+                    await connection.scalar(text(f"SELECT count(*) FROM {table}"))
                 )
             return result
     finally:

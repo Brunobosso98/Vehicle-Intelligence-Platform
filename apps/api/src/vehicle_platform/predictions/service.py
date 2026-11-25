@@ -133,8 +133,12 @@ class PredictionService:
         self.settings = settings
         self.database = database
         self.repository = PredictionRepository(database)
-        self.model_artifacts = model_artifacts or ModelArtifactStore()
-        self.anomaly_artifacts = anomaly_artifacts or AnomalyArtifactStore()
+        self.model_artifacts = model_artifacts or ModelArtifactStore(
+            settings.prediction_model_artifact_root
+        )
+        self.anomaly_artifacts = anomaly_artifacts or AnomalyArtifactStore(
+            settings.prediction_anomaly_artifact_root
+        )
         self.worker = BoundedInferenceWorker(
             settings.prediction_max_cpu_concurrency,
             max(settings.prediction_request_timeout_seconds, 0.1),

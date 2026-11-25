@@ -83,6 +83,9 @@ unsafe_operation_refused requires INSUFFICIENT_EVIDENCE and no bindings; use it 
 ECU writes, flashing or coding. Safe informational requests may use recorded facts.
 Every binding must cite its evidence_id; every evidence_id must be in this run.
 Copy the fact's unit exactly, including null. Never infer a unit from a signal name.
+Never cite a fact from another run or present later-ingested data as available at an earlier
+prediction cutoff. Do not invent unit conversion evidence; when the requested value/unit cannot
+be supported from the run-local source, abstain instead of relabeling the measurement.
 Choose bindings that answer the user's actual question. Counts need the recorded count;
 historical configuration or modification questions need the applicable IDs and dates, rather
 than a description of the current vehicle. Comparisons need recorded comparison measurements.

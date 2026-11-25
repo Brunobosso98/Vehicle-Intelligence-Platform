@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from ipaddress import ip_network
+from pathlib import Path
 from typing import Literal
 from urllib.parse import parse_qs, urlparse
 from uuid import UUID
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
     acquisition_token_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
     acquisition_batch_limit: int = Field(default=500, ge=1, le=5000)
     prediction_service_enabled: bool = False
+    prediction_model_artifact_root: Path = Path("apps/api/.artifacts/phase9b")
+    prediction_anomaly_artifact_root: Path = Path("apps/api/.artifacts/phase9c")
     prediction_operator_token: SecretStr | None = None
     prediction_trusted_networks: str = Field(
         default="127.0.0.0/8,::1/128", min_length=3, max_length=512

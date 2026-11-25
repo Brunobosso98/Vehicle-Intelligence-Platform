@@ -26,6 +26,7 @@ labels = {
     "Phase 9G evaluation and calibration": "PHASE9G",
     "Phase 9H predictive intelligence UI": "PHASE9H",
     "Phase 10 offline MLOps control plane": "PHASE10",
+    "Phase 11 agent evaluation and red team": "PHASE11",
 }
 outcome_status = {
     "success": "PASS",

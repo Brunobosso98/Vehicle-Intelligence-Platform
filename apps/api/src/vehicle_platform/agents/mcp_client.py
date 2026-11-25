@@ -1,4 +1,7 @@
 import json
+import logging
+import os
+import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, Protocol
@@ -16,6 +19,52 @@ from vehicle_platform.mcp.schemas import Envelope
 from vehicle_platform.mcp.tools import TOOL_NAMES
 
 RECOVERABLE_TOOL_ERRORS = frozenset({"mcp_tool_error", "tool_result_budget_exhausted"})
+_phase11_disconnect_lock = threading.Lock()
+_phase11_disconnect_used = False
+
+
+class _Phase11DisconnectOnceTransport(httpx2.AsyncBaseTransport):
+    """Lose one real MCP tool response in the disposable test environment."""
+
+    def __init__(self, inner: httpx2.AsyncBaseTransport | None = None) -> None:
+        self._inner = inner or httpx2.AsyncHTTPTransport()
+
+    async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
+        body = await request.aread()
+        replay = httpx2.Request(
+            method=request.method,
+            url=request.url,
+            headers=request.headers,
+            content=body,
+            extensions=dict(request.extensions),
+        )
+        response = await self._inner.handle_async_request(replay)
+        global _phase11_disconnect_used
+        if request.method == "POST" and _is_tools_call(body):
+            with _phase11_disconnect_lock:
+                inject = not _phase11_disconnect_used
+                if inject:
+                    _phase11_disconnect_used = True
+            if inject:
+                await response.aread()
+                await response.aclose()
+                logging.getLogger(__name__).warning("phase11_mcp_transport_disconnect_injected")
+                raise httpx2.ReadError("simulated lost MCP tool response", request=request)
+        return response
+
+    async def aclose(self) -> None:
+        await self._inner.aclose()
+
+
+def _is_tools_call(body: bytes) -> bool:
+    try:
+        payload = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    requests = payload if isinstance(payload, list) else [payload]
+    return any(isinstance(item, dict) and item.get("method") == "tools/call" for item in requests)
+
+
 PREDICTION_TOOL_ERRORS = {
     ErrorCode.NOT_FOUND: "prediction_evidence_unavailable",
     ErrorCode.FORBIDDEN: "prediction_evidence_not_verified",
@@ -103,8 +152,12 @@ async def connect(
         raise AgentError("prediction_capability_required")
     if token:
         headers["Authorization"] = "Bearer " + token.get_secret_value()
+    fault_mode = os.environ.get("PHASE11_MCP_TRANSPORT_FAULT")
+    if fault_mode and (settings.environment != "test" or fault_mode != "disconnect_once"):
+        raise AgentError("invalid_test_fault_configuration")
+    transport = _Phase11DisconnectOnceTransport() if fault_mode else None
     async with (
-        httpx2.AsyncClient(headers=headers, trust_env=False) as http,
+        httpx2.AsyncClient(headers=headers, trust_env=False, transport=transport) as http,
         Client(streamable_http_client(settings.mcp_url, http_client=http)) as client,
     ):
         yield MCPClient(client, http)
