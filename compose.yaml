@@ -223,7 +223,7 @@ services:
 
   otel-collector:
     profiles: ["observability"]
-    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.166.0@sha256:5dfb40297a8da893e4e9b6b98d3ddbdd9082f73611170d6381e355e08b235334
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
       - type: bind
